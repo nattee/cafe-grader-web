@@ -12,6 +12,14 @@ CafeGrader::Application.routes.draw do
 
   resources :sites
 
+  resources :test
+
+  resources :messages do
+    collection do
+      get 'console'
+    end
+  end
+
   resources :announcements do
     member do
       get 'toggle','toggle_front'
@@ -80,22 +88,57 @@ CafeGrader::Application.routes.draw do
   end
 
 
-
-  #main
-  get "main/list"
-  get 'main/submission(/:id)', to: 'main#submission', as: 'main_submission'
-
   #user admin
-  get 'user_admin/bulk_manage', to: 'user_admin#bulk_manage', as: 'bulk_manage_user_admin'
-  post 'user_admin', to: 'user_admin#create'
-  delete 'user_admin/:id', to: 'user_admin#destroy', as: 'user_admin_destroy'
+  resources :user_admin do
+    collection do
+      get 'bulk_manage', as: 'bulk_manage_user_admin'
+      delete ':id', to: 'user_admin#destroy', as: 'user_admin_destroy'
+      get 'user_stat'
+    end
+  end
 
+  resources :contest_management, only: [:index] do
+    collection do
+      get 'user_stat'
+      get 'clear_stat'
+      get 'clear_all_stat'
+    end
+  end
+
+  #get 'user_admin', to: 'user_admin#index'
+  #get 'user_admin/bulk_manage', to: 'user_admin#bulk_manage', as: 'bulk_manage_user_admin'
+  #post 'user_admin', to: 'user_admin#create'
+  #delete 'user_admin/:id', to: 'user_admin#destroy', as: 'user_admin_destroy'
+
+  #singular resource
+  #---- BEWARE ---- singular resource maps to plural controller by default, we can override by provide controller name directly
   #report
-  get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
-  get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'
-  get "report/login"
-  get 'report/max_score', to: 'report#max_score', as: 'report_max_score'
-  post 'report/show_max_score', to: 'report#show_max_score', as: 'report_show_max_score'
+  resource :report, only: [], controller: 'report' do
+    get 'login'
+    get 'multiple_login'
+    get 'problem_hof/:id', action: 'problem_hof'
+    get 'current_score'
+    get 'max_score'
+    post 'show_max_score'
+  end
+  #get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
+  #get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'
+  #get "report/login"
+  #get 'report/max_score', to: 'report#max_score', as: 'report_max_score'
+  #post 'report/show_max_score', to: 'report#show_max_score', as: 'report_show_max_score'
+
+  resource :main, only: [], controller: 'main' do
+    get 'list'
+    get 'submission(/:id)', action: 'submission', as: 'main_submission'
+    post 'submit'
+    get 'announcements'
+    get 'help'
+  end
+  #main
+  #get "main/list"
+  #get 'main/submission(/:id)', to: 'main#submission', as: 'main_submission'
+  #post 'main/submit', to: 'main#submit'
+  #get 'main/announcements', to: 'main#announcements'
 
 
   #
