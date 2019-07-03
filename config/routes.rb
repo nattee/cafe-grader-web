@@ -5,7 +5,8 @@ CafeGrader::Application.routes.draw do
   root :to => 'main#login'
 
   #logins
-  get 'login/login',  to: 'login#login'
+  match 'login/login',  to: 'login#login', via: [:get,:post]
+
 
   resources :contests
 

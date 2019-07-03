@@ -1,6 +1,6 @@
 class MessagesController < ApplicationController
 
-  before_filter :authenticate
+  before_action :authenticate
 
   verify :method => :post, :only => ['create'],
          :redirect_to => { :action => 'list' }

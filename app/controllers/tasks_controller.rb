@@ -1,6 +1,6 @@
 class TasksController < ApplicationController
 
-  before_filter :authenticate, :check_viewability
+  before_action :authenticate, :check_viewability
 
   def index
     redirect_to :action => 'list'

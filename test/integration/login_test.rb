@@ -8,14 +8,14 @@ class LoginTest < ActionDispatch::IntegrationTest
   test "login with invalid information" do
     get root_path
     assert_response :success
-    post login_login_path, login: "root", password: "hahaha"
+    post login_login_path, params: {login: "root", password: "hahaha"}
     assert_redirected_to root_path
   end
 
   test "normal user login" do
     get root_path
     assert_response :success
-    post login_login_path, {login: "john", password: "hello" }
+    post login_login_path, params: {login: "john", password: "hello" }
     assert_redirected_to main_list_path
   end
 
@@ -24,7 +24,7 @@ class LoginTest < ActionDispatch::IntegrationTest
     GraderConfiguration.reload
     get root_path
     assert_response :success
-    post login_login_path, {login: "john", password: "hello" }
+    post login_login_path, params: {login: "john", password: "hello" }
     follow_redirect!
     assert_redirected_to root_path
   end
@@ -34,7 +34,7 @@ class LoginTest < ActionDispatch::IntegrationTest
     GraderConfiguration.reload
     get root_path
     assert_response :success
-    post login_login_path, {login: "admin", password: "admin" }
+    post login_login_path, params: {login: "admin", password: "admin" }
     assert_redirected_to main_list_path
   end
 end

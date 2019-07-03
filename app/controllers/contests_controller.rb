@@ -1,6 +1,6 @@
 class ContestsController < ApplicationController
 
-  before_filter :admin_authorization
+  before_action :admin_authorization
 
   in_place_edit_for :contest, :title
   in_place_edit_for :contest, :enabled

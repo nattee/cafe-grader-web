@@ -4,7 +4,7 @@ class UserAdminController < ApplicationController
 
   include MailHelperMethods
 
-  before_filter :admin_authorization
+  before_action :admin_authorization
 
   # GETs should be safe (see http://www.w3.org/2001/tag/doc/whenToUseGet.html)
   verify :method => :post, :only => [

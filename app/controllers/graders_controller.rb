@@ -1,6 +1,6 @@
 class GradersController < ApplicationController
 
-  before_filter :admin_authorization
+  before_action :admin_authorization
 
   verify :method => :post, :only => ['clear_all', 
                                      'start_exam',

@@ -1,6 +1,6 @@
 class TestController < ApplicationController
 
-  before_filter :authenticate, :check_viewability
+  before_action :authenticate, :check_viewability
 
 #
 #  COMMENT OUT: filter in each action instead

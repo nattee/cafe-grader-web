@@ -1,7 +1,7 @@
 class ConfigurationsController < ApplicationController
 
-  before_filter :authenticate
-  before_filter { |controller| controller.authorization_by_roles(['admin'])}
+  before_action :authenticate
+  before_action { |controller| controller.authorization_by_roles(['admin'])}
 
 
   def index

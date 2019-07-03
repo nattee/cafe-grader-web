@@ -13,6 +13,7 @@ gem 'activerecord-session_store'
 gem 'mysql2'
 #for testing
 gem 'sqlite3'
+gem 'rails-controller-testing'
 #for dumping database into yaml
 gem 'yaml_db'
 
