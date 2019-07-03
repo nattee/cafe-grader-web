@@ -91,9 +91,17 @@ CafeGrader::Application.routes.draw do
   #user admin
   resources :user_admin do
     collection do
-      get 'bulk_manage', as: 'bulk_manage_user_admin'
-      delete ':id', to: 'user_admin#destroy', as: 'user_admin_destroy'
+      get 'bulk_manage'
       get 'user_stat'
+      get 'import'
+      get 'new_list'
+      get 'admin'
+      get 'random_all_passwords'
+      get 'active'
+      get 'mass_mailing'
+    end
+    member do
+      get 'clear_last_ip'
     end
   end
 
