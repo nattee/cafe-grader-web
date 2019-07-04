@@ -19,9 +19,6 @@ class UsersController < ApplicationController
   before_action :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
 
 
-  verify :method => :post, :only => [:chg_passwd],
-         :redirect_to => { :action => :index }
-
   #in_place_edit_for :user, :alias_for_editing
   #in_place_edit_for :user, :email_for_editing
 

@@ -8,7 +8,7 @@
   = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-default btn-sm'
   = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-default btn-sm'
 .submitbox
-  = form_tag :action => 'quick_create' do
+  = form_tag action: 'quick_create', controller: 'problems' do
     %b Quick New:
     %label{:for => "problem_name"} Name
     = text_field 'problem', 'name'

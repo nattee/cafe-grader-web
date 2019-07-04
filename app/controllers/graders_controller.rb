@@ -2,13 +2,6 @@ class GradersController < ApplicationController
 
   before_action :admin_authorization
 
-  verify :method => :post, :only => ['clear_all', 
-                                     'start_exam',
-                                     'start_grading',
-                                     'stop_all', 
-                                     'clear_terminated'], 
-         :redirect_to => {:action => 'index'}
-
   def index
     redirect_to :action => 'list'
   end

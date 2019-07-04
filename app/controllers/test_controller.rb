@@ -2,13 +2,6 @@ class TestController < ApplicationController
 
   before_action :authenticate, :check_viewability
 
-#
-#  COMMENT OUT: filter in each action instead
-#
-#  before_filter :verify_time_limit, :only => [:submit]
-
-  verify :method => :post, :only => [:submit],
-         :redirect_to => { :action => :index }
 
   def index
     prepare_index_information

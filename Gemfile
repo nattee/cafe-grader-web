@@ -69,6 +69,7 @@ gem 'bootstrap3-datetimepicker-rails'
 gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------
+gem 'simple_form'
 #select 2
 gem 'select2-rails'
 #ace editor

@@ -6,15 +6,6 @@ class UserAdminController < ApplicationController
 
   before_action :admin_authorization
 
-  # GETs should be safe (see http://www.w3.org/2001/tag/doc/whenToUseGet.html)
-  verify :method => :post, :only => [
-                                      :create, :create_from_list, 
-                                      :update, 
-                                      :manage_contest, 
-                                      :bulk_mail 
-                                    ],
-         :redirect_to => { :action => :list }
-
   def index
     @user_count = User.count
     if params[:page] == 'all'

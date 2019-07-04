@@ -11,12 +11,6 @@ class ProblemsController < ApplicationController
     @problems = Problem.order(date_added: :desc)
   end
 
-  # GETs should be safe (see http://www.w3.org/2001/tag/doc/whenToUseGet.html)
-  verify :method => :post, :only => [ :create, :quick_create,
-                                      :do_manage,
-                                      :do_import,
-                                    ],
-         :redirect_to => { :action => :index }
 
   def show
     @problem = Problem.find(params[:id])
@@ -29,7 +23,7 @@ class ProblemsController < ApplicationController
 
   def create
     @problem = Problem.new(problem_params)
-    @description = Description.new(params[:description])
+    @description = Description.new(problem_params[:description])
     if @description.body!=''
       if !@description.save
         render :action => new and return

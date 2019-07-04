@@ -38,6 +38,8 @@ Rails.application.routes.draw do
       get 'turn_all_on'
       get 'import'
       get 'manage'
+      get 'quick_create'
+      post 'do_manage'
     end
   end
 
@@ -92,6 +94,7 @@ Rails.application.routes.draw do
   resources :user_admin do
     collection do
       match 'bulk_manage', via: [:get, :post]
+      get 'bulk_mail'
       get 'user_stat'
       get 'import'
       get 'new_list'
@@ -100,6 +103,7 @@ Rails.application.routes.draw do
       get 'active'
       get 'mass_mailing'
       match 'create_from_list', via: [:get, :post]
+      post 'grant_admin'
     end
     member do
       get 'clear_last_ip'

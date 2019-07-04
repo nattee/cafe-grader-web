@@ -15,15 +15,6 @@ class MainController < ApplicationController
 
   before_action :authenticate_by_ip_address, :only => [:list]
 
-  # COMMENTED OUT: filter in each action instead
-  # before_filter :verify_time_limit, :only => [:submit]
-
-  verify :method => :post, :only => [:submit],
-         :redirect_to => { :action => :index }
-
-  # COMMENT OUT: only need when having high load
-  # caches_action :index, :login
-
   # NOTE: This method is not actually needed, 'config/routes.rb' has
   # assigned action login as a default action.
   def index

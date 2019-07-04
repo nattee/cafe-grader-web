@@ -9,7 +9,7 @@ class User < ActiveRecord::Base
   has_and_belongs_to_many :roles
 
   #has_and_belongs_to_many :groups
-  has_many :groups_users, class_name: GroupUser
+  has_many :groups_users, class_name: 'GroupUser'
   has_many :groups, :through => :groups_users
 
   has_many :test_requests, -> {order(submitted_at: :desc)}
