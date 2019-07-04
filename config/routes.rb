@@ -91,7 +91,7 @@ CafeGrader::Application.routes.draw do
   #user admin
   resources :user_admin do
     collection do
-      get 'bulk_manage'
+      match 'bulk_manage', via: [:get, :post]
       get 'user_stat'
       get 'import'
       get 'new_list'
@@ -99,6 +99,7 @@ CafeGrader::Application.routes.draw do
       get 'random_all_passwords'
       get 'active'
       get 'mass_mailing'
+      match 'create_from_list', via: [:get, :post]
     end
     member do
       get 'clear_last_ip'
