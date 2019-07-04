@@ -1,4 +1,4 @@
-CafeGrader::Application.routes.draw do
+Rails.application.routes.draw do
   resources :tags
   get "sources/direct_edit"
 
