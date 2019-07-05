@@ -27,7 +27,7 @@ class User < ActiveRecord::Base
   belongs_to :site
   belongs_to :country
 
-  has_and_belongs_to_many :contests, -> { order(:name); uniq}
+  has_and_belongs_to_many :contests, -> { order(:name)}
 
   scope :activated_users, -> {where activated: true}
 
@@ -173,7 +173,7 @@ class User < ActiveRecord::Base
       return false if site==nil
       return site.finished?
     elsif GraderConfiguration.indv_contest_mode?
-      return false if self.contest_stat(true)==nil
+      return false if self.contest_stat==nil
       return contest_time_left == 0
     else
       return false

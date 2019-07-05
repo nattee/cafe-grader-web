@@ -66,14 +66,14 @@ class ProblemsController < ApplicationController
     @problem = Problem.find(params[:id])
     @description = @problem.description
     if @description.nil? and params[:description][:body]!=''
-      @description = Description.new(params[:description])
+      @description = Description.new(description_params)
       if !@description.save
         flash[:notice] = 'Error saving description'
         render :action => 'edit' and return
       end
       @problem.description = @description
     elsif @description
-      if !@description.update_attributes(params[:description])
+      if !@description.update_attributes(description_params)
         flash[:notice] = 'Error saving description'
         render :action => 'edit' and return
       end
@@ -299,6 +299,10 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :full_score, :change_date_added, :date_added, :available, :test_allowed,:output_only, :url, :description, tag_ids:[])
+    end
+
+    def description_params
+      params.require(:description).permit(:body, :markdown)
     end
 
 end

@@ -40,6 +40,7 @@ Rails.application.routes.draw do
       get 'manage'
       get 'quick_create'
       post 'do_manage'
+      post 'do_import'
     end
   end
 
@@ -81,6 +82,7 @@ Rails.application.routes.draw do
       get 'download'
       get 'compiler_msg'
       get 'rejudge'
+      get 'source'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
@@ -115,6 +117,7 @@ Rails.application.routes.draw do
       get 'user_stat'
       get 'clear_stat'
       get 'clear_all_stat'
+      get 'change_contest_mode'
     end
   end
 
