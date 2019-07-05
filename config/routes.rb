@@ -99,11 +99,11 @@ Rails.application.routes.draw do
       get 'import'
       get 'new_list'
       get 'admin'
-      get 'random_all_passwords'
       get 'active'
       get 'mass_mailing'
-      match 'create_from_list', via: [:get, :post]
       post 'grant_admin'
+      match 'create_from_list', via: [:get, :post]
+      match 'random_all_passwords', via: [:get, :post]
     end
     member do
       get 'clear_last_ip'

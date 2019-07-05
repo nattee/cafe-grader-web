@@ -209,7 +209,7 @@ class UserAdminController < ApplicationController
     @prefix = params[:prefix] || ''
     @non_admin_users = User.find_non_admin_with_prefix(@prefix)
     @changed = false
-    if request.request_method == 'POST'
+    if params[:commit] == 'Go ahead'
       @non_admin_users.each do |user|
         password = random_password
         user.password = password
@@ -219,7 +219,6 @@ class UserAdminController < ApplicationController
       @changed = true
     end
   end
-
 
   # contest management
 
