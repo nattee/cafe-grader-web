@@ -173,15 +173,28 @@ CONFIGURATIONS =
    },
 
 
+   {
+     :key => 'right.whitelist_ip_only',
+     :value_type => 'boolean',
+     :default_value => 'false',
+     :description => "If true, non-admin user will be able to use the system only when their ip is in the 'whitelist_ip'."
+   },
+
+   {
+     :key => 'right.whitelist_ip',
+     :value_type => 'string',
+     :default_value => '0.0.0.0/0',
+     :description => "list of whitelist ip, given in comma separated CIDR notation. For example '161.200.92.0/23, 161.200.80.1/32'"
+   },
 
   ]
 
 
-def create_configuration_key(key, 
-                             value_type, 
-                             default_value, 
+def create_configuration_key(key,
+                             value_type,
+                             default_value,
                              description='')
-  conf = (GraderConfiguration.find_by_key(key) || 
+  conf = (GraderConfiguration.find_by_key(key) ||
           GraderConfiguration.new(:key => key,
                             :value_type => value_type,
                             :value => default_value))
@@ -196,7 +209,7 @@ def seed_config
     else
       desc = ''
     end
-    create_configuration_key(conf[:key], 
+    create_configuration_key(conf[:key],
                              conf[:value_type],
                              conf[:default_value],
                              desc)
@@ -217,7 +230,7 @@ def seed_roles
   graders_right = Right.create(:name => 'graders_admin',
                                :controller => 'graders',
                                :action => 'all')
-    
+
   role.rights << user_admin_right;
   role.rights << problem_admin_right;
   role.rights << graders_right;
