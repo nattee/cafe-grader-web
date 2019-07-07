@@ -21,6 +21,7 @@ class MainController < ApplicationController
     redirect_to :action => 'login'
   end
 
+  #reset login, clear session
   def login
     saved_notice = flash[:notice]
     reset_session
@@ -38,6 +39,11 @@ class MainController < ApplicationController
 
     @announcements = Announcement.frontpage
     render :action => 'login', :layout => 'empty'
+  end
+
+  def logout
+    reset_session
+    redirect_to root_path
   end
 
   def list

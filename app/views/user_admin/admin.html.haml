@@ -17,9 +17,9 @@
 %hr
 
 = form_tag :action => 'grant_admin' do
-  Grant admin permission to:
-  = text_field_tag 'login'
-  = submit_tag 'Grant'
+  = label_tag :login, 'Grant admin permission to:'
+  = text_field_tag 'login',nil, class: 'input-field'
+  = submit_tag 'Grant', class: 'btn btn-primary'
 
 %hr/
 = link_to '[go back to index]', :action => 'index'

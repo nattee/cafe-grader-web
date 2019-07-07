@@ -7,11 +7,8 @@ Rails.application.routes.draw do
   #logins
   match 'login/login',  to: 'login#login', via: [:get,:post]
 
-
   resources :contests
-
   resources :sites
-
   resources :test
 
   resources :messages do
@@ -93,7 +90,7 @@ Rails.application.routes.draw do
 
 
   #user admin
-  resources :user_admin do
+  resources :user_admin  do
     collection do
       match 'bulk_manage', via: [:get, :post]
       get 'bulk_mail'
@@ -103,6 +100,7 @@ Rails.application.routes.draw do
       get 'admin'
       get 'active'
       get 'mass_mailing'
+      get 'revoke_admin'
       post 'grant_admin'
       match 'create_from_list', via: [:get, :post]
       match 'random_all_passwords', via: [:get, :post]
@@ -144,11 +142,13 @@ Rails.application.routes.draw do
   #post 'report/show_max_score', to: 'report#show_max_score', as: 'report_show_max_score'
 
   resource :main, only: [], controller: 'main' do
+    get 'login'
+    get 'logout'
     get 'list'
     get 'submission(/:id)', action: 'submission', as: 'main_submission'
-    post 'submit'
     get 'announcements'
     get 'help'
+    post 'submit'
   end
   #main
   #get "main/list"
