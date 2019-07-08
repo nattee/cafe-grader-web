@@ -84,13 +84,13 @@ class UsersTest < ApplicationSystemTestCase
 
     login 'jack','morning'
     visit  bulk_manage_user_admin_index_path
-    assert_current_path root_path
     assert_text 'You are not authorized'
+    assert_current_path login_main_path
 
     login 'james','morning'
     visit  new_list_user_admin_index_path
-    assert_current_path root_path
     assert_text 'You are not authorized'
+    assert_current_path login_main_path
   end
 
   def login(username,password)

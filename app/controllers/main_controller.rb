@@ -1,6 +1,6 @@
 class MainController < ApplicationController
 
-  before_action :authenticate, :except => [:index, :login]
+  before_action :check_valid_login, :except => [:login]
   before_action :check_viewability, :except => [:index, :login]
 
   append_before_action :confirm_and_update_start_time, 
@@ -15,13 +15,8 @@ class MainController < ApplicationController
 
   before_action :authenticate_by_ip_address, :only => [:list]
 
-  # NOTE: This method is not actually needed, 'config/routes.rb' has
-  # assigned action login as a default action.
-  def index
-    redirect_to :action => 'login'
-  end
-
   #reset login, clear session
+  #front page
   def login
     saved_notice = flash[:notice]
     reset_session

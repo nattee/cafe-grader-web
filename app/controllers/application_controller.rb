@@ -11,9 +11,9 @@ class ApplicationController < ActionController::Base
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
   #report and redirect for unauthorized activities
-  def unauthorized_redirect
-    flash[:notice] = 'You are not authorized to view the page you requested'
-    redirect_to :controller => 'main', :action => 'login'
+  def unauthorized_redirect(notice = 'You are not authorized to view the page you requested')
+    flash[:notice] = notice
+    redirect_to login_main_path
   end
 
   # Returns the current logged-in user (if any).
@@ -23,7 +23,7 @@ class ApplicationController < ActionController::Base
   end
 
   def admin_authorization
-    return false unless authenticate
+    return false unless check_valid_login
     user = User.includes(:roles).find(session[:user_id])
     unless user.admin?
       unauthorized_redirect
@@ -33,7 +33,7 @@ class ApplicationController < ActionController::Base
   end
 
   def authorization_by_roles(allowed_roles)
-    return false unless authenticate
+    return false unless check_valid_login
     user = User.find(session[:user_id])
     unless user.roles.detect { |role| allowed_roles.member?(role.name) }
       unauthorized_redirect
@@ -55,37 +55,36 @@ class ApplicationController < ActionController::Base
 
   #redirect to root (and also force logout)
   #if the user is not logged_in or the system is in "ADMIN ONLY" mode
-  def authenticate
+  def check_valid_login
+    #check if logged in
     unless session[:user_id]
-      flash[:notice] = 'You need to login'
       if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-        flash[:notice] = 'You need to login but you cannot log in at this time'
+        unauthorized_redirect('You need to login but you cannot log in at this time')
+      else
+        unauthorized_redirect('You need to login')
       end
-      redirect_to :controller => 'main', :action => 'login'
       return false
     end
 
     # check if run in single user mode
     if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
       if @current_user==nil || (not @current_user.admin?)
-        flash[:notice] = 'You cannot log in at this time'
-        redirect_to :controller => 'main', :action => 'login'
+        unauthorized_redirect('You cannot log in at this time')
         return false
       end
     end
 
     # check if the user is enabled
     unless @current_user.enabled? || @current_user.admin?
-      flash[:notice] = 'Your account is disabled'
-      redirect_to :controller => 'main', :action => 'login'
+      unauthorized_redirect 'Your account is disabled'
       return false
     end
 
     # check if user ip is allowed
     unless @current_user.admin? || !GraderConfiguration[ALLOW_WHITELIST_IP_ONLY_CONF_KEY]
       unless is_request_ip_allowed?
-        flash[:notice] = 'Your IP is not allowed'
-        redirect_to root_path
+        unauthorized_redirect 'Your IP is not allowed'
+        return false
       end
     end
 
@@ -124,7 +123,7 @@ class ApplicationController < ActionController::Base
   end
 
   def authorization
-    return false unless authenticate
+    return false unless check_valid_login
     user = User.find(session[:user_id])
     unless user.roles.detect { |role|
         role.rights.detect{ |right|

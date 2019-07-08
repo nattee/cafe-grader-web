@@ -1,5 +1,5 @@
 class SubmissionsController < ApplicationController
-  before_action :authenticate
+  before_action :check_valid_login
   before_action :submission_authorization, only: [:show, :download, :edit]
   before_action :admin_authorization, only: [:rejudge]
 

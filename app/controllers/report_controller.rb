@@ -2,12 +2,12 @@ require 'csv'
 
 class ReportController < ApplicationController
 
-  before_action :authenticate
+  before_action :check_valid_login
 
   before_action :admin_authorization, only: [:login_stat,:submission_stat, :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
 
   before_action(only: [:problem_hof]) { |c|
-    return false unless authenticate
+    return false unless check_valid_login
 
     admin_authorization unless GraderConfiguration["right.user_view_submission"]
   }

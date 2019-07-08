@@ -3,7 +3,7 @@ class GroupsController < ApplicationController
                                    :add_user, :remove_user,:remove_all_user,
                                    :add_problem, :remove_problem,:remove_all_problem,
                                   ]
-  before_action :authenticate, :admin_authorization
+  before_action :admin_authorization
 
   # GET /groups
   def index

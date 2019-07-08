@@ -4,7 +4,7 @@ class UsersController < ApplicationController
 
   include MailHelperMethods
 
-  before_action :authenticate, :except => [:new, 
+  before_action :check_valid_login, :except => [:new, 
                                            :register, 
                                            :confirm, 
                                            :forget,
@@ -14,7 +14,7 @@ class UsersController < ApplicationController
                                                        :register,
                                                        :forget,
                                                        :retrieve_password]
-  before_action :authenticate, :profile_authorization, only: [:profile]
+  before_action :check_valid_login, :profile_authorization, only: [:profile]
 
   before_action :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
 

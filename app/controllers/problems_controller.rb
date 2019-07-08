@@ -1,7 +1,10 @@
 class ProblemsController < ApplicationController
 
-  before_action :authenticate, :authorization
-  before_action :testcase_authorization, only: [:show_testcase]
+  before_action :admin_authorization
+
+  #NOTE: ghost from the past?
+  #before_action :testcase_authorization, only: [:show_testcase]
+
 
   in_place_edit_for :problem, :name
   in_place_edit_for :problem, :full_name
