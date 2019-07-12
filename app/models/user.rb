@@ -81,7 +81,7 @@ class User < ActiveRecord::Base
   end
 
   def admin?
-    self.roles.detect {|r| r.name == 'admin' }
+    self.roles.where(name: 'admin').count > 0
   end
 
   def email_for_editing

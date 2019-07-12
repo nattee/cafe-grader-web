@@ -68,7 +68,7 @@ class ApplicationController < ActionController::Base
 
     # check if run in single user mode
     if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-      if @current_user==nil || (not @current_user.admin?)
+      if @current_user==nil || (!@current_user.admin?)
         unauthorized_redirect('You cannot log in at this time')
         return false
       end
@@ -108,10 +108,11 @@ class ApplicationController < ActionController::Base
     #this assume that we have already authenticate normally
     unless GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY]
       user = User.find(session[:user_id])
-      if (not @current_user.admin? && user.last_ip && user.last_ip != request.remote_ip)
+      puts "User admin #{user.admin?}"
+      if (!user.admin? && user.last_ip && user.last_ip != request.remote_ip)
         flash[:notice] = "You cannot use the system from #{request.remote_ip}. Your last ip is #{user.last_ip}"
+        puts "hahaha"
         redirect_to :controller => 'main', :action => 'login'
-        puts "CHEAT: user #{user.login} tried to login from '#{request.remote_ip}' while last ip is '#{user.last_ip}' at #{Time.zone.now}"
         return false
       end
       unless user.last_ip
