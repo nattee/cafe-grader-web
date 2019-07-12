@@ -31,7 +31,7 @@ class Problem < ActiveRecord::Base
 
   def self.create_from_import_form_params(params, old_problem=nil)
     org_problem = old_problem || Problem.new
-    import_params, problem = Problem.extract_params_and_check(params, 
+    import_params, problem = Problem.extract_params_and_check(params,
                                                               org_problem)
 
     if !problem.errors.empty?
@@ -52,8 +52,8 @@ class Problem < ActiveRecord::Base
 
     importer = TestdataImporter.new(problem)
 
-    if not importer.import_from_file(import_params[:file], 
-                                     import_params[:time_limit], 
+    if not importer.import_from_file(import_params[:file],
+                                     import_params[:time_limit],
                                      import_params[:memory_limit],
                                      import_params[:checker_name],
                                      import_to_db)

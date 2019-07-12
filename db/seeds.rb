@@ -267,12 +267,12 @@ end
 
 def seed_more_languages
   Language.delete_all
-  Language.create( name: 'c', pretty_name: 'C', ext: 'c', common_ext: 'c' )
-  Language.create( name: 'cpp', pretty_name: 'C++', ext: 'cpp', common_ext: 'cpp,cc' )
-  Language.create( name: 'pas', pretty_name: 'Pascal', ext: 'pas', common_ext: 'pas' )
-  Language.create( name: 'ruby', pretty_name: 'Ruby', ext: 'rb', common_ext: 'rb' )
-  Language.create( name: 'python', pretty_name: 'Python', ext: 'py', common_ext: 'py' )
-  Language.create( name: 'java', pretty_name: 'Java', ext: 'java', common_ext: 'java' )
+  Language.find_or_create_by( name: 'c', pretty_name: 'C', ext: 'c', common_ext: 'c' )
+  Language.find_or_create_by( name: 'cpp', pretty_name: 'C++', ext: 'cpp', common_ext: 'cpp,cc' )
+  Language.find_or_create_by( name: 'pas', pretty_name: 'Pascal', ext: 'pas', common_ext: 'pas' )
+  Language.find_or_create_by( name: 'ruby', pretty_name: 'Ruby', ext: 'rb', common_ext: 'rb' )
+  Language.find_or_create_by( name: 'python', pretty_name: 'Python', ext: 'py', common_ext: 'py' )
+  Language.find_or_create_by( name: 'java', pretty_name: 'Java', ext: 'java', common_ext: 'java' )
 end
 
 seed_config

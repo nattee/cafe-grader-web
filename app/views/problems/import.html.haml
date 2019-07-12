@@ -8,7 +8,7 @@
 - if @problem and @problem.errors
   =error_messages_for 'problem'
 
-= simple_form_for :problem, url: do_import_problems_path, :multipart => true  do |f|
+= form_tag do_import_problems_path, :multipart => true  do |f|
 
   .submitbox
     %table
