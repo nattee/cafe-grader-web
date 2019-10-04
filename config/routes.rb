@@ -72,6 +72,10 @@ Rails.application.routes.draw do
       get 'toggle_activate', 'toggle_enable'
       get 'stat'
     end
+    collection do
+      get 'profile'
+      post 'chg_passwd'
+    end
   end
 
   resources :submissions do

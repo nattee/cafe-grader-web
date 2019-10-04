@@ -14,7 +14,6 @@ class UsersController < ApplicationController
                                                        :register,
                                                        :forget,
                                                        :retrieve_password]
-  before_action :check_valid_login, :profile_authorization, only: [:profile]
 
   before_action :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
 
@@ -30,16 +29,25 @@ class UsersController < ApplicationController
     end
   end
 
+  # edit logged in user profile
+  def profile
+    if !GraderConfiguration['system.user_setting_enabled']
+      redirect_to :controller => 'main', :action => 'list'
+    else
+      @user = current_user;
+    end
+  end
+
   def chg_passwd
     user = User.find(session[:user_id])
-    user.password = params[:passwd]
-    user.password_confirmation = params[:passwd_verify]
+    user.password = params[:password]
+    user.password_confirmation = params[:password_confirmation]
     if user.save
       flash[:notice] = 'password changed'
     else
       flash[:notice] = 'Error: password changing failed'
     end
-    redirect_to :action => 'index'
+    redirect_to :action => 'profile'
   end
 
   def new
@@ -215,5 +223,4 @@ class UsersController < ApplicationController
     def user_params
       params.require(:user).permit(:login, :full_name, :email)
     end
-
 end

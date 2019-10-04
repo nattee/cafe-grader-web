@@ -93,6 +93,25 @@ class UsersTest < ApplicationSystemTestCase
     assert_current_path login_main_path
   end
 
+  test "login then change password" do
+    newpassword = '1234asdf'
+    login 'john', 'hello'
+    visit profile_users_path
+
+    fill_in 'password', with: newpassword
+    fill_in 'password_confirmation', with: newpassword
+
+    click_on 'Edit'
+
+    visit logout_main_path
+    login 'john', 'hello'
+    assert_text 'Wrong password'
+
+    login 'john', newpassword
+    assert_text "MAIN"
+    assert_text "Submission"
+  end
+
   def login(username,password)
     visit root_path
     fill_in "Login", with: username

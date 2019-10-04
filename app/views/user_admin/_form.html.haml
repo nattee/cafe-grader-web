@@ -1,14 +1,12 @@
 = simple_form_for(@user) do |f|
   = f.error_notification
-  .row
-    .col-md-6.col-md-offset-2
-      = f.input :login, label: 'Login'
-      = f.input :full_name, label: 'Full name'
-      = f.input :password
-      = f.input :password_confirmation
-      = f.input :email
-      = f.input :alias
-      = f.input :remark
-      = f.button :submit, class: 'btn btn-success'
-      = link_to 'Cancel', :back, class: 'btn btn-default'
+  = f.input :login, label: 'Login'
+  = f.input :full_name, label: 'Full name'
+  = f.input :password
+  = f.input :password_confirmation
+  = f.input :email
+  = f.input :alias
+  = f.input :remark
+  = f.button :submit, class: 'btn btn-primary'
+  = link_to 'Cancel', :back, class: 'btn btn-default'
 
