@@ -246,13 +246,18 @@ class User < ActiveRecord::Base
 
   #get a list of available problem
   def available_problems
+    # first, we check if this is normal mode
     if not GraderConfiguration.multicontests?
+
+      #if this is a normal mode
+      #we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
         return available_problems_in_group
       else
         return Problem.available_problems
       end
     else
+      #this is multi contest mode
       contest_problems = []
       pin = {}
       contests.enabled.each do |contest|

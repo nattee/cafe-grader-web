@@ -4,6 +4,7 @@ module MainHelper
     if !problem.url.blank?
       return link_to name, problem.url, options
     elsif !problem.description_filename.blank?
+      #build a link to a problem (via task controller)
       basename, ext = problem.description_filename.split('.')
       options[:controller] = 'tasks'
       options[:action] = 'download'

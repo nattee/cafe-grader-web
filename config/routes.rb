@@ -135,7 +135,7 @@ Rails.application.routes.draw do
     get 'login'
     get 'multiple_login'
     get 'problem_hof/:id', action: 'problem_hof'
-    get 'current_score'
+    get 'current_score(/:group_id)', action: 'current_score', as: 'current_score'
     get 'max_score'
     post 'show_max_score'
   end

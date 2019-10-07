@@ -1,0 +1,45 @@
+.container-fluid
+  .row
+    .col-md-6
+      %h1 Adding list of users
+  .row
+    .col-md-6
+      .panel.panel-default
+        .panel-heading
+          .panel-title Info
+        .panel-body
+          %ul
+            %li
+              List of user information in this format:
+              %tt user_id,name(,passwd(,alias(,remark)))
+            %li
+              Note that
+              %tt passwd, alias
+              and
+              %tt remark
+              is optional.
+            %li
+              When
+              %tt passwd
+              or
+              %tt alias
+              is empty, the original value will be used instead.
+            %li
+              If the users with the same user_id already exists, existing information will be overwritten.
+
+  .row
+    .col-md-6
+      = form_tag :action => 'create_from_list' do
+        .form-group
+          = submit_tag 'Create following users',class: 'btn btn-success'
+        .form-group
+          .div.checkbox
+            %label 
+              = check_box_tag :add_to_group
+              Also add these users to the following group
+            = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), id: 'group_name',class: 'select2'
+        .form-group
+          = text_area_tag 'user_list', nil, :rows => 50, :cols => 80
+    .col-md-6
+
+

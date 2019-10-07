@@ -17,7 +17,12 @@ class ReportController < ApplicationController
 
   def current_score
     @problems = Problem.available_problems
-    @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
+    if params[:group_id]
+      @group = Group.find(params[:group_id])
+      @users = @group.users.where(enabled: true)
+    else
+      @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
+    end
     @scorearray = calculate_max_score(@problems, @users,0,0,true)
 
     #rencer accordingly
