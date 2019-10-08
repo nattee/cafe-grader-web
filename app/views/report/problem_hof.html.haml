@@ -12,8 +12,8 @@
     .form-inline
       = select 'report',
         'problem_id',
-        @problems.collect {|p| ["[#{p.name}] #{p.full_name}", report_problem_hof_url(p.id)]},
-        {:selected => report_problem_hof_url(@problem)},
+        @problems.collect {|p| ["[#{p.name}] #{p.full_name}", problem_hof_report_path(p.id)]},
+        {:selected => problem_hof_report_path(@problem)},
         { class: 'select2 form-control' }
       %button.btn.btn-primary.btn-sm.go-button#problem_go{data: {source: "#report_problem_id"}} Go
 
