@@ -65,7 +65,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :grader_configuration, controller: 'configurations'
+  resources :grader_configuration, controller: 'configurations' do
+    collection do
+      get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
+    end
+  end
 
   resources :users do
     member do
@@ -134,7 +138,7 @@ Rails.application.routes.draw do
   resource :report, only: [], controller: 'report' do
     get 'login'
     get 'multiple_login'
-    get 'problem_hof/:id', action: 'problem_hof'
+    get 'problem_hof(/:id)', action: 'problem_hof', as: 'problem_hof'
     get 'current_score(/:group_id)', action: 'current_score', as: 'current_score'
     get 'max_score'
     post 'show_max_score'

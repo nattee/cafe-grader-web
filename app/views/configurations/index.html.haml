@@ -1,37 +1,48 @@
 /- content_for :header do
 /  = javascript_include_tag 'local_jquery'
 
-%h1 System configuration
+.container-fluid
+  .row
+    .col-md-12
+      %h1 System configuration
+  .row
+    .col-md-12
+      = link_to 'Set exam mode', set_exam_right_grader_configuration_index_path('false'), class: 'btn btn-warning'
+      = link_to 'Set practice mode', set_exam_right_grader_configuration_index_path('true'), class: 'btn btn-info'
 
-- @group.each do |g|
-  %h2= g
-  %table.table.table-striped
-    %thead
-      %th{style: 'width: 25%'} Key
-      %th{style: 'width: 10%'}Type
-      %th{style: 'width: 15%'} Value
-      %th Description
-    - @configurations.each do |conf|
-      - next if conf.key[0...(conf.key.index('.'))] != g
-      - @grader_configuration = conf
-      %tr
-        %td
-          /= in_place_editor_field :grader_configuration, :key, {}, :rows=>1
-          = @grader_configuration.key
-        %td
-          /= in_place_editor_field :grader_configuration, :value_type, {}, :rows=>1
-          = @grader_configuration.value_type
-        %td
-          = best_in_place @grader_configuration, :value, ok_button: "ok", cancel_button: "cancel"
-        %td= conf.description
+  - @group.each do |g|
+    .row
+      .col-md-12
+        %h2= g
+        %table.table.table-striped
+          %thead
+            %th{style: 'width: 25%'} Key
+            %th{style: 'width: 10%'}Type
+            %th{style: 'width: 15%'} Value
+            %th Description
+          - @configurations.each do |conf|
+            - next if conf.key[0...(conf.key.index('.'))] != g
+            - @grader_configuration = conf
+            %tr
+              %td
+                /= in_place_editor_field :grader_configuration, :key, {}, :rows=>1
+                = @grader_configuration.key
+              %td
+                /= in_place_editor_field :grader_configuration, :value_type, {}, :rows=>1
+                = @grader_configuration.value_type
+              %td
+                = best_in_place @grader_configuration, :value, ok_button: "ok", cancel_button: "cancel"
+              %td= conf.description
 
-- if GraderConfiguration.config_cached?
-  %br/
-  Your config is saved, but it does not automatically take effect.
-  %br/
-  If you have one mongrel process running, you can
-  = link_to '[click]', :action => 'reload'
-  here to reload.
-  %br/
-  If you have more than one process running, you should restart 
-  them manually.
+  .row
+    .col-md-12
+      - if GraderConfiguration.config_cached?
+        %br/
+        Your config is saved, but it does not automatically take effect.
+        %br/
+        If you have one mongrel process running, you can
+        = link_to '[click]', :action => 'reload'
+        here to reload.
+        %br/
+        If you have more than one process running, you should restart 
+        them manually.
