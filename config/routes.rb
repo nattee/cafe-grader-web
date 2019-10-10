@@ -12,8 +12,13 @@ Rails.application.routes.draw do
   resources :test
 
   resources :messages do
+    member do
+      get 'hide'
+      post 'reply'
+    end
     collection do
       get 'console'
+      get 'list_all'
     end
   end
 
