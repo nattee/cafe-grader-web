@@ -1,10 +1,11 @@
 # Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
 add1_by_admin:
-  id: 1
   user: admin
   problem:  prob_add
   language: Language_c
+  submitted_at: "2019-10-22 08:34"
   source: 
+    xxx
     \#include <stdio>
     \#include <stdlib>
     int main() {
@@ -12,10 +13,10 @@ add1_by_admin:
     }
 
 sub1_by_admin:
-  id: 2
   user: admin
   problem:  prob_sub
   language: Language_c
+  submitted_at: "2019-10-22 08:34"
   source: 
     \#include <stdio>
     \#include <stdlib>
@@ -24,10 +25,22 @@ sub1_by_admin:
     }
 
 add1_by_john:
-  id: 3
   user: john
   problem:  prob_add
   language: Language_c
+  submitted_at: "2019-10-22 08:34"
+  source: 
+    \#include <stdio>
+    \#include <stdlib>
+    int main() {
+      cout << 33 << endl;
+    }
+
+add1_by_james:
+  user: james
+  problem:  prob_add
+  language: Language_c
+  submitted_at: "2019-10-22 08:34"
   source: 
     \#include <stdio>
     \#include <stdlib>
@@ -36,10 +49,10 @@ add1_by_john:
     }
 
 sub1_by_james:
-  id: 4
   user: james
   problem:  prob_sub
   language: Language_c
+  submitted_at: "2019-10-22 08:34"
   source: 
     \#include <stdio>
     \#include <stdlib>
