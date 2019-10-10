@@ -62,6 +62,10 @@ class LoginController < ApplicationController
     end
   end
 
+  def logout
+    redirect_to root_path
+  end
+
   def self.add_authenticator(authenticator)
     @@authenticators << authenticator
   end

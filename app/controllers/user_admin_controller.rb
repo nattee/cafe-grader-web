@@ -4,16 +4,7 @@ class UserAdminController < ApplicationController
 
   include MailHelperMethods
 
-  before_filter :admin_authorization
-
-  # GETs should be safe (see http://www.w3.org/2001/tag/doc/whenToUseGet.html)
-  verify :method => :post, :only => [
-                                      :create, :create_from_list, 
-                                      :update, 
-                                      :manage_contest, 
-                                      :bulk_mail 
-                                    ],
-         :redirect_to => { :action => :list }
+  before_action :admin_authorization
 
   def index
     @user_count = User.count
@@ -69,6 +60,8 @@ class UserAdminController < ApplicationController
     lines = params[:user_list]
 
     note = []
+    error_note = []
+    ok_user = []
 
     lines.split("\n").each do |line|
       items = line.chomp.split(',')
@@ -110,18 +103,36 @@ class UserAdminController < ApplicationController
                             :remark => remark})
         end
         user.activated = true
-        user.save
 
-        if added_random_password
-          note << "'#{login}' (+)"
+        if user.save
+          if added_random_password
+            note << "'#{login}' (+)"
+          else
+            note << login
+          end
+          ok_user << user
         else
-          note << login
+          error_note << "#{login}"
         end
+
       end
     end
+
+    #add to group
+    if params[:add_to_group]
+      group = Group.where(id: params[:group_id]).first
+      if group
+        group.users << ok_user
+      end
+    end
+
+    # show flash
     flash[:success] = 'User(s) ' + note.join(', ') + 
       ' were successfully created.  ' +
       '( (+) - created with random passwords.)'   
+    if error_note.size > 0
+      flash[:error] = "Following user(s) failed to be created: " + error_note.join(', ')
+    end
     redirect_to :action => 'index'
   end
 
@@ -218,7 +229,7 @@ class UserAdminController < ApplicationController
     @prefix = params[:prefix] || ''
     @non_admin_users = User.find_non_admin_with_prefix(@prefix)
     @changed = false
-    if request.request_method == 'POST'
+    if params[:commit] == 'Go ahead'
       @non_admin_users.each do |user|
         password = random_password
         user.password = password
@@ -228,7 +239,6 @@ class UserAdminController < ApplicationController
       @changed = true
     end
   end
-
 
   # contest management
 

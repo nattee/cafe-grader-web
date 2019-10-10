@@ -1,5 +1,5 @@
-ENV["RAILS_ENV"] = "test"
-require File.expand_path('../../config/environment', __FILE__)
+ENV['RAILS_ENV'] ||= 'test'
+require_relative '../config/environment'
 require 'rails/test_help'
 
 #reporter for beautiful result
@@ -22,6 +22,7 @@ class ActiveSupport::TestCase
 
   # Add more helper methods to be used by all tests here...
 
-  self.use_transactional_fixtures = true
+  self.use_transactional_tests = true
+  #self.use_instantiated_fixtures  = false
   self.use_instantiated_fixtures  = false
 end

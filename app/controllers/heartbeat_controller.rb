@@ -1,5 +1,5 @@
 class HeartbeatController < ApplicationController
-  before_filter :admin_authorization, :only => ['index']
+  before_action :admin_authorization, :only => ['index']
 
   def edit
     #@user = User.find_by_login(params[:id])

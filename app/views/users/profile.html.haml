@@ -1,0 +1,24 @@
+
+.container-fluid
+  = form_tag :action => 'chg_passwd', :method => 'post' do
+    .row
+      .col-md-6
+        %h1 Your account settings
+        .form-group
+          %label{:for => "login"} Login
+          =@user.login
+        .form-group
+          %label{:for => "full_name"} Full name
+          =@user.full_name
+        .form-group
+          %label{:for => "password"} Password
+          =password_field_tag :password, nil, class: 'form-control'
+        .form-group
+          %label{:for => "password_confirmation"} Password confirmation
+          =password_field_tag :password_confirmation, nil, class: 'form-control'
+    .row
+      .col-md-6
+        =submit_tag 'Edit', class: 'btn btn-primary'
+
+
+

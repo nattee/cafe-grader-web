@@ -9,16 +9,16 @@ class User < ActiveRecord::Base
   has_and_belongs_to_many :roles
 
   #has_and_belongs_to_many :groups
-  has_many :groups_users, class_name: GroupUser
+  has_many :groups_users, class_name: 'GroupUser'
   has_many :groups, :through => :groups_users
 
-  has_many :test_requests, -> {order(submitted_at: DESC)}
+  has_many :test_requests, -> {order(submitted_at: :desc)}
 
-  has_many :messages, -> { order(created_at: DESC) },
+  has_many :messages, -> { order(created_at: :desc) },
            :class_name => "Message",
            :foreign_key => "sender_id"
 
-  has_many :replied_messages, -> { order(created_at: DESC) },
+  has_many :replied_messages, -> { order(created_at: :desc) },
            :class_name => "Message",
            :foreign_key => "receiver_id"
 
@@ -27,7 +27,7 @@ class User < ActiveRecord::Base
   belongs_to :site
   belongs_to :country
 
-  has_and_belongs_to_many :contests, -> { order(:name); uniq}
+  has_and_belongs_to_many :contests, -> { order(:name)}
 
   scope :activated_users, -> {where activated: true}
 
@@ -81,7 +81,7 @@ class User < ActiveRecord::Base
   end
 
   def admin?
-    self.roles.detect {|r| r.name == 'admin' }
+    self.roles.where(name: 'admin').count > 0
   end
 
   def email_for_editing
@@ -173,7 +173,7 @@ class User < ActiveRecord::Base
       return false if site==nil
       return site.finished?
     elsif GraderConfiguration.indv_contest_mode?
-      return false if self.contest_stat(true)==nil
+      return false if self.contest_stat==nil
       return contest_time_left == 0
     else
       return false
@@ -246,13 +246,18 @@ class User < ActiveRecord::Base
 
   #get a list of available problem
   def available_problems
+    # first, we check if this is normal mode
     if not GraderConfiguration.multicontests?
+
+      #if this is a normal mode
+      #we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
         return available_problems_in_group
       else
         return Problem.available_problems
       end
     else
+      #this is multi contest mode
       contest_problems = []
       pin = {}
       contests.enabled.each do |contest|

@@ -1,35 +1,22 @@
 class MainController < ApplicationController
 
-  before_filter :authenticate, :except => [:index, :login]
-  before_filter :check_viewability, :except => [:index, :login]
+  before_action :check_valid_login, :except => [:login]
+  before_action :check_viewability, :except => [:index, :login]
 
-  append_before_filter :confirm_and_update_start_time, 
+  append_before_action :confirm_and_update_start_time, 
                        :except => [:index, 
                                    :login, 
                                    :confirm_contest_start]
 
   # to prevent log in box to be shown when user logged out of the
   # system only in some tab
-  prepend_before_filter :reject_announcement_refresh_when_logged_out, 
+  prepend_before_action :reject_announcement_refresh_when_logged_out, 
                         :only => [:announcements]
 
-  before_filter :authenticate_by_ip_address, :only => [:list]
+  before_action :authenticate_by_ip_address, :only => [:list]
 
-  # COMMENTED OUT: filter in each action instead
-  # before_filter :verify_time_limit, :only => [:submit]
-
-  verify :method => :post, :only => [:submit],
-         :redirect_to => { :action => :index }
-
-  # COMMENT OUT: only need when having high load
-  # caches_action :index, :login
-
-  # NOTE: This method is not actually needed, 'config/routes.rb' has
-  # assigned action login as a default action.
-  def index
-    redirect_to :action => 'login'
-  end
-
+  #reset login, clear session
+  #front page
   def login
     saved_notice = flash[:notice]
     reset_session
@@ -47,6 +34,11 @@ class MainController < ApplicationController
 
     @announcements = Announcement.frontpage
     render :action => 'login', :layout => 'empty'
+  end
+
+  def logout
+    reset_session
+    redirect_to root_path
   end
 
   def list

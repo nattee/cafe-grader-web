@@ -1,6 +1,6 @@
 class TasksController < ApplicationController
 
-  before_filter :authenticate, :check_viewability
+  before_action :check_valid_login, :check_viewability
 
   def index
     redirect_to :action => 'list'
@@ -27,19 +27,18 @@ class TasksController < ApplicationController
   def download
     problem = Problem.find(params[:id])
     unless @current_user.can_view_problem? problem
+      flash[:notice] = 'You are not authorized to access this file'
       redirect_to :action => 'index' and return
     end
 
     base_name = params[:file]
     base_filename = File.basename("#{base_name}.#{params[:ext]}")
     filename = "#{Problem.download_file_basedir}/#{params[:id]}/#{base_filename}"
-    puts "SENDING: #{filename}"
 
     if !FileTest.exists?(filename)
+      flash[:notice] = 'File does not exists'
       redirect_to :action => 'index' and return
     end
-
-    puts "SENDING: #{filename}"
 
     send_file_to_user(filename, base_filename)
   end

@@ -1,6 +1,6 @@
 class SitesController < ApplicationController
 
-  before_filter :admin_authorization
+  before_action :admin_authorization
 
   # GET /sites
   # GET /sites.xml

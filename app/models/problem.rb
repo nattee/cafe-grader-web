@@ -4,10 +4,10 @@ class Problem < ActiveRecord::Base
   has_and_belongs_to_many :contests, :uniq => true
 
   #has_and_belongs_to_many :groups
-  has_many :groups_problems, class_name: GroupProblem
+  has_many :groups_problems, class_name: 'GroupProblem'
   has_many :groups, :through => :groups_problems
 
-  has_many :problems_tags, class_name: ProblemTag
+  has_many :problems_tags, class_name: 'ProblemTag'
   has_many :tags, through: :problems_tags
 
   has_many :test_pairs, :dependent => :delete_all
@@ -31,7 +31,7 @@ class Problem < ActiveRecord::Base
 
   def self.create_from_import_form_params(params, old_problem=nil)
     org_problem = old_problem || Problem.new
-    import_params, problem = Problem.extract_params_and_check(params, 
+    import_params, problem = Problem.extract_params_and_check(params,
                                                               org_problem)
 
     if !problem.errors.empty?
@@ -52,8 +52,8 @@ class Problem < ActiveRecord::Base
 
     importer = TestdataImporter.new(problem)
 
-    if not importer.import_from_file(import_params[:file], 
-                                     import_params[:time_limit], 
+    if not importer.import_from_file(import_params[:file],
+                                     import_params[:time_limit],
                                      import_params[:memory_limit],
                                      import_params[:checker_name],
                                      import_to_db)

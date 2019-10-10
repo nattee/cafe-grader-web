@@ -7,7 +7,7 @@
           %span.icon-bar
           %span.icon-bar
           %span.icon-bar
-        %a.navbar-brand{href: main_list_path} 
+        %a.navbar-brand{href: list_main_path} 
           %span.glyphicon.glyphicon-home
           MAIN
       .collapse.navbar-collapse#navbar-collapse
@@ -72,9 +72,9 @@
 
         %ul.nav.navbar-nav.navbar-right
           = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-question-sign')}".html_safe, 'main', 'help')
-          = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-comment')}".html_safe, 'messages', 'list', {title: I18n.t('menu.messages'), data: {toggle: 'tooltip'}})
+          = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-comment')}".html_safe, 'messages', 'index', {title: I18n.t('menu.messages'), data: {toggle: 'tooltip'}})
           - if GraderConfiguration['system.user_setting_enabled']
-            = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-cog')}".html_safe, 'users', 'index', {title: I18n.t('menu.settings'), data: {toggle: 'tooltip'}})
+            = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-cog', id: 'user_profile')}".html_safe, 'users', 'profile', {title: I18n.t('menu.settings'), data: {toggle: 'tooltip'}})
           = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-log-out')} #{@current_user.full_name}".html_safe, 'main', 'login', {title: I18n.t('menu.log_out'), data: {toggle: 'tooltip'}})
 
 /

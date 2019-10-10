@@ -94,7 +94,7 @@ class TestdataImporter
     testdata_filename = File.join(Dir.tmpdir,"#{@problem.name}#{ext}")
 
     return nil if tempfile==""
-    
+
     if tempfile.instance_of?(Tempfile)
       tempfile.close
       FileUtils.move(tempfile.path,testdata_filename)

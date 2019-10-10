@@ -2,12 +2,12 @@ require 'csv'
 
 class ReportController < ApplicationController
 
-  before_filter :authenticate
+  before_action :check_valid_login
 
-  before_filter :admin_authorization, only: [:login_stat,:submission_stat, :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
+  before_action :admin_authorization, only: [:login_stat,:submission_stat, :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
 
-  before_filter(only: [:problem_hof]) { |c|
-    return false unless authenticate
+  before_action(only: [:problem_hof]) { |c|
+    return false unless check_valid_login
 
     admin_authorization unless GraderConfiguration["right.user_view_submission"]
   }
@@ -17,7 +17,12 @@ class ReportController < ApplicationController
 
   def current_score
     @problems = Problem.available_problems
-    @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
+    if params[:group_id]
+      @group = Group.find(params[:group_id])
+      @users = @group.users.where(enabled: true)
+    else
+      @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
+    end
     @scorearray = calculate_max_score(@problems, @users,0,0,true)
 
     #rencer accordingly

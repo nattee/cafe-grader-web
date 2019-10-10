@@ -4,23 +4,19 @@ class UsersController < ApplicationController
 
   include MailHelperMethods
 
-  before_filter :authenticate, :except => [:new, 
+  before_action :check_valid_login, :except => [:new, 
                                            :register, 
                                            :confirm, 
                                            :forget,
                                            :retrieve_password]
 
-  before_filter :verify_online_registration, :only => [:new,
+  before_action :verify_online_registration, :only => [:new,
                                                        :register,
                                                        :forget,
                                                        :retrieve_password]
-  before_filter :authenticate, :profile_authorization, only: [:profile]
 
-  before_filter :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
+  before_action :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
 
-
-  verify :method => :post, :only => [:chg_passwd],
-         :redirect_to => { :action => :index }
 
   #in_place_edit_for :user, :alias_for_editing
   #in_place_edit_for :user, :email_for_editing
@@ -33,16 +29,25 @@ class UsersController < ApplicationController
     end
   end
 
+  # edit logged in user profile
+  def profile
+    if !GraderConfiguration['system.user_setting_enabled']
+      redirect_to :controller => 'main', :action => 'list'
+    else
+      @user = current_user;
+    end
+  end
+
   def chg_passwd
     user = User.find(session[:user_id])
-    user.password = params[:passwd]
-    user.password_confirmation = params[:passwd_verify]
+    user.password = params[:password]
+    user.password_confirmation = params[:password_confirmation]
     if user.save
       flash[:notice] = 'password changed'
     else
       flash[:notice] = 'Error: password changing failed'
     end
-    redirect_to :action => 'index'
+    redirect_to :action => 'profile'
   end
 
   def new
@@ -218,5 +223,4 @@ class UsersController < ApplicationController
     def user_params
       params.require(:user).permit(:login, :full_name, :email)
     end
-
 end
