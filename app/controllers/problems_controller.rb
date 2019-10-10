@@ -2,10 +2,6 @@ class ProblemsController < ApplicationController
 
   before_action :admin_authorization
 
-  #NOTE: ghost from the past?
-  #before_action :testcase_authorization, only: [:show_testcase]
-
-
   in_place_edit_for :problem, :name
   in_place_edit_for :problem, :full_name
   in_place_edit_for :problem, :full_score
@@ -26,7 +22,7 @@ class ProblemsController < ApplicationController
 
   def create
     @problem = Problem.new(problem_params)
-    @description = Description.new(problem_params[:description])
+    @description = Description.new(description_params)
     if @description.body!=''
       if !@description.save
         render :action => new and return
@@ -305,7 +301,7 @@ class ProblemsController < ApplicationController
     end
 
     def description_params
-      params.require(:description).permit(:body, :markdown)
+      params.require(:description).permit(:body, :markdowned)
     end
 
 end
