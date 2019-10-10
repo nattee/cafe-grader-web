@@ -50,7 +50,7 @@ class UsersTest < ApplicationSystemTestCase
 
     click_on 'New list of users', match: :first
     find(:css, 'textarea').fill_in with:"abc1,Boaty McBoatface,abcdef,alias1,remark1,\nabc2,Boaty2 McSecond,acbdef123,aias2,remark2"
-    click_on 'create users'
+    click_on 'Create following users'
 
     assert_text('remark1')
     assert_text('remark2')
