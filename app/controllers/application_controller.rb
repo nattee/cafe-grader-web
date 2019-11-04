@@ -154,7 +154,6 @@ class ApplicationController < ActionController::Base
       user_ip = IPAddr.new(request.remote_ip)
 
       GraderConfiguration[WHITELIST_IP_CONF_KEY].delete(' ').split(',').each do |ips|
-        puts "ip is #{ips}, user ip is #{user_ip}"
         allow_ips = IPAddr.new(ips)
         if allow_ips.include?(user_ip)
           return true
