@@ -274,7 +274,7 @@ def seed_users_and_roles
 end
 
 def seed_more_languages
-  Language.delete_all
+  #Language.delete_all
   Language.find_or_create_by( name: 'c', pretty_name: 'C', ext: 'c', common_ext: 'c' )
   Language.find_or_create_by( name: 'cpp', pretty_name: 'C++', ext: 'cpp', common_ext: 'cpp,cc' )
   Language.find_or_create_by( name: 'pas', pretty_name: 'Pascal', ext: 'pas', common_ext: 'pas' )
