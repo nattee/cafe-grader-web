@@ -2,7 +2,7 @@
   %h1 Current Score
   = form_tag current_score_report_path, method: 'get' do
     Show only users from this group
-    = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), id: 'group_name',class: 'select2'
+    = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), id: 'group_name',class: 'select2', style: 'width: 20em';
     = submit_tag 'Apply',class: 'btn btn-default'
 
   %br
