@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
 
   SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
-  ALLOW_WHITELIST_IP_ONLY_CONF_KEY = 'right.allow_whitelist_ip_only'
+  WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
   #report and redirect for unauthorized activities
@@ -81,9 +81,9 @@ class ApplicationController < ActionController::Base
     end
 
     # check if user ip is allowed
-    unless @current_user.admin? || !GraderConfiguration[ALLOW_WHITELIST_IP_ONLY_CONF_KEY]
+    unless @current_user.admin? || GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       unless is_request_ip_allowed?
-        unauthorized_redirect 'Your IP is not allowed'
+        unauthorized_redirect 'Your IP is not allowed to login at this time.'
         return false
       end
     end
@@ -108,10 +108,8 @@ class ApplicationController < ActionController::Base
     #this assume that we have already authenticate normally
     unless GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY]
       user = User.find(session[:user_id])
-      puts "User admin #{user.admin?}"
       if (!user.admin? && user.last_ip && user.last_ip != request.remote_ip)
         flash[:notice] = "You cannot use the system from #{request.remote_ip}. Your last ip is #{user.last_ip}"
-        puts "hahaha"
         redirect_to :controller => 'main', :action => 'login'
         return false
       end
@@ -152,14 +150,17 @@ class ApplicationController < ActionController::Base
   end
 
   def is_request_ip_allowed?
-    if GraderConfiguration[ALLOW_WHITELIST_IP_ONLY_CONF_KEY]
+    unless GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       user_ip = IPAddr.new(request.remote_ip)
-      GraderConfiguration[WHITELIST_IP_LIST_CONF_KEY].delete(' ').split(',').each do |ips|
+
+      GraderConfiguration[WHITELIST_IP_CONF_KEY].delete(' ').split(',').each do |ips|
+        puts "ip is #{ips}, user ip is #{user_ip}"
         allow_ips = IPAddr.new(ips)
-        unless allow_ips.includes(user_ip)
-          return false
+        if allow_ips.include?(user_ip)
+          return true
         end
       end
+      return false
     end
     return true
   end

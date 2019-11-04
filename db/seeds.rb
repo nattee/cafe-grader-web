@@ -100,7 +100,7 @@ CONFIGURATIONS =
      :key => 'right.view_testcase',
      :value_type => 'boolean',
      :default_value => 'false',
-     :description => 'When true, any user can view/download test data'
+     :description => 'If true, any user can view/download test data'
    },
    
    {
@@ -182,17 +182,17 @@ CONFIGURATIONS =
 
 
    {
-     :key => 'right.whitelist_ip_only',
+     :key => 'right.whitelist_ignore',
      :value_type => 'boolean',
-     :default_value => 'false',
-     :description => "If true, non-admin user will be able to use the system only when their ip is in the 'whitelist_ip'."
+     :default_value => 'true',
+     :description => "If true, no IP check against whitelist_ip is perform. However, when false, non-admin user must have their ip in 'whitelist_ip' to be able to login."
    },
 
    {
      :key => 'right.whitelist_ip',
      :value_type => 'string',
      :default_value => '0.0.0.0/0',
-     :description => "list of whitelist ip, given in comma separated CIDR notation. For example '161.200.92.0/23, 161.200.80.1/32'"
+     :description => "list of whitelist ip, given in comma separated CIDR notation. For example '192.168.90.0/23, 192.168.1.23/32'"
    },
 
   ]

@@ -12,9 +12,11 @@
       %th.text-right Total
       %th.text-right Passed
   %tbody
-    - sum = Array.new(@problems.count,0)
-    - nonzero = Array.new(@problems.count,0)
-    - full = Array.new(@problems.count,0)
+    - sum = Array.new(@problems.count+1,0)
+    - nonzero = Array.new(@problems.count+1,0)
+    - full = Array.new(@problems.count+1,0)
+    - puts @scorearray
+    - puts @problems.count
     - @scorearray.each do |sc|
       %tr
         - total,num_passed = 0,0
