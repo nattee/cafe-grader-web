@@ -465,6 +465,7 @@ ORDER BY submitted_at
   protected
 
   def calculate_max_score(problems, users,since_id,until_id, get_last_score = false)
+    #scorearray[i] = user #i's user stat where i is the index (not id)
     scorearray = Array.new
     users.each do |u|
       ustat = Array.new

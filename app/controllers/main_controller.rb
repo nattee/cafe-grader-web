@@ -21,6 +21,7 @@ class MainController < ApplicationController
     saved_notice = flash[:notice]
     reset_session
     flash.now[:notice] = saved_notice
+    @remote_ip = request.remote_ip
 
     # EXPERIMENT:
     # Hide login if in single user mode and the url does not

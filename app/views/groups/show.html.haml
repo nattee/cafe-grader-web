@@ -21,11 +21,13 @@
             %li
               If you want to add several users to a group, it may be easier to just re-import those users in 
               = link_to 'New list of users', new_list_user_admin_index_path
-              page
+              page. You can also use 
+              = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
+              page.
           =form_tag add_user_group_path(@group), class: 'form-inline' do
             .form-group
               =label_tag :user_id, "User"
-              =select_tag :user_id, options_from_collection_for_select(User.all,'id','full_name'), class: 'select2'
+              =select_tag :user_id, options_from_collection_for_select(User.all,'id','full_name'), class: 'select2', style: 'width: 10em';
             =submit_tag "Add",class: 'btn btn-primary'
 
 
@@ -52,12 +54,12 @@
           %ul
             %li
               If you want to add several problem to a group, it may be easier to bulk manage them in the
-              = link_to 'Bulk Manage', manage_problems_path
+              = link_to 'Bulk Manage Problems', manage_problems_path
               page
           =form_tag add_problem_group_path(@group), class: 'form-inline' do
             .form-group
               =label_tag :problem_id, "Problem"
-              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','full_name'), class: 'select2'
+              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','full_name'), class: 'select2', style: 'width: 10em';
             =submit_tag "Add",class: 'btn btn-primary'
 
 

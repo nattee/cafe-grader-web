@@ -61,6 +61,7 @@ class UserAdminController < ApplicationController
 
     note = []
     error_note = []
+    error_msg = nil
     ok_user = []
 
     lines.split("\n").each do |line|
@@ -76,7 +77,7 @@ class UserAdminController < ApplicationController
           password = items[2].chomp(" ")
         else
           password = random_password
-          add_random_password=true;
+          added_random_password=true;
         end
 
         if items.length>= 4 and items[3].chomp(" ").length > 0;
@@ -96,11 +97,11 @@ class UserAdminController < ApplicationController
           user.remark = remark
         else
           user = User.new({:login => login,
-                            :full_name => full_name,
-                            :password => password,
-                            :password_confirmation => password,
-                            :alias => user_alias,
-                            :remark => remark})
+                           :full_name => full_name,
+                           :password => password,
+                           :password_confirmation => password,
+                           :alias => user_alias,
+                           :remark => remark})
         end
         user.activated = true
 
@@ -112,7 +113,8 @@ class UserAdminController < ApplicationController
           end
           ok_user << user
         else
-          error_note << "#{login}"
+          error_note << "'#{login}'"
+          error_msg = user.errors.full_messages.to_sentence unless error_msg
         end
 
       end
@@ -127,11 +129,13 @@ class UserAdminController < ApplicationController
     end
 
     # show flash
-    flash[:success] = 'User(s) ' + note.join(', ') + 
-      ' were successfully created.  ' +
-      '( (+) - created with random passwords.)'   
+    if note.size > 0
+      flash[:success] = 'User(s) ' + note.join(', ') + 
+        ' were successfully created.  ' +
+        '( (+) - created with random passwords.)'   
+    end
     if error_note.size > 0
-      flash[:error] = "Following user(s) failed to be created: " + error_note.join(', ')
+      flash[:error] = "Following user(s) failed to be created: " + error_note.join(', ') + ". The error of the first failed one are: " + error_msg;
     end
     redirect_to :action => 'index'
   end
