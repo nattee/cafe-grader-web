@@ -1,0 +1,10 @@
+.panel.panel-primary
+  .panel-heading
+    Problems
+  .panel-body
+    %p
+      Select problem(s) that we wish to know the score.
+    = label_tag :problem_id, "Problems"
+    = select_tag 'problem_id[]',
+        options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
+        { class: 'select2 form-control', multiple: "true" }

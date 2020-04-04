@@ -1,0 +1,61 @@
+- content_for :header do
+  = javascript_include_tag 'local_jquery'
+
+%h1 Submissions detail
+
+.row
+  .col-md-4
+    = render partial: 'shared/problem_select'
+  .col-md-4
+    = render partial: 'shared/problem_select'
+  .col-md-4
+    = render partial: 'shared/user_select'
+
+
+.row
+  .col-12
+    %table.table.table-hover.table-condense.datatable
+      -#
+        %thead
+          %tr
+            %th User
+            %th Problem
+            %th Subbmission ID
+            %th Submit Time
+            %th Score
+            %th detail
+        %tbody
+          - @submissions.each do |s|
+            %tr
+              %td= s.user.login
+              %td= s.problem.long_name
+              %td= s.id
+              %td= s.submitted_at
+              %td= s.points
+              %td= s.grader_comment
+
+
+:javascript
+  $('.datatable').DataTable({
+    columns: [
+      {title: 'User', data: 'login'},
+      {title: 'Problem', data: 'problem.long_name'},
+      {title: 'Sub ID', data: 'id'},
+      {title: 'Submit at', data: 'submitted_at'},
+      {title: 'Points', data: 'points'},
+      {title: 'detail', data: 'grader_comment'},
+    ],
+    ajax: {
+      url: '#{submission_query_report_path}',
+      type: 'POST',
+      data: (d) =>  {
+        d.since_datetime = '1123'
+        d.until_datetime = 'xxx'
+      },
+      dataType: 'json',
+      beforeSend: (request) => {
+        request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+      },
+    }, //end ajax
+    'pageLength': 50
+  });

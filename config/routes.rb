@@ -152,6 +152,8 @@ Rails.application.routes.draw do
     post 'cheat_report'
     get 'cheat_scruntinize'
     post 'cheat_scruntinize'
+    get 'submission'
+    post 'submission_query'
   end
   #get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
   #get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'

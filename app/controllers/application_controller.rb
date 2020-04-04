@@ -164,4 +164,65 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  #function for datatable ajax query
+  #return record,total_count,filter_count
+  def process_query_record(record, 
+                           total_count: nil, 
+                           select: '', 
+                           global_search: [], 
+                           no_search: false, 
+                           force_order: '', 
+                           date_filter: '', date_param_since: 'date_since',date_param_until: 'date_until')
+    arel_table = record.model.arel_table
+
+    if !no_search && params['search']
+      global_value = record.model.sanitize_sql(params['search']['value'].strip.downcase)
+      if !global_value.blank?
+        global_value.split.each do |value|
+          global_where = global_search.map{|f| "LOWER(#{f}) like '%#{value}%'"}.join(' OR ')
+          record = record.where(global_where)
+        end
+      end
+
+      params['columns'].each do |i, col|
+        if !col['search']['value'].blank?
+          record = record.where(arel_table[col['name']].lower.matches("%#{col['search']['value'].strip.downcase}%"))
+        end
+      end
+    end
+
+    if !date_filter.blank?
+      date_since = Time.parse( params[:date_since] ) rescue Time.new(1,1,1)
+      date_until = Time.parse( params[:date_until] ) rescue Time.zone.now()
+      date_range = date_since..date_until
+      record = record.where(date_filter.to_sym => date_range)
+    end
+
+    if force_order.blank?
+      if params['order']
+        params['order'].each do |i, o|
+          colName = params['columns'][o['column']]['name']
+          colName = "#{record.model.table_name}.#{colName}" if colName.upcase == 'ID'
+          record = record.order("#{colName} #{o['dir'].casecmp('desc') != 0 ? 'ASC' : 'DESC'}") unless colName.blank?
+        end
+      end
+    else
+      record = record.order(force_order)
+    end
+
+    filterCount = record.count(record.model.primary_key)
+    # if .group() is used, filterCount might be like {id_1: count_1, id_2: count_2, ...}
+    # so we should count the result again..
+    if filterCount.is_a? Hash
+      filterCount = filterCount.count
+    end
+
+    record = record.offset(params['start'] || 0).limit(params['length'] || 100)
+    if (!select.blank?)
+      record = record.select(select)
+    end
+
+    return record, total_count || record.model.count, filterCount
+  end
+
 end

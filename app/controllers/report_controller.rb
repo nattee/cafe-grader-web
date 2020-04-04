@@ -142,8 +142,7 @@ class ReportController < ApplicationController
     end
   end
 
-  def submission_stat
-
+  def submission
     date_and_time = '%Y-%m-%d %H:%M'
     begin
       @since_time = DateTime.strptime(params[:since_datetime],date_and_time)
@@ -156,25 +155,22 @@ class ReportController < ApplicationController
       @until_time = DateTime.new(3000,1,1)
     end
 
-    @submissions = {}
+    @submissions = Submission
+      .joins(:problem).joins(:user)
+      .where("submitted_at >= ? AND submitted_at <= ?",@since_time,@until_time)
+  end
 
-    User.find_each do |user|
-      @submissions[user.id] = { login: user.login, full_name: user.full_name, count: 0, sub: { } }
-    end
+  def submission_query
+    @submissions = Submission
+      .joins(:problem).joins(:user)
+      .where("submitted_at >= ? AND submitted_at <= ?",@since_time,@until_time)
 
-    Submission.where("submitted_at >= ? AND submitted_at <= ?",@since_time,@until_time).find_each do |s|
-      if @submissions[s.user_id]
-        if not @submissions[s.user_id][:sub].has_key?(s.problem_id)
-          a = Problem.find_by_id(s.problem_id)
-          @submissions[s.user_id][:sub][s.problem_id] = 
-            { prob_name: (a ? a.full_name : '(NULL)'),
-              sub_ids: [s.id] } 
-        else
-          @submissions[s.user_id][:sub][s.problem_id][:sub_ids] << s.id
-        end
-        @submissions[s.user_id][:count] += 1
-      end
-    end
+    @submissions, @recordsTotal, @recordsFiltered = process_query_record( @submissions,
+      global_search: ['user.login','user.full_name','problem.name','problem.full_name','points'],
+      date_filter: 'submitted_at',
+      date_param_since: 'since_datetime',
+      date_param_until: 'until_datetime',
+    )
   end
 
   def problem_hof
