@@ -44,7 +44,7 @@
 //= require best_in_place
 //= require best_in_place.jquery-ui
 //= require brython
-//= require bootstrap-datepicker
+//= re quire bootstrap-datepicker
 //= require bootstrap-datetimepicker
 
 // since this is after blank line, it is not downloaded

@@ -7,61 +7,71 @@
   .col-md-4
     = render partial: 'shared/problem_select'
   .col-md-4
-    = render partial: 'shared/problem_select'
+    = render partial: 'shared/date_filter'
   .col-md-4
     = render partial: 'shared/user_select'
 
+.row
+  .col-md-6
+    .alert.alert-info
+      %ul
+        %li Display a maximum of 100,000 entries to save computation power
+        %li You have to click refresh when changing the filter above
 
 .row
-  .col-12
-    %table.table.table-hover.table-condense.datatable
-      -#
-        %thead
-          %tr
-            %th User
-            %th Problem
-            %th Subbmission ID
-            %th Submit Time
-            %th Score
-            %th detail
-        %tbody
-          - @submissions.each do |s|
-            %tr
-              %td= s.user.login
-              %td= s.problem.long_name
-              %td= s.id
-              %td= s.submitted_at
-              %td= s.points
-              %td= s.grader_comment
+  .col-sm-12
+    %table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
 
 
 :javascript
-  $('.datatable').DataTable({
-    dom: 'Bfrtip',
-    buttons: [
-        'copy', 'excel', 'pdf'
-    ],
-    columns: [
-      {title: 'Sub ID', data: 'id'},
-      {title: 'User', data: 'user.login'},
-      {title: 'Problem', data: 'problem.long_name'},
-      {title: 'Language', data: 'language.pretty_name'},
-      {title: 'Submit at', data: 'submitted_at'},
-      {title: 'Result', data: 'grader_comment'},
-      {title: 'Score', data: 'points'},
-      {title: 'IP', data: 'ip_address'},
-    ],
-    ajax: {
-      url: '#{submission_query_report_path}',
-      type: 'POST',
-      data: (d) =>  {
-        d.since_datetime = '1123'
-        d.until_datetime = 'xxx'
-      },
-      dataType: 'json',
-      beforeSend: (request) => {
-        request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
-      },
-    }, //end ajax
-    'pageLength': 50
+  $(function() {
+    submission_table = $('.datatable').DataTable({
+      dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+      autoWidth: true,
+      buttons: [
+        {
+          text: 'Refresh',
+          action: (e,dt,node,config) => {
+            submission_table.clear().draw()
+            submission_table.ajax.reload( () => { submission_table.columns.adjust().draw() } )
+          }
+        },
+        'copy', 'excel'
+      ],
+      columns: [
+        {title: 'Sub ID', data: 'id'},
+        {title: 'User', data: 'user.login'},
+        {title: 'Problem', data: 'problem.long_name'},
+        {title: 'Language', data: 'language.pretty_name'},
+        {title: 'Submit at', data: 'submitted_at'},
+        {title: 'Result', data: 'grader_comment'},
+        {title: 'Score', data: 'points'},
+        {title: 'IP', data: 'ip_address'},
+      ],
+      ajax: {
+        url: '#{submission_query_report_path}',
+        type: 'POST',
+        data: (d) =>  {
+          d.since_datetime = $('#since_datetime').val()
+          d.until_datetime = $('#until_datetime').val()
+          d.users = $("input[name='users']:checked").val()
+          d.problems = $("#problem_id").select2('val')
+          d.groups = $("#group_id").select2('val')
+        },
+        dataType: 'json',
+        beforeSend: (request) => {
+          request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+        },
+      }, //end ajax
+      'pageLength': 50,
+      processing: true,
+    });
+
+    $('.input-group.date').datetimepicker({
+      format: 'YYYY-MM-DD',
+      showTodayButton: true,
+      locale: 'en',
+      widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
+      defaultDate: moment()
+    });
   });

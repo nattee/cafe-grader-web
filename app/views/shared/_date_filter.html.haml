@@ -1,0 +1,20 @@
+.panel.panel-primary
+  .panel-heading
+    Date ranges
+  .panel-body
+    .row.form-group
+      .col-md-4
+        From Date:
+      .col-md-6
+        .input-group.date
+          = text_field_tag :since_datetime, nil, class: 'form-control'
+          %span.input-group-addon
+            %span.glyphicon.glyphicon-calendar
+    .row.form-group
+      .col-md-4
+        Until Date:
+      .col-md-6
+        .input-group.date
+          = text_field_tag :until_datetime, nil, class: 'form-control'
+          %span.input-group-addon
+            %span.glyphicon.glyphicon-calendar

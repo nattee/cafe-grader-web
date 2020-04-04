@@ -167,12 +167,13 @@ class ApplicationController < ActionController::Base
   #function for datatable ajax query
   #return record,total_count,filter_count
   def process_query_record(record, 
-                           total_count: nil, 
-                           select: '', 
-                           global_search: [], 
-                           no_search: false, 
-                           force_order: '', 
-                           date_filter: '', date_param_since: 'date_since',date_param_until: 'date_until')
+                           total_count: nil,
+                           select: '',
+                           global_search: [],
+                           no_search: false,
+                           force_order: '',
+                           date_filter: '', date_param_since: 'date_since',date_param_until: 'date_until',
+                           hard_limit: nil)
     arel_table = record.model.arel_table
 
     if !no_search && params['search']
@@ -192,9 +193,11 @@ class ApplicationController < ActionController::Base
     end
 
     if !date_filter.blank?
-      date_since = Time.parse( params[:date_since] ) rescue Time.new(1,1,1)
-      date_until = Time.parse( params[:date_until] ) rescue Time.zone.now()
-      date_range = date_since..date_until
+      param_since = params[date_param_since]
+      param_until = params[date_param_until]
+      date_since = Time.zone.parse( param_since ) || Time.new(1,1,1) rescue Time.new(1,1,1)
+      date_until = Time.zone.parse( param_until ) || Time.zone.now() rescue Time.zone.now()
+      date_range = date_since..(date_until.end_of_day)
       record = record.where(date_filter.to_sym => date_range)
     end
 
@@ -217,7 +220,14 @@ class ApplicationController < ActionController::Base
       filterCount = filterCount.count
     end
 
-    record = record.offset(params['start'] || 0).limit(params['length'] || 100)
+
+    record = record.offset(params['start'] || 0)
+    record = record.limit(hard_limit)
+    if (params['length'])
+      limit = params['length'].to_i
+      limit == hard_limit if (hard_limit && hard_limit < limit)
+      record = record.limit(limit)
+    end
     if (!select.blank?)
       record = record.select(select)
     end

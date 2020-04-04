@@ -12,7 +12,8 @@ $(document).on 'change', '.btn-file :file', ->
 # document ready
 
 $ ->
-  $(".select2").select2()
+  $(".select2").select2({
+  })
   #$(".bootstrap-switch").bootstrapSwitch()
   #$(".bootstrap-toggle").bootstrapToggle()
   $('.btn-file :file').on 'fileselect', (event, numFiles, label) ->

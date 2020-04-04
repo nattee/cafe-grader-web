@@ -10,3 +10,10 @@
       %label
         = radio_button_tag 'users', 'enabled', (params[:users] == "enabled")
         Only enabled users
+    .radio
+      %label
+        = radio_button_tag 'users', 'group', (params[:users] == "group")
+        Only these groups
+    = select_tag 'group_id[]',
+        options_for_select(Group.all.collect {|g| ["[#{g.name}] #{g.description}", g.id]}),
+        { id: 'group_id', class: 'select2 form-control', multiple: "true"}

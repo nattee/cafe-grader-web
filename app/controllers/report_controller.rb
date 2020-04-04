@@ -4,7 +4,7 @@ class ReportController < ApplicationController
 
   before_action :check_valid_login
 
-  before_action :admin_authorization, only: [:login_stat,:submission_stat, :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
+  before_action :admin_authorization, only: [:login_stat,:submission, :submission_query, :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
 
   before_action(only: [:problem_hof]) { |c|
     return false unless check_valid_login
@@ -143,34 +143,33 @@ class ReportController < ApplicationController
   end
 
   def submission
-    date_and_time = '%Y-%m-%d %H:%M'
-    begin
-      @since_time = DateTime.strptime(params[:since_datetime],date_and_time)
-    rescue
-      @since_time = DateTime.new(1000,1,1)
-    end
-    begin
-      @until_time = DateTime.strptime(params[:until_datetime],date_and_time)
-    rescue
-      @until_time = DateTime.new(3000,1,1)
-    end
-
-    @submissions = Submission
-      .joins(:problem).joins(:user)
   end
 
   def submission_query
     @submissions = Submission
-      .joins(:problem).joins(:user)
+      .includes(:problem).includes(:user).includes(:language)
+
+    if params[:problem]
+      @submission = @submission.where(problem_id: params[:problem])
+    end
+
+    case params[:users]
+    when 'enabled'
+      @submissions = @submissions.where('user.enabled': true)
+    when 'group'
+      @submissions = @submissions.joins(user: :groups).where(user: {groups: {id: params[:groups]}}) if params[:groups]
+    end
+
+    #set default
+    params[:since_datetime] = Date.today.to_s if params[:since_datetime].blank?
 
     @submissions, @recordsTotal, @recordsFiltered = process_query_record( @submissions,
       global_search: ['user.login','user.full_name','problem.name','problem.full_name','points'],
       date_filter: 'submitted_at',
       date_param_since: 'since_datetime',
       date_param_until: 'until_datetime',
+      hard_limit: 100_000
     )
-    puts '-------------------------------'
-    puts @submissions
   end
 
   def problem_hof
