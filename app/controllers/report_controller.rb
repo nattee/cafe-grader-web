@@ -157,13 +157,11 @@ class ReportController < ApplicationController
 
     @submissions = Submission
       .joins(:problem).joins(:user)
-      .where("submitted_at >= ? AND submitted_at <= ?",@since_time,@until_time)
   end
 
   def submission_query
     @submissions = Submission
       .joins(:problem).joins(:user)
-      .where("submitted_at >= ? AND submitted_at <= ?",@since_time,@until_time)
 
     @submissions, @recordsTotal, @recordsFiltered = process_query_record( @submissions,
       global_search: ['user.login','user.full_name','problem.name','problem.full_name','points'],
@@ -171,6 +169,8 @@ class ReportController < ApplicationController
       date_param_since: 'since_datetime',
       date_param_until: 'until_datetime',
     )
+    puts '-------------------------------'
+    puts @submissions
   end
 
   def problem_hof

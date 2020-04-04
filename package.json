@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "datatables": "^1.10.18",
+    "datatables.net-bs": "^1.10.20",
+    "datatables.net-buttons-bs": "^1.6.1",
+    "datatables.net-buttons-dt": "^1.6.1",
+    "datatables.net-dt": "^1.10.20",
+    "jszip": "^3.3.0",
+    "pdfmake": "^0.1.65"
+  }
+}

@@ -37,13 +37,19 @@
 
 :javascript
   $('.datatable').DataTable({
+    dom: 'Bfrtip',
+    buttons: [
+        'copy', 'excel', 'pdf'
+    ],
     columns: [
-      {title: 'User', data: 'login'},
-      {title: 'Problem', data: 'problem.long_name'},
       {title: 'Sub ID', data: 'id'},
+      {title: 'User', data: 'user.login'},
+      {title: 'Problem', data: 'problem.long_name'},
+      {title: 'Language', data: 'language.pretty_name'},
       {title: 'Submit at', data: 'submitted_at'},
-      {title: 'Points', data: 'points'},
-      {title: 'detail', data: 'grader_comment'},
+      {title: 'Result', data: 'grader_comment'},
+      {title: 'Score', data: 'points'},
+      {title: 'IP', data: 'ip_address'},
     ],
     ajax: {
       url: '#{submission_query_report_path}',

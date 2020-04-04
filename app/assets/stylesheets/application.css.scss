@@ -35,7 +35,8 @@
 @import "bootstrap-sortable";
 @import "bootstrap-datepicker3";
 @import "bootstrap-datetimepicker";
-@import "dataTables/bootstrap/3/jquery.dataTables.bootstrap";
+@import "datatables.net-bs/css/dataTables.bootstrap.min";
+@import "datatables.net-buttons-bs/css/buttons.bootstrap.min";
 
 //bootstrap navbar color (from)
 $bgDefault: #19197b;

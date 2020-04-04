@@ -66,7 +66,7 @@ gem 'momentjs-rails'
 gem 'rails_bootstrap_sortable'
 gem 'bootstrap-datepicker-rails'
 gem 'bootstrap3-datetimepicker-rails'
-gem 'jquery-datatables-rails'
+#gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------
 gem 'simple_form'
