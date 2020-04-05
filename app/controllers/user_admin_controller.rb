@@ -8,13 +8,6 @@ class UserAdminController < ApplicationController
 
   def index
     @user_count = User.count
-    if params[:page] == 'all'
-      @users = User.all
-      @paginated = false
-    else
-      @users = User.paginate :page => params[:page]
-      @paginated = true
-    end
     @users = User.all
     @hidden_columns = ['hashed_password', 'salt', 'created_at', 'updated_at']
     @contests = Contest.enabled

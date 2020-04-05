@@ -65,6 +65,7 @@
                 = add_menu( 'Current Score', 'report', 'current_score')
                 = add_menu( 'Score Report', 'report', 'max_score')
                 = add_menu( 'Submission Report', 'report', 'submission')
+                = add_menu( 'Login Report', 'report', 'login')
             - if (ungraded = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count) > 0
               =link_to "#{ungraded} backlogs!",
                 grader_list_path,

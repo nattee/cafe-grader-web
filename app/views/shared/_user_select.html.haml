@@ -8,7 +8,7 @@
         All users
     .radio
       %label
-        = radio_button_tag 'users', 'enabled', (params[:users] == "enabled")
+        = radio_button_tag 'users', 'enabled', (params[:users] == "enabled"), checked: true
         Only enabled users
     .radio
       %label

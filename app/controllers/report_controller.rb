@@ -4,7 +4,9 @@ class ReportController < ApplicationController
 
   before_action :check_valid_login
 
-  before_action :admin_authorization, only: [:login_stat,:submission, :submission_query, :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
+  before_action :admin_authorization, only: [:login_stat,:submission, :submission_query, 
+                                             :login, :login_detail_query, :login_summary_query,
+                                             :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
 
   before_action(only: [:problem_hof]) { |c|
     return false unless check_valid_login
@@ -104,7 +106,53 @@ class ReportController < ApplicationController
 
   end
 
-  def login_stat
+  def login
+  end
+
+  def login_summary_query
+    @users = Array.new
+
+    date_and_time = '%Y-%m-%d %H:%M'
+    begin
+      md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
+      @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
+    rescue
+      @since_time = DateTime.new(1000,1,1)
+    end
+    begin
+      md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
+      @until_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
+    rescue
+      @until_time = DateTime.new(3000,1,1)
+    end
+
+    record = User
+      .left_outer_joins(:logins).group('users.id')
+      .where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
+    case params[:users]
+    when 'enabled'
+      record = record.where(enabled: true)
+    when 'group'
+      record = record.joins(:groups).where(groups: {id: params[:groups]}) if params[:groups]
+    end
+
+    record = record.pluck("users.id,users.login,users.full_name,count(logins.created_at),min(logins.created_at),max(logins.created_at)")
+    record.each do |user|
+      x = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
+                                      user[0],@since_time,@until_time)
+        .pluck(:ip_address).uniq
+      @users << { id: user[0],
+                   login: user[1],
+                   full_name: user[2],
+                   count: user[3],
+                   min: user[4],
+                   max: user[5],
+                   ip: x
+                 }
+    end
+  end
+
+  def login_detail_query
     @logins = Array.new
 
     date_and_time = '%Y-%m-%d %H:%M'
@@ -120,25 +168,13 @@ class ReportController < ApplicationController
     rescue
       @until_time = DateTime.new(3000,1,1)
     end
-    
-    User.all.each do |user|
-      @logins << { id: user.id,
-                   login: user.login, 
-                   full_name: user.full_name, 
-                   count: Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
-                                      user.id,@since_time,@until_time)
-                          .count(:id),
-                   min: Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
-                                      user.id,@since_time,@until_time)
-                          .minimum(:created_at),
-                   max: Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
-                                      user.id,@since_time,@until_time)
-                          .maximum(:created_at),
-                    ip: Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
-                                      user.id,@since_time,@until_time)
-                          .select(:ip_address).uniq
 
-                 }
+    @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
+    case params[:users]
+    when 'enabled'
+      @logins = @logins.where(users: {enabled: true})
+    when 'group'
+      @logins = @logins.joins(user: :groups).where(user: {groups: {id: params[:groups]}}) if params[:groups]
     end
   end
 
@@ -149,15 +185,18 @@ class ReportController < ApplicationController
     @submissions = Submission
       .includes(:problem).includes(:user).includes(:language)
 
-    if params[:problem]
-      @submission = @submission.where(problem_id: params[:problem])
-    end
-
     case params[:users]
     when 'enabled'
-      @submissions = @submissions.where('user.enabled': true)
+      @submissions = @submissions.where(users: {enabled: true})
     when 'group'
       @submissions = @submissions.joins(user: :groups).where(user: {groups: {id: params[:groups]}}) if params[:groups]
+    end
+
+    case params[:problems]
+    when 'enabled'
+      @submissions = @submissions.where(problems: {available: true})
+    when 'selected'
+      @submissions = @submissions.where(problem_id: params[:problem_id])
     end
 
     #set default
@@ -170,6 +209,9 @@ class ReportController < ApplicationController
       date_param_until: 'until_datetime',
       hard_limit: 100_000
     )
+  end
+
+  def login
   end
 
   def problem_hof

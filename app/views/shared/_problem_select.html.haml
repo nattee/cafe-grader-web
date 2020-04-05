@@ -2,9 +2,18 @@
   .panel-heading
     Problems
   .panel-body
-    %p
-      Select problem(s) to be included in the report
-    = label_tag :problem_id, "Problems"
+    .radio
+      %label
+        = radio_button_tag 'problems', 'all', (params[:users] == "all")
+        All problems
+    .radio
+      %label
+        = radio_button_tag 'problems', 'enabled', (params[:users] == "enabled"), checked: true
+        Only problems with available = "yes"
+    .radio
+      %label
+        = radio_button_tag 'problems', 'selected', (params[:users] == "group")
+        Only these selected problems
     = select_tag 'problem_id[]',
         options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
         { id: :problem_id, class: 'select2 form-control', multiple: "true" }

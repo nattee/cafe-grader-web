@@ -1,0 +1,130 @@
+- content_for :header do
+  = javascript_include_tag 'local_jquery'
+
+%h1 Logins detail
+
+.row
+  .col-md-4
+    .alert.alert-info
+      %ul
+        %li You have to click refresh when changing the filter above
+        %li Detail tab shows each logins separately
+        %li Summary tab shows logins summary of each user
+  .col-md-4
+    = render partial: 'shared/date_filter'
+  .col-md-4
+    = render partial: 'shared/user_select'
+
+.row.form-group
+  .col-sm-12
+    %ul.nav.nav-tabs
+      %li.active
+        %a{href: '#detail', data: {toggle: :tab}} Detail
+      %li
+        %a{href: '#summary', data: {toggle: :tab}} Summary
+.row
+  .col-sm-12
+    .tab-content
+      .tab-pane.active#detail
+        %table#detail-table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
+      .tab-pane#summary
+        %table#summary-table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
+
+
+
+:javascript
+  $(function() {
+    detail_table = $('#detail-table').DataTable({
+      dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+      autoWidth: true,
+      buttons: [
+        {
+          text: 'Refresh',
+          action: (e,dt,node,config) => {
+            detail_table.clear().draw()
+            detail_table.ajax.reload( () => { detail_table.columns.adjust().draw() } )
+            summary_table.clear().draw()
+            summary_table.ajax.reload( () => { summary_table.columns.adjust().draw() } )
+          }
+        },
+        'copy', 
+        {
+          extend: 'excel',
+          title: 'Login detail',
+        }
+      ],
+      columns: [
+        {title: 'User', data: 'login_text'},
+        {title: 'Time', data: 'created_at'},
+        {title: 'IP', data: 'ip_address'},
+      ],
+      ajax: {
+        url: '#{login_detail_query_report_path}',
+        type: 'POST',
+        data: (d) =>  {
+          d.since_datetime = $('#since_datetime').val()
+          d.until_datetime = $('#until_datetime').val()
+          d.users = $("input[name='users']:checked").val()
+          d.groups = $("#group_id").select2('val')
+        },
+        dataType: 'json',
+        beforeSend: (request) => {
+          request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+        },
+      }, //end ajax
+      pageLength: 25,
+      processing: true,
+    });
+
+    summary_table = $('#summary-table').DataTable({
+      dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+      autoWidth: true,
+      buttons: [
+        {
+          text: 'Refresh',
+          action: (e,dt,node,config) => {
+            summary_table.clear().draw()
+            summary_table.ajax.reload( () => { summary_table.columns.adjust().draw() } )
+            detail_table.clear().draw()
+            detail_table.ajax.reload( () => { detail_table.columns.adjust().draw() } )
+          }
+        },
+        'copy',
+        {
+          extend: 'excel',
+          title: 'Login summary',
+        }
+      ],
+      columns: [
+        {title: 'User', data: 'login_text'},
+        {title: 'Login Count', data: 'count'},
+        {title: 'Earliest', data: 'earliest'},
+        {title: 'Latest', data: 'latest'},
+        {title: 'IP', data: 'ip_address'},
+      ],
+      ajax: {
+        url: '#{login_summary_query_report_path}',
+        type: 'POST',
+        data: (d) =>  {
+          d.since_datetime = $('#since_datetime').val()
+          d.until_datetime = $('#until_datetime').val()
+          d.users = $("input[name='users']:checked").val()
+          d.groups = $("#group_id").select2('val')
+        },
+        dataType: 'json',
+        beforeSend: (request) => {
+          request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
+        },
+      }, //end ajax
+      pageLength: 25,
+      processing: true,
+    });
+
+    $('.input-group.date').datetimepicker({
+      format: 'YYYY-MM-DD HH:mm',
+      showTodayButton: true,
+      locale: 'en',
+      widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
+      defaultDate: moment()
+    });
+  });

@@ -22,6 +22,8 @@ class User < ActiveRecord::Base
            :class_name => "Message",
            :foreign_key => "receiver_id"
 
+  has_many :logins
+
   has_one :contest_stat, :class_name => "UserContestStat", :dependent => :destroy
 
   belongs_to :site
