@@ -6,7 +6,7 @@ class ReportController < ApplicationController
 
   before_action :admin_authorization, only: [:login_stat,:submission, :submission_query, 
                                              :login, :login_detail_query, :login_summary_query,
-                                             :stuck, :cheat_report, :cheat_scruntinize, :show_max_score, :current_score]
+                                             :stuck, :cheat_report, :cheat_scrutinize, :show_max_score, :current_score]
 
   before_action(only: [:problem_hof]) { |c|
     return false unless check_valid_login
@@ -453,7 +453,7 @@ ORDER BY ip_address,submitted_at
 
   end
 
-  def cheat_scruntinize
+  def cheat_scrutinize
     #convert date & time
     date_and_time = '%Y-%m-%d %H:%M'
     begin
@@ -473,7 +473,7 @@ ORDER BY ip_address,submitted_at
     @sid = params[:SID].split(/[,\s]/) if params[:SID]
     unless @sid and @sid.size > 0
       return 
-      redirect_to actoin: :cheat_scruntinize
+      redirect_to actoin: :cheat_scrutinize
       flash[:notice] = 'Please enter at least 1 student id'
     end
     mark = Array.new(@sid.size,'?')

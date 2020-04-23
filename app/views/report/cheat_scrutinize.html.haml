@@ -13,33 +13,58 @@
 
 %h1 Login status
 
-=render partial: 'report_menu'
+.panel.panel-primary
+  .panel-heading
+    User ID and time rnage
+  .panel-body
+    = form_tag({session: :url })  do
+      .row.form-group
+        .col-md-2
+          From Date:
+        .col-md-4
+          .input-group.date
+            = text_field_tag :since_datetime, @since_time, class: 'form-control'
+            %span.input-group-addon
+              %span.glyphicon.glyphicon-calendar
+      .row.form-group
+        .col-md-2
+          Until Date:
+        .col-md-4
+          .input-group.date
+            = text_field_tag :until_datetime, @until_time, class: 'form-control'
+            %span.input-group-addon
+              %span.glyphicon.glyphicon-calendar
+      .row.form-group
+        .col-md-2
+          IDs (separated by space):
+        .col-md-10
+          = text_field_tag 'SID', @sid, size: 40, class: 'form-control'
+      .row.form-group
+        .col-md-2
+        .col-md-10
+          =submit_tag 'query', class: 'btn btn-primary'
 
-
-= form_tag({session: :url })  do
-  .submitbox
-    %table
-      %tr
-        %td{colspan: 6, style: 'font-weight: bold'}= 'Query login & submit in the range'
-      %tr
-        %td{style: 'width: 120px; font-weight: bold'}= 'Login date range'
-        %td{align: 'right'} since:
-        %td= text_field_tag 'since_datetime', @since_time
-      %tr
-        %td
-        %td{align: 'right'} until:
-        %td= text_field_tag 'until_datetime', @until_time
-      %tr
-        %td
-        %td
-        %td Blank mean no condition
-      %tr
-        %td{style: 'width: 120px; font-weight: bold'}= "ID"
-        %td{colspan: 2}= text_field_tag 'SID', @sid, size: 40
-      %tr
-        %td
-        %td
-        %td= submit_tag 'query'
+      -#
+        %table
+          %tr
+            %td{style: 'width: 120px; font-weight: bold'}= 'Login date range'
+            %td{align: 'right'} since:
+            %td= text_field_tag 'since_datetime', @since_time, class: 'form-control datetimepicker'
+          %tr
+            %td
+            %td{align: 'right'} until:
+            %td= text_field_tag 'until_datetime', @until_time
+          %tr
+            %td
+            %td
+            %td Blank mean no condition
+          %tr
+            %td{style: 'width: 120px; font-weight: bold'}= "ID"
+            %td{colspan: 2}= text_field_tag 'SID', @sid, size: 40
+          %tr
+            %td
+            %td
+            %td= submit_tag 'query'
 
 
 %h2 Logs
