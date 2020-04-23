@@ -76,7 +76,7 @@
         - user = User.where("login = ?",id).first
         %tr
           //%td= link_to id, controller: :user, action: :profile, id: id
-          %td= link_to id, "https://www.nattee.net/java/users/profile/#{user.id}"
+          %td= link_to id, stat_user_path(user.id)
           %td= user.full_name
 
 //%table.tablesorter-cafe#my_table
@@ -96,12 +96,12 @@
         %tr{class: cycle('info-even','info-odd')}
           %td= l[:submitted_at].strftime "%Y.%b.%d %H:%M:%S"
           //%td= l[:id] == -1 ? "LOGIN" : link_to("submit #{l[:id]}", controller: 'graders' , action: 'submission', id: l[:id])
-          %td= l[:id] == -1 ? "LOGIN" : link_to( "submit #{l[:id]}", "https://www.nattee.net/java/graders/submission/#{l[:id]}")
+          %td= l[:id] == -1 ? "LOGIN" : link_to( "##{l[:id]}", submission_path(l[:id]))
           %td= l[:ip_address]
           //%td= link_to l[:login], controller: 'users', action: 'profile', id: l[:id]
-          %td= link_to( l[:login], "https://www.nattee.net/java/users/profile/#{l.user_id}")
+          %td= link_to( l[:login], stat_user_path(l.user_id))
           %td= l[:full_name]
           %td= l[:id] == -1 ? "" : l.problem.name
-          %td= l[:id] == -1 ? "" : l.points * 100/ l.problem.full_score
+          %td.text-right= l[:id] == -1 ? "" : l.points * 100/ l.problem.full_score
 
 
