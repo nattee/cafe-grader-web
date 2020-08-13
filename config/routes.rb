@@ -54,6 +54,7 @@ Rails.application.routes.draw do
       post 'add_problem', to: 'groups#add_problem', as: 'add_problem'
       delete 'remove_problem/:problem_id', to: 'groups#remove_problem', as: 'remove_problem'
       delete 'remove_all_problem', to: 'groups#remove_all_problem', as: 'remove_all_problem'
+      get 'toggle'
     end
     collection do
 
@@ -92,7 +93,6 @@ Rails.application.routes.draw do
       get 'download'
       get 'compiler_msg'
       get 'rejudge'
-      get 'source'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'

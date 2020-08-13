@@ -113,8 +113,9 @@ module ApplicationHelper
 
   def toggle_button(on,toggle_url,id, option={})
     btn_size = option[:size] || 'btn-xs'
+    btn_block = option[:block] || 'btn-block'
     link_to (on ? "Yes" : "No"), toggle_url,
-      {class: "btn btn-block #{btn_size} btn-#{on ? 'success' : 'default'} ajax-toggle",
+      {class: "btn #{btn_block} #{btn_size} btn-#{on ? 'success' : 'default'} ajax-toggle",
         id: id,
         data: {remote: true, method: 'get'}}
   end

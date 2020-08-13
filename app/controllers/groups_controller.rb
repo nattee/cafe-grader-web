@@ -2,6 +2,7 @@ class GroupsController < ApplicationController
   before_action :set_group, only: [:show, :edit, :update, :destroy,
                                    :add_user, :remove_user,:remove_all_user,
                                    :add_problem, :remove_problem,:remove_all_problem,
+                                   :toggle,
                                   ]
   before_action :admin_authorization
 
@@ -47,6 +48,11 @@ class GroupsController < ApplicationController
   def destroy
     @group.destroy
     redirect_to groups_url, notice: 'Group was successfully destroyed.'
+  end
+
+  def toggle
+    @group.enabled = @group.enabled? ? false : true
+    @group.save
   end
 
   def remove_user
@@ -99,6 +105,6 @@ class GroupsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def group_params
-      params.require(:group).permit(:name, :description)
+      params.require(:group).permit(:name, :description, :enabled)
     end
 end

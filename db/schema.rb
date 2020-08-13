@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2018_06_12_102327) do
+ActiveRecord::Schema.define(version: 2020_08_13_083020) do
 
   create_table "announcements", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
     t.string "author"
@@ -80,6 +80,7 @@ ActiveRecord::Schema.define(version: 2018_06_12_102327) do
   create_table "groups", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
     t.string "name"
     t.string "description"
+    t.boolean "enabled", default: true
   end
 
   create_table "groups_problems", id: false, options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
