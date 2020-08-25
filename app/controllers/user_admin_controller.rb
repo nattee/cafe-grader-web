@@ -65,7 +65,8 @@ class UserAdminController < ApplicationController
     ok_user = []
 
     lines.split("\n").each do |line|
-      items = line.chomp.split(',')
+      #split with large limit, this will cause consecutive ',' to be result in a blank
+      items = line.chomp.split(',',1000)
       if items.length>=2
         login = items[0]
         full_name = items[1]
@@ -73,8 +74,12 @@ class UserAdminController < ApplicationController
         user_alias = ''
 
         added_random_password = false
-        if items.length >= 3 and items[2].chomp(" ").length > 0;
-          password = items[2].chomp(" ")
+        added_password = false
+        if items.length >= 3
+          if items[2].chomp(" ").length > 0
+            password = items[2].chomp(" ")
+            added_password = true
+          end
         else
           password = random_password
           added_random_password=true;
@@ -86,16 +91,21 @@ class UserAdminController < ApplicationController
           user_alias = login
         end
 
+
+        has_remark = false
         if items.length>=5
           remark = items[4].strip;
+          has_remark = true
         end
 
         user = User.find_by_login(login)
         if (user)
           user.full_name = full_name
-          user.password = password
-          user.remark = remark
+          user.remark = remark if has_remark
+          user.password = password if added_password || added_random_password
         else
+          #create a random password if none are given
+          password = random_password unless password
           user = User.new({:login => login,
                            :full_name => full_name,
                            :password => password,

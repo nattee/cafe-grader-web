@@ -182,9 +182,6 @@ ANALYSISMODE
 #{header}
 <tr>
 <td class="left-col">
-#{user.full_name}<br/>
-#{t 'title_bar.current_time'} #{format_short_time(Time.zone.now)}
-#{time_left}
 <br/>
 </td>
 <td class="right-col">#{contest_name}</td>

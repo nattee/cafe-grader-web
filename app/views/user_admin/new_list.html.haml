@@ -26,6 +26,15 @@
               is empty, the original value will be used instead.
             %li
               If the users with the same user_id already exists, existing information will be overwritten.
+          Example:
+          %ol
+            %li 
+              %pre user1,Somchai Jaidee
+              will create (or update) a user with login "user1" and setting the fullname to "Somchai Jaidee", also setting a random password.
+            %li 
+              %pre user1,Somchai Jaidee,
+              will create (or update) a user with login "user1" and and setting the fullname "Somchai Jaidee". No change is made to the password unless this is a new user. If this is a new user, a random password will be generated.
+
 
   .row
     .col-md-6

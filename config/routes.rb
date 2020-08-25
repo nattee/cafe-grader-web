@@ -177,7 +177,7 @@ Rails.application.routes.draw do
 
   #
   get 'tasks/view/:file.:ext' => 'tasks#view'
-  get 'tasks/download/:id/:file.:ext' => 'tasks#download'
+  get 'tasks/download/:id/:file.:ext' => 'tasks#download', as: 'download_task'
   get 'heartbeat/:id/edit' => 'heartbeat#edit'
 
   #grader
