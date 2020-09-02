@@ -113,8 +113,7 @@ Rails.application.routes.draw do
       get 'admin'
       get 'active'
       get 'mass_mailing'
-      get 'revoke_admin'
-      post 'grant_admin'
+      match 'modify_role', via: [:get, :post]
       match 'create_from_list', via: [:get, :post]
       match 'random_all_passwords', via: [:get, :post]
     end

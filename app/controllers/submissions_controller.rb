@@ -94,9 +94,8 @@ protected
 
   def submission_authorization
     #admin always has privileged
-    if @current_user.admin?
-      return true
-    end
+    return true if @current_user.admin?
+    return true if @current_user.has_role?('TA') && (['show','download'].include? action_name)
 
     sub = Submission.find(params[:id])
     if @current_user.available_problems.include? sub.problem

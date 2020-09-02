@@ -362,36 +362,33 @@ class UserAdminController < ApplicationController
   # admin management
 
   def admin
-    @admins = User.all.find_all {|user| user.admin? }
+    @admins = Role.where(name: 'admin').take.users
+    @tas = Role.where(name: 'ta').take.users
   end
 
-  def grant_admin
-    login = params[:login]
-    user = User.find_by_login(login)
-    if user!=nil
-      admin_role = Role.find_by_name('admin')
-      user.roles << admin_role
+  def modify_role
+    user = User.find_by_login(params[:login])
+    role = Role.find_by_name(params[:role])
+    unless user && role
+      flash[:error] = 'Unknown user or role'
+      redirect_to admin_user_admin_index_path
+      return
+    end
+    if params[:commit] == 'Grant'
+      #grant role
+      user.roles << role
+      flash[:notice] = "User '#{user.login}' has been granted the role '#{role.name}'"
     else
-      flash[:notice] = 'Unknown user'
+      #revoke role
+      if user.login == 'root' && role.name == 'admin'
+        flash[:error] = 'You cannot revoke admisnistrator permission from root.'
+        redirect_to admin_user_admin_index_path
+        return
+      end
+      user.roles.delete(role)
+      flash[:notice] = "The role '#{role.name}' has been revoked from User '#{user.login}'"
     end
-    flash[:notice] = 'User added as admins'
-    redirect_to :action => 'admin'
-  end
-
-  def revoke_admin
-    user = User.find(params[:id])
-    if user==nil
-      flash[:notice] = 'Unknown user'
-      redirect_to :action => 'admin' and return
-    elsif user.login == 'root'
-      flash[:notice] = 'You cannot revoke admisnistrator permission from root.'
-      redirect_to :action => 'admin' and return
-    end
-
-    admin_role = Role.find_by_name('admin')
-    user.roles.delete(admin_role)
-    flash[:notice] = 'User permission revoked'
-    redirect_to :action => 'admin'
+    redirect_to admin_user_admin_index_path
   end
 
   # mass mailing
