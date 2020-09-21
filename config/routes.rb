@@ -180,18 +180,19 @@ Rails.application.routes.draw do
   get 'heartbeat/:id/edit' => 'heartbeat#edit'
 
   #grader
-  get 'graders/list', to: 'graders#list', as: 'grader_list'
+  #get 'graders/list', to: 'graders#list', as: 'grader_list'
   namespace :graders do
     get 'task/:id/:type', action: 'task', as: 'task'
     get 'view/:id/:type', action: 'view', as: 'view'
     get 'clear/:id', action: 'clear', as: 'clear'
-    get 'stop'
-    get 'stop_all'
-    get 'clear_all'
-    get 'clear_terminated'
     get 'start_grading'
     get 'start_exam'
+    get 'clear_all'
+    get 'stop_all'
 
+    get 'stop'
+    get 'clear_terminated'
+    get 'list'
   end
 
 
