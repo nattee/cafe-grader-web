@@ -1,25 +1,54 @@
-%h1 Administrators
+%h1 Modify Role
+.row
+  .col-md-6
+    %h4 Administrators
+    = form_tag modify_role_user_admin_index_path, method: 'post', class: 'form-inline' do
+      = hidden_field_tag :role, 'admin'
+      .form-group
+        = label_tag :login, 'Grant admin role to:'
+        = text_field_tag 'login',nil, class: 'form-control'
+      .form-group
+        = submit_tag 'Grant', class: 'btn btn-primary'
+    %br
+    %table.table.table-condense.table-hover.table-striped.table-bordered
+      %thead{:class => 'info-head'}
+        %th #
+        %th Login
+        %th Full name
+        %th 
+      - @admins.each_with_index do |user, i|
+        %tr
+          %td= i+1
+          %td= user.login
+          %td= user.full_name
+          %td
+            - if user.login!='root'
+              = link_to '[revoke]', modify_role_user_admin_index_path( login: user.login, role: 'admin', commit: 'revoke')
+  .col-md-6
+    %h4 Teacher Assistants (TA)
+    = form_tag modify_role_user_admin_index_path, method: 'post', class: 'form-inline' do
+      = hidden_field_tag :role, 'TA'
+      .form-group
+        = label_tag :login, 'Grant TA role to:'
+        = text_field_tag 'login',nil, class: 'form-control'
+      .form-group
+        = submit_tag 'Grant', class: 'btn btn-primary'
+    %br
+    %table.table.table-condense.table-hover.table-striped.table-bordered
+      %thead{:class => 'info-head'}
+        %th #
+        %th Login
+        %th Full name
+        %th 
+      - @tas.each_with_index do |user, i|
+        %tr
+          %td= i+1
+          %td= user.login
+          %td= user.full_name
+          %td
+            - if user.login!='root'
+              = link_to '[revoke]', modify_role_user_admin_index_path( login: user.login, role: 'TA', commit: 'revoke')
 
-%table{:class => 'info'}
-  %tr{:class => 'info-head'}
-    %th #
-    %th Login
-    %th Full name
-    %th 
-  - @admins.each_with_index do |user, i|
-    %tr
-      %td= i+1
-      %td= user.login
-      %td= user.full_name
-      %td
-        - if user.login!='root'
-          = link_to '[revoke]', :action => 'revoke_admin', :id => user.id
-%hr
-
-= form_tag :action => 'grant_admin' do
-  = label_tag :login, 'Grant admin permission to:'
-  = text_field_tag 'login',nil, class: 'input-field'
-  = submit_tag 'Grant', class: 'btn btn-primary'
 
 %hr/
 = link_to '[go back to index]', :action => 'index'

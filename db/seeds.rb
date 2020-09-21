@@ -225,6 +225,7 @@ def seed_config
 end
 
 def seed_roles
+  Role.find_or_create_by(name: 'TA')
   return if Role.find_by_name('admin')
 
   role = Role.create(:name => 'admin')

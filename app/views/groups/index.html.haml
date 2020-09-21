@@ -7,14 +7,16 @@
     %tr
       %th Name
       %th Description
+      %th Enabled?
       %th
       %th
 
   %tbody
     - @groups.each do |group|
-      %tr
+      %tr{:class => "#{(group.enabled?) ? "success" : "danger"}", id: "group-#{group.id}"}
         %td= group.name
         %td= group.description
+        %td= toggle_button(group.enabled?, toggle_group_path(group), "group-enabled-#{group.id}", size: ' ', block: ' ')
         %td= link_to 'View', group, class: 'btn btn-default'
         %td= link_to 'Destroy', group, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger'
 

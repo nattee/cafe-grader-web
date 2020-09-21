@@ -58,7 +58,8 @@ class UserAdminController < ApplicationController
     ok_user = []
 
     lines.split("\n").each do |line|
-      items = line.chomp.split(',')
+      #split with large limit, this will cause consecutive ',' to be result in a blank
+      items = line.chomp.split(',',1000)
       if items.length>=2
         login = items[0]
         full_name = items[1]
@@ -66,8 +67,12 @@ class UserAdminController < ApplicationController
         user_alias = ''
 
         added_random_password = false
-        if items.length >= 3 and items[2].chomp(" ").length > 0;
-          password = items[2].chomp(" ")
+        added_password = false
+        if items.length >= 3
+          if items[2].chomp(" ").length > 0
+            password = items[2].chomp(" ")
+            added_password = true
+          end
         else
           password = random_password
           added_random_password=true;
@@ -79,16 +84,21 @@ class UserAdminController < ApplicationController
           user_alias = login
         end
 
+
+        has_remark = false
         if items.length>=5
           remark = items[4].strip;
+          has_remark = true
         end
 
         user = User.find_by_login(login)
         if (user)
           user.full_name = full_name
-          user.password = password
-          user.remark = remark
+          user.remark = remark if has_remark
+          user.password = password if added_password || added_random_password
         else
+          #create a random password if none are given
+          password = random_password unless password
           user = User.new({:login => login,
                            :full_name => full_name,
                            :password => password,
@@ -345,36 +355,33 @@ class UserAdminController < ApplicationController
   # admin management
 
   def admin
-    @admins = User.all.find_all {|user| user.admin? }
+    @admins = Role.where(name: 'admin').take.users
+    @tas = Role.where(name: 'ta').take.users
   end
 
-  def grant_admin
-    login = params[:login]
-    user = User.find_by_login(login)
-    if user!=nil
-      admin_role = Role.find_by_name('admin')
-      user.roles << admin_role
+  def modify_role
+    user = User.find_by_login(params[:login])
+    role = Role.find_by_name(params[:role])
+    unless user && role
+      flash[:error] = 'Unknown user or role'
+      redirect_to admin_user_admin_index_path
+      return
+    end
+    if params[:commit] == 'Grant'
+      #grant role
+      user.roles << role
+      flash[:notice] = "User '#{user.login}' has been granted the role '#{role.name}'"
     else
-      flash[:notice] = 'Unknown user'
+      #revoke role
+      if user.login == 'root' && role.name == 'admin'
+        flash[:error] = 'You cannot revoke admisnistrator permission from root.'
+        redirect_to admin_user_admin_index_path
+        return
+      end
+      user.roles.delete(role)
+      flash[:notice] = "The role '#{role.name}' has been revoked from User '#{user.login}'"
     end
-    flash[:notice] = 'User added as admins'
-    redirect_to :action => 'admin'
-  end
-
-  def revoke_admin
-    user = User.find(params[:id])
-    if user==nil
-      flash[:notice] = 'Unknown user'
-      redirect_to :action => 'admin' and return
-    elsif user.login == 'root'
-      flash[:notice] = 'You cannot revoke admisnistrator permission from root.'
-      redirect_to :action => 'admin' and return
-    end
-
-    admin_role = Role.find_by_name('admin')
-    user.roles.delete(admin_role)
-    flash[:notice] = 'User permission revoked'
-    redirect_to :action => 'admin'
+    redirect_to admin_user_admin_index_path
   end
 
   # mass mailing

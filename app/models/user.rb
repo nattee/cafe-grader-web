@@ -83,7 +83,11 @@ class User < ActiveRecord::Base
   end
 
   def admin?
-    self.roles.where(name: 'admin').count > 0
+    has_role?('admin')
+  end
+
+  def has_role?(role)
+    self.roles.where(name: role).count > 0
   end
 
   def email_for_editing
@@ -275,9 +279,10 @@ class User < ActiveRecord::Base
     end
   end
 
+  # new feature, get list of available problem in all enabled group that the user belongs to
   def available_problems_in_group
     problem = []
-    self.groups.each do |group|
+    self.groups.where(enabled: true).each do |group|
       group.problems.where(available: true).each { |p| problem << p }
     end
     problem.uniq!
@@ -298,6 +303,8 @@ class User < ActiveRecord::Base
     end
   end
 
+  #check if the user has the right to view that problem
+  #this also consider group based problem policy
   def can_view_problem?(problem)
     return true if admin?
     return available_problems.include? problem

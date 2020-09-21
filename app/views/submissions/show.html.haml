@@ -42,6 +42,7 @@
             - if @submission.problem!=nil
               = link_to "[#{@submission.problem.name}]", stat_problem_path(@submission.problem)
               = @submission.problem.full_name
+              = link_to_description_if_any "[download] <span class='glyphicon glyphicon-file'></span>".html_safe, @submission.problem
             - else
               = "(n/a)"
         %tr

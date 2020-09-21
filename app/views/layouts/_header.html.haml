@@ -68,7 +68,7 @@
                 = add_menu( 'Login Report', 'report', 'login')
             - if (ungraded = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count) > 0
               =link_to "#{ungraded} backlogs!",
-                grader_list_path,
+                graders_list_path,
                 class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
 
         %ul.nav.navbar-nav.navbar-right

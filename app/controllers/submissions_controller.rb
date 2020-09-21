@@ -16,8 +16,8 @@ class SubmissionsController < ApplicationController
     else
       @problem = Problem.find_by_id(params[:problem_id])
       if (@problem == nil) or (not @problem.available)
-        redirect_to main_list_path
-        flash[:notice] = 'Error: submissions for that problem are not viewable.'
+        redirect_to list_main_path
+        flash[:error] = 'Authorization error: You have no right to view submissions for this problem'
         return
       end
       @submissions = Submission.find_all_by_user_problem(@user.id, @problem.id).order(id: :desc)
@@ -94,9 +94,8 @@ protected
 
   def submission_authorization
     #admin always has privileged
-    if @current_user.admin?
-      return true
-    end
+    return true if @current_user.admin?
+    return true if @current_user.has_role?('TA') && (['show','download'].include? action_name)
 
     sub = Submission.find(params[:id])
     if @current_user.available_problems.include? sub.problem

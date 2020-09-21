@@ -188,7 +188,7 @@ class MainController < ApplicationController
       @user = user
     end
   end
-  
+
   protected
 
   def prepare_announcements(recent=nil)

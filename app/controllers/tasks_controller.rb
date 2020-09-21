@@ -27,8 +27,9 @@ class TasksController < ApplicationController
   def download
     problem = Problem.find(params[:id])
     unless @current_user.can_view_problem? problem
-      flash[:notice] = 'You are not authorized to access this file'
-      redirect_to :action => 'index' and return
+      flash[:error] = 'You are not authorized to access this file'
+      redirect_to list_main_path
+      return
     end
 
     base_name = params[:file]
@@ -37,7 +38,8 @@ class TasksController < ApplicationController
 
     if !FileTest.exists?(filename)
       flash[:notice] = 'File does not exists'
-      redirect_to :action => 'index' and return
+      redirect_to list_main_path
+      return
     end
 
     send_file_to_user(filename, base_filename)

@@ -54,6 +54,7 @@ Rails.application.routes.draw do
       post 'add_problem', to: 'groups#add_problem', as: 'add_problem'
       delete 'remove_problem/:problem_id', to: 'groups#remove_problem', as: 'remove_problem'
       delete 'remove_all_problem', to: 'groups#remove_all_problem', as: 'remove_all_problem'
+      get 'toggle'
     end
     collection do
 
@@ -92,7 +93,6 @@ Rails.application.routes.draw do
       get 'download'
       get 'compiler_msg'
       get 'rejudge'
-      get 'source'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
@@ -113,8 +113,7 @@ Rails.application.routes.draw do
       get 'admin'
       get 'active'
       get 'mass_mailing'
-      get 'revoke_admin'
-      post 'grant_admin'
+      match 'modify_role', via: [:get, :post]
       match 'create_from_list', via: [:get, :post]
       match 'random_all_passwords', via: [:get, :post]
     end
@@ -184,22 +183,23 @@ Rails.application.routes.draw do
 
   #
   get 'tasks/view/:file.:ext' => 'tasks#view'
-  get 'tasks/download/:id/:file.:ext' => 'tasks#download'
+  get 'tasks/download/:id/:file.:ext' => 'tasks#download', as: 'download_task'
   get 'heartbeat/:id/edit' => 'heartbeat#edit'
 
   #grader
-  get 'graders/list', to: 'graders#list', as: 'grader_list'
+  #get 'graders/list', to: 'graders#list', as: 'grader_list'
   namespace :graders do
     get 'task/:id/:type', action: 'task', as: 'task'
     get 'view/:id/:type', action: 'view', as: 'view'
     get 'clear/:id', action: 'clear', as: 'clear'
-    get 'stop'
-    get 'stop_all'
-    get 'clear_all'
-    get 'clear_terminated'
     get 'start_grading'
     get 'start_exam'
+    get 'clear_all'
+    get 'stop_all'
 
+    get 'stop'
+    get 'clear_terminated'
+    get 'list'
   end
 
 

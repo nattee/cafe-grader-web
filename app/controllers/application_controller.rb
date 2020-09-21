@@ -152,8 +152,9 @@ class ApplicationController < ActionController::Base
   def is_request_ip_allowed?
     unless GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       user_ip = IPAddr.new(request.remote_ip)
+      allowed = GraderConfiguration[WHITELIST_IP_CONF_KEY] || ''
 
-      GraderConfiguration[WHITELIST_IP_CONF_KEY].delete(' ').split(',').each do |ips|
+      allowed.delete(' ').split(',').each do |ips|
         allow_ips = IPAddr.new(ips)
         if allow_ips.include?(user_ip)
           return true
