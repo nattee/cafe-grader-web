@@ -1,6 +1,9 @@
 class ProblemsController < ApplicationController
 
-  before_action :admin_authorization
+  before_action :admin_authorization, except: [:stat]
+  before_action only: [:stat] do
+    authorization_by_roles(['admin','ta'])
+  end
 
   in_place_edit_for :problem, :name
   in_place_edit_for :problem, :full_name

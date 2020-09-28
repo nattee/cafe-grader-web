@@ -34,8 +34,7 @@ class ApplicationController < ActionController::Base
 
   def authorization_by_roles(allowed_roles)
     return false unless check_valid_login
-    user = User.find(session[:user_id])
-    unless user.roles.detect { |role| allowed_roles.member?(role.name) }
+    unless @current_user.roles.detect { |role| allowed_roles.member?(role.name) }
       unauthorized_redirect
       return false
     end
