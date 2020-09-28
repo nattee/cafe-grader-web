@@ -73,7 +73,7 @@ class MainController < ApplicationController
     @submission.submitted_at = Time.new.gmtime
     @submission.ip_address = request.remote_ip
 
-    if GraderConfiguration.time_limit_mode? and user.contest_finished?
+    if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
       @submission.errors.add(:base,"The contest is over.")
       prepare_list_information
       render :action => 'list' and return

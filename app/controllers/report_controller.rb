@@ -19,7 +19,7 @@ class ReportController < ApplicationController
 
   def current_score
     @problems = Problem.available_problems
-    if params[:group_id]
+    if params[:group_id] && params[:users] == 'group'
       @group = Group.find(params[:group_id])
       @users = @group.users.where(enabled: true)
     else
@@ -50,10 +50,12 @@ class ReportController < ApplicationController
     end
 
     #users
-    @users = if params[:users] == "all" then 
-               User.includes(:contests).includes(:contest_stat)
-             else 
+    @users = if params[:users] == "group" then 
+               Group.find(params[:group_id]).users.all
+             elsif params[:users] == 'enabled'
                User.includes(:contests).includes(:contest_stat).where(enabled: true)
+             else
+               User.includes(:contests).includes(:contest_stat)
              end
 
     #set up range from param

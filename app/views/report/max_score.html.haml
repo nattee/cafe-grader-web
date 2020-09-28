@@ -39,6 +39,11 @@
           %label
             = radio_button_tag 'users', 'enabled', (params[:users] == "enabled")
             Only enabled users
+        .radio
+          %label
+            = radio_button_tag 'users', 'group', (params[:users] == "group")
+            Only users from this group
+            = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), id: 'group_name',class: 'select2', style: 'width: 20em';
 .row
   .col-md-12
     = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
