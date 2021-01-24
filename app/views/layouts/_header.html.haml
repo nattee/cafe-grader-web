@@ -70,6 +70,12 @@
               =link_to "#{ungraded} backlogs!",
                 graders_list_path,
                 class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
+          / announcement
+          - @nav_announcement.each do |ann|
+            %p.navbar-text
+              = ann.body.html_safe
+
+            
 
         %ul.nav.navbar-nav.navbar-right
           = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-question-sign')}".html_safe, 'main', 'help')

@@ -17,6 +17,9 @@
   %b Show on front page:
   = h @announcement.frontpage
 %p
+  %b Show on top menu bar:
+  = h @announcement.on_nav_bar
+%p
   %b Show only in contest:
   = h @announcement.contest_only
 = link_to 'Edit', edit_announcement_path(@announcement)

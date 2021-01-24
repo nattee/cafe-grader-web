@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   protect_from_forgery
 
   before_action :current_user
+  before_action :nav_announcement
 
   SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
@@ -20,6 +21,10 @@ class ApplicationController < ActionController::Base
   def current_user
     return nil unless session[:user_id]
     @current_user ||= User.find(session[:user_id])
+  end
+
+  def nav_announcement
+    @nav_announcement = Announcement.where(on_nav_bar: true)
   end
 
   def admin_authorization
