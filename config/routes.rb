@@ -85,6 +85,7 @@ Rails.application.routes.draw do
     collection do
       get 'profile'
       post 'chg_passwd'
+      post 'chg_default_language'
     end
   end
 
