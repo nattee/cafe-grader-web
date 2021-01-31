@@ -50,6 +50,17 @@ class UsersController < ApplicationController
     redirect_to :action => 'profile'
   end
 
+  def chg_default_language
+    user = User.find(session[:user_id])
+    user.default_language = params[:default_language]
+    if user.save
+      flash[:notice] = 'default language changed'
+    else
+      flash[:notice] = 'Error: default language changing failed'
+    end
+    redirect_to :action => 'profile'
+  end
+
   def new
     @user = User.new
     render :action => 'new', :layout => 'empty'

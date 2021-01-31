@@ -26,7 +26,7 @@
 
         .form-group
           = label_tag 'Language:'
-          = select_tag 'language_id', options_from_collection_for_select(Language.all, 'id', 'pretty_name', @lang_id || Language.find_by_pretty_name("Python").id || Language.first.id), class: 'form-control select', style: "width: 100px"
+          = select_tag 'language_id', options_from_collection_for_select(Language.all, 'id', 'pretty_name', @lang_id || @current_user.default_language || Language.find_by_pretty_name("Python").id || Language.first.id), class: 'form-control select', style: "width: 100px"
         .form-group
           .input-group
             %span.input-group-btn
