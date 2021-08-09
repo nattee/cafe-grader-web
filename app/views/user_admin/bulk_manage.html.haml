@@ -23,6 +23,12 @@
           %li
             %code 21$
             matches every user whose login ends with "21"
+        .form-group
+          .div.checkbox
+            %label
+              = check_box_tag :filter_group, 1, params[:filter_group] == '1'
+              Apply to this group only
+            = select_tag "filter_group_id", options_from_collection_for_select( Group.all, 'id','name',params[:filter_group_id]), id: 'group_name',class: 'select2'
   .col-md-6
     .panel.panel-primary
       .panel-title.panel-heading

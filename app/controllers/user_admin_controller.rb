@@ -39,7 +39,7 @@ class UserAdminController < ApplicationController
       redirect_to :action => 'index'
     else
       render :action => 'new'
-    end    
+    end
   end
 
   def clear_last_ip
@@ -52,92 +52,23 @@ class UserAdminController < ApplicationController
   def create_from_list
     lines = params[:user_list]
 
-    note = []
-    error_note = []
-    error_msg = nil
-    ok_user = []
 
-    lines.split("\n").each do |line|
-      #split with large limit, this will cause consecutive ',' to be result in a blank
-      items = line.chomp.split(',',1000)
-      if items.length>=2
-        login = items[0]
-        full_name = items[1]
-        remark =''
-        user_alias = ''
+    res = User.create_from_list(lines)
+    error_logins = res[:error_logins]
+    error_msg = res[:first_error]
+    ok_user = res[:created_users]
 
-        added_random_password = false
-        added_password = false
-        if items.length >= 3
-          if items[2].chomp(" ").length > 0
-            password = items[2].chomp(" ")
-            added_password = true
-          end
-        else
-          password = random_password
-          added_random_password=true;
-        end
-
-        if items.length>= 4 and items[3].chomp(" ").length > 0;
-          user_alias = items[3].chomp(" ")
-        else
-          user_alias = login
-        end
-
-
-        has_remark = false
-        if items.length>=5
-          remark = items[4].strip;
-          has_remark = true
-        end
-
-        user = User.find_by_login(login)
-        if (user)
-          user.full_name = full_name
-          user.remark = remark if has_remark
-          user.password = password if added_password || added_random_password
-        else
-          #create a random password if none are given
-          password = random_password unless password
-          user = User.new({:login => login,
-                           :full_name => full_name,
-                           :password => password,
-                           :password_confirmation => password,
-                           :alias => user_alias,
-                           :remark => remark})
-        end
-        user.activated = true
-
-        if user.save
-          if added_random_password
-            note << "'#{login}' (+)"
-          else
-            note << login
-          end
-          ok_user << user
-        else
-          error_note << "'#{login}'"
-          error_msg = user.errors.full_messages.to_sentence unless error_msg
-        end
-
-      end
-    end
 
     #add to group
     if params[:add_to_group]
-      group = Group.where(id: params[:group_id]).first
-      if group
-        group.users << ok_user
-      end
+      group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(ok_user)
     end
 
     # show flash
-    if note.size > 0
-      flash[:success] = 'User(s) ' + note.join(', ') + 
-        ' were successfully created.  ' +
-        '( (+) - created with random passwords.)'   
+    if ok_user.count > 0
+      flash[:success] = "#{ok_user.count} user(s) was created or updated successfully"
     end
-    if error_note.size > 0
+    if error_logins.size > 0
       flash[:error] = "Following user(s) failed to be created: " + error_note.join(', ') + ". The error of the first failed one are: " + error_msg;
     end
     redirect_to :action => 'index'
@@ -401,7 +332,7 @@ class UserAdminController < ApplicationController
       flash[:notice] = 'You entered an empty mail subject.'
       redirect_to :action => 'mass_mailing' and return
     end
-    
+
     mail_body = params[:email_body]
     if !mail_body or mail_body.blank?
       flash[:notice] = 'You entered an empty mail body.'
@@ -417,7 +348,7 @@ class UserAdminController < ApplicationController
         note << user.login
       end
     end
-    
+
     flash[:notice] = 'User(s) ' + note.join(', ') + 
       ' were successfully modified.  ' 
     redirect_to :action => 'mass_mailing'
@@ -426,9 +357,14 @@ class UserAdminController < ApplicationController
   #bulk manage
   def bulk_manage
 
-    begin 
-      @users = User.where('(login REGEXP ?) OR (remark REGEXP ?)',params[:regex],params[:regex]) if params[:regex]
-      @users.count if @users #i don't know why I have to call count, but if I won't exception is not raised
+    begin
+      if params[:filter_group]
+        @users = Group.find_by(id: params[:filter_group_id]).users
+      else
+        @users = User.all
+      end
+      @users = @users.where('(login REGEXP ?) OR (remark REGEXP ?)',params[:regex],params[:regex]) unless params[:regex].blank?
+      @users.count if @users #test the sql
     rescue Exception
       flash[:error] = 'Regular Expression is malformed'
       @users = nil

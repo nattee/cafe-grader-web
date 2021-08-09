@@ -8,6 +8,13 @@ class Group < ActiveRecord::Base
   #has_and_belongs_to_many :problems
   #has_and_belongs_to_many :users
 
+  def add_users_skip_existing(users_list)
+    new_list = []
+    users_list.each do |u|
+      new_list << u unless users.include? u
+    end
+    users << new_list
+  end
 
 end
 

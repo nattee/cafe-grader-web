@@ -136,10 +136,6 @@ class User < ActiveRecord::Base
     password
   end
 
-  def self.find_non_admin_with_prefix(prefix='')
-    users = User.all
-    return users.find_all { |u| !(u.admin?) and u.login.index(prefix)==0 }
-  end
 
   # Contest information
 
@@ -314,13 +310,91 @@ class User < ActiveRecord::Base
     User.update_all(:last_ip => nil)
   end
 
+  #create multiple user, one per lines of input
+  def self.create_from_list(lines)
+    error_logins = []
+    first_error = nil
+    created_users = []
+
+    lines.split("\n").each do |line|
+      #split with large limit, this will cause consecutive ',' to be result in a blank
+      items = line.chomp.split(',',1000)
+      if items.length>=2
+        login = items[0]
+        full_name = items[1]
+        remark =''
+        user_alias = ''
+
+        added_random_password = false
+        added_password = false
+
+        #given password?
+        if items.length >= 3
+          if items[2].chomp(" ").length > 0
+            password = items[2].chomp(" ")
+            added_password = true
+          end
+        else
+          password = random_password
+          added_random_password=true;
+        end
+
+        #given alias?
+        if items.length>= 4 and items[3].chomp(" ").length > 0;
+          user_alias = items[3].chomp(" ")
+        else
+          user_alias = login
+        end
+
+        #given remark?
+        has_remark = false
+        if items.length>=5
+          remark = items[4].strip;
+          has_remark = true
+        end
+
+        user = User.find_by_login(login)
+        if (user)
+          user.full_name = full_name
+          user.remark = remark if has_remark
+          user.password = password if added_password || added_random_password
+        else
+          #create a random password if none are given
+          password = random_password unless password
+          user = User.new({:login => login,
+                           :full_name => full_name,
+                           :password => password,
+                           :password_confirmation => password,
+                           :alias => user_alias,
+                           :remark => remark})
+        end
+        user.activated = true
+
+        if user.save
+          created_users << user
+        else
+          error_logins << "'#{login}'"
+          first_error = user.errors.full_messages.to_sentence unless first_error
+        end
+      end
+    end
+
+    return {error_logins: error_logins, first_error: first_error, created_users: created_users}
+
+  end
+
+  def self.find_non_admin_with_prefix(prefix='')
+    users = User.all
+    return users.find_all { |u| !(u.admin?) and u.login.index(prefix)==0 }
+  end
+
   protected
     def encrypt_new_password
       return if password.blank?
       self.salt = (10+rand(90)).to_s
       self.hashed_password = User.encrypt(self.password,self.salt)
     end
-  
+
     def assign_default_site
       # have to catch error when migrating (because self.site is not available).
       begin
