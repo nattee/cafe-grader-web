@@ -27,7 +27,7 @@
           =form_tag add_user_group_path(@group), class: 'form-inline' do
             .form-group
               =label_tag :user_id, "User"
-              =select_tag :user_id, options_from_collection_for_select(User.all,'id','full_name'), class: 'select2', style: 'width: 10em';
+              =select_tag :user_id, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', style: 'width: 25em';
             =submit_tag "Add",class: 'btn btn-primary'
 
 
@@ -59,7 +59,7 @@
           =form_tag add_problem_group_path(@group), class: 'form-inline' do
             .form-group
               =label_tag :problem_id, "Problem"
-              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','full_name'), class: 'select2', style: 'width: 10em';
+              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', style: 'width: 25em';
             =submit_tag "Add",class: 'btn btn-primary'
 
 

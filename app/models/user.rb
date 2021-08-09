@@ -82,6 +82,10 @@ class User < ActiveRecord::Base
     end
   end
 
+  def login_with_name
+    "[#{login}] #{full_name}"
+  end
+
   def admin?
     has_role?('admin')
   end
