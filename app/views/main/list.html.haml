@@ -2,6 +2,10 @@
   = javascript_include_tag "announcement_refresh"
 
 = user_title_bar(@user)
+- if @user.section
+  passcode for CP Unofficial Logo voting is
+  %strong= @user.section
+  %br
 
 - if (GraderConfiguration.contest_mode?) and (@user.site!=nil) and (@user.site.started!=true)
   %p=t 'main.start_soon'
