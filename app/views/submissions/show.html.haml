@@ -30,11 +30,14 @@
           %td.text-right
             %strong User
           %td
-            - if @submission.user 
-              = link_to "#{@submission.user.login}", stat_user_path(@submission.user)
-              = @submission.user.full_name
+            - if @current_user.admin? ||@current_user == @submission.user
+              - if @submission.user
+                = link_to "#{@submission.user.login}", stat_user_path(@submission.user)
+                = @submission.user.full_name
+              - else
+                = "(n/a)"
             - else
-              = "(n/a)"
+              = '-- REDACTED --'
         %tr
           %td.text-right
             %strong Task
