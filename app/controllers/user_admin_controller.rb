@@ -69,7 +69,7 @@ class UserAdminController < ApplicationController
       flash[:success] = "#{ok_user.count} user(s) was created or updated successfully"
     end
     if error_logins.size > 0
-      flash[:error] = "Following user(s) failed to be created: " + error_note.join(', ') + ". The error of the first failed one are: " + error_msg;
+      flash[:error] = "Following user(s) failed to be created: " + error_logins.join(', ') + ". The error of the first failed one are: " + error_msg;
     end
     redirect_to :action => 'index'
   end
