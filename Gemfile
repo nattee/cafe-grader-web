@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 #rails
-gem 'rails', '~>5.2'
+gem 'rails', '~>6.0'
 gem 'activerecord-session_store'
 gem 'puma'
 
