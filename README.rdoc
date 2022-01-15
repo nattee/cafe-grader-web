@@ -53,9 +53,19 @@ This is very important.
 1. You have to reboot since RVM change a lots of system.
 2. If you are using GUI version of Ubuntu, be sure to have Gnome Terminal (or any other terminal you are using) perform login every time. This can be done by mark the check box "Run command as a login shell" in Gnome terminal or by adding --login to bash. 
 
-=== 3. Install necessary package
+=== 3. Install necessary package and nodejs
 
-    cafe@grader:~$ sudo apt install libmysqlclient-dev default-jdk unzip nodejs php-cli apache2 dirmngr gnupg apache2-dev
+First, we install required package via apt.
+
+    cafe@grader:~$ sudo apt install libmysqlclient-dev default-jdk unzip php-cli apache2 dirmngr gnupg apache2-dev
+
+Since nodejs that comes with ubuntu 18.04 is very outdated, we need to install it manually. This follow the method outlined in https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-18-04 under *Installing Node.js with Apt Using a NodeSource PPA*
+
+    cd ~
+    curl -sL https://deb.nodesource.com/setup_17.x -o nodesource_setup.sh
+    sudo bash nodesource_setup.sh
+    sudo apt install nodejs
+
 
 === 4. Install cafe-grader
 
