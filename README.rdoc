@@ -45,9 +45,13 @@ Second, we add the custom PPA, update the system and install RVM.
     cafe@grader:~$ sudo apt-get update
     cafe@grader:~$ sudo apt-get install rvm
 
-This is very important. You have to logout and login again since RVM change a lots of system. 
+We also need to add our user to the rvm group
 
-If you are using GUI version of Ubuntu, be sure to have Gnome Terminal (or any other terminal you are using) perform login every time. This can be done by mark the check box "Run command as a login shell" in Gnome terminal or by adding --login to bash. 
+    sudo usermod -a -G rvm $USER
+
+This is very important. 
+1. You have to reboot since RVM change a lots of system.
+2. If you are using GUI version of Ubuntu, be sure to have Gnome Terminal (or any other terminal you are using) perform login every time. This can be done by mark the check box "Run command as a login shell" in Gnome terminal or by adding --login to bash. 
 
 === 3. Install necessary package
 
