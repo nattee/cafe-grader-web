@@ -1,10 +1,12 @@
 require 'ipaddr'
+require "securerandom"
 
 class ApplicationController < ActionController::Base
   protect_from_forgery
 
   before_action :current_user
   before_action :nav_announcement
+  before_action :unique_visitor_id
 
   SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
@@ -54,6 +56,12 @@ class ApplicationController < ActionController::Base
     unauthorized_redirect unless GraderConfiguration["right.view_testcase"]
   end
 
+  def unique_visitor_id
+    unless cookies[:uuid]
+      value = SecureRandom.uuid
+      cookies[:uuid] = { value: value, expires: 20.year }
+    end
+  end
 
   protected
 

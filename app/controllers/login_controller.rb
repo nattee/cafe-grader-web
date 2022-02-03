@@ -22,6 +22,16 @@ class LoginController < ApplicationController
       return
     end
 
+    #store uuid when login
+    if user.last_ip.nil?
+      user.last_ip = cookies[:uuid]
+    else
+      if user.last_ip != cookies[:uuid]
+        user.last_ip =cookies[:uuid]
+        #log different login
+      end
+    end
+
     #process logging in
     session[:user_id] = user.id
     session[:admin] = user.admin?
@@ -38,7 +48,7 @@ class LoginController < ApplicationController
     end
 
     #save login information
-    Login.create(user_id: user.id, ip_address: request.remote_ip)
+    Login.create(user_id: user.id, ip_address: cookies[:uuid])
 
     redirect_to :controller => 'main', :action => 'list'
   end
