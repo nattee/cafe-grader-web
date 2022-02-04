@@ -57,10 +57,12 @@ class ApplicationController < ActionController::Base
   end
 
   def unique_visitor_id
-    unless cookies[:uuid]
+    unless cookies.encrypted[:uuid]
       value = SecureRandom.uuid
-      cookies[:uuid] = { value: value, expires: 20.year }
+      cookies.encrypted[:uuid] = { value: value, expires: 20.year }
     end
+    puts "encrypt " + cookies.encrypted[:uuid]
+    puts cookies[:uuid]
   end
 
   protected
