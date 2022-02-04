@@ -24,6 +24,28 @@ class Problem < ActiveRecord::Base
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
 
+  def get_jschart_history
+    start = 4.month.ago.beginning_of_day
+    start_date = start.to_date
+    count = Submission.where(problem: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
+    i = 0
+    label = []
+    value = []
+    while (start_date + i < Time.zone.now.to_date)
+      if (start_date+i).day == 1
+        #label << (start_date+i).strftime("%d %b %Y")
+        #label << (start_date+i).strftime("%d")
+      else
+        #label << ' '
+        #label << (start_date+i).strftime("%d")
+      end
+      label << (start_date+i).strftime("%d-%b")
+      value << (count[start_date+i] || 0)
+      i+=1
+    end
+    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+  end
+
   def self.available_problems
     available.order(date_added: :desc).order(:name)
     #Problem.available.all(:order => "date_added DESC, name ASC")

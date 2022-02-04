@@ -1,5 +1,7 @@
 class Submission < ActiveRecord::Base
 
+  enum tag: {default: 0, model: 1}, _prefix: true
+
   belongs_to :language
   belongs_to :problem
   belongs_to :user
@@ -24,12 +26,12 @@ class Submission < ActiveRecord::Base
   def self.find_all_last_by_problem(problem_id)
     # need to put in SQL command, maybe there's a better way
     Submission.includes(:user).find_by_sql("SELECT * FROM submissions " +
-			   "WHERE id = " +
-			   "(SELECT MAX(id) FROM submissions AS subs " +
-			   "WHERE subs.user_id = submissions.user_id AND " +
-                           "problem_id = " + problem_id.to_s + " " +
-			   "GROUP BY user_id) " +
-                           "ORDER BY user_id")
+      "WHERE id = " +
+        "(SELECT MAX(id) FROM submissions AS subs " +
+      "WHERE subs.user_id = submissions.user_id AND " +
+        "problem_id = " + problem_id.to_s + " " +
+      "GROUP BY user_id) " +
+      "ORDER BY user_id")
   end
 
   def self.find_in_range_by_user_and_problem(user_id, problem_id,since_id,until_id)
@@ -75,12 +77,12 @@ class Submission < ActiveRecord::Base
     i = 0
     source.each_line do |s|
       if s =~ option
-	words = s.split
-	return words[1]
+        words = s.split
+        return words[1]
       end
       i = i + 1
       if i==10
-	return nil
+        return nil
       end
     end
     return nil

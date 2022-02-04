@@ -94,6 +94,7 @@ Rails.application.routes.draw do
       get 'download'
       get 'compiler_msg'
       get 'rejudge'
+      get 'set_tag'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'

@@ -39,6 +39,17 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  #admin always count as every roles
+  def role_authorization(roles)
+    return false unless check_valid_login
+    user = User.find(session[:user_id])
+    return true if user.admin?
+    roles.each do |r|
+      return true if user.has_role?(r)
+    end
+    unauthorized_redirect
+  end
+
   def authorization_by_roles(allowed_roles)
     return false unless check_valid_login
     unless @current_user.roles.detect { |role| allowed_roles.member?(role.name) }

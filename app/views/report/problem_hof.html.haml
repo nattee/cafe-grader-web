@@ -23,7 +23,7 @@
   Please select a problem.
 - else
   %h1 [#{Problem.find(params[:id]).name}] #{Problem.find(params[:id]).full_name}
-  %h2 Submission History
-  =render partial: 'application/bar_graph', locals: { histogram: @histogram }
+  -# %h2 Submission History
+  -# =render partial: 'application/bar_graph', locals: { histogram: @histogram }
   =render partial: 'task_hof'
 

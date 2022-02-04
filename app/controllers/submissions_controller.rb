@@ -1,7 +1,8 @@
 class SubmissionsController < ApplicationController
+  before_action :set_submission, only: [:show,:download,:compiler_msg,:rejudge,:set_tag, :edit]
   before_action :check_valid_login
   before_action :submission_authorization, only: [:show, :download, :edit]
-  before_action :admin_authorization, only: [:rejudge]
+  before_action only: [:rejudge, :set_tag] do role_authorization([:ta]) end
 
   # GET /submissions
   # GET /submissions.json
@@ -27,8 +28,6 @@ class SubmissionsController < ApplicationController
   # GET /submissions/1
   # GET /submissions/1.json
   def show
-    @submission = Submission.find(params[:id])
-
     #log the viewing
     user = User.find(session[:user_id])
     SubmissionViewLog.create(user_id: session[:user_id],submission_id: @submission.id) unless user.admin?
@@ -37,12 +36,10 @@ class SubmissionsController < ApplicationController
   end
 
   def download
-    @submission = Submission.find(params[:id])
     send_data(@submission.source, {:filename => @submission.download_filename, :type => 'text/plain'})
   end
 
   def compiler_msg
-    @submission = Submission.find(params[:id])
     respond_to do |format|
       format.js
     end
@@ -65,7 +62,6 @@ class SubmissionsController < ApplicationController
 
   # GET /submissions/1/edit
   def edit
-    @submission = Submission.find(params[:id])
     @source = @submission.source.to_s
     @problem = @submission.problem
     @lang_id = @submission.language.id
@@ -82,12 +78,16 @@ class SubmissionsController < ApplicationController
 
   # GET /submissions/:id/rejudge
   def rejudge
-    @submission = Submission.find(params[:id])
     @task = @submission.task
     @task.status_inqueue! if @task
     respond_to do |format|
       format.js
     end
+  end
+
+  def set_tag
+    @submission.update(tag: params[:tag])
+    redirect_to @submission
   end
 
 protected
@@ -105,6 +105,10 @@ protected
     #default to NO
     unauthorized_redirect
     return false
+  end
+  
+  def set_submission
+    @submission = Submission.find(params[:id])
   end
 
     

@@ -71,7 +71,7 @@ class MainController < ApplicationController
     end
 
     @submission.submitted_at = Time.new.gmtime
-    @submission.ip_address = request.remote_ip
+    @submission.ip_address = cookies.encrypted[:uuid]
 
     if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
       @submission.errors.add(:base,"The contest is over.")

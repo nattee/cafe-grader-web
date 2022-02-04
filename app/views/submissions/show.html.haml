@@ -89,11 +89,6 @@
           %td
             %button.btn.btn-info.btn-xs{type: 'button', data: {toggle: 'modal', target: '#compiler'}}
               view
-        - if session[:admin]
-          %tr
-            %td.text-right
-              %strong IP
-            %td #{@submission.ip_address}
         %tr
           %td.text-right
             %strong Grading Task Status
@@ -101,6 +96,23 @@
             = @task.status_str if @task
             - if session[:admin]
               = link_to "rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-info btn-xs'
+        - if session[:admin]
+          %tr
+            %td.text-right
+              %strong IP
+            %td #{@submission.ip_address}
+          %tr
+            %td.text-right
+              %strong Model solution
+            %td
+              - if @submission.tag_model?
+                YES
+                - if session[:admin]
+                  = link_to "remove model status", set_tag_submission_path(@submission, tag: :default), class: 'btn btn-warning btn-xs'
+              - else
+                No
+                - if session[:admin]
+                  = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-xs'
 
 
 .modal.fade#compiler{tabindex: -1,role: 'dialog'}

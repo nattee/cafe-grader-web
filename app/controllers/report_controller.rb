@@ -234,16 +234,21 @@ class ReportController < ApplicationController
 
     return unless @problem
 
+    #model submisssion
+    @model_subs = Submission.where(problem: @problem,tag: Submission.tags[:model])
+
+
+    #calculate best submission
     @by_lang = {} #aggregrate by language
 
     range =65
-    @histogram = { data: Array.new(range,0), summary: {} }
+    #@histogram = { data: Array.new(range,0), summary: {} }
     @summary = {count: 0, solve: 0, attempt: 0}
     user = Hash.new(0)
     Submission.where(problem_id: @problem.id).find_each do |sub|
       #histogram
       d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
-      @histogram[:data][d.to_i] += 1 if d < range
+      #@histogram[:data][d.to_i] += 1 if d < range
 
       next unless sub.points
       @summary[:count] += 1
@@ -311,9 +316,13 @@ class ReportController < ApplicationController
       end
     end
 
-    @histogram[:summary][:max] = [@histogram[:data].max,1].max
+    #@histogram[:summary][:max] = [@histogram[:data].max,1].max
     @summary[:attempt] = user.count
     user.each_value { |v| @summary[:solve] += 1 if v == 1 }
+
+
+    #for new graph
+    @chart_dataset = @problem.get_jschart_history.to_json.html_safe
   end
 
   def stuck #report struggling user,problem
