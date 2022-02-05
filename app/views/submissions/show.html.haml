@@ -94,9 +94,9 @@
             %strong Grading Task Status
           %td
             = @task.status_str if @task
-            - if session[:admin]
+            - if @current_user.admin?
               = link_to "rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-info btn-xs'
-        - if session[:admin]
+        - if @current_user.has_role?('ta')
           %tr
             %td.text-right
               %strong IP
@@ -107,11 +107,11 @@
             %td
               - if @submission.tag_model?
                 YES
-                - if session[:admin]
+                - if @current_user.has_role?('ta')
                   = link_to "remove model status", set_tag_submission_path(@submission, tag: :default), class: 'btn btn-warning btn-xs'
               - else
                 No
-                - if session[:admin]
+                - if @current_user.has_role?('ta')
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-xs'
 
 

@@ -91,7 +91,7 @@ class User < ActiveRecord::Base
   end
 
   def has_role?(role)
-    self.roles.where(name: role).count > 0
+    self.roles.where(name: [role,'admin']).count > 0
   end
 
   def email_for_editing

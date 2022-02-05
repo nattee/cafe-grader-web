@@ -22,8 +22,9 @@
   /=render partial: 'all_time_hof'
   Please select a problem.
 - else
-  %h1 [#{Problem.find(params[:id]).name}] #{Problem.find(params[:id]).full_name}
-  -# %h2 Submission History
-  -# =render partial: 'application/bar_graph', locals: { histogram: @histogram }
+  %h1
+    [#{Problem.find(params[:id]).name}] #{Problem.find(params[:id]).full_name}
+    - if @current_user.has_role?('ta')
+      %a{href:stat_problem_path(@problem)} (stat)
   =render partial: 'task_hof'
 

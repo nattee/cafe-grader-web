@@ -54,12 +54,14 @@
         %table.table.table-hover
           %thead
             %tr
-              %th #Sub
+              %th #Sub (lang)
               %th Author
           %tbody
             - @model_subs.each do |sub|
               %tr
-                %td= link_to "##{sub.id}", submission_path(sub)
+                %td
+                  = link_to "##{sub.id}", submission_path(sub)
+                  = "(#{sub.language.pretty_name})"
                 %td= sub.user.full_name
     .col-md-8
       - if @best
