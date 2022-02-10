@@ -72,8 +72,6 @@ class ApplicationController < ActionController::Base
       value = SecureRandom.uuid
       cookies.encrypted[:uuid] = { value: value, expires: 20.year }
     end
-    puts "encrypt " + cookies.encrypted[:uuid]
-    puts cookies[:uuid]
   end
 
   protected

@@ -119,8 +119,9 @@ class ReportController < ApplicationController
       md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
       @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
     rescue
-      @since_time = DateTime.new(1000,1,1)
+      @since_time = Time.zone.now
     end
+    puts @since_time
     begin
       md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
       @until_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
@@ -143,12 +144,14 @@ class ReportController < ApplicationController
       x = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
                                       user[0],@since_time,@until_time)
         .pluck(:ip_address).uniq
+      puts user[4]
+      puts user[5]
       @users << { id: user[0],
                    login: user[1],
                    full_name: user[2],
                    count: user[3],
-                   min: user[4],
-                   max: user[5],
+                   min: user[4].in_time_zone,
+                   max: user[5].in_time_zone,
                    ip: x
                  }
     end
@@ -162,7 +165,7 @@ class ReportController < ApplicationController
       md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
       @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
     rescue
-      @since_time = DateTime.new(1000,1,1)
+      @since_time = Time.zone.now
     end
     begin
       md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
