@@ -61,7 +61,7 @@ This is very important.
 
 First, we install required package via apt.
 
-    cafe@grader:~$ sudo apt install git libmysqlclient-dev default-jdk unzip php-cli apache2 dirmngr gnupg apache2-dev
+    cafe@grader:~$ sudo apt install git libmysqlclient-dev default-jdk unzip php-cli apache2 apache2-dev
 
 Next, we need nodejs. Depends on your ubuntu version, the step to install correct version of nodejs differs.
 
