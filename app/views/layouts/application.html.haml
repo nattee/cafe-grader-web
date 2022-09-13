@@ -3,13 +3,15 @@
 %head
   %title= GraderConfiguration['contest.name']
   = stylesheet_link_tag "application", params[:controller], :media => "all"
-  = javascript_include_tag "application", params[:controller]
   = csrf_meta_tags
+  = csp_meta_tag
+  = javascript_importmap_tags
   = content_for :header
   = yield :head
 
 %body
-  = render 'layouts/header'
+  - unless local_assigns[:skip_header]
+    = render 'layouts/header'
 
   /= content_tag(:p,flash[:notice],class: 'alert alert-success') if flash[:notice]!=nil
   = flash_messages

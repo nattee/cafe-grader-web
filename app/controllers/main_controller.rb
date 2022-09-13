@@ -34,7 +34,7 @@ class MainController < ApplicationController
     # end
 
     @announcements = Announcement.frontpage
-    render :action => 'login', :layout => 'empty'
+    render :action => 'login', locals: {skip_header: true}
   end
 
   def logout

@@ -148,6 +148,9 @@ GEM
       ruby_parser (~> 3.5)
     i18n (1.12.0)
       concurrent-ruby (~> 1.0)
+    importmap-rails (1.1.5)
+      actionpack (>= 6.0.0)
+      railties (>= 6.0.0)
     in_place_editing (1.2.0)
     io-console (0.5.11)
     irb (1.4.1)
@@ -336,6 +339,7 @@ DEPENDENCIES
   fuzzy-string-match
   haml
   haml-rails
+  importmap-rails (~> 1.1)
   in_place_editing
   jbuilder
   jquery-countdown-rails
@@ -370,4 +374,4 @@ RUBY VERSION
    ruby 3.1.2p20
 
 BUNDLED WITH
-   2.3.7
+   2.3.22
