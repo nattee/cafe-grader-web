@@ -92,13 +92,10 @@ GEM
     bindex (0.8.1)
     bootsnap (1.13.0)
       msgpack (~> 1.2)
-    bootstrap-sass (3.4.1)
-      autoprefixer-rails (>= 5.2.1)
-      sassc (>= 2.0.0)
-    bootstrap-switch-rails (3.3.5)
-    bootstrap-toggle-rails (2.2.1.0)
-    bootstrap3-datetimepicker-rails (4.17.47)
-      momentjs-rails (>= 2.8.1)
+    bootstrap (5.2.0)
+      autoprefixer-rails (>= 9.1.0)
+      popper_js (>= 2.11.5, < 3)
+      sassc-rails (>= 2.0.0)
     builder (3.2.4)
     capybara (3.37.1)
       addressable
@@ -158,15 +155,6 @@ GEM
     jbuilder (2.11.5)
       actionview (>= 5.0.0)
       activesupport (>= 5.0.0)
-    jquery-countdown-rails (2.0.2)
-    jquery-rails (4.5.0)
-      rails-dom-testing (>= 1, < 3)
-      railties (>= 4.2.0)
-      thor (>= 0.14, < 2.0)
-    jquery-tablesorter (1.27.2)
-      railties (>= 3.2)
-    jquery-ui-rails (6.0.1)
-      railties (>= 3.2.16)
     listen (3.0.8)
       rb-fsevent (~> 0.9, >= 0.9.4)
       rb-inotify (~> 0.9, >= 0.9.7)
@@ -185,8 +173,6 @@ GEM
       builder
       minitest (>= 5.0)
       ruby-progressbar
-    momentjs-rails (2.29.4.1)
-      railties (>= 3.1)
     msgpack (1.5.6)
     multi_json (1.15.0)
     mysql2 (0.5.4)
@@ -207,6 +193,7 @@ GEM
     nio4r (2.5.8)
     nokogiri (1.13.8-x86_64-linux)
       racc (~> 1.4)
+    popper_js (2.11.5)
     public_suffix (5.0.0)
     puma (5.6.5)
       nio4r (~> 2.0)
@@ -237,8 +224,6 @@ GEM
       nokogiri (>= 1.6)
     rails-html-sanitizer (1.4.3)
       loofah (~> 2.3)
-    rails_bootstrap_sortable (2.0.7)
-      momentjs-rails (>= 2.8.3)
     railties (7.0.4)
       actionpack (= 7.0.4)
       activesupport (= 7.0.4)
@@ -325,13 +310,9 @@ PLATFORMS
 DEPENDENCIES
   ace-rails-ap
   activerecord-session_store
-  autoprefixer-rails
   best_in_place!
   bootsnap
-  bootstrap-sass (~> 3.4.1)
-  bootstrap-switch-rails
-  bootstrap-toggle-rails
-  bootstrap3-datetimepicker-rails (~> 4.17.47)
+  bootstrap (~> 5.2)
   capybara
   coffee-rails
   debug
@@ -342,19 +323,13 @@ DEPENDENCIES
   importmap-rails (~> 1.1)
   in_place_editing
   jbuilder
-  jquery-countdown-rails
-  jquery-rails
-  jquery-tablesorter
-  jquery-ui-rails
   listen (>= 3.0.5, < 3.2)
   mail
   minitest-reporters
-  momentjs-rails (>= 2.9.0)
   mysql2
   puma
   rails (~> 7.0)
   rails-controller-testing
-  rails_bootstrap_sortable
   rdiscount
   rouge
   sassc-rails

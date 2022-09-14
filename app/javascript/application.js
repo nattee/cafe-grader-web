@@ -2,16 +2,19 @@
 //import "@hotwired/turbo-rails"
 //import "controllers"
 //
-console.log('xxxxx')
-import jQuery from "jquery"
-//import pdfmake from "pdfmake"
+
+import pdfmake from "pdfmake"
 //import jszip from "jszip"
 //import DataTable from "datatables.net-bs5"
-//
-window.$ = window.jQuery = jQuery;
 //window.DataTable = DataTable();
-//
+
+//bootstrap
+//import * as bootstrap from "bootstrap"
+import "bootstrap"
+window.bootstrap = bootstrap
 console.log($); // ok
-////console.log(jszip);
+console.log(bootstrap)
+console.log(jszip);
+
 console.log('application.js ready')
 

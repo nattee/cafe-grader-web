@@ -54,24 +54,25 @@ gem 'jbuilder'
 gem 'best_in_place', git: "https://github.com/mmotherwell/best_in_place"
 
 # jquery addition
-gem 'jquery-rails'
-gem 'jquery-ui-rails'
+#gem 'jquery-rails'
+#gem 'jquery-ui-rails'
 #gem 'jquery-timepicker-addon-rails'
-gem 'jquery-tablesorter'
-gem 'jquery-countdown-rails'
+#gem 'jquery-tablesorter'
+#gem 'jquery-countdown-rails'
 
 #syntax highlighter
 gem 'rouge'
 
 #bootstrap add-ons
-gem 'bootstrap-sass', '~> 3.4.1'
-gem 'bootstrap-switch-rails'
-gem 'bootstrap-toggle-rails'
-gem 'autoprefixer-rails'
-gem 'momentjs-rails', '>= 2.9.0'
-gem 'rails_bootstrap_sortable'
+#gem 'bootstrap-sass', '~> 3.4.1'
+gem 'bootstrap', '~> 5.2'
+#gem 'bootstrap-switch-rails'
+#gem 'bootstrap-toggle-rails'
+#gem 'autoprefixer-rails'
+#gem 'momentjs-rails', '>= 2.9.0'
+#gem 'rails_bootstrap_sortable'
 #gem 'bootstrap-datepicker-rails'
-gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
+#gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
 #gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------

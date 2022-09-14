@@ -12,6 +12,8 @@ Rails.application.config.assets.paths << Rails.root.join('node_modules')
 # application.js, application.css, and all non-JS/CSS in the app/assets
 # folder are already added.
 # Rails.application.config.assets.precompile += %w( admin.js admin.css )
+Rails.application.config.assets.precompile += %w(bootstrap.min.js popper.js)
+
 Rails.application.config.assets.precompile += ['announcement_refresh.js','effects.js','site_update.js']
 Rails.application.config.assets.precompile += ['local_jquery.js','tablesorter-theme.cafe.css']
 %w( announcements submissions configurations contests contest_management graders heartbeat
