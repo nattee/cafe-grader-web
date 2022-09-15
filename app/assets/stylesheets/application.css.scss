@@ -35,8 +35,11 @@
 //@import "bootstrap-sortable";
 //@import "bootstrap-datepicker3";
 //@import "bootstrap-datetimepicker";
-@import "datatables.net-bs/css/dataTables.bootstrap.min";
-@import "datatables.net-buttons-bs/css/buttons.bootstrap.min";
+//@import "datatables.net-bs/css/dataTables.bootstrap.min";
+//@import "datatables.net-buttons-bs/css/buttons.bootstrap.min";
+
+//new import
+@import 'datatables/datatables.min';
 
 //bootstrap navbar color (from)
 $bgDefault: #19197b;
