@@ -23,9 +23,9 @@ gem 'bootsnap', require: false
 gem 'mysql2'
 #for testing
 gem 'sqlite3'
-gem 'rails-controller-testing'
+#gem 'rails-controller-testing'
 #for dumping database into yaml
-gem 'yaml_db'
+#gem 'yaml_db'
 
 
 #------------- assset pipeline -----------------
@@ -35,11 +35,13 @@ gem 'yaml_db'
 #gem 'sass-rails'
 gem 'sassc-rails'
 gem 'coffee-rails'
+gem 'material_icons'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   # gem 'therubyracer', :platforms => :ruby
 
-gem 'uglifier'
+gem "importmap-rails", "~> 1.1"
+# gem 'uglifier'
 
 gem 'haml'
 gem 'haml-rails'
@@ -54,7 +56,7 @@ gem 'jbuilder'
 gem 'best_in_place', git: "https://github.com/mmotherwell/best_in_place"
 
 # jquery addition
-#gem 'jquery-rails'
+gem 'jquery-rails'
 #gem 'jquery-ui-rails'
 #gem 'jquery-timepicker-addon-rails'
 #gem 'jquery-tablesorter'
@@ -69,7 +71,7 @@ gem 'bootstrap', '~> 5.2'
 #gem 'bootstrap-switch-rails'
 #gem 'bootstrap-toggle-rails'
 #gem 'autoprefixer-rails'
-#gem 'momentjs-rails', '>= 2.9.0'
+gem 'momentjs-rails'
 #gem 'rails_bootstrap_sortable'
 #gem 'bootstrap-datepicker-rails'
 #gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
@@ -78,7 +80,7 @@ gem 'bootstrap', '~> 5.2'
 #----------- user interface -----------------
 gem 'simple_form'
 #select 2
-gem 'select2-rails'
+#gem 'select2-rails'
 #ace editor
 gem 'ace-rails-ap'
 #paginator
@@ -123,4 +125,3 @@ group :test do
 end
 
 
-gem "importmap-rails", "~> 1.1"

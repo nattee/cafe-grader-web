@@ -5,9 +5,9 @@
   = stylesheet_link_tag "application", params[:controller], :media => "all"
   = csrf_meta_tags
   = csp_meta_tag
-  = javascript_import_module_tag('prepend_jquery')
+  = javascript_include_tag :my_app
+  -# = javascript_import_module_tag('prepend_jquery')
   = javascript_importmap_tags
-  = javascript_import_module_tag('datatable_late')
   = content_for :header
   = yield :head
   -# %link{href:"https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css",rel:"stylesheet",integrity:"sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT",crossorigin:"anonymous"}

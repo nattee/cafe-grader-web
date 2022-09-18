@@ -3,6 +3,7 @@
 //import "controllers"
 //
 
+//import "my_sprocket"
 import "pdfmake"
 import "pdfmake-vfs"
 import "jszip"
@@ -19,7 +20,7 @@ console.log(JSZip);
 import "datatables"
 import "datatables-bs5"
 import "datatables-editor"
-//import "datatables-editor-bs5"
+import "datatables-editor-bs5"
 import "datatables-autofill"
 import "datatables-autofill-bs5"
 import "datatables-button"
@@ -45,6 +46,16 @@ import "datatables-select"
 import "datatables-staterestore"
 import "datatables-staterestore-bs5"
 /* */
+
+import "select2"
+
+//import "ace-rails-ap"
+//import "ace/theme-merbivore"
+//import "ace/mode-python"
+
+//my own customization
+import 'custom'
+
 
 console.log('application.js ready')
 
