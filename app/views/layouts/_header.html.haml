@@ -10,7 +10,7 @@
         %ul.navbar-nav.me-auto.mb-2.mb-lg-0
           / submission
           - if (@current_user!=nil) and (GraderConfiguration.show_tasks_to?(@current_user))
-            %li.nav-item.dropdown
+            %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {expanded:"false"}, role: "button"}
                 = "#{I18n.t 'menu.submissions'}"
               %ul.dropdown-menu
@@ -18,23 +18,23 @@
                 %li= link_to 'Self Test', test_index_path, class:'dropdown-item'
           / hall of fame
           - if GraderConfiguration['right.user_hall_of_fame']
-            = add_menu("#{I18n.t 'menu.hall_of_fame'}", 'report', 'problem_hof', class: 'nav-item')
+            %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'
           / display MODE button (with countdown in contest mode)
           - if GraderConfiguration.analysis_mode?
-            %div.navbar-btn.btn.btn-success#countdown= "ANALYSIS MODE"
+            %div.btn.btn-success#countdown= "ANALYSIS MODE"
           - elsif GraderConfiguration.time_limit_mode?
             - if @current_user.contest_finished?
-              %div.navbar-btn.btn.btn-danger#countdown= "Contest is over"
+              %div.btn.btn-danger#countdown= "Contest is over"
             - elsif !@current_user.contest_started?
-              %div.navbar-btn.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
+              %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
             - else
-              %div.navbar-btn.btn.btn-primary#countdown asdf
+              %div.btn.btn-primary#countdown asdf
               :javascript
                 $("#countdown").countdown({until: "+#{@current_user.contest_time_left.to_i}s", layout: 'Time left: {hnn}:{mnn}:{snn}'}); 
           / admin section
           - if (@current_user!=nil) and (session[:admin])
             / management
-            %li.nav-item.dropdown
+            %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Manage
               %ul.dropdown-menu
@@ -54,7 +54,7 @@
                 %li= link_to 'Contests', contest_management_index_path, class: 'dropdown-item'
                 -#
             / report
-            %li.nav-item.dropdown
+            %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Report
               %ul.dropdown-menu

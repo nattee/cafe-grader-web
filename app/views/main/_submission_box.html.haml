@@ -1,4 +1,4 @@
-= form_tag({:action => 'submit'}, :multipart => true, class: 'form') do
+= form_with url: submit_main_path, multipart: true, class: 'form' do |form|
   - if @submission and @submission.errors.any?
     #error_explanation
       .alert.alert-danger
@@ -6,15 +6,14 @@
         %ul
           - @submission.errors.full_messages.each do |msg|
             %li= msg
-  .form-group
-    = label_tag :submission, 'Problem:'
-    = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control', style: "width: 100%" }
-  .form-group
-    = label_tag :file, 'File:'
-    .input-group
-      %span.input-group-btn
-        %span.btn.btn-default.btn-file
-          Browse
-          = file_field_tag 'file'
-      = text_field_tag '' , nil, {readonly: true, class: 'form-control'}
-  = submit_tag 'Submit', class: 'btn btn-default'
+  .row.mb-2
+    .col-sm-2
+      = form.label :submission, 'Problem:', class: 'form-label'
+    .col-sm-10
+      = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control', style: "width: 100%" }
+  .row.mb-2
+    .col-sm-2
+      = form.label :file, 'File:', class: 'form-label'
+    .col-sm-10
+      = form.file_field :file, class: 'form-control'
+  = form.submit 'Submit', class: 'btn btn-primary'
