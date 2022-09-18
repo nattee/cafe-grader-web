@@ -44,11 +44,11 @@
                 %th
               = render :partial => 'problem', :collection => cp[:problems]
   .col-md-5
-    .panel.panel-info
-      .panel-heading
+    .card
+      .card-header
         Announcement
-        = link_to 'Manage', announcements_path, class: 'btn btn-xs btn-default'
-      %ul.list-group
+        = link_to 'Manage', announcements_path, class: 'btn btn-small'
+      .card-body
         = render :partial => 'announcement', :collection => @announcements
 
 %script{:type => 'text/javascript'}

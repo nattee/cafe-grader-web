@@ -1,15 +1,26 @@
-%li.list-group-item
-  %strong
+.card-body
+  .card-title
     = announcement.title
-  - if @current_user and @current_user.admin?
-    = link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-xs btn-default'
-  %small= "(updated #{time_ago_in_words(announcement.updated_at)} ago on #{announcement.updated_at})"
-
-  %br
+    - if @current_user and @current_user.admin?
+      = link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-xs btn-default'
+  .card-subtitle
+    = "(updated #{time_ago_in_words(announcement.updated_at)} ago on #{announcement.updated_at})"
+  .card-text
     = markdown(announcement.body)
-  :javascript
-    Announcement.updateRecentId(#{announcement.id});
-  - if (defined? announcement_effect) and announcement_effect
+
+
+-#
+  %li.list-group-item
+    %strong
+    - if @current_user and @current_user.admin?
+      = link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-xs btn-default'
+    %small= "(updated #{time_ago_in_words(announcement.updated_at)} ago on #{announcement.updated_at})"
+
+    %br
+      = markdown(announcement.body)
     :javascript
-      $("announcement-#{announcement.id}").blindDown({duration: 0.2});
-      $("announcement-#{announcement.id}").appear({duration: 0.5, queue: 'end'});
+      Announcement.updateRecentId(#{announcement.id});
+    - if (defined? announcement_effect) and announcement_effect
+      :javascript
+        $("announcement-#{announcement.id}").blindDown({duration: 0.2});
+        $("announcement-#{announcement.id}").appear({duration: 0.5, queue: 'end'});

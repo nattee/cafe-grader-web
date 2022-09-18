@@ -70,13 +70,18 @@
           - @nav_announcement.each do |ann|
             %p.navbar-text
               = ann.body.html_safe
-
-            
-
-        %ul.nav.navbar-nav.navbar-right
-          = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-question-sign')}".html_safe, 'main', 'help')
-          = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-comment')}".html_safe, 'messages', 'index', {title: I18n.t('menu.messages'), data: {toggle: 'tooltip'}})
-          - if GraderConfiguration['system.user_setting_enabled']
-            = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-cog', id: 'user_profile')}".html_safe, 'users', 'profile', {title: I18n.t('menu.settings'), data: {toggle: 'tooltip'}})
-          = add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-log-out')} #{@current_user.full_name}".html_safe, 'main', 'login', {title: I18n.t('menu.log_out'), data: {toggle: 'tooltip'}})
-
+      %ul.navbar-nav
+        %li.nav-item
+          %a.nav-link{href: help_main_path}
+            %span.mi.md-18 help
+        %li.nav-item
+          %a.nav-link{href: messages_path}
+            %span.mi.md-18 chat
+        - if GraderConfiguration['system.user_setting_enabled']
+          %li.nav-item
+            %a.nav-link{href: profile_users_path}
+              %span.mi.md-18 settings
+        %li.nav-item
+          %a.nav-link{href: login_main_path}
+            %span.mi.md-18 exit_to_app
+            = @current_user.full_name
