@@ -38,7 +38,7 @@
     - if GraderConfiguration.multicontests?
       %th Contests
   - for problem in @problems
-    %tr{:class => "#{(problem.available) ? "success" : "danger"}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
+    %tr{:class => "#{(problem.available) ? "bg-success bg-opacity-25" : "bg-opacity-25"}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
       - @problem=problem
       %td= problem.name #in_place_editor_field :problem, :name, {}, :rows=>1
       %td
@@ -47,9 +47,9 @@
       %td.text-right= problem.full_score #in_place_editor_field :problem, :full_score, {}, :rows=>1
       %td
         - problem.tags.each do |t|
-          - #%button.btn.btn-default.btn-xs= t.name
+          - #%button.btn.btn-default.btn-sm= t.name
           %span.label.label-default= t.name
-      %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-xs btn-primary'
+      %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
       %td= problem.date_added
       %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
       %td= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
@@ -57,9 +57,9 @@
       - if GraderConfiguration.multicontests?
         %td
           = problem.contests.collect { |c| c.name }.join(', ')
-      %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-xs btn-block'
-      %td= link_to 'Show', {:action => 'show', :id => problem}, class: 'btn btn-info btn-xs btn-block'
-      %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-xs btn-block'
-      %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, :confirm => 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-xs btn-block'
+      %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-sm btn-block'
+      %td= link_to 'Show', {:action => 'show', :id => problem}, class: 'btn btn-info btn-sm btn-block'
+      %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-sm btn-block'
+      %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, :confirm => 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 %br/
 = link_to '[New problem]', :action => 'new'

@@ -8,12 +8,12 @@
             %li= msg
   .row.mb-2
     .col-sm-2
-      = form.label :submission, 'Problem:', class: 'form-label'
+      = form.label :submission, 'Problem:', class: 'col-form-label'
     .col-sm-10
       = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control', style: "width: 100%" }
   .row.mb-2
     .col-sm-2
-      = form.label :file, 'File:', class: 'form-label'
+      = form.label :file, 'File:', class: 'col-form-label'
     .col-sm-10
       = form.file_field :file, class: 'form-control'
   = form.submit 'Submit', class: 'btn btn-primary'

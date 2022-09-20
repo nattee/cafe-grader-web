@@ -2,7 +2,7 @@
   %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg
     .container-fluid
       %a.navbar-brand{href: list_main_path} 
-        %span.glyphicon.glyphicon-home
+        %span.mi.mi-bs home
         MAIN
       %button.navbar-toggler.collapsed{ type: :button, 'data-bs': {toggle: 'collapse', target: '#navbar-collapse'} }
         %span.navbar-toggler-icon
@@ -73,15 +73,15 @@
       %ul.navbar-nav
         %li.nav-item
           %a.nav-link{href: help_main_path}
-            %span.mi.md-18 help
+            %span.mi.mi-bs.md-18 help
         %li.nav-item
           %a.nav-link{href: messages_path}
-            %span.mi.md-18 chat
+            %span.mi.mi-bs.md-18 chat
         - if GraderConfiguration['system.user_setting_enabled']
           %li.nav-item
             %a.nav-link{href: profile_users_path}
-              %span.mi.md-18 settings
+              %span.mi.mi-bs.md-18 settings
         %li.nav-item
           %a.nav-link{href: login_main_path}
-            %span.mi.md-18 exit_to_app
+            %span.mi.mi-bs.md-18 exit_to_app
             = @current_user.full_name

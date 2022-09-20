@@ -118,7 +118,6 @@ GEM
     concurrent-ruby (1.1.10)
     crass (1.0.6)
     digest (3.1.0)
-    dynamic_form (1.1.4)
     erubi (1.11.0)
     erubis (2.7.0)
     execjs (2.8.1)
@@ -307,7 +306,6 @@ DEPENDENCIES
   byebug
   capybara
   coffee-rails
-  dynamic_form
   fuzzy-string-match
   haml
   haml-rails

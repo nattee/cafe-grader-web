@@ -87,10 +87,7 @@ gem 'ace-rails-ap'
 #gem 'will_paginate', '~> 3.0.7'
 
 gem 'mail'
-gem 'rdiscount'
-gem 'dynamic_form'
-gem 'in_place_editing'
-#gem 'verification', :git => 'https://github.com/sikachu/verification.git'
+gem 'rdiscount'  #markdown
 
 
 #---------------- testiing -----------------------

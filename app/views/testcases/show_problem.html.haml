@@ -4,8 +4,8 @@
 /navbar
 %ul.nav.nav-pills{role: :tablist}
   - @problem.testcases.each.with_index do |tc,id|
-    %li{role: :presentation, class: ('active' if id == 0)}
-      %a{href:"#tc#{tc.id}", role: 'tab', data: {toggle: 'tab'}}= tc.num
+    %li.nav-item{role: :presentation, class: ('active' if id == 0)}
+      %a.nav-link{href:"#tc#{tc.id}", role: 'tab', 'data-bs': {toggle: 'tab', target: "#tc#{tc.id}"}}= tc.num
 
 /actual data
 .tab-content

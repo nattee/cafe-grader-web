@@ -2,8 +2,6 @@ class AnnouncementsController < ApplicationController
 
   before_action :admin_authorization
 
-  in_place_edit_for :announcement, :published
-
   # GET /announcements
   # GET /announcements.xml
   def index
@@ -89,7 +87,7 @@ class AnnouncementsController < ApplicationController
 
   def toggle_front
     @announcement = Announcement.find(params[:id])
-    @announcement.update_attributes( frontpage:  !@announcement.frontpage? )
+    @announcement.update( frontpage:  !@announcement.frontpage? )
     respond_to do |format|
       format.js { render partial: 'toggle_button',
                   locals: {button_id: "#announcement_toggle_front_#{@announcement.id}",button_on: @announcement.frontpage? } }

@@ -5,10 +5,6 @@ class ProblemsController < ApplicationController
     authorization_by_roles(['admin','ta'])
   end
 
-  in_place_edit_for :problem, :name
-  in_place_edit_for :problem, :full_name
-  in_place_edit_for :problem, :full_score
-
   def index
     @problems = Problem.order(date_added: :desc)
   end
