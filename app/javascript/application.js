@@ -5,8 +5,8 @@
 
 
 //bootstrap
-import "bootstrap"
-window.bootstrap = bootstrap
+//import "bootstrap"
+//window.bootstrap = bootstrap
 
 //datatable
 //import 'datatables-bundle'

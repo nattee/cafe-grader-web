@@ -8,4 +8,5 @@
 import jQuery from "jquery"
 window.$ = window.jQuery = jQuery;
 
+console.log($)
 console.log('i am prepend_jquery');

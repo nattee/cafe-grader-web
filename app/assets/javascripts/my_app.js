@@ -1,6 +1,8 @@
 //main entry point for sprocket
 //= require jquery3
 //= require jquery_ujs
+//= require popper
+//= require bootstrap-sprockets
 //= require moment
 //= require moment/th
 //= require ace-rails-ap

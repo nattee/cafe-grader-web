@@ -1,4 +1,4 @@
-class Problem < ActiveRecord::Base
+class Problem < ApplicationRecord
 
   belongs_to :description
   has_and_belongs_to_many :contests, :uniq => true

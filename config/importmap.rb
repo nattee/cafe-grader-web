@@ -3,12 +3,12 @@
 #entry point
 pin "application"
 pin "prepend_jquery"
-pin "my_sprocket"
+#pin "my_sprocket"
 pin_all_from "app/javascript/controllers", under: "controllers"
 
 #we don't need jquery in importmap because we use sprocket version
-#pin "jquery", to: 'jquery.js', preload: true
-pin "bootstrap", to: "bootstrap.bundle.min.js", preload: true
+#pin "jquery", to: 'my_jquery.js', preload: true
+#pin "bootstrap", to: "bootstrap.bundle.min.js", preload: true
 #no need popper, because bundled already in bootstrap
 #pin "@popperjs/core", to: "https://ga.jspm.io/npm:@popperjs/core@2.11.6/lib/index.js"
 
