@@ -47,13 +47,13 @@
     .card
       .card-header
         Announcement
-        = link_to 'Manage', announcements_path, class: 'btn btn-small'
-      .card-body
+        = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
+      %ul.list-group.list-group-flush
         = render :partial => 'announcement', :collection => @announcements
-
-%script{:type => 'text/javascript'}
-  = "Announcement.refreshUrl = '#{url_for :controller => 'main', :action => 'announcements'}';"
-  Announcement.registerRefreshEventTimer();
+-#
+  %script{:type => 'text/javascript'}
+    = "Announcement.refreshUrl = '#{url_for :controller => 'main', :action => 'announcements'}';".html_safe
+    Announcement.registerRefreshEventTimer();
 
 .modal.fade#compiler{tabindex: -1,role: 'dialog'}
   .modal-dialog.modal-lg{role:'document'}

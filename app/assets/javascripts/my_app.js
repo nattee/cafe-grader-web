@@ -1,5 +1,6 @@
 //main entry point for sprocket
-//= require jquery
+//= require jquery3
+//= require jquery_ujs
 //= require moment
 //= require moment/th
 //= require ace-rails-ap

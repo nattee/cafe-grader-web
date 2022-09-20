@@ -12,41 +12,44 @@
     .col-md-8
       %div#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
     .col-md-4
-      - # submission form
-      = form_tag({controller: :main, :action => 'submit'}, :multipart => true, class: 'form') do
+      -# submission form
+      .card.mb-3
+        .card-header
+          Submission
+        .card-body
+          = form_with url: submit_main_path, :multipart => true, class: 'form' do |form|
+            = hidden_field_tag 'editor_text', @source
+            = hidden_field_tag 'submission[problem_id]', @problem.id
+            .row.mb-2
+              .col-md-4
+                = form.label "Task", class: 'col-form-label text-secondary'
+              .col-md-8
+                = form.label nil, "#{@problem.long_name}", class: 'col-form-label fw-bold'
+            .row.mb-2
+              .col-md-4
+                = form.label "Description", class: 'col-form-label text-secondary'
+              .col-md-8
+                = link_to_description_if_any "[download] <span class='mi'>description</span>".html_safe, @problem
+            .row.mb-2
+              .col-md-4
+                = form.label :language_id, 'Language', class: 'col-form-label text-secondary'
+              .col-md-8
+                = form.select :language_id, options_from_collection_for_select(Language.all, 'id', 'pretty_name', @lang_id || @current_user.default_language || Language.find_by_pretty_name("Python").id || Language.first.id), {},  class: 'form-select', style: "width: 100px", id: 'language_id'
+            .row.mb-2
+              .col-12
+                = form.file_field :load_file, class: 'form-control', id: 'load_file'
+            .row.mb-2
+              .col-12
+                = submit_tag 'Submit', class: 'btn ' + (@submission && @submission.number >= 100 ? 'golden-btn' : 'btn-success'), id: 'live_submit', 
+                  data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
 
-        = hidden_field_tag 'editor_text', @source
-        = hidden_field_tag 'submission[problem_id]', @problem.id
-        .form-group
-          = label_tag "Task:"
-          = text_field_tag 'asdf', "#{@problem.long_name}", class: 'form-control', disabled: true
-        .form-group
-          = label_tag "Description:"
-          = link_to_description_if_any "[download] <span class='glyphicon glyphicon-file'></span>".html_safe, @problem
-
-        .form-group
-          = label_tag 'Language:'
-          = select_tag 'language_id', options_from_collection_for_select(Language.all, 'id', 'pretty_name', @lang_id || @current_user.default_language || Language.find_by_pretty_name("Python").id || Language.first.id), class: 'form-control select', style: "width: 100px"
-        .form-group
-          .input-group
-            %span.input-group-btn
-              %span.btn.btn-default.btn-file
-                Browse
-                = file_field_tag 'load_file'
-            = text_field_tag '' , nil, {readonly: true, class: 'form-control'}
-        .form-group
-          = submit_tag 'Submit', class: 'btn ' + (@submission && @submission.number >= 100 ? 'golden-btn' : 'btn-success'), id: 'live_submit', 
-            data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
-      - # latest submission status
-      .panel{class: (@submission && @submission.graded_at) ? "panel-info" : "panel-warning"}
-        .panel-heading
+      -# latest submission status
+      .card
+        .card-header.text-bg-info.border-info
           Latest Submission Status
-          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), class: "btn btn-default btn-sm", remote: true if @submission
-        .panel-body
-          %div#latest_status
-            - if @submission
-              = render :partial => 'submission_short',
-                :locals => {submission: @submission, problem_name: @problem.name, problem_id: @problem.id }
+          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", remote: true if @submission
+        .card-body
+          #latest_status
 
 .modal.fade#compiler{tabindex: -1,role: 'dialog'}
   .modal-dialog.modal-lg{role:'document'}
@@ -64,7 +67,7 @@
 
 :javascript
   $(document).ready(function() {
-    e = ace.edit("editor")
+    var e = ace.edit("editor")
     e.setValue($("#text_sourcecode").val());
     e.gotoLine(1);
     $("#language_id").trigger('change');
@@ -80,7 +83,36 @@
       reader.readAsText(file)
     });
 
+    $("#live_submit").on("click", function(event) {
+      $("#editor_text").val(e.getValue());
+    });
+
+    $("#language_id").on("change", function(event) {
+      text = $("#language_id option:selected").text();
+      mode = 'ace/mode/c_cpp';
+      switch (text) {
+        case 'Pascal':
+          mode = 'ace/mode/pascal';
+          break;
+        case 'C++':
+        case 'C':
+          mode = 'ace/mode/c_cpp';
+          break;
+        case 'Ruby':
+          mode = 'ace/mode/ruby';
+          break;
+        case 'Python':
+          mode = 'ace/mode/python';
+          break;
+        case 'Java':
+          mode = 'ace/mode/java';
+      }
+      e.getSession().setMode(mode);
+    });
+
     //brython();
+    $('#refresh').click()
+
   });
 
 

@@ -1,4 +1,4 @@
-class Submission < ActiveRecord::Base
+class Submission < ApplicationRecord
 
   enum tag: {default: 0, model: 1}, _prefix: true
 
@@ -91,7 +91,7 @@ class Submission < ActiveRecord::Base
   def self.find_language_in_source(source, source_filename="")
     langopt = find_option_in_source(/^LANG:/,source)
     if langopt
-      return (Language.find_by_name(langopt) || 
+      return (Language.find_by_name(langopt) ||
               Language.find_by_pretty_name(langopt))
     else
       if source_filename
@@ -143,14 +143,14 @@ class Submission < ActiveRecord::Base
     return if self.problem!=nil and self.problem.output_only
 
     if self.language == nil
-      errors.add('source',"Cannot detect language. Did you submit a correct source file?")
+      errors.add(:source,:invalid,message: "Cannot detect language. Did you submit a correct source file?")
     end
   end
 
   def must_have_valid_problem
     return if self.source==nil
     if self.problem==nil
-      errors.add('problem',"must be specified.")
+      errors.add(:problem,:blank,'aaa')
     else
       #admin always have right
       return if self.user.admin?

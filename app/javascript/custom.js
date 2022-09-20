@@ -8,7 +8,12 @@ $(document).on('change', '.btn-file :file', function() {
 
 $(function() {
   var e;
-  $(".select2").select2({});
+  $(".select2").select2({
+    theme: "bootstrap-5",
+    //selectionCssClass: "select2--small",
+    //dropdownCssClass: "select2--small",
+  });
+
   $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
     var input, log;
     input = $(this).parents('.input-group').find(':text');

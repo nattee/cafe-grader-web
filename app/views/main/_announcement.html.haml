@@ -1,8 +1,9 @@
-.card-body
+%li.list-group-item
   .card-title
-    = announcement.title
-    - if @current_user and @current_user.admin?
-      = link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-xs btn-default'
+    %h1
+      = announcement.title
+      - if @current_user and @current_user.admin?
+        = link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-sm btn-outline-secondary'
   .card-subtitle
     = "(updated #{time_ago_in_words(announcement.updated_at)} ago on #{announcement.updated_at})"
   .card-text

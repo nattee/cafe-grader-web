@@ -3,20 +3,16 @@
 //import "controllers"
 //
 
-//import "my_sprocket"
-import "pdfmake"
-import "pdfmake-vfs"
-import "jszip"
 
 //bootstrap
 import "bootstrap"
 window.bootstrap = bootstrap
-console.log($); // ok
-console.log(bootstrap)
-console.log(JSZip);
 
 //datatable
 //import 'datatables-bundle'
+import "pdfmake"
+import "pdfmake-vfs"
+import "jszip"
 import "datatables"
 import "datatables-bs5"
 import "datatables-editor"
@@ -48,10 +44,6 @@ import "datatables-staterestore-bs5"
 /* */
 
 import "select2"
-
-//import "ace-rails-ap"
-//import "ace/theme-merbivore"
-//import "ace/mode-python"
 
 //my own customization
 import 'custom'

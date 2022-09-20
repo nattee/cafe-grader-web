@@ -42,10 +42,11 @@ en:
     start_soon: "The contest at your site will start soon.  Please wait."
     specified_in_header: "Specified in header"
 
-    problem_desc: "desc"
-    submitted_at: "Submitted at"
-    graded_at: "Graded at"
-    score: "score: "
+    problem_desc: desc
+    submission_id: Sub ID
+    submitted_at: Submitted
+    graded_at: Graded
+    score: score
     cmp_msg: "compiler msg"
     src_link: "src"
     submissions_link: "submissions"

@@ -33,3 +33,5 @@
 #.ruby-version
 
 /config/secrets.yml
+
+/.byebug_history
