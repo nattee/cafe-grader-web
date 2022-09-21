@@ -2,10 +2,11 @@
 
 .row
   .col-md-6
-    - if @announcements.length!=0
-      .announcementbox{:style => 'margin-top: 0px'}
-        %span{:class => 'title'}
-          Announcements
+    .card
+      .card-header
+        Announcement
+        = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
+      %ul.list-group.list-group-flush
         = render :partial => 'announcement', :collection => @announcements
   .col-md-4{style: "padding-left: 20px;"}
     = render :partial => 'login_box'

@@ -8,7 +8,17 @@
 - if @problem and @problem.errors
   =error_messages_for 'problem'
 
-= form_tag do_import_problems_path, :multipart => true  do |f|
+= form_with url: do_import_problems_path, :multipart => true  do |f|
+  .row.mb-2
+    .col-md-1
+      = f.label :name, 'Name'
+    .col-md-11
+      = f.text_field :name, class: 'form-control'
+  .row.mb-2
+    .col-md-1
+      = f.label :full_name, 'Full Name'
+    .col-md-11
+      = f.text_field :full_name, class: 'form-control'
 
   .submitbox
     %table
