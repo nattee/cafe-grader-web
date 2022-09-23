@@ -24,33 +24,32 @@
   }
 
 
-.container-fluid
-  .row
-    .col-md-8
-      .card
-        .card-body
-          %h2.card-title Submission History
-          %canvas#chart{height: '50px'}
+.row.mb-3
+  .col-md-8
+    .card
+      .card-body
+        %h2.card-title Submission History
+        %canvas#chart{height: '50px'}
 
-    .col-md-4
-      .card
-        .card-body
-          %h2.card-title General Info
-          .row
-            .col-sm-6
-              Subs
-            .col-sm-6
-              = @summary[:count]
-          .row
-            .col-sm-6
-              Solved/Attempted User
-            .col-sm-6
-              #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
-  .row
-    .col-md-4
-      .card
-        .card-body
-          %h2.card-title Model submission
+  .col-md-4
+    .card
+      .card-body
+        %h2.card-title General Info
+        .row
+          .col-sm-6
+            Subs
+          .col-sm-6
+            = @summary[:count]
+        .row
+          .col-sm-6
+            Solved/Attempted User
+          .col-sm-6
+            #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
+.row.mb-3
+  .col-md-4
+    .card
+      .card-body
+        %h2.card-title Model submission
         %table.table.table-hover
           %thead
             %tr
@@ -63,11 +62,11 @@
                   = link_to "##{sub.id}", submission_path(sub)
                   = "(#{sub.language.pretty_name})"
                 %td= sub.user.full_name
-    .col-md-8
-      - if @best
-        .card
-          .card-body
-            %h2.card-title Top Submissions
+  .col-md-8
+    - if @best
+      .card
+        .card-body
+          %h2.card-title Top Submissions
           %table.table.table-hover
             %thead
               %tr

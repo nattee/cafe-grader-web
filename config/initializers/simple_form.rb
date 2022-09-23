@@ -2,7 +2,7 @@
 #
 # Uncomment this and change the path if necessary to include your own
 # components.
-# See https://github.com/plataformatec/simple_form#custom-components to know
+# See https://github.com/heartcombo/simple_form#custom-components to know
 # more about custom components.
 # Dir[Rails.root.join('lib/components/**/*.rb')].each { |f| require f }
 #
@@ -128,9 +128,6 @@ SimpleForm.setup do |config|
   # To stop SimpleForm from generating the novalidate option, enabling the HTML5 validations,
   # change this configuration to true.
   config.browser_validations = false
-
-  # Collection of methods to detect if a file type was given.
-  # config.file_methods = [ :mounted_as, :file?, :public_filename, :attached? ]
 
   # Custom mappings for input types. This should be a hash containing a regexp
   # to match as key, and the input type that will be used when the field name

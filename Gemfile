@@ -9,7 +9,6 @@ gem 'rails', '~>7.0'
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
-gem 'activerecord-session_store'
 gem 'puma'
 
 # Reduces boot times through caching; required in config/boot.rb

@@ -66,12 +66,6 @@ GEM
     activerecord (7.0.4)
       activemodel (= 7.0.4)
       activesupport (= 7.0.4)
-    activerecord-session_store (2.0.0)
-      actionpack (>= 5.2.4.1)
-      activerecord (>= 5.2.4.1)
-      multi_json (~> 1.11, >= 1.11.2)
-      rack (>= 2.0.8, < 3)
-      railties (>= 5.2.4.1)
     activestorage (7.0.4)
       actionpack (= 7.0.4)
       activejob (= 7.0.4)
@@ -145,7 +139,6 @@ GEM
     importmap-rails (1.1.5)
       actionpack (>= 6.0.0)
       railties (>= 6.0.0)
-    in_place_editing (1.2.0)
     jbuilder (2.11.5)
       actionview (>= 5.0.0)
       activesupport (>= 5.0.0)
@@ -176,7 +169,6 @@ GEM
     momentjs-rails (2.29.4.1)
       railties (>= 3.1)
     msgpack (1.5.6)
-    multi_json (1.15.0)
     mysql2 (0.5.4)
     net-imap (0.2.3)
       digest
@@ -299,7 +291,6 @@ PLATFORMS
 
 DEPENDENCIES
   ace-rails-ap
-  activerecord-session_store
   best_in_place!
   bootsnap
   bootstrap (~> 5.2)
@@ -310,7 +301,6 @@ DEPENDENCIES
   haml
   haml-rails
   importmap-rails (~> 1.1)
-  in_place_editing
   jbuilder
   jquery-rails
   listen (>= 3.0.5, < 3.2)

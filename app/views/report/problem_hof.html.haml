@@ -5,24 +5,14 @@
 /- else
 /  %h1 All-Time Hall of Fame
 
-.panel.panel-info
-  .panel-heading
-    Select Task
-  .panel-body
-    .form-inline
-      = select 'report',
-        'problem_id',
-        @problems.collect {|p| ["[#{p.name}] #{p.full_name}", problem_hof_report_path(p)]},
-        {:selected => problem_hof_report_path(@problem)},
-        { class: 'select2 form-control' }
-      %button.btn.btn-primary.btn-sm.go-button#problem_go{data: {source: "#report_problem_id"}} Go
-
+.row.mb-5
+  .col-md-6
+    = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_hof_report_path}
 
 - unless params[:id]
-  /=render partial: 'all_time_hof'
   Please select a problem.
 - else
-  %h1
+  %h1.mt-3
     [#{Problem.find(params[:id]).name}] #{Problem.find(params[:id]).full_name}
     - if @current_user.has_role?('ta')
       %a{href:stat_problem_path(@problem)} (stat)

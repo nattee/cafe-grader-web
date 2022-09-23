@@ -26,14 +26,6 @@ $(function() {
       }
     }
   });
-  $(".go-button").on('click', function(event) {
-    var link, url;
-    link = $(this).attr("data-source");
-    url = $(link).val();
-    if (url) {
-      window.location.href = url;
-    }
-  });
   $('.ajax-toggle').on('click', function(event) {
     var target;
     target = $(event.target);

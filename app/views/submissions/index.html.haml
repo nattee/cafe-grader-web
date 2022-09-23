@@ -1,16 +1,4 @@
-.card.border-info.mb-2
-  .card-header.text-bg-info.border-info
-    Select Problems
-  .card-body
-    .row
-      .col-6
-        = select 'submission',
-          'problem_id',
-          @problems.collect {|p| ["[#{p.name}] #{p.full_name}", problem_submissions_url(p.id)]},
-          { selected: (@problem ? problem_submissions_url(@problem) : -1) },
-          { class: 'select2 form-control'}
-      .col-6
-        %a.btn.btn-primary.go-button#problem_go{data: {source: '#submission_problem_id'}} Go
+= render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_submissions_path}
 
 - if @problem!=nil
   %h2= "Task: #{@problem.full_name} (#{@problem.name})"
