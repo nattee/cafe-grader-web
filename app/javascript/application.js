@@ -49,5 +49,8 @@ import "select2"
 import 'custom'
 
 
+//trigger import map ready
 console.log('application.js ready')
-
+window.importmapScriptsLoaded = true
+const import_map_loaded = new CustomEvent('import-map-loaded', { });
+document.dispatchEvent(import_map_loaded);

@@ -11,6 +11,7 @@ class UserAdminController < ApplicationController
     @users = User.all
     @hidden_columns = ['hashed_password', 'salt', 'created_at', 'updated_at']
     @contests = Contest.enabled
+    @user = User.new
   end
 
   def active

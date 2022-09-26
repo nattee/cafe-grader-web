@@ -1,51 +1,44 @@
 %h1 Users
 
-.card.border-primary
-  .card-header.text-bg-primary.border-primary
+.card.border-success.mb-3
+  .card-header.text-bg-success.border-success
     Quick Add
   .card-body
-    = form_with url: 'asd', class: 'row row-cols-lg-auto g-3 align-items-center'  do |f|
+    = form_with url: user_admin_index_path, scope: :user,  class: 'row row-cols-lg-auto g-3 align-items-center'  do |f|
       .col-12
-        = f.label 'user_login', 'Login'
-        = f.text_field 'login', :size => 10,class: 'form-control'
+        = f.text_field 'login', :size => 10,class: 'form-control', placeholder: 'login'
       .form-group
-        = f.label 'user_full_name', 'Full Name'
-        = f.text_field 'full_name', :size => 10,class: 'form-control'
+        = f.text_field 'full_name', :size => 10,class: 'form-control', placeholder: 'full name'
       .form-group
-        = f.label 'user_password', 'Password'
-        = f.text_field 'password', :size => 10,class: 'form-control'
+        = f.password_field 'password', :size => 10,class: 'form-control', placeholder: 'password'
       .form-group
-        = f.label 'user_password_confirmation', 'Confirm'
-        = f.text_field 'password_confirmation', :size => 10,class: 'form-control'
+        = f.password_field 'password_confirmation', :size => 10,class: 'form-control', placeholder: 'password confirmation'
       .form-group
-        = f.label 'user_email', 'email'
-        = f.text_field 'email', :size => 10,class: 'form-control'
-      =submit_tag "Create", class: 'btn btn-primary align-items-bottom'
+        = f.text_field 'email', :size => 10,class: 'form-control', placeholder: 'email'
+      =submit_tag "Create", class: 'btn btn-success align-items-bottom'
 
-.panel.panel-primary
-  .panel-title.panel-heading
+.card.border-success.mb-3
+  .card-header.text-bg-success.border-success
     Import from site management
-  .panel-body
-    = form_tag({:action => 'import'}, :multipart => true,class: 'form form-inline') do
-      .form-group
-        = label_tag :file, 'File:'
-        .input-group
-          %span.input-group-btn
-            %span.btn.btn-default.btn-file
-              Browse
-              = file_field_tag 'file'
-          = text_field_tag '' , nil, {readonly: true, class: 'form-control'}
-      = submit_tag 'Submit', class: 'btn btn-default'
+  .card-body
+    = form_with url: import_user_admin_index_path, :multipart => true do |f|
+      .row
+        .col-auto
+          = f.label :file, 'File:', class: 'col-form-label'
+        .col-auto
+          = f.file_field :file, class: 'form-control'
+        .col-auto
+          = f.submit 'Submit', class: 'btn btn-secondary'
 
 
 %p
   = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success '}
   = link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success '}
-  = link_to 'Bulk Manage', { action: :bulk_manage} , { class: 'btn btn-default btn-info'}
-  = link_to 'View administrators',{ :action => 'admin'}, { class: 'btn btn-default '}
-  = link_to 'Random passwords',{ :action => 'random_all_passwords'}, { class: 'btn btn-default '}
-  = link_to 'View active users',{ :action => 'active'}, { class: 'btn btn-default '}
-  = link_to 'Mass mailing',{ :action => 'mass_mailing'}, { class: 'btn btn-default '}
+  = link_to 'Bulk Manage', { action: :bulk_manage} , { class: 'btn btn-secondary btn-info'}
+  = link_to 'View administrators',{ :action => 'admin'}, { class: 'btn btn-secondary '}
+  = link_to 'Random passwords',{ :action => 'random_all_passwords'}, { class: 'btn btn-secondary '}
+  = link_to 'View active users',{ :action => 'active'}, { class: 'btn btn-secondary '}
+  = link_to 'Mass mailing',{ :action => 'mass_mailing'}, { class: 'btn btn-secondary '}
 
 - if GraderConfiguration.multicontests?
   %br/
@@ -101,6 +94,8 @@
 = link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success '}
 
 :javascript
-  $('.datatable').DataTable({
-    'pageLength': 50
-  });
+  $(document).on('import-map-loaded',(e) => {
+    $('.datatable').DataTable({
+      'pageLength': 50
+    });
+  })

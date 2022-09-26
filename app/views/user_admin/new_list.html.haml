@@ -2,12 +2,26 @@
   .row
     .col-md-6
       %h1 Adding list of users
-  .row
+  .row.my-3
     .col-md-6
-      .panel.panel-default
-        .panel-heading
-          .panel-title Info
-        .panel-body
+      = form_with url: create_from_list_user_admin_index_path do |f|
+        .row.align-items-center.mb-3
+          .col-auto
+            = f.submit 'Create following users',class: 'btn btn-success'
+          .col-auto
+            .form-check
+              = f.check_box :add_to_group, class: 'form-check-input'
+              = f.label :add_to_group, 'Also add these users to the following group', class: 'form-check-label'
+          .col-4
+            = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control'
+        .row.mb-3
+          .col-12
+            = f.text_area :user_list, value: nil, class: 'form-control', style: 'height: 30rem'
+    .col-md-6
+      .card.card-default
+        .card-header
+          .card-title Info
+        .card-body
           %ul
             %li
               List of user information in this format:
@@ -35,20 +49,8 @@
               %pre user1,Somchai Jaidee,
               will create (or update) a user with login "user1" and and setting the fullname "Somchai Jaidee". No change is made to the password unless this is a new user. If this is a new user, a random password will be generated.
 
-
-  .row
-    .col-md-6
-      = form_tag :action => 'create_from_list' do
-        .form-group
-          = submit_tag 'Create following users',class: 'btn btn-success'
-        .form-group
-          .div.checkbox
-            %label 
-              = check_box_tag :add_to_group
-              Also add these users to the following group
-            = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), id: 'group_name',class: 'select2'
-        .form-group
-          = text_area_tag 'user_list', nil, :rows => 50, :cols => 80
-    .col-md-6
-
+:javascript
+  $(document).on('import-map-loaded',(e) => {
+    $('.select2').select2()
+  });
 
