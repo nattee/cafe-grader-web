@@ -1,9 +1,13 @@
 class ProblemsController < ApplicationController
 
+  include ActiveStorage::SetCurrent
+
   before_action :admin_authorization, except: [:stat]
+  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :toggle, :toggle_test, :toggle_view_testcase, :stat]
   before_action only: [:stat] do
     authorization_by_roles(['admin','ta'])
   end
+
 
   def index
     @problems = Problem.order(date_added: :desc)
@@ -11,28 +15,35 @@ class ProblemsController < ApplicationController
 
 
   def show
-    @problem = Problem.find(params[:id])
+  end
+
+  #get statement download link
+  def get_statement
+    unless @current_user.can_view_problem? @problem
+      redirect_to list_main_path, error: 'You are not authorized to access this file'
+      return
+    end
+
+    if params[:ext]=='pdf'
+      content_type = 'application/pdf'
+    else
+      content_type = 'application/octet-stream'
+    end
+
+    filename = @problem.statement.filename.to_s
+    data =@problem.statement.download
+
+    send_data data, stream: false, disposition: 'inline', filename: filename, type: content_type
   end
 
   def new
     @problem = Problem.new
-    @description = nil
   end
 
   def create
     @problem = Problem.new(problem_params)
-    @description = Description.new(description_params)
-    if @description.body!=''
-      if !@description.save
-        render :action => new and return
-      end
-    else
-      @description = nil
-    end
-    @problem.description = @description
     if @problem.save
-      flash[:notice] = 'Problem was successfully created.'
-      redirect_to action: :index
+      redirect_to action: :index, notice: 'Problem was successfully created.'
     else
       render :action => 'new'
     end
@@ -56,63 +67,31 @@ class ProblemsController < ApplicationController
   end
 
   def edit
-    @problem = Problem.find(params[:id])
     @description = @problem.description
   end
 
   def update
-    @problem = Problem.find(params[:id])
-    @description = @problem.description
-    if @description.nil? and params[:description][:body]!=''
-      @description = Description.new(description_params)
-      if !@description.save
-        flash[:notice] = 'Error saving description'
-        render :action => 'edit' and return
-      end
-      @problem.description = @description
-    elsif @description
-      if !@description.update(description_params)
-        flash[:notice] = 'Error saving description'
-        render :action => 'edit' and return
-      end
-    end
-    if params[:file] and params[:file].content_type != 'application/pdf'
-        flash[:notice] = 'Error: Uploaded file is not PDF'
-        render :action => 'edit' and return
+    if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
+        flash[:error] = 'Error: Uploaded file is not PDF'
+        render :action => 'edit'
+        return
     end
     if @problem.update(problem_params)
-      flash[:notice] = 'Problem was successfully updated.'
-      unless params[:file] == nil or params[:file] == ''
-        flash[:notice] = 'Problem was successfully updated and a new PDF file is uploaded.'
-        out_dirname = "#{Problem.download_file_basedir}/#{@problem.id}"
-        if not FileTest.exists? out_dirname
-          Dir.mkdir out_dirname
-        end
-
-        out_filename = "#{out_dirname}/#{@problem.name}.pdf"
-        if FileTest.exists? out_filename
-          File.delete out_filename
-        end
-
-        File.open(out_filename,"wb") do |file|
-          file.write(params[:file].read)
-        end
-        @problem.description_filename = "#{@problem.name}.pdf"
-        @problem.save
-      end
-      redirect_to :action => 'show', :id => @problem
+      flash[:notice] = 'Problem was successfully updated. '
+      flash[:notice] += 'A new statement PDF is uploaded' if problem_params[:statement] 
+      @problem.save
+      redirect_to edit_problem_path(@problem)
     else
       render :action => 'edit'
     end
   end
 
   def destroy
-    p = Problem.find(params[:id]).destroy
+    @problem.destroy
     redirect_to action: :index
   end
 
   def toggle
-    @problem = Problem.find(params[:id])
     @problem.update(available: !(@problem.available) )
     respond_to do |format|
       format.js { }
@@ -120,7 +99,6 @@ class ProblemsController < ApplicationController
   end
 
   def toggle_test
-    @problem = Problem.find(params[:id])
     @problem.update(test_allowed: !(@problem.test_allowed?) )
     respond_to do |format|
       format.js { }
@@ -128,7 +106,6 @@ class ProblemsController < ApplicationController
   end
 
   def toggle_view_testcase
-    @problem = Problem.find(params[:id])
     @problem.update(view_testcase: !(@problem.view_testcase?) )
     respond_to do |format|
       format.js { }
@@ -152,7 +129,6 @@ class ProblemsController < ApplicationController
   end
 
   def stat
-    @problem = Problem.find(params[:id])
     unless @problem.available or session[:admin]
       redirect_to :controller => 'main', :action => 'list'
       return
@@ -295,8 +271,13 @@ class ProblemsController < ApplicationController
 
   private
 
+    def set_problem
+      @problem = Problem.find(params[:id])
+    end
+
     def problem_params
-      params.require(:problem).permit(:name, :full_name, :full_score, :change_date_added, :date_added, :available, :test_allowed,:output_only, :url, :description, tag_ids:[])
+      params.require(:problem).permit(:name, :full_name, :full_score, :change_date_added, :date_added, :available,
+                                      :test_allowed, :output_only, :url, :description, :statement, :description, tag_ids:[])
     end
 
     def description_params

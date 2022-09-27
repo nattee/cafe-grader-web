@@ -35,3 +35,4 @@
 /config/secrets.yml
 
 /.byebug_history
+/storage/*

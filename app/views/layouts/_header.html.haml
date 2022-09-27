@@ -11,14 +11,14 @@
           / submission
           - if (@current_user!=nil) and (GraderConfiguration.show_tasks_to?(@current_user))
             %li.nav-item.dropdown.mx-2
-              %a.nav-link.dropdown-toggle{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {expanded:"false"}, role: "button"}
+              %a.nav-link.dropdown-toggle.active-with-children{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {expanded:"false"}, role: "button"}
                 = "#{I18n.t 'menu.submissions'}"
               %ul.dropdown-menu
-                %li= link_to 'View', submissions_path, class:'dropdown-item'
+                %li= link_to 'View', submissions_path, class: 'dropdown-item '+active_class_when(controller: :submissions)
                 %li= link_to 'Self Test', test_index_path, class:'dropdown-item'
           / hall of fame
           - if GraderConfiguration['right.user_hall_of_fame']
-            %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'
+            %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :problem_hof)
           / display MODE button (with countdown in contest mode)
           - if GraderConfiguration.analysis_mode?
             %div.btn.btn-success#countdown= "ANALYSIS MODE"
@@ -35,33 +35,33 @@
           - if (@current_user!=nil) and (session[:admin])
             / management
             %li.nav-item.dropdown.mx-2
-              %a.nav-link.dropdown-toggle{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
+              %a.nav-link.dropdown-toggle.active-with-children{href: '#', 'data-bs': {toggle:'dropdown'}, aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Manage
               %ul.dropdown-menu
-                %li= link_to 'Announcements', announcements_path, class: 'dropdown-item'
-                %li= link_to 'Problems', problems_path, class: 'dropdown-item'
-                %li= link_to 'Tags', tags_path, class: 'dropdown-item'
-                %li= link_to 'Users', user_admin_index_path, class: 'dropdown-item'
-                %li= link_to 'User Groups', groups_path, class: 'dropdown-item'
-                %li= link_to 'Graders', graders_list_path, class: 'dropdown-item'
-                %li= link_to 'Message ', console_messages_path, class: 'dropdown-item'
+                %li= link_to 'Announcements', announcements_path, class: 'dropdown-item'+active_class_when(controller: :announcements)
+                %li= link_to 'Problems', problems_path, class: 'dropdown-item'+active_class_when(controller: :problems)
+                %li= link_to 'Tags', tags_path, class: 'dropdown-item'+active_class_when(controller: :tags)
+                %li= link_to 'Users', user_admin_index_path, class: 'dropdown-item'+active_class_when(controller: :user_admin)
+                %li= link_to 'User Groups', groups_path, class: 'dropdown-item'+active_class_when(controller: :groups)
+                %li= link_to 'Graders', graders_list_path, class: 'dropdown-item'+active_class_when(controller: :graders)
+                %li= link_to 'Message ', console_messages_path, class: 'dropdown-item'+active_class_when(controller: :messages)
                 %li
                   %hr.dropdown-divider
-                %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'
+                %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :grader_configuration)
                 %li
                   %hr.dropdown-divider
-                %li= link_to 'Sites', sites_path, class: 'dropdown-item'
-                %li= link_to 'Contests', contest_management_index_path, class: 'dropdown-item'
+                %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites)
+                %li= link_to 'Contests', contest_management_index_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
                 -#
             / report
             %li.nav-item.dropdown.mx-2
-              %a.nav-link.dropdown-toggle{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
+              %a.nav-link.dropdown-toggle.active-with-children{href: '#', 'data-bs': {toggle:'dropdown'},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Report
               %ul.dropdown-menu
-                %li= link_to 'Current Score', current_score_report_path, class: 'dropdown-item'
-                %li= link_to 'Score Report', max_score_report_path, class: 'dropdown-item'
-                %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'
-                %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'
+                %li= link_to 'Current Score', current_score_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :current_score)
+                %li= link_to 'Score Report', max_score_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :max_score)
+                %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
+                %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
             - if (ungraded = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count) > 0
               =link_to "#{ungraded} backlogs!",
                 graders_list_path,
@@ -85,3 +85,9 @@
           %a.nav-link{href: login_main_path}
             %span.mi.mi-bs.md-18 exit_to_app
             = @current_user.full_name
+:javascript
+  $('.active-with-children').each( (index,obj) => { 
+    if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
+      $(obj).addClass('active')
+    }
+  } )

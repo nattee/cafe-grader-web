@@ -209,4 +209,15 @@ TITLEBAR
     BOOTSTRAP_FLASH_MSG.fetch(flash_type.to_sym, flash_type.to_s)
   end
 
+  def active_class_when(options = {},cname = @active_controller, aname = @active_action)
+    class_name = ' active '
+    ok = true
+    options.each do |k,v|
+      ok = false if k == :controller && v.to_s != cname
+      ok = false if k == :action && v.to_s != aname
+    end
+    return class_name if ok && options.size > 0
+    return ''
+  end
+
 end

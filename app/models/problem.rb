@@ -1,6 +1,7 @@
 class Problem < ApplicationRecord
 
-  belongs_to :description
+  #belongs_to :description
+
   has_and_belongs_to_many :contests, :uniq => true
 
   #has_and_belongs_to_many :groups
@@ -23,6 +24,9 @@ class Problem < ApplicationRecord
 
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
+
+  has_one_attached :statement
+  has_many_attached :attachments
 
   def get_jschart_history
     start = 4.month.ago.beginning_of_day

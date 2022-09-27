@@ -1,4 +1,13 @@
 GIT
+  remote: https://github.com/heartcombo/simple_form
+  revision: 31fe25504771bd6cd425b585a4e0ed652fba4521
+  ref: 31fe255
+  specs:
+    simple_form (5.1.0)
+      actionpack (>= 5.2)
+      activemodel (>= 5.2)
+
+GIT
   remote: https://github.com/mmotherwell/best_in_place
   revision: 88eb3052623a9a6cd346864d2aca05021c2f80d0
   specs:
@@ -247,9 +256,6 @@ GEM
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
     sexp_processor (4.16.1)
-    simple_form (5.1.0)
-      actionpack (>= 5.2)
-      activemodel (>= 5.2)
     spring (2.1.1)
     spring-watcher-listen (2.0.1)
       listen (>= 2.7, < 4.0)
@@ -315,7 +321,7 @@ DEPENDENCIES
   rouge
   sassc-rails
   selenium-webdriver
-  simple_form
+  simple_form!
   spring
   spring-watcher-listen (~> 2.0.0)
   sprockets-rails

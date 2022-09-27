@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   before_action :current_user
   before_action :nav_announcement
   before_action :unique_visitor_id
+  before_action :active_controller_action
 
   SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
@@ -27,6 +28,12 @@ class ApplicationController < ActionController::Base
 
   def nav_announcement
     @nav_announcement = Announcement.where(on_nav_bar: true)
+  end
+
+  def active_controller_action
+    #so that we can override this value inside each action
+    @active_controller = controller_name
+    @active_action = action_name
   end
 
   def admin_authorization

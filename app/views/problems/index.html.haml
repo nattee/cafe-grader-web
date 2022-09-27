@@ -37,6 +37,9 @@
       %sup{class: 'text-primary',data: {toggle: 'tooltip'}, title: 'Let user uses test interface on this problem?' } [?]
     - if GraderConfiguration.multicontests?
       %th Contests
+    %th.text-center
+    %th.text-center
+    %th.text-center
   - for problem in @problems
     %tr{:class => "#{(problem.available) ? "bg-success bg-opacity-25" : "bg-opacity-25"}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
       - @problem=problem
@@ -58,7 +61,6 @@
         %td
           = problem.contests.collect { |c| c.name }.join(', ')
       %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-sm btn-block'
-      %td= link_to 'Show', {:action => 'show', :id => problem}, class: 'btn btn-info btn-sm btn-block'
       %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-sm btn-block'
       %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, :confirm => 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 %br/
