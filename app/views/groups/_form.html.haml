@@ -1,27 +1,7 @@
-= form_for @group do |f|
-  - if @group.errors.any?
-    #error_explanation
-      %h2= "#{pluralize(@group.errors.count, "error")} prohibited this group from being saved:"
-      %ul
-        - @group.errors.full_messages.each do |msg|
-          %li= msg
-  .row
-    .col-md-6
-      .form-group.field
-        = f.label :name
-        = f.text_field :name, class: 'form-control'
-  .row
-    .col-md-6
-      .form-group.field
-        = f.label :description
-        = f.text_field :description, class: 'form-control'
-  .row
-    .col-md-6
-      .checkbox
-        = f.label :enabled do
-          = f.check_box :enabled
-          Enabled
-  .row
-    .col-md-6
-      .form-group.actions
-        = f.submit 'Save', class: 'btn btn-primary'
+.row
+  .col-md-6
+    = simple_form_for @group do |f|
+      = f.input :name
+      = f.input :description
+      = f.input :enabled
+      = f.button :submit, class: 'btn btn-primary'

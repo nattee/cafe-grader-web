@@ -26,8 +26,8 @@ class User < ActiveRecord::Base
 
   has_one :contest_stat, :class_name => "UserContestStat", :dependent => :destroy
 
-  belongs_to :site
-  belongs_to :country
+  belongs_to :site, optional: true
+  belongs_to :country, optional: true
 
   has_and_belongs_to_many :contests, -> { order(:name)}
 
@@ -45,12 +45,12 @@ class User < ActiveRecord::Base
   validates_length_of :password, :within => 4..50, :if => :password_required?
   validates_confirmation_of :password, :if => :password_required?
 
-  validates_format_of :email, 
-                      :with => /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i, 
+  validates_format_of :email,
+                      :with => /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i,
                       :if => :email_validation?
-  validate :uniqueness_of_email_from_activated_users, 
+  validate :uniqueness_of_email_from_activated_users,
            :if => :email_validation?
-  validate :enough_time_interval_between_same_email_registrations, 
+  validate :enough_time_interval_between_same_email_registrations,
            :if => :email_validation?
 
   # these are for ytopc

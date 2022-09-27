@@ -2,6 +2,8 @@
 
 = render 'form'
 
-= link_to 'Show', @group
-\|
-= link_to 'Back', groups_path
+.row.my-3
+  .col-auto
+    = link_to 'Edit members and problems', @group, class: 'btn btn-info'
+  .col-auto
+    = link_to 'Back', groups_path, class: 'btn btn-secondary'

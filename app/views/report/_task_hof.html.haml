@@ -135,21 +135,22 @@
                       = "#{value[:first][:value]} @"
                       = link_to "#" + value[:first][:sub_id].to_s, submission_path( value[:first][:sub_id])
 
-%script{src:"https://cdn.jsdelivr.net/npm/chart.js"}
 :javascript
-  data = #{@chart_dataset}
-  config = {
-    type: 'bar',
-    data: data,
-    options: { 
-      plugins: {
-        legend: {
-          display: false
+  $(document).on('import-map-loaded',(e) => {
+    data = #{@chart_dataset}
+    config = {
+      type: 'bar',
+      data: data,
+      options: { 
+        plugins: {
+          legend: {
+            display: false
+          },
         },
-      },
+      }
     }
-  }
-  Chart.defaults.font.size = 15
-  //Chart.defaults.font.family = 'Sarabun Light'
-  chart = new Chart($('#chart'),config)
+    Chart.defaults.font.size = 15
+    //Chart.defaults.font.family = 'Sarabun Light'
+    chart = new Chart($('#chart'),config)
+  });
 

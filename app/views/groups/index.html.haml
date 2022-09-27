@@ -1,7 +1,7 @@
 %h1 Groups
 
 %p
-  = link_to 'New Group', new_group_path, class: 'btn btn-primary'
+  = link_to 'New Group', new_group_path, class: 'btn btn-success'
 %table.table.table-hover
   %thead
     %tr
@@ -9,16 +9,15 @@
       %th Description
       %th Enabled?
       %th
-      %th
-
   %tbody
     - @groups.each do |group|
       %tr{:class => "#{(group.enabled?) ? "success" : "danger"}", id: "group-#{group.id}"}
         %td= group.name
         %td= group.description
-        %td= toggle_button(group.enabled?, toggle_group_path(group), "group-enabled-#{group.id}", size: ' ', block: ' ')
-        %td= link_to 'View', group, class: 'btn btn-default'
-        %td= link_to 'Destroy', group, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger'
+        %td= toggle_button(group.enabled?, toggle_group_path(group), "group-enabled-#{group.id}", block: ' ')
+        %td
+          = link_to 'Edit members and problems', group, class: 'btn btn-secondary btn-sm'
+          = link_to 'Destroy', group, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger btn-sm'
 
 %br
 

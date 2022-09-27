@@ -35,6 +35,7 @@ class UserAdminController < ApplicationController
   def create
     @user = User.new(user_params)
     @user.activated = true
+    byebug
     if @user.save
       flash[:notice] = 'User was successfully created.'
       redirect_to :action => 'index'

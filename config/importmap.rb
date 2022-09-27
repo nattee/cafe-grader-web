@@ -55,3 +55,4 @@ pin "select2", to: "select2.min.js"
 pin "custom", to: "custom.js"
 
 #pin "ace-rails-ap"
+pin "chart", to: 'chart.js' # @3.9.1

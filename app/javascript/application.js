@@ -44,6 +44,7 @@ import "datatables-staterestore-bs5"
 /* */
 
 import "select2"
+import "chart"
 
 //my own customization
 import 'custom'
