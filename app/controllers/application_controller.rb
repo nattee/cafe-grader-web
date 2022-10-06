@@ -15,9 +15,8 @@ class ApplicationController < ActionController::Base
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
   #report and redirect for unauthorized activities
-  def unauthorized_redirect(notice = 'You are not authorized to view the page you requested')
-    flash[:notice] = notice
-    redirect_to login_main_path
+  def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')
+    redirect_to login_main_path, alert: msg
   end
 
   # Returns the current logged-in user (if any).
@@ -46,30 +45,18 @@ class ApplicationController < ActionController::Base
     return true
   end
 
-  #admin always count as every roles
-  def role_authorization(roles)
+  def authorization_by_roles(allowed_roles)
     return false unless check_valid_login
-    user = User.find(session[:user_id])
-    return true if user.admin?
+    return true if @current_user.admin?
     roles.each do |r|
-      return true if user.has_role?(r)
+      return true if @current_user.has_role?(r)
     end
     unauthorized_redirect
   end
 
-  def authorization_by_roles(allowed_roles)
-    return false unless check_valid_login
-    unless @current_user.roles.detect { |role| allowed_roles.member?(role.name) }
-      unauthorized_redirect
-      return false
-    end
-  end
-
   def testcase_authorization
     #admin always has privileged
-    if @current_user.admin?
-      return true
-    end
+    return true if @current_user.admin?
 
     unauthorized_redirect unless GraderConfiguration["right.view_testcase"]
   end

@@ -1,7 +1,7 @@
 class LoginController < ApplicationController
 
   @@authenticators = []
-  
+
   def index
     # show login screen
     reset_session
@@ -11,14 +11,12 @@ class LoginController < ApplicationController
   def login
     user = get_authenticated_user(params[:login], params[:password])
     unless user
-      flash[:notice] = 'Wrong password'
-      redirect_to :controller => 'main', :action => 'login'
+      redirect_to login_main_path, alert: 'Wrong password'
       return
     end
 
     if (!GraderConfiguration['right.bypass_agreement']) and (!params[:accept_agree]) and !user.admin?
-      flash[:notice] = 'You must accept the agreement before logging in'
-      redirect_to :controller => 'main', :action => 'login'
+      redirect_to login_main_path, alert: 'You must accept the agreement before logging in'
       return
     end
 
@@ -60,14 +58,14 @@ class LoginController < ApplicationController
       site = nil
     end
     if site==nil
-      flash[:notice] = 'Wrong site'
+      flash[:alert] = 'Wrong site'
       redirect_to :controller => 'main', :action => 'login'  and return
     end
     if (site.password) and (site.password == params[:login][:password])
       session[:site_id] = site.id
       redirect_to :controller => 'site', :action => 'index'
     else
-      flash[:notice] = 'Wrong site password'
+      flash[:alert] = 'Wrong site password'
       redirect_to :controller => 'site', :action => 'login'
     end
   end

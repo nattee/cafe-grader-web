@@ -18,9 +18,8 @@ class MainController < ApplicationController
   #reset login, clear session
   #front page
   def login
-    saved_notice = flash[:notice]
-    reset_session
-    flash.now[:notice] = saved_notice
+    #saved_notice = flash[:notice]
+    #flash[:notice] = saved_notice
     @remote_ip = request.remote_ip
 
     # EXPERIMENT:

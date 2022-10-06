@@ -7,9 +7,8 @@
       .card-subtitle=t 'login.message'
 
       - if flash[:notice]
-        %hr/
-        %b= flash[:notice]
-        %hr/
+        .alert.alert-danger
+          = flash[:notice]
 
       .card
         .card-body{ style: "background: #eeeeff;"}

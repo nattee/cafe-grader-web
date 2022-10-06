@@ -2,7 +2,7 @@ class SubmissionsController < ApplicationController
   before_action :set_submission, only: [:show,:download,:compiler_msg,:rejudge,:set_tag, :edit]
   before_action :check_valid_login
   before_action :submission_authorization, only: [:show, :download, :edit]
-  before_action only: [:rejudge, :set_tag] do role_authorization([:ta]) end
+  before_action only: [:rejudge, :set_tag] do authorization_by_roles([:ta]) end
 
   # GET /submissions
   # GET /submissions.json
