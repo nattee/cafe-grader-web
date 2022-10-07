@@ -248,7 +248,7 @@ class ReportController < ApplicationController
     #@histogram = { data: Array.new(range,0), summary: {} }
     @summary = {count: 0, solve: 0, attempt: 0}
     user = Hash.new(0)
-    Submission.where(problem_id: @problem.id).find_each do |sub|
+    Submission.where(problem_id: @problem.id).includes(:language).each do |sub|
       #histogram
       d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
       #@histogram[:data][d.to_i] += 1 if d < range
@@ -257,7 +257,8 @@ class ReportController < ApplicationController
       @summary[:count] += 1
       user[sub.user_id] = [user[sub.user_id], (sub.points >= @problem.full_score) ? 1 : 0].max
 
-      lang = Language.find_by_id(sub.language_id)
+      #lang = Language.find_by_id(sub.language_id)
+      lang = sub.language
       next unless lang
       next unless sub.points >= @problem.full_score
 

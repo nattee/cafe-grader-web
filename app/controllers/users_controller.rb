@@ -130,27 +130,21 @@ class UsersController < ApplicationController
 
   def stat
     @user = User.find(params[:id])
-    @submission = Submission.joins(:problem).where(user_id: params[:id])
+    @submission = Submission.joins(:problem).includes(:problem).includes(:language).where(user_id: params[:id])
     @submission = @submission.where('problems.available = true') unless current_user.admin?
 
-    range = 120
-    @histogram = { data: Array.new(range,0), summary: {} }
     @summary = {count: 0, solve: 0, attempt: 0}
     problem = Hash.new(0)
 
     @submission.find_each do |sub|
-      #histogram
-      d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
-      @histogram[:data][d.to_i] += 1 if d < range
-
       @summary[:count] += 1
       next unless sub.problem
       problem[sub.problem] = [problem[sub.problem], ( (sub.try(:points) || 0) >= sub.problem.full_score) ? 1 : 0].max
     end
 
-    @histogram[:summary][:max] = [@histogram[:data].max,1].max
     @summary[:attempt] = problem.count
     problem.each_value { |v| @summary[:solve] += 1 if v == 1 }
+    @chart_dataset = @user.get_jschart_user_sub_history.to_json.html_safe
   end
 
   def toggle_activate

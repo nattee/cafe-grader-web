@@ -1,42 +1,46 @@
-- content_for :header do
-  = javascript_include_tag 'local_jquery'
-
-:javascript
-  $(function () {
-    $('#submission_table').tablesorter({widgets: ['zebra']});
-  });
 
 :css
   .fix-width {
     font-family: Droid Sans Mono,Consolas, monospace, mono, Courier New, Courier;
   }
 
-%h1= @user.full_name
+%h1 User stats
+%h5.text-secondary= @user.login
 
-<b>Login:</b> #{@user.login} <br/>
-<b>Full name:</b> #{@user.full_name} <br />
+.row.my-3
+  .col-md-8
+    .card
+      .card-body
+        %h2.card-title Sub Info
+        %canvas#chart{height: '50px'}
+
+  .col-md-4
+    .card
+      .card-body
+        %h2.card-title General Info
+        .row
+          .col-sm-6.fw-bold
+            Login
+          .col-sm-6
+            = @user.login
+        .row
+          .col-sm-6.fw-bold
+            Full name
+          .col-sm-6
+            = @user.full_name
+        .row
+          .col-sm-6.fw-bold
+            Subs
+          .col-sm-6
+            = @summary[:count]
+        .row
+          .col-sm-6.fw-bold
+            Solved/Attempted Problem
+          .col-sm-6
+            #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
 
 
-%h2 Problem Stat
-%table.info
-  %thead
-    %tr.info-head
-      %th Stat
-      %th Value
-  %tbody
-    %tr{class: cycle('info-even','info-odd')}
-      %td.info_param Submissions
-      %td= @summary[:count]
-    %tr{class: cycle('info-even','info-odd')}
-      %td.info_param Solved/Attempted Problem
-      %td #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
-
-%h2 Submission History
-
-=render partial: 'application/bar_graph', locals: {histogram: @histogram, param: {bar_width: 7}}
-
-
-%table#submission_table.table.table-striped
+%table#main_table.table.table-striped
   %thead
     %tr
       %th ID
@@ -65,6 +69,27 @@
 
 
 :javascript
-  $("#submission_table").DataTable({
-    paging: false
+  $(document).on('import-map-loaded',(e) => {
+    //init datatable
+    $("#main_table").DataTable({
+      paging: false
+    });
+
+    //history graph
+    data = #{@chart_dataset}
+    config = {
+      type: 'bar',
+      data: data,
+      options: {
+        plugins: {
+          legend: {
+            display: false
+          },
+        },
+      }
+    }
+    Chart.defaults.font.size = 15
+    //Chart.defaults.font.family = 'Sarabun Light'
+    chart = new Chart($('#chart'),config)
   });
+

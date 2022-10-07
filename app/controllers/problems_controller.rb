@@ -148,6 +148,9 @@ class ProblemsController < ApplicationController
 
     @summary = { attempt: user.count, solve: 0 }
     user.each_value { |v| @summary[:solve] += 1 if v == 1 }
+
+    #for new graph
+    @chart_dataset = @problem.get_jschart_history.to_json.html_safe
   end
 
   def manage

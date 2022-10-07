@@ -314,6 +314,21 @@ class User < ActiveRecord::Base
     User.update_all(:last_ip => nil)
   end
 
+  def get_jschart_user_sub_history
+    start = 4.month.ago.beginning_of_day
+    start_date = start.to_date
+    count = Submission.where(user: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
+    i = 0
+    label = []
+    value = []
+    while (start_date + i < Time.zone.now.to_date)
+      label << (start_date+i).strftime("%d-%b")
+      value << (count[start_date+i] || 0)
+      i+=1
+    end
+    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+  end
+
   #create multiple user, one per lines of input
   def self.create_from_list(lines)
     error_logins = []

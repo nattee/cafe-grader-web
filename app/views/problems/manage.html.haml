@@ -2,51 +2,29 @@
   = stylesheet_link_tag 'problems'
   = javascript_include_tag 'local_jquery'
 
-:javascript
-  $(document).ready( function() {
-    function shiftclick(start,stop,value) {
-      $('tr input').each( function(id,input) { 
-        var $input=$(input);
-        var iid=parseInt($input.attr('id').split('-')[2]);
-        if(iid>=start&&iid<=stop){
-        $input.prop('checked',value)
-        }
-      });
-    }
-
-    $('tr input').click( function(e)  {
-      if (e.shiftKey) {
-        stop = parseInt($(this).attr('id').split('-')[2]);
-        var orig_stop = stop
-        if (typeof start !== 'undefined') {
-          if (start > stop) {
-            var tmp = start;
-            start = stop;
-            stop = tmp;
-          }
-          shiftclick(start,stop,$(this).is(':checked') )
-        }
-        start = orig_stop
-      } else {
-        start = parseInt($(this).attr('id').split('-')[2]);
-      }
-    });
-  });
 
 
 %h1 Manage problems
 
 %p= link_to '[Back to problem list]', problems_path
 
-= form_tag :action=>'do_manage' do
-  .panel.panel-primary
-    .panel-heading
+= form_with url: do_manage_problems_path do |f|
+  .card.border-primary.mb-2
+    .card-header.text-bg-primary.border-primary
       Action
-    .panel-body
+    .card-body
       .submit-box
         What do you want to do to the selected problem?
         %br/
         (You can shift-click to select a range of problems)
+        .row
+          .col-md-auto
+            = f.check_box :change_date_added, class: 'form-check-input'
+          .col-md-auto
+            .form-check-label
+              Change "Date added" to
+          .col-md-auto
+            
         %ul.form-inline
           %li
             Change "Date added" to
@@ -107,13 +85,45 @@
                 = "(#{contest.name} [#{link_to 'x', :action => 'remove_contest', :id => problem.id, :contest_id => contest.id }])"
 
 :javascript
-  $('.input-group.date').datetimepicker({
-    format: 'DD/MMM/YYYY',
-    showTodayButton: true,
-    locale: 'en',
-    widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
 
-  });
-  $('.datatable').DataTable({
-    paging: false
+  $(document).on('import-map-loaded', function() {
+    function shiftclick(start,stop,value) {
+      $('tr input').each( function(id,input) { 
+        var $input=$(input);
+        var iid=parseInt($input.attr('id').split('-')[2]);
+        if(iid>=start&&iid<=stop){
+        $input.prop('checked',value)
+        }
+      });
+    }
+
+    $('tr input').click( function(e)  {
+      if (e.shiftKey) {
+        stop = parseInt($(this).attr('id').split('-')[2]);
+        var orig_stop = stop
+        if (typeof start !== 'undefined') {
+          if (start > stop) {
+            var tmp = start;
+            start = stop;
+            stop = tmp;
+          }
+          shiftclick(start,stop,$(this).is(':checked') )
+        }
+        start = orig_stop
+      } else {
+        start = parseInt($(this).attr('id').split('-')[2]);
+      }
+    });
+
+    $('.input-group.date').datetimepicker({
+      format: 'DD/MMM/YYYY',
+      showTodayButton: true,
+      locale: 'en',
+      widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
+
+    });
+
+    $('.datatable').DataTable({
+      paging: false
+    });
   });
