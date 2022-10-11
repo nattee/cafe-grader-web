@@ -1,30 +1,64 @@
-- content_for :head do
-  = stylesheet_link_tag 'problems'
-  = javascript_include_tag 'local_jquery'
-
-
-
 %h1 Manage problems
 
 %p= link_to '[Back to problem list]', problems_path
 
-= form_with url: do_manage_problems_path do |f|
+= form_with url: do_manage_problems_path, class: 'align-items-center' do |f|
   .card.border-primary.mb-2
     .card-header.text-bg-primary.border-primary
       Action
     .card-body
-      .submit-box
-        What do you want to do to the selected problem?
-        %br/
-        (You can shift-click to select a range of problems)
-        .row
-          .col-md-auto
-            = f.check_box :change_date_added, class: 'form-check-input'
-          .col-md-auto
-            .form-check-label
-              Change "Date added" to
-          .col-md-auto
-            
+      What do you want to do to the selected problem?
+      %br/
+      (You can shift-click to select a range of problems)
+      .row
+        .col-md-6
+          .row.my-3.align-items-center
+            .col-md-auto
+              .form-check
+                = f.label :change_date_added, 'Change "Date added" to'
+                = f.check_box :change_date_added, class: 'form-check-input'
+            .col-md-auto
+              = f.text_field :date_added, class: 'form-control'
+          .row.mb-3.align-items-center
+            .col-md-auto
+              .form-check
+                = f.label :change_enable, 'Set "Available" to'
+                = f.check_box :change_enable, class: 'form-check-input'
+            .col-md-auto
+              = f.radio_button :enable, "yes", class: 'form-check-input'
+              = f.label :enable_yes, "yes"
+            .col-md-auto
+              = f.radio_button :enable, "no", class: 'form-check-input'
+              = f.label :enable_no, "no"
+          .row.mb-3.align-items-center
+            .col-md-auto
+              .form-check
+                = f.label :add_group, 'Add selected problems to user group'
+                = f.check_box :add_group, class: 'form-check-input'
+            .col-md-auto
+              = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control'
+        .col-md-6
+          .row.mb-3.align-items-center
+            .col-md-auto
+              .form-check
+                = f.label :add_tags, 'Add the following tags to the selected problems'
+                = f.check_box :add_tags, class: 'form-check-input'
+            .col-md-auto
+              = f.select "tag_ids", options_from_collection_for_select( Tag.all, 'id','name'), {},class: 'select2', multiple: true, data: {placeholder: 'Select tags by clicking', width: "400px"}
+          - if GraderConfiguration.multicontests?
+            .row.mb-3.align-items-center
+              .col-md-auto
+                .form-check
+                  = f.label :add_contest, 'Add selected problems to contest'
+                  = f.check_box :add_contest, class: 'form-check-input'
+              .col-md-auto
+                = f.select "contest_id", options_from_collection_for_select( Contest.all, :id,:title), {}, class: 'select2 form-control'
+      .row.mb-3
+        .col-auto
+          = f.submit :go, class: 'btn btn-primary'
+
+          
+      -#
         %ul.form-inline
           %li
             Change "Date added" to
@@ -126,4 +160,23 @@
     $('.datatable').DataTable({
       paging: false
     });
+    $('.select2').select2();
+
+
+    new TempusDominus(document.getElementById('date_added'), {
+      display: {
+        icons: {
+          time: 'mi mi-td-time',
+          date: 'mi mi-td-date',
+          up: 'mi mi-td-up',
+          down: 'mi mi-td-down',
+          previous: 'bi bi-chevron-left',
+          next: 'bi bi-chevron-right',
+          today: 'bi bi-calendar-check',
+          clear: 'bi bi-trash',
+          close: 'bi bi-x',
+        },
+      }
+    });
+
   });

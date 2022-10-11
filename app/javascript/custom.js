@@ -10,8 +10,6 @@ $(function() {
   var e;
   $(".select2").select2({
     theme: "bootstrap-5",
-    //selectionCssClass: "select2--small",
-    //dropdownCssClass: "select2--small",
   });
 
   $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
@@ -42,4 +40,38 @@ $(function() {
   }
 
   //jQuery(".best_in_place").best_in_place();
+  
+  //default options for tempus dominus
+  window.default_td_options = {
+    display: {
+      icons: {
+        time: 'mi mi-td-time',
+        date: 'mi mi-td-date',
+        up: 'mi mi-td-up',
+        down: 'mi mi-td-down',
+        previous: 'mi mi-td-previous',
+        next: 'mi mi-td-next',
+        today: 'mi mi-td-today',
+        clear: 'mi mi-td-clear',
+        close: 'mi mi-td-close',
+      },
+      buttons: {
+        today: true,
+        clear: false,
+        close: true
+      },
+      components: {
+        calendar: true,
+        date: true,
+        month: true,
+        year: true,
+        decades: true,
+        clock: true,
+        hours: true,
+        minutes: true,
+        seconds: false,
+        useTwentyfourHour: true,
+      },
+    }
+  }
 });

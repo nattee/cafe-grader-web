@@ -45,6 +45,8 @@ import "datatables-staterestore-bs5"
 
 import "select2"
 import "chart"
+import { TempusDominus } from "@eonasdan/tempus-dominus"
+window.TempusDominus = TempusDominus
 
 //my own customization
 import 'custom'

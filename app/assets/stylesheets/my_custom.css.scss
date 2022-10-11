@@ -4,12 +4,23 @@
 }
 
 
-//for google material design
+//for google material icon
 .mi-bs {
   vertical-align: middle;
   position: relative;
   top: -3px;
 }
+
+//for use google material icon with Tempus Dominus
+.mi-td-time:after { content: 'schedule'; }
+.mi-td-date:after { content: 'date_range'; }
+.mi-td-up:after { content: 'arrow_upward'; }
+.mi-td-down:after { content: 'arrow_downward'; }
+.mi-td-previous:after { content: 'arrow_back'; }
+.mi-td-next:after { content: 'arrow_forward'; }
+.mi-td-today:after { content: 'today'; }
+.mi-td-clear:after { content: 'delete'; }
+.mi-td-close:after { content: 'cancel'; }
 
 // --------------- bootstrap file upload ----------------------
 .btn-file {
