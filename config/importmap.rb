@@ -56,4 +56,6 @@ pin "custom", to: "custom.js"
 
 #pin "ace-rails-ap"
 pin "chart", to: 'chart.js' # @3.9.1
-pin "@eonasdan/tempus-dominus", to: "@eonasdan--tempus-dominus.js" # @6.2.4
+pin "@eonasdan/tempus-dominus", to: "tempus-dominus/@eonasdan--tempus-dominus.js" # @6.2.4
+pin "@eonasdan/tempus-dominus-esm", to: "tempus-dominus/tempus-dominus.esm.js" # @6.2.4
+pin "@eonasdan/tempus-dominus/customDateFormat", to: "tempus-dominus/customDateFormat.js" # @6.2.4

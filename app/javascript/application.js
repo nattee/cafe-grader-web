@@ -45,8 +45,14 @@ import "datatables-staterestore-bs5"
 
 import "select2"
 import "chart"
+
+//tempus dominus
 import { TempusDominus } from "@eonasdan/tempus-dominus"
+import * as TD from "@eonasdan/tempus-dominus-esm"
+import * as customDateFormat from '@eonasdan/tempus-dominus/customDateFormat'
+window.TD = TD
 window.TempusDominus = TempusDominus
+window.customDateFormat = customDateFormat
 
 //my own customization
 import 'custom'

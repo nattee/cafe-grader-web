@@ -36,7 +36,7 @@
                 = f.label :add_group, 'Add selected problems to user group'
                 = f.check_box :add_group, class: 'form-check-input'
             .col-md-auto
-              = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control'
+              = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', data: {width: "400px"}
         .col-md-6
           .row.mb-3.align-items-center
             .col-md-auto
@@ -56,37 +56,6 @@
       .row.mb-3
         .col-auto
           = f.submit :go, class: 'btn btn-primary'
-
-          
-      -#
-        %ul.form-inline
-          %li
-            Change "Date added" to
-            .input-group.date
-              = text_field_tag :date_added, class: 'form-control'
-              %span.input-group-addon
-                %span.glyphicon.glyphicon-calendar
-            -# = select_date Date.current, :prefix => 'date_added'
-            &nbsp;&nbsp;&nbsp;
-            = submit_tag 'Change', :name => 'change_date_added', class: 'btn btn-primary btn-sm'
-          %li
-            Set "Available" to
-            = submit_tag 'True', :name => 'enable_problem', class: 'btn btn-primary btn-sm'
-            = submit_tag 'False', :name => 'disable_problem', class: 'btn btn-primary btn-sm'
-
-          - if GraderConfiguration.multicontests?
-            %li
-              Add selected problems to contest
-              = select("contest","id",Contest.all.collect {|c| [c.title, c.id]})
-              = submit_tag 'Add', :name => 'add_to_contest', class: 'btn btn-primary btn-sm'
-          %li
-            Add selected problems to user group
-            = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), id: 'group_name',class: 'select2'
-            = submit_tag 'Add', name: 'add_group', class: 'btn btn-primary'
-          %li
-            Add the following tags to the selected problems
-            = select_tag "tag_ids", options_from_collection_for_select( Tag.all, 'id','name'), id: 'tags_name',class: 'select2', multiple: true, data: {placeholder: 'Select tags by clicking', width: "200px"}
-            = submit_tag 'Add', name: 'add_tags', class: 'btn btn-primary'
 
   %table.table.table-hover.datatable
     %thead
@@ -110,7 +79,7 @@
           %td= problem.full_name
           %td
             - problem.tags.each do |t|
-              %span.label.label-default= t.name
+              %span.badge.text-bg-secondary= t.name
           %td= problem.available
           %td= problem.date_added
           - if GraderConfiguration.multicontests?
@@ -149,33 +118,34 @@
       }
     });
 
-    $('.input-group.date').datetimepicker({
-      format: 'DD/MMM/YYYY',
-      showTodayButton: true,
-      locale: 'en',
-      widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
-
-    });
-
     $('.datatable').DataTable({
       paging: false
     });
     $('.select2').select2();
 
 
-    new TempusDominus(document.getElementById('date_added'), {
+    td = new TempusDominus(document.getElementById('date_added'), {
       display: {
         icons: {
           time: 'mi mi-td-time',
           date: 'mi mi-td-date',
           up: 'mi mi-td-up',
           down: 'mi mi-td-down',
-          previous: 'bi bi-chevron-left',
-          next: 'bi bi-chevron-right',
-          today: 'bi bi-calendar-check',
-          clear: 'bi bi-trash',
-          close: 'bi bi-x',
+          previous: 'mi mi-td-previous',
+          next: 'mi mi-td-next',
+          today: 'mi mi-td-today',
+          clear: 'mi mi-td-clear',
+          close: 'mi mi-td-close',
         },
+        components: {
+          hours: false,
+          minutes: false,
+          seconds: false
+        }
+      },
+      localization: {
+        locale: 'en-uk',
+        format: 'dd/MMM/yyyy',
       }
     });
 

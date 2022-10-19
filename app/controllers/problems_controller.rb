@@ -154,19 +154,14 @@ class ProblemsController < ApplicationController
   end
 
   def manage
-    @problems = Problem.order(date_added: :desc)
+    @problems = Problem.order(date_added: :desc).includes(:tags)
   end
 
   def do_manage
-    if params.has_key? 'change_date_added' and params[:date_added].strip.empty? == false
-      change_date_added
-    elsif params.has_key? 'add_to_contest'
-      add_to_contest
-    elsif params.has_key? 'enable_problem'
-      set_available(true)
-    elsif params.has_key? 'disable_problem'
-      set_available(false)
-    elsif params.has_key? 'add_group'
+    change_date_added if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
+    add_to_contest if params.has_key? 'add_to_contest'
+    set_available(params[:enable] == 'yes') if params[:change_enable] == '1'
+    if params[:add_group] == '1'
       group = Group.find(params[:group_id])
       ok = []
       failed = []
@@ -180,10 +175,10 @@ class ProblemsController < ApplicationController
       end
       flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
       flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
-    elsif params.has_key? 'add_tags'
-      get_problems_from_params.each do |p|
-        p.tag_ids += params[:tag_ids]
-      end
+    end
+
+    if params[:add_tags] == '1'
+      get_problems_from_params.each { |p| p.tag_ids += params[:tag_ids] }
     end
 
     redirect_to :action => 'manage'
