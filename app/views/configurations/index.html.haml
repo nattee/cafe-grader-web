@@ -1,6 +1,3 @@
-/- content_for :header do
-/  = javascript_include_tag 'local_jquery'
-
 .container-fluid
   .row
     .col-md-12
@@ -9,6 +6,8 @@
     .col-md-12
       = link_to 'Set exam mode', set_exam_right_grader_configuration_index_path('false'), class: 'btn btn-warning'
       = link_to 'Set practice mode', set_exam_right_grader_configuration_index_path('true'), class: 'btn btn-info'
+
+  = turbo_frame_tag "stream_js"
 
   - @group.each do |g|
     .row
@@ -22,16 +21,13 @@
             %th Description
           - @configurations.each do |conf|
             - next if conf.key[0...(conf.key.index('.'))] != g
-            - @grader_configuration = conf
             %tr
               %td
-                /= in_place_editor_field :grader_configuration, :key, {}, :rows=>1
-                = @grader_configuration.key
+                = conf.key
               %td
-                /= in_place_editor_field :grader_configuration, :value_type, {}, :rows=>1
-                = @grader_configuration.value_type
+                = conf.value_type
               %td
-                = best_in_place @grader_configuration, :value, ok_button: "ok", cancel_button: "cancel"
+                = render partial: 'config', locals: {conf: conf}
               %td= conf.description
 
   .row
@@ -46,3 +42,9 @@
         %br/
         If you have more than one process running, you should restart 
         them manually.
+
+:javascript
+  function hahaha(e) {
+    window.xxx = e
+    console.log('asdf')
+  }

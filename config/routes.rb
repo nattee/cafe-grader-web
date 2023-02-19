@@ -76,6 +76,9 @@ Rails.application.routes.draw do
     collection do
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
     end
+    member do
+      patch 'toggle'
+    end
   end
 
   resources :users do

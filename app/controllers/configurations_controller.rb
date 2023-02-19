@@ -1,10 +1,14 @@
 class ConfigurationsController < ApplicationController
 
   before_action :admin_authorization
+  before_action :set_config, only: [:update, :toggle, :edit]
 
   def index
     @configurations = GraderConfiguration.order(:key)
     @group = GraderConfiguration.pluck("grader_configurations.key").map{ |x| x[0...(x.index('.'))] }.uniq.sort
+  end
+
+  def edit
   end
 
   def reload
@@ -13,14 +17,25 @@ class ConfigurationsController < ApplicationController
   end
 
   def update
-    @config = GraderConfiguration.find(params[:id])
     User.clear_last_login if @config.key == GraderConfiguration::MULTIPLE_IP_LOGIN_KEY and @config.value == 'true' and params[:grader_configuration][:value] == 'false'
     respond_to do |format|
-      if @config.update_attributes(configuration_params)
+      if @config.update(configuration_params)
         format.json { head :ok }
+        format.turbo_stream
       else
         format.json { respond_with_bip(@config) }
       end
+    end
+  end
+
+  def toggle
+    if @config.value == "true"
+      @config.update(value: "false")
+    else
+      @config.update(value: "true")
+    end
+    respond_to do |format|
+      format.turbo_stream
     end
   end
 
@@ -37,6 +52,10 @@ class ConfigurationsController < ApplicationController
 private
   def configuration_params
     params.require(:grader_configuration).permit(:key,:value_type,:value,:description)
+  end
+
+  def set_config
+    @config = GraderConfiguration.find(params[:id])
   end
 
 end
