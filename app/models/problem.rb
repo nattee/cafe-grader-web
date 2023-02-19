@@ -131,7 +131,7 @@ class Problem < ActiveRecord::Base
       result << ""
     end
 
-    result << "end <<\n"
+    result << "end\n"
     return result.join "\n"
   end
 

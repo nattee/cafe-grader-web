@@ -42,7 +42,7 @@ end
 @options = {
   all: false,
   output_dir: '../judge/ev_dump/',
-  check_path: '../judge/scripts/std-script/check',
+  check_path: '../judge/scripts/std-script/check.text',
 }
 option_parser = OptionParser.new(ARGV)
 option_parser.banner = "Usage: rails example.rb [options] prob_1 prob_2 ..."
