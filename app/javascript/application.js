@@ -57,6 +57,9 @@ window.customDateFormat = customDateFormat
 //my own customization
 import 'custom'
 
+//import turbo but disable it by default
+import { Turbo } from "@hotwired/turbo-rails"
+Turbo.session.drive = false
 
 //trigger import map ready
 console.log('application.js ready')

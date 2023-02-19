@@ -59,3 +59,8 @@ pin "chart", to: 'chart.js' # @3.9.1
 pin "@eonasdan/tempus-dominus", to: "tempus-dominus/@eonasdan--tempus-dominus.js" # @6.2.4
 pin "@eonasdan/tempus-dominus-esm", to: "tempus-dominus/tempus-dominus.esm.js" # @6.2.4
 pin "@eonasdan/tempus-dominus/customDateFormat", to: "tempus-dominus/customDateFormat.js" # @6.2.4
+
+#hotwire
+pin "@hotwired/stimulus", to: "stimulus.min.js", preload: true
+pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
+pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true

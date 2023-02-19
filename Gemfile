@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '3.1.2'
+ruby '3.2.1'
 
 #rails
 gem 'rails', '~>7.0'
@@ -39,8 +39,14 @@ gem 'material_icons'
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   # gem 'therubyracer', :platforms => :ruby
 
+# use import map
 gem "importmap-rails", "~> 1.1"
-# gem 'uglifier'
+
+# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
+gem "turbo-rails"
+
+# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
+gem "stimulus-rails"
 
 gem 'haml'
 gem 'haml-rails'
@@ -79,12 +85,8 @@ gem 'momentjs-rails'
 #----------- user interface -----------------
 gem 'simple_form', git: 'https://github.com/heartcombo/simple_form', ref: '31fe255'
 
-#select 2
-#gem 'select2-rails'
 #ace editor
 gem 'ace-rails-ap'
-#paginator
-#gem 'will_paginate', '~> 3.0.7'
 
 gem 'mail'
 gem 'rdiscount'  #markdown
