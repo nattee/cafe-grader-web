@@ -2,18 +2,18 @@
   .card-header.text-bg-primary.border-primary
     Problems
   .card-body
-    .radio
-      %label
-        = radio_button_tag 'problems', 'all', (params[:users] == "all")
-        All problems
-    .radio
-      %label
-        = radio_button_tag 'problems', 'enabled', (params[:users] == "enabled"), checked: true
-        Only problems with available = "yes"
-    .radio
-      %label
-        = radio_button_tag 'problems', 'selected', (params[:users] == "group")
-        Only these selected problems
-    = select_tag 'problem_id[]',
-        options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
-        { id: :problem_id, class: 'select2 form-control', multiple: "true" }
+    .form-check.mt-2.mb-3
+      = radio_button_tag :problems, :all, false, class: 'form-check-input'
+      = label_tag :problems_all, 'All Users'
+    .form-check.my-2
+      = radio_button_tag :problems, :enabled, true, class: 'form-check-input'
+      = label_tag :problems_enabled, 'Only available problems'
+    .row.row-cols-lg-auto.align-items-center
+      .col-12
+        .form-check.form-check-inline
+          = radio_button_tag :problems, :selected, false, class: 'form-check-input'
+          = label_tag :problems_selected, 'Only selected problems'
+      .col-12
+        = select_tag 'problem_id[]',
+            options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
+            { id: :problem_id, class: 'select2 form-control', multiple: "true", style: "width: 20rem" }

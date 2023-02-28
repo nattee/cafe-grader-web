@@ -48,7 +48,7 @@ class ReportController < ApplicationController
     @scorearray = calculate_max_score(@problems, @users, @since_id, @until_id)
 
     #this only render as turbo stream
-    turbo_stream.replace 'max_score_result', partial: 'score_table'
+    # see show_max_score.turbo_stream
   end
 
   def current_score

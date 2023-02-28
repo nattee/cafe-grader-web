@@ -1,6 +1,3 @@
-- content_for :header do
-  = javascript_include_tag 'local_jquery'
-
 %h1 Submissions detail
 
 .row
@@ -20,14 +17,16 @@
 
 .row
   .col-sm-12
-    %table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
+    %table#table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
 
 
 :javascript
-  $(function() {
-    submission_table = $('.datatable').DataTable({
+  $(document).on('import-map-loaded', (e) => {
+    submission_table = $('#table').DataTable({
       dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
       autoWidth: true,
+      pageLength: 50,
+      processing: true,
       buttons: [
         {
           text: 'Refresh',
@@ -59,24 +58,15 @@
           d.since_datetime = $('#since_datetime').val()
           d.until_datetime = $('#until_datetime').val()
           d.users = $("input[name='users']:checked").val()
-          d.groups = $("#group_id").select2('val')
+          //d.groups = $("#group_id").select2('val')
           d.problems = $("input[name='problems']:checked").val()
-          d.problem_id = $("#problem_id").select2('val')
+          //d.problem_id = $("#problem_id").select2('val')
         },
         dataType: 'json',
         beforeSend: (request) => {
           request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
         },
       }, //end ajax
-      'pageLength': 50,
-      processing: true,
     });
 
-    $('.input-group.date').datetimepicker({
-      format: 'YYYY-MM-DD',
-      showTodayButton: true,
-      locale: 'en',
-      widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
-      defaultDate: moment()
-    });
   });
