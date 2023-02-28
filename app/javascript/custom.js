@@ -39,8 +39,6 @@ $(function() {
     e.getSession().setUseSoftTabs(true);
   }
 
-  //jQuery(".best_in_place").best_in_place();
-  
   //default options for tempus dominus
   window.default_td_options = {
     display: {

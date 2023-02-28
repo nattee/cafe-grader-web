@@ -15,12 +15,9 @@
   - @contests.each do |contest|
     - @contest = contest
     %tr
-      -#%td= in_place_editor_field :contest, :name, {}, :rows => 1
-      -#%td= in_place_editor_field :contest, :title, {}, :rows => 1
-      -#%td= in_place_editor_field :contest, :enabled, {}, :rows => 1
-      %td= best_in_place @contest, :name
-      %td= best_in_place @contest, :title
-      %td= best_in_place @contest, :enabled
+      %td= @contest.name
+      %td= @contest.title
+      %td= @contest.enabled
       %td= link_to 'Show', contest
       %td= link_to 'Edit', edit_contest_path(contest)
       %td= link_to 'Destroy', contest, :confirm => 'Are you sure?', :method => :delete

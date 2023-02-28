@@ -17,10 +17,6 @@ class UsersController < ApplicationController
 
   before_action :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
 
-
-  #in_place_edit_for :user, :alias_for_editing
-  #in_place_edit_for :user, :email_for_editing
-
   def index
     if !GraderConfiguration['system.user_setting_enabled']
       redirect_to :controller => 'main', :action => 'list'
