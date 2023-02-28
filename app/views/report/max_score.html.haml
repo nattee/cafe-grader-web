@@ -1,54 +1,53 @@
 %h1 Maximum score
 
-= form_tag show_max_score_report_path
-.row
-  .col-md-4
-    .panel.panel-primary
-      .panel-heading
-        Problems
-      .panel-body
-        %p
-          Select problem(s) that we wish to know the score.
-        = label_tag :problem_id, "Problems"
-        = select_tag 'problem_id[]',
-            options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
-            { class: 'select2 form-control', multiple: "true" }
-  .col-md-4
-    .panel.panel-primary
-      .panel-heading
-        Submission range
-      .panel-body
-        %p
-          Input minimum and maximum range of submission ID that should be included. A blank value for min and max means -1 and infinity, respectively.
-        .form-group
-          = label_tag :from, "Min"
-          = text_field_tag 'from_id', @since_id, class: "form-control"
-        .form-group
-          = label_tag :from, "Max"
-          = text_field_tag 'to_id', @until_id, class: "form-control"
-  .col-md-4
-    .panel.panel-primary
-      .panel-heading
-        Users
-      .panel-body
-        .radio
-          %label
-            = radio_button_tag 'users', 'all', (params[:users] == "all")
-            All users
-        .radio
-          %label
-            = radio_button_tag 'users', 'enabled', (params[:users] == "enabled")
-            Only enabled users
-        .radio
-          %label
-            = radio_button_tag 'users', 'group', (params[:users] == "group")
-            Only users from this group
-            = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), id: 'group_name',class: 'select2', style: 'width: 20em';
-.row
-  .col-md-12
-    = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
-    = button_tag 'Download CSV', class: "btn btn-primary btn-large", value: "download"
+= form_with url: show_max_score_report_path, data: {turbo: true} do |f|
+  .row
+    .col-md-4
+      .card.border-primary.mb-2
+        .card-header.text-bg-primary.border-primary
+          Problems
+        .card-body
+          %p
+            Select problem(s) that we wish to know the score.
+          = label_tag :problem_id, "Problems"
+          = select_tag 'problem_id[]',
+              options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
+              { class: 'select2 form-control', multiple: "true" }
+    .col-md-4
+      .card.border-primary.mb-2
+        .card-header.text-bg-primary.border-primary
+          Submission range
+        .card-body
+          %p
+            Input minimum and maximum range of submission ID that should be included. A blank value for min and max means -1 and infinity, respectively.
+          .form-group
+            = label_tag :from, "Min"
+            = text_field_tag 'from_id', @since_id, class: "form-control"
+          .form-group
+            = label_tag :from, "Max"
+            = text_field_tag 'to_id', @until_id, class: "form-control"
+    .col-md-4
+      .card.border-primary.mb-2
+        .card-header.text-bg-primary.border-primary
+          Users
+        .card-body
+          .form-check.mt-2.mb-3
+            = f.radio_button :users, :all, class: 'form-check-input'
+            = f.label :users_all, 'All Users'
+          .form-check.my-2
+            = f.radio_button :users, :enabled, class: 'form-check-input'
+            = f.label :users_enabled, 'Only enabled users'
+          .row.row-cols-lg-auto.align-items-center
+            .col-12
+              .form-check.form-check-inline
+                = f.radio_button :users, :group, class: 'form-check-input'
+                = f.label :users_group, 'Only users from this group'
+            .col-12
+              = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), id: 'group_name',class: 'select2', style: 'width: 20em';
+  .row
+    .col-md-12
+      = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
 
-- if @scorearray
-  %h2 Result
-  =render "score_table"
+.mt-3
+  = turbo_frame_tag "max_score_result", data: {turbo: "true"}
+

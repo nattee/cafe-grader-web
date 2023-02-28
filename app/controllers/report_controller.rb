@@ -17,26 +17,6 @@ class ReportController < ApplicationController
   def max_score
   end
 
-  def current_score
-    @problems = Problem.available_problems
-    if params[:group_id] && params[:users] == 'group'
-      @group = Group.find(params[:group_id])
-      @users = @group.users.where(enabled: true)
-    else
-      @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
-    end
-    @scorearray = calculate_max_score(@problems, @users,0,0,true)
-
-    #rencer accordingly
-    if params[:button] == 'download' then
-      csv = gen_csv_from_scorearray(@scorearray,@problems)
-      send_data csv, filename: 'max_score.csv'
-    else
-      #render template: 'user_admin/user_stat'
-      render 'current_score'
-    end
-  end
-
   def show_max_score
     #process parameters
     #problems
@@ -67,16 +47,30 @@ class ReportController < ApplicationController
     #calculate the routine
     @scorearray = calculate_max_score(@problems, @users, @since_id, @until_id)
 
+    #this only render as turbo stream
+    turbo_stream.replace 'max_score_result', partial: 'score_table'
+  end
+
+  def current_score
+    @problems = Problem.available_problems
+    if params[:group_id] && params[:users] == 'group'
+      @group = Group.find(params[:group_id])
+      @users = @group.users.where(enabled: true)
+    else
+      @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
+    end
+    @scorearray = calculate_max_score(@problems, @users,0,0,true)
+
     #rencer accordingly
     if params[:button] == 'download' then
       csv = gen_csv_from_scorearray(@scorearray,@problems)
       send_data csv, filename: 'max_score.csv'
     else
       #render template: 'user_admin/user_stat'
-      render 'max_score'
+      render 'current_score'
     end
-
   end
+
 
   def score
     if params[:commit] == 'download csv'
@@ -113,21 +107,8 @@ class ReportController < ApplicationController
 
   def login_summary_query
     @users = Array.new
-
-    date_and_time = '%Y-%m-%d %H:%M'
-    begin
-      md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
-    rescue
-      @since_time = Time.zone.now
-    end
-    puts @since_time
-    begin
-      md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @until_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
-    rescue
-      @until_time = DateTime.new(3000,1,1)
-    end
+    @since_time = parse_td_datetime(params[:since_datetime],Time.zone.now)
+    @until_time = parse_td_datetime(params[:until_datetime],DateTime.new(3000,1,1))
 
     record = User
       .left_outer_joins(:logins).group('users.id')
@@ -144,8 +125,6 @@ class ReportController < ApplicationController
       x = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
                                       user[0],@since_time,@until_time)
         .pluck(:ip_address).uniq
-      puts user[4]
-      puts user[5]
       @users << { id: user[0],
                    login: user[1],
                    full_name: user[2],
@@ -159,20 +138,8 @@ class ReportController < ApplicationController
 
   def login_detail_query
     @logins = Array.new
-
-    date_and_time = '%Y-%m-%d %H:%M'
-    begin
-      md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
-    rescue
-      @since_time = Time.zone.now
-    end
-    begin
-      md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @until_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
-    rescue
-      @until_time = DateTime.new(3000,1,1)
-    end
+    @since_time = parse_td_datetime(params[:since_datetime],Time.zone.now)
+    @until_time = parse_td_datetime(params[:until_datetime],DateTime.new(3000,1,1))
 
     @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
     case params[:users]

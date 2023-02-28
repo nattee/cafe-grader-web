@@ -253,4 +253,11 @@ class ApplicationController < ActionController::Base
     return record, total_count || record.model.count, filterCount
   end
 
+  #parse the string given from tempus dominus, set default when error
+  def parse_td_datetime(text, default = Time.zone.now)
+    md = text.match(/(\d+)\/(\d+)\/(\d+), (\d+):(\d+)/)
+    result = Time.zone.local(md[3].to_i,md[2].to_i,md[1].to_i,md[4].to_i,md[5].to_i) rescue default
+    return result
+  end
+
 end

@@ -1,20 +1,26 @@
-.panel.panel-primary
-  .panel-heading
+.card.border-primary
+  .card-header.text-bg-primary.border-primary
     Date ranges
-  .panel-body
-    .row.form-group
-      .col-md-4
+  .card-body
+    .row.mb-3
+      .col-md-4.col-form-label
         From Date:
       .col-md-6
-        .input-group.date
+        .input-group.td-date
           = text_field_tag :since_datetime, nil, class: 'form-control'
-          %span.input-group-addon
-            %span.glyphicon.glyphicon-calendar
-    .row.form-group
-      .col-md-4
+          %span.input-group-text
+            %span.mi event
+    .row.mb-3
+      .col-md-4.col-form-label
         Until Date:
       .col-md-6
         .input-group.date
           = text_field_tag :until_datetime, nil, class: 'form-control'
-          %span.input-group-addon
-            %span.glyphicon.glyphicon-calendar
+          %span.input-group-text
+            %span.mi event
+
+:javascript
+  $( document ).on('import-map-loaded', (e) => {
+    a = new TempusDominus(document.getElementById('since_datetime'), default_td_options );
+    b = new TempusDominus(document.getElementById('until_datetime'), default_td_options );
+  })

@@ -6,6 +6,71 @@ $(document).on('change', '.btn-file :file', function() {
   input.trigger('fileselect', [numFiles, label]);
 });
 
+//default options for tempus dominus
+window.default_td_options = {
+  display: {
+    icons: {
+      time: 'mi mi-td-time',
+      date: 'mi mi-td-date',
+      up: 'mi mi-td-up',
+      down: 'mi mi-td-down',
+      previous: 'mi mi-td-previous',
+      next: 'mi mi-td-next',
+      today: 'mi mi-td-today',
+      clear: 'mi mi-td-clear',
+      close: 'mi mi-td-close',
+    },
+    buttons: {
+      today: true,
+      clear: false,
+      close: true
+    },
+    components: {
+      calendar: true,
+      date: true,
+      month: true,
+      year: true,
+      decades: true,
+      clock: true,
+      hours: true,
+      minutes: true,
+      seconds: false,
+      useTwentyfourHour: true,
+    },
+  },
+  localization: {
+    locale: 'en-uk',
+    format: 'dd/MMM/yyyy',
+  }
+}
+
+window.default_td_date_options = {
+  display: {
+    icons: {
+      time: 'mi mi-td-time',
+      date: 'mi mi-td-date',
+      up: 'mi mi-td-up',
+      down: 'mi mi-td-down',
+      previous: 'mi mi-td-previous',
+      next: 'mi mi-td-next',
+      today: 'mi mi-td-today',
+      clear: 'mi mi-td-clear',
+      close: 'mi mi-td-close',
+    },
+    components: {
+      hours: false,
+      minutes: false,
+      seconds: false
+    }
+  },
+  localization: {
+    locale: 'en-uk',
+    format: 'dd/MMM/yyyy',
+  }
+}
+
+
+//global initialization
 $(function() {
   var e;
   $(".select2").select2({
@@ -39,37 +104,4 @@ $(function() {
     e.getSession().setUseSoftTabs(true);
   }
 
-  //default options for tempus dominus
-  window.default_td_options = {
-    display: {
-      icons: {
-        time: 'mi mi-td-time',
-        date: 'mi mi-td-date',
-        up: 'mi mi-td-up',
-        down: 'mi mi-td-down',
-        previous: 'mi mi-td-previous',
-        next: 'mi mi-td-next',
-        today: 'mi mi-td-today',
-        clear: 'mi mi-td-clear',
-        close: 'mi mi-td-close',
-      },
-      buttons: {
-        today: true,
-        clear: false,
-        close: true
-      },
-      components: {
-        calendar: true,
-        date: true,
-        month: true,
-        year: true,
-        decades: true,
-        clock: true,
-        hours: true,
-        minutes: true,
-        seconds: false,
-        useTwentyfourHour: true,
-      },
-    }
-  }
 });

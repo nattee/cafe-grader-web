@@ -1,7 +1,7 @@
-.panel.panel-primary
-  .panel-heading
+.card.border-primary
+  .card-header.text-bg-primary.border-primary
     Problems
-  .panel-body
+  .card-body
     .radio
       %label
         = radio_button_tag 'problems', 'all', (params[:users] == "all")

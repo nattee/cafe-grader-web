@@ -51,14 +51,8 @@ gem "stimulus-rails"
 gem 'haml'
 gem 'haml-rails'
 
-# Turbolinks makes navigating your web application faster. Read more: https://github.com/turbolinks/turbolinks
-#gem 'turbolinks', '~> 5'
-# Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder'
 
-
-#in-place editor
-gem 'best_in_place', git: "https://github.com/mmotherwell/best_in_place"
 
 # jquery addition
 gem 'jquery-rails'

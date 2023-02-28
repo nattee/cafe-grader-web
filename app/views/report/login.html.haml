@@ -15,19 +15,19 @@
   .col-md-4
     = render partial: 'shared/user_select'
 
-.row.form-group
+.row.mb-3
   .col-sm-12
     %ul.nav.nav-tabs
-      %li.active
-        %a{href: '#detail', data: {toggle: :tab}} Detail
-      %li
-        %a{href: '#summary', data: {toggle: :tab}} Summary
+      %li.nav-item
+        %button.nav-link.active{'data-bs': {toggle: :tab, target: '#detail'}} Detail
+      %li.nav-item
+        %button.nav-link{'data-bs': {toggle: :tab, target: '#summary'}} Summary
 .row
   .col-sm-12
     .tab-content
-      .tab-pane.active#detail
+      .tab-pane.fade.show.active#detail
         %table#detail-table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
-      .tab-pane#summary
+      .tab-pane.fade#summary
         %table#summary-table.table.table-hover.table-condense.datatable{style: 'width: 100%'}
 
 
@@ -120,11 +120,4 @@
       processing: true,
     });
 
-    $('.input-group.date').datetimepicker({
-      format: 'YYYY-MM-DD HH:mm',
-      showTodayButton: true,
-      locale: 'en',
-      widgetPositioning: {horizontal: 'auto', vertical: 'bottom'},
-      defaultDate: moment()
-    });
   });

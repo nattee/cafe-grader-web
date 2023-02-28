@@ -1,19 +1,17 @@
-.panel.panel-primary
-  .panel-heading
+.card.border-primary.mb-2
+  .card-header.text-bg-primary.border-primary
     Users
-  .panel-body
-    .radio
-      %label
-        = radio_button_tag 'users', 'all', (params[:users] == "all")
-        All users
-    .radio
-      %label
-        = radio_button_tag 'users', 'enabled', (params[:users] == "enabled"), checked: true
-        Only enabled users
-    .radio
-      %label
-        = radio_button_tag 'users', 'group', (params[:users] == "group")
-        Only these groups
-    = select_tag 'group_id[]',
-        options_for_select(Group.all.collect {|g| ["[#{g.name}] #{g.description}", g.id]}),
-        { id: 'group_id', class: 'select2 form-control', multiple: "true"}
+  .card-body
+    .form-check.mt-2.mb-3
+      = radio_button_tag :users, :all, true, class: 'form-check-input'
+      = label_tag :users_all, 'All Users'
+    .form-check.my-2
+      = radio_button_tag :users, :enabled, false, class: 'form-check-input'
+      = label_tag :users_enabled, 'Only enabled users'
+    .row.row-cols-lg-auto.align-items-center
+      .col-12
+        .form-check.form-check-inline
+          = radio_button_tag :users, :group, false, class: 'form-check-input'
+          = label_tag :users_group, 'Only users from this group'
+      .col-12
+        = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), id: 'group_name',class: 'select2', style: 'width: 20em';
