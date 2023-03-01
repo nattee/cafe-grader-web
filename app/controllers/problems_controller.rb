@@ -10,7 +10,8 @@ class ProblemsController < ApplicationController
 
 
   def index
-    @problems = Problem.order(date_added: :desc)
+    @problems = Problem.includes(:tags).order(date_added: :desc)
+    @multi_contest = GraderConfiguration.multicontests?
   end
 
 

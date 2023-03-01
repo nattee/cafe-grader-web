@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_02_20_171501) do
+ActiveRecord::Schema[7.0].define(version: 2023_03_01_170551) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -249,9 +249,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_20_171501) do
     t.string "ip_address"
     t.integer "tag", default: 0
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
+    t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"
-    t.index ["user_id", "problem_id", "number"], name: "index_submissions_on_user_id_and_problem_id_and_number", unique: true
-    t.index ["user_id", "problem_id"], name: "index_submissions_on_user_id_and_problem_id"
+    t.index ["user_id", "problem_id", "number"], name: "index_submissions_on_user_id_and_problem_id_and_number"
   end
 
   create_table "tags", id: :integer, charset: "latin1", force: :cascade do |t|

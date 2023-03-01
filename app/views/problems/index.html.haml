@@ -51,13 +51,13 @@
       %td
         - problem.tags.each do |t|
           - #%button.btn.btn-default.btn-sm= t.name
-          %span.label.label-default= t.name
+          %span.badge.text-bg-secondary.bg-opacity-100= t.name
       %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
       %td= problem.date_added
       %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
       %td= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
       %td= toggle_button(@problem.test_allowed?, toggle_test_problem_path(@problem), "problem-test-#{@problem.id}")
-      - if GraderConfiguration.multicontests?
+      - if @multi_contest
         %td
           = problem.contests.collect { |c| c.name }.join(', ')
       %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-sm btn-block'
