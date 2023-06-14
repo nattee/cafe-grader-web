@@ -62,5 +62,8 @@ module CafeGrader
         test user_admin users testcases).each do |controller|
       config.assets.precompile += ["#{controller}.js", "#{controller}.css"]
     end
+
+    #load our application additional config
+    config.worker = Rails.application.config_for(:worker)
   end
 end

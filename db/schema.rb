@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_03_01_170551) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_11_072455) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -130,6 +130,15 @@ ActiveRecord::Schema[7.0].define(version: 2023_03_01_170551) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "status"
     t.index ["updated_at"], name: "index_heart_beats_on_updated_at"
+  end
+
+  create_table "jobs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.integer "status", limit: 1, default: 0
+    t.integer "job_type", limit: 1, default: 0
+    t.integer "arg"
+    t.string "arg_text"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "languages", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|

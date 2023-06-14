@@ -1,0 +1,7 @@
+# cafe_grader judge configuration
+# this is per machine configuration
+
+#executable
+compiler:
+  cpp: /usr/bin/g++
+

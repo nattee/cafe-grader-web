@@ -105,6 +105,11 @@ class Problem < ApplicationRecord
   def long_name
     "[#{name}] #{full_name}"
   end
+
+  #TODO: change to language specific
+  def exec_filename(language)
+    'a.out'
+  end
   
   protected
 

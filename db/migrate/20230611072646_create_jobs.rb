@@ -1,0 +1,15 @@
+class CreateJobs < ActiveRecord::Migration[7.0]
+  def change
+    create_table :jobs do |t|
+      t.integer :status, limit: 1, default: 0
+      t.integer :grader_process_id
+      t.integer :job_type
+      t.integer :arg
+      t.string :arg_text
+      t.string :result
+      t.datetime :finished
+
+      t.timestamps
+    end
+  end
+end

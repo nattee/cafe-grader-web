@@ -28,11 +28,13 @@
 *.orig
 *.swp
 
+
 #ignore rvm setting file
 #.ruby-gemset
 #.ruby-version
 
 /config/secrets.yml
+/config/worker.yml
 
 /.byebug_history
 /storage/*
