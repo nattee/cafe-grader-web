@@ -5,7 +5,7 @@ class CreateJobs < ActiveRecord::Migration[7.0]
       t.integer :grader_process_id
       t.integer :job_type
       t.integer :arg
-      t.string :arg_text
+      t.string :param
       t.string :result
       t.datetime :finished
 

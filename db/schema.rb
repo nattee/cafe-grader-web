@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_11_072455) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_19_070315) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -134,9 +134,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072455) do
 
   create_table "jobs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.integer "status", limit: 1, default: 0
-    t.integer "job_type", limit: 1, default: 0
+    t.integer "grader_process_id"
+    t.integer "job_type"
     t.integer "arg"
     t.string "arg_text"
+    t.string "result"
+    t.datetime "finished"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -318,6 +321,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072455) do
     t.text "sol", size: :long
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
+    t.integer "dataset_id"
     t.index ["problem_id"], name: "index_testcases_on_problem_id"
   end
 

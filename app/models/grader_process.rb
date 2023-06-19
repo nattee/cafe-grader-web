@@ -1,4 +1,4 @@
-class GraderProcess < ActiveRecord::Base
+class GraderProcess < ApplicationRecord
   
   def self.find_by_host_and_pid(host,pid)
     return GraderProcess.where(host:host).where(pid: pid).first

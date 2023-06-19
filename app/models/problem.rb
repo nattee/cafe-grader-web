@@ -16,6 +16,8 @@ class Problem < ApplicationRecord
 
   has_many :submissions
 
+  has_many :data_sets
+
   validates_presence_of :name
   validates_format_of :name, :with => /\A\w+\z/
   validates_presence_of :full_name

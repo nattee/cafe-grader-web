@@ -3,7 +3,7 @@ require 'yaml'
 #
 # This class also contains various login of the system.
 #
-class GraderConfiguration < ActiveRecord::Base
+class GraderConfiguration < ApplicationRecord
 
   SYSTEM_MODE_CONF_KEY = 'system.mode'
   TEST_REQUEST_EARLY_TIMEOUT_KEY = 'contest.test_request.early_timeout'

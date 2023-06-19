@@ -3,10 +3,11 @@ class Grader
   # It is associated with one box-id of isolate
   # Responsible for dispatching a job
 
-  JudgeResultPath = 'isolate_result'
-  JudgeResultBinPath = 'bin'
-  JudgeResultSourcePath = 'source'
-  JudgeResultLibPath = 'lib'
+  JudgeProblemPath = 'isolate_problem'
+  JudgeSubmissionPath = 'isolate_submission'
+  JudgeSubmissionBinPath = 'bin'
+  JudgeSubmissionSourcePath = 'source'
+  JudgeSubmissionLibPath = 'lib'
 
   attr_accessor :job
   attr_reader :box_id
@@ -16,14 +17,40 @@ class Grader
   end
 
   def process_job_compile
-    sub = Submission.find(job.arg)
+    sub = Submission.find(@job.arg)
     compiler = Compile.get_compiler(sub)
-    compiler.compile(sub)
+    result = compiler.compile(sub)
+
+    #report compile success
+    @job.report(:success, result)
+
+    #add next jobs
+    sub.problem.active_dataset.testcases.each do |tp|
+      Job.add_evaluation_jobs(sub,tp)
+    end
+  end
+
+  def process_job_evaluate
+    sub = Submission.find(@job.arg)
+    param = JSON.parse(@job.param,symbolize_names: true)
+    testcase = Testcase.find(param[:testcase_id])
+
+    evaluator = Evaluator.get_evaluator(sub)
+    result = evaluator.evaluate(sub,testcase)
+
+    @job.report(:success, result)
+
+    #add scoring when all evaluation is done
+    if Job.all_evaluate_job_complete(job)
+      Job.add_scoring(sub)
+    end
   end
 
   def run_job
     if @job.job_type == :compile
       process_job_compile
+    elsif @job.job_type == :evaluate
+      process_job_evaluate
     else
       #we don't know how to process this job, report so
       @job.report(:error,'grader does not have handler for this job_type')

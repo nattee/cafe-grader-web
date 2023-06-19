@@ -1,4 +1,4 @@
-class Announcement < ActiveRecord::Base
+class Announcement < ApplicationRecord
 
   def self.published(contest_started=false)
     if contest_started

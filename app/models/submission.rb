@@ -8,6 +8,7 @@ class Submission < ApplicationRecord
 
   before_validation :assign_problem
   before_validation :assign_language
+  before_save :assign_latest_number_if_new_recond
 
   validates_presence_of :source
   validates_length_of :source, :maximum => 100_000, :allow_blank => true, :message => 'code too long, the limit is 100,000 bytes'
@@ -17,7 +18,8 @@ class Submission < ApplicationRecord
 
   has_one :task
 
-  before_save :assign_latest_number_if_new_recond
+  has_many_attached :compiled_files
+
 
   def self.find_last_by_user_and_problem(user_id, problem_id)
     where("user_id = ? AND problem_id = ?",user_id,problem_id).last

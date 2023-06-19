@@ -1,4 +1,4 @@
-class GroupUser < ActiveRecord::Base
+class GroupUser < ApplicationRecord
   self.table_name = 'groups_users'
 
   belongs_to :user

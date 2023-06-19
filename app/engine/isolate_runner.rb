@@ -10,7 +10,7 @@ module IsolateRunner
     system(cmd)
   end
 
-  def run_isolate(prog,input: {},output: {'/output': ""},time_limit: 1, wall_limit: time_limit + 3,isolate_args: [])
+  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 3,isolate_args: [])
     #mount directory for output
     args = []
     output.each { |k,v| args << ['-d',"#{k}=#{v}:rw"] }

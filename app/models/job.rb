@@ -7,6 +7,13 @@ class Job < ApplicationRecord
 
   belongs_to :grader_process
 
+  def report(status,result)
+    update(status: status,result: result)
+  end
+
+  def self.add_evaluation_jobs(submission,testcase)
+    Job.create(job_type: :evaluate,arg: submission.id, param: {testcase: testcases.id}.to_json )
+  end
 
   # fetch jobs from the queue, only for given job_types, if given
   def self.take_oldest_waiting_job(grader_process,job_types = [])
@@ -25,8 +32,8 @@ class Job < ApplicationRecord
     return job
   end
 
-  def report(status,result)
-    update(status: status,result: result)
+  def self.all_evaluate_job_complete(job)
+    Job.where(parent_job: job.parent_job,job_type: :evaluate).where.not(status: :success).count == 0
   end
 
 end

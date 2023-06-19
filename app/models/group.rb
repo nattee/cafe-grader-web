@@ -1,4 +1,4 @@
-class Group < ActiveRecord::Base
+class Group < ApplicationRecord
   has_many :groups_problems, class_name: 'GroupProblem'
   has_many :problems, :through => :groups_problems
 

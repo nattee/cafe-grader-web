@@ -186,6 +186,11 @@ Rails.application.routes.draw do
   #post 'main/submit', to: 'main#submit'
   #get 'main/announcements', to: 'main#announcements'
 
+  namespace :worker do
+    post 'compiled_submission/:id', action: :compiled_submission, as: :compiled_submission
+  end
+
+
 
   #
   get 'tasks/view/:file.:ext' => 'tasks#view'
