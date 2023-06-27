@@ -16,6 +16,7 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
     add_column :testcases, :group_name, :string
     add_column :testcases, :code_name, :string
     add_reference :problems, :live_data_set
+    add_reference :submissions, :data_set, index: false
 
   end
 end

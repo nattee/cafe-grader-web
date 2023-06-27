@@ -1,0 +1,15 @@
+class AddMoreGraderProcess < ActiveRecord::Migration[7.0]
+  def change
+    add_column :grader_processes, :host_id, :integer
+    add_column :grader_processes, :box_id, :integer
+
+
+    create_table :host_problems do |t|
+      t.references :host
+      t.references :problem
+      t.boolean :executable_ready
+      t.integer :status, limit: 1
+      t.timestamps
+    end
+  end
+end

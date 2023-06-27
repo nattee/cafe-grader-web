@@ -5,12 +5,12 @@ class Evaluator
 
 
   # main evaluation function
-  def evaluate(box_id,sub,testcase)
+  def evaluate(sub,testcase)
     @sub = sub
     @testcase = testcase
 
     #init isolate
-    setup_isolate(box_id)
+    setup_isolate(@box_id)
 
     #prepare data files
     prepare_submission_directory
@@ -28,25 +28,41 @@ class Evaluator
     input = {"/input":@input_file.dirname, "/mybin":@bin_path.cleanpath}
     puts "CMD: #{cmd_string}"
     out,err,status = run_isolate(cmd_string,input: input, isolate_args: isolate_args)
+
+    #save result
     File.write(@output_path + 'stdout.txt',out)
     File.write(@output_path + 'stderr.txt',err)
+
+    #add scoring job when all evaluation is complete
+    if Job.all_evaluate_job_complete(j)
+      Job.add_scoring_job(sub)
+    end
+
+
   end
 
   def prepare_executable
-    #check if the file is ready
-    return if File.exist? @bin_path + 'bin_ready'
+    result = false
 
-    #if not, check if some other process from our host is preparing the file
+    #check if some other process from our host is preparing the file
+    HostProblem.transaction do
+      hp = HostProblem.lock("FOR UPDATE").find_or_create_by(host_id: @host_id, problem_id: @sub.problem.id)
+      result = hp.executable_ready?
+      unless result
+        #execute table is not downloaded, do so.
+        @sub.compiled_files.each do |attachment|
+          filename = @bin_path + attachment.filename.to_s
+          File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} }
+          FileUtils.chmod('a+x',filename)
+        end
 
-    #if no one is preparing, acquire the lock and prepare the file
-    GraderProcess.transaction do
-      @sub.compiled_files.each do |attachment|
-        filename = @bin_path + attachment.filename.to_s
-        File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} }
-        FileUtils.chmod('a+x',filename)
+        #report and commit the transaction
+        FileUtils.touch(@bin_path + 'bin_ready')
+        hp.update(executable_ready: true)
+        result = true
       end
-      FileUtils.touch(@bin_path + 'bin_ready')
     end
+    return result
   end
 
   def prepare_files_for_evaluate
@@ -69,7 +85,8 @@ class Evaluator
     FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
   end
 
-  def self.get_evaluator(sub)
+  #return appropriate evaluator class for the submission
+  def self.get_evaluator(submission)
     #TODO: should return appropriate compiler class
     return self
   end

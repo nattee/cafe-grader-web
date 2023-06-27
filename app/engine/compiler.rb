@@ -8,7 +8,6 @@ class Compiler
 
   SourceFilename = 'source.cpp'
 
-
   # main compile function
   def compile(box_id,sub)
     @sub = sub
@@ -40,6 +39,7 @@ class Compiler
 
     # the result should be at @bin_path
     upload_compiled_files
+
 
     #clean up isolate
     cleanup_isolate

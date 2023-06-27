@@ -11,8 +11,21 @@ class Job < ApplicationRecord
     update(status: status,result: result)
   end
 
-  def self.add_evaluation_jobs(submission,testcase)
-    Job.create(job_type: :evaluate,arg: submission.id, param: {testcase: testcases.id}.to_json )
+  def self.add_compiling_job(submission,parent_job_id = nil)
+    Job.create(parent_job_id: parent_job_id, job_type: :compile, arg: submission.id )
+  end
+
+  def self.add_evaluation_jobs(submission,parent_job_id = nil)
+    submission.data_set.testcases.each do |testcase|
+      Job.create(parent_job_id: parent_job_id,
+                 job_type: :evaluate,
+                 arg: submission.id,
+                 param: {testcase: testcases.id}.to_json )
+    end
+  end
+
+  def self.add_scoring_job(submission,parent_job_id = nil)
+    Job.create(parent_job_id: parent_job_id, job_type: :score, arg: submission.id )
   end
 
   # fetch jobs from the queue, only for given job_types, if given
@@ -35,5 +48,6 @@ class Job < ApplicationRecord
   def self.all_evaluate_job_complete(job)
     Job.where(parent_job: job.parent_job,job_type: :evaluate).where.not(status: :success).count == 0
   end
+
 
 end

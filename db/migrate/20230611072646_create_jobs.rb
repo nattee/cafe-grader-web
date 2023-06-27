@@ -7,6 +7,7 @@ class CreateJobs < ActiveRecord::Migration[7.0]
       t.integer :arg
       t.string :param
       t.string :result
+      t.references :parent_job
       t.datetime :finished
 
       t.timestamps

@@ -2,6 +2,13 @@ module JudgeBase
   InputFilename = 'input.txt'
   AnsFilename = 'answer.txt'
 
+  def initialize(box_id,host_id)
+    @box_id = box_id
+    @host_id = host_id
+
+    puts "Create #{self.class.to_s} with box_id = #{box_id}, host_id = #{host_id}"
+  end
+
   def prepare_submission_directory
     #preparing path name
     @submission_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeSubmissionPath + @sub.id.to_s

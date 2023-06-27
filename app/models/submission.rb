@@ -3,8 +3,10 @@ class Submission < ApplicationRecord
   enum tag: {default: 0, model: 1}, _prefix: true
 
   belongs_to :language
-  belongs_to :problem
+  belongs_to :problem  #this should be changed to delefation
+  #delegate :problem, through: :data_set, allow_nil: true
   belongs_to :user
+  belongs_to :data_set
 
   before_validation :assign_problem
   before_validation :assign_language
