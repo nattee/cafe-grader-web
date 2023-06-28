@@ -3,9 +3,14 @@ class Evaluator
   include JudgeBase
   include Rails.application.routes.url_helpers
 
+  StdOutFilename = 'stdout.txt'
+  StdErrFilename = 'stderr.txt'
 
-  # main evaluation function
-  def evaluate(sub,testcase)
+
+
+  # main run function
+  # run the submission against the testcase
+  def execute(sub,testcase)
     @sub = sub
     @testcase = testcase
 
@@ -29,15 +34,31 @@ class Evaluator
     puts "CMD: #{cmd_string}"
     out,err,status = run_isolate(cmd_string,input: input, isolate_args: isolate_args)
 
-    #save result
-    File.write(@output_path + 'stdout.txt',out)
-    File.write(@output_path + 'stderr.txt',err)
+    #save result to disk
+    File.write(@output_path + StdOutFilename,out)
+    File.write(@output_path + StdErrFilename,err)
 
-    #add scoring job when all evaluation is complete
-    if Job.all_evaluate_job_complete(j)
-      Job.add_scoring_job(sub)
+    #call evaluate to check the result
+    evaluate(out,err)
+
+  end
+
+  # this should be called after execute
+  def evaluate(out,err)
+    #check for result
+    result = parse_isolate_result(err)
+
+
+  end
+
+  # return a hash {result: result_code, time: runtime}
+  def parse_isolate_result(text)
+    if text[0...2] == 'OK'
+      md = text.match /OK \((\d+\.\d+) sec real/
+      return {result: 0, time: md[1].to_d}
+    elsif text[0...2] == 'TO'
+    else
     end
-
 
   end
 

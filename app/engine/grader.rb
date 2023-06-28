@@ -46,6 +46,11 @@ class Grader
     end
   end
 
+  def process_job_scoring
+    sub = Submission.find(@job.arg)
+
+  end
+
   def run_job
     if @job.job_type == :compile
       process_job_compile

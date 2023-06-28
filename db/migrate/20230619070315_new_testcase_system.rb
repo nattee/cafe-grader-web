@@ -12,6 +12,13 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
       t.string  :score_param
     end
 
+    create_table :evaluations do |t|
+      t.references :submission
+      t.references :testcase
+      t.integer :result
+      t.decimal :score, precision: 10, scale: 2
+    end
+
     add_reference :testcases, :data_set
     add_column :testcases, :group_name, :string
     add_column :testcases, :code_name, :string

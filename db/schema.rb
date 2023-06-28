@@ -139,9 +139,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.integer "arg"
     t.string "param"
     t.string "result"
+    t.bigint "parent_job_id"
     t.datetime "finished"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["parent_job_id"], name: "index_jobs_on_parent_job_id"
   end
 
   create_table "languages", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
