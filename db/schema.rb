@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
+ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -76,11 +76,33 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "data_sets", charset: "utf8mb3", force: :cascade do |t|
+    t.bigint "problem_id"
+    t.string "name"
+    t.decimal "time_limit", precision: 10, scale: 2, default: "1.0"
+    t.integer "memory_limit"
+    t.integer "task_type", limit: 1
+    t.integer "score_type", limit: 1
+    t.integer "compilation_type", limit: 1
+    t.integer "evaluation_type", limit: 1
+    t.string "score_param"
+    t.index ["problem_id"], name: "index_data_sets_on_problem_id"
+  end
+
   create_table "descriptions", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
     t.text "body"
     t.boolean "markdowned"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+  end
+
+  create_table "evaluations", charset: "utf8mb3", force: :cascade do |t|
+    t.bigint "submission_id"
+    t.bigint "testcase_id"
+    t.integer "result"
+    t.decimal "score", precision: 10, scale: 2
+    t.index ["submission_id"], name: "index_evaluations_on_submission_id"
+    t.index ["testcase_id"], name: "index_evaluations_on_testcase_id"
   end
 
   create_table "grader_configurations", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
@@ -102,6 +124,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.integer "task_id"
     t.string "task_type"
     t.boolean "terminated"
+    t.integer "host_id"
+    t.integer "box_id"
     t.index ["host", "pid"], name: "index_grader_processes_on_ip_and_pid"
   end
 
@@ -130,6 +154,17 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "status"
     t.index ["updated_at"], name: "index_heart_beats_on_updated_at"
+  end
+
+  create_table "host_problems", charset: "utf8mb3", force: :cascade do |t|
+    t.bigint "host_id"
+    t.bigint "problem_id"
+    t.boolean "executable_ready"
+    t.integer "status", limit: 1
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["host_id"], name: "index_host_problems_on_host_id"
+    t.index ["problem_id"], name: "index_host_problems_on_problem_id"
   end
 
   create_table "jobs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -186,6 +221,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.integer "difficulty"
     t.text "description"
     t.boolean "markdown"
+    t.bigint "live_data_set_id"
+    t.index ["live_data_set_id"], name: "index_problems_on_live_data_set_id"
   end
 
   create_table "problems_tags", id: :integer, charset: "latin1", force: :cascade do |t|
@@ -262,6 +299,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.integer "effective_code_length"
     t.string "ip_address"
     t.integer "tag", default: 0
+    t.bigint "data_set_id"
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"
@@ -323,6 +361,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_11_072646) do
     t.text "sol", size: :long
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
+    t.bigint "data_set_id"
+    t.string "group_name"
+    t.string "code_name"
+    t.index ["data_set_id"], name: "index_testcases_on_data_set_id"
     t.index ["problem_id"], name: "index_testcases_on_problem_id"
   end
 
