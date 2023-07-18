@@ -6,7 +6,7 @@ module JudgeBase
     @box_id = box_id
     @host_id = host_id
 
-    puts "Create #{self.class.to_s} with box_id = #{box_id}, host_id = #{host_id}"
+    Rails.logger.info "Create #{self.class.to_s} with box_id = #{box_id}, host_id = #{host_id}"
   end
 
   def prepare_submission_directory

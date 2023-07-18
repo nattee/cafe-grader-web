@@ -1,3 +1,3 @@
 class Evaluation < ApplicationRecord
-  enum result: {success: 0, wrong: 1, time_limit: 2, memory_limit: 2, crash: 3}
+  enum result: {waiting: 0, success: 1, wrong: 2, time_limit: 3, memory_limit: 4, crash: 5, unknown_error: 6}
 end

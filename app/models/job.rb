@@ -7,8 +7,8 @@ class Job < ApplicationRecord
 
   belongs_to :grader_process
 
-  def report(status,result)
-    update(status: status,result: result)
+  def report(result)
+    update(status: result[:status],result: result[:result_text])
   end
 
   def self.add_compiling_job(submission,parent_job_id = nil)

@@ -31,35 +31,39 @@ class Evaluator
     isolate_args = %w(-p -E PATH)
     isolate_args += %w(-i /input/input.txt)
     input = {"/input":@input_file.dirname, "/mybin":@bin_path.cleanpath}
-    puts "CMD: #{cmd_string}"
-    out,err,status = run_isolate(cmd_string,input: input, isolate_args: isolate_args)
+    meta_file = @output_path + 'meta.txt'
+
+    out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file)
 
     #save result to disk
     File.write(@output_path + StdOutFilename,out)
     File.write(@output_path + StdErrFilename,err)
 
     #call evaluate to check the result
-    evaluate(out,err)
+    e = evaluate(out,meta)
 
   end
 
-  # this should be called after execute
-  def evaluate(out,err)
-    #check for result
-    result = parse_isolate_result(err)
-
-
-  end
-
-  # return a hash {result: result_code, time: runtime}
-  def parse_isolate_result(text)
-    if text[0...2] == 'OK'
-      md = text.match /OK \((\d+\.\d+) sec real/
-      return {result: 0, time: md[1].to_d}
-    elsif text[0...2] == 'TO'
+  # this should be called after execute, it will runs the comparator
+  def evaluate(out,meta)
+    unless meta['status'].blank?
+      if meta['status'] == 'SG'
+        e = Evaluation.create(submission: @sub, testcase: @testcase,
+                          time: meta['time'] * 1000, memory: meta['max-rss'], message: meta['message'],result: :crash)
+      elsif meta['status'] == 'TO'
+        e = Evaluation.create(submission: @sub, testcase: @testcase,
+                          time: meta['time-wall'] * 1000, memory: meta['max-rss'], message: meta['message'], result: :time_limit)
+      else
+        e = Evaluation.create(submission: @sub, testcase: @testcase,
+                          time: meta['time'] * 1000, memory: meta['max-rss'], message: meta['message'], result: :unknown_error)
+        #other status
+      end
     else
+      #ends normally, runs the comparator
+      e = Evaluation.create(submission: @sub, testcase: @testcase,
+                        time: meta['time'] * 1000,memory: meta['max-rss'])
     end
-
+    return e;
   end
 
   def prepare_executable

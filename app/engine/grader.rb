@@ -21,12 +21,14 @@ class Grader
     compiler = Compile.get_compiler(sub)
     result = compiler.compile(sub)
 
-    #report compile success
-    @job.report(:success, result)
+    #report compile
+    @job.report(result)
 
     #add next jobs
-    sub.problem.active_dataset.testcases.each do |tp|
-      Job.add_evaluation_jobs(sub,tp)
+    if result[:compile_result] == :success
+      sub.problem.active_dataset.testcases.each do |tp|
+        Job.add_evaluation_jobs(sub,tp)
+      end
     end
   end
 
@@ -48,7 +50,6 @@ class Grader
 
   def process_job_scoring
     sub = Submission.find(@job.arg)
-
   end
 
   def run_job

@@ -16,6 +16,8 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
       t.references :submission
       t.references :testcase
       t.integer :result
+      t.integer :time
+      t.integer :memory
       t.decimal :score, precision: 10, scale: 2
     end
 
@@ -24,6 +26,7 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
     add_column :testcases, :code_name, :string
     add_reference :problems, :live_data_set
     add_reference :submissions, :data_set, index: false
+    add_column :submissions, :status, :integer, limit: 1, default: 0
 
   end
 end

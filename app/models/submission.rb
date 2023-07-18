@@ -1,6 +1,8 @@
 class Submission < ApplicationRecord
 
   enum tag: {default: 0, model: 1}, _prefix: true
+  enum status: {submitted: 0, evaluating: 1, done: 2, compilation_error: 3}
+
 
   belongs_to :language
   belongs_to :problem  #this should be changed to delefation

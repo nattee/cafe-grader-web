@@ -100,6 +100,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.bigint "submission_id"
     t.bigint "testcase_id"
     t.integer "result"
+    t.integer "time"
+    t.integer "memory"
     t.decimal "score", precision: 10, scale: 2
     t.index ["submission_id"], name: "index_evaluations_on_submission_id"
     t.index ["testcase_id"], name: "index_evaluations_on_testcase_id"
@@ -167,7 +169,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.index ["problem_id"], name: "index_host_problems_on_problem_id"
   end
 
-  create_table "jobs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "jobs", charset: "utf8mb3", force: :cascade do |t|
     t.integer "status", limit: 1, default: 0
     t.integer "grader_process_id"
     t.integer "job_type"
@@ -300,10 +302,11 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.string "ip_address"
     t.integer "tag", default: 0
     t.bigint "data_set_id"
+    t.integer "status", limit: 1, default: 0
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"
-    t.index ["user_id", "problem_id", "number"], name: "index_submissions_on_user_id_and_problem_id_and_number"
+    t.index ["user_id", "problem_id", "number"], name: "index_submissions_on_user_id_and_problem_id_and_number", unique: true
   end
 
   create_table "tags", id: :integer, charset: "latin1", force: :cascade do |t|
