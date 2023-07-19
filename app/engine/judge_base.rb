@@ -21,7 +21,6 @@ module JudgeBase
     @bin_path.chmod(0777)
     @source_path.mkpath
     @lib_path.mkpath
-
   end
 
   def prepare_testcase_directory
@@ -39,6 +38,13 @@ module JudgeBase
     @sub_testcase_path.mkpath
     @input_path.mkpath
     @output_path.mkpath
-
   end
+
+
+  def build_result_hash
+    {status: nil,
+     result_text: nil
+    }
+  end
+
 end
