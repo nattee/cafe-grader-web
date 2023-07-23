@@ -1,3 +1,5 @@
 class Evaluation < ApplicationRecord
-  enum result: {waiting: 0, success: 1, wrong: 2, time_limit: 3, memory_limit: 4, crash: 5, unknown_error: 6}
+  belongs_to :submission
+  belongs_to :testcase
+  enum result: {waiting: 0, correct: 1, wrong: 2, partial: 3, time_limit: 4, memory_limit: 5, crash: 6, unknown_error: 7}
 end

@@ -8,6 +8,7 @@ class Grader
   JudgeSubmissionBinPath = 'bin'
   JudgeSubmissionSourcePath = 'source'
   JudgeSubmissionLibPath = 'lib'
+  JudgeSubmissionCompilePath = 'compile'
 
   attr_accessor :job
   attr_reader :box_id

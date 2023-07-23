@@ -162,7 +162,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.bigint "host_id"
     t.bigint "problem_id"
     t.boolean "executable_ready"
-    t.integer "status", limit: 1
+    t.integer "status", limit: 1, default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["host_id"], name: "index_host_problems_on_host_id"

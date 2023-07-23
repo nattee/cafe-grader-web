@@ -4,7 +4,7 @@ class AddMoreGraderProcess < ActiveRecord::Migration[7.0]
       t.references :host
       t.references :problem
       t.boolean :executable_ready
-      t.integer :status, limit: 1
+      t.integer :status, limit: 1, default: 0
       t.timestamps
     end
 

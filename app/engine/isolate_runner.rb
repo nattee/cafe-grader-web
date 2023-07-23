@@ -19,8 +19,9 @@ module IsolateRunner
     input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }
 
     cmd = "#{@isolate_cmd} --run -b #{@box_id} --meta=#{meta} #{dir_args.join ' '} #{isolate_args.join ' '} -- #{prog}"
-    Rails.logger.debug "ISOLATE run command: #{cmd}"
+    judge_log("ISOLATE run command: #{cmd}")
     out,err,status = Open3.capture3(cmd)
+    judge_log("ISOLATE run completed: status #{status}")
 
     return out,err,status,parse_meta(meta)
   end
@@ -37,6 +38,7 @@ module IsolateRunner
     File.open(filename,'r').each do |line|
       a,b = line.split(':')
       result[a] = b.to_d
+      result[a] = b.to_i if a == 'exitcode'
     end
     return result
   end

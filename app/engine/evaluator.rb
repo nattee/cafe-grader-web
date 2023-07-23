@@ -3,8 +3,6 @@ class Evaluator
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-  StdOutFilename = 'stdout.txt'
-  StdErrFilename = 'stderr.txt'
 
 
 
@@ -18,9 +16,10 @@ class Evaluator
     setup_isolate(@box_id)
 
     #prepare data files
-    prepare_submission_directory
-    prepare_testcase_directory
-    prepare_files_for_evaluate
+    prepare_submission_directory(@sub)
+    prepare_testcase_directory(@sub,@testcase)
+    prepare_testcase_files
+    prepare_executable
 
     #prepare params for running sandbox
     executable = '/mybin/' + @sub.problem.exec_filename(@sub.language)
@@ -48,67 +47,85 @@ class Evaluator
   def evaluate(out,meta)
     unless meta['status'].blank?
       if meta['status'] == 'SG'
-        e = Evaluation.create(submission: @sub, testcase: @testcase,
+        e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
                           time: meta['time'] * 1000, memory: meta['max-rss'], message: meta['message'],result: :crash)
       elsif meta['status'] == 'TO'
-        e = Evaluation.create(submission: @sub, testcase: @testcase,
+        e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
                           time: meta['time-wall'] * 1000, memory: meta['max-rss'], message: meta['message'], result: :time_limit)
       else
-        e = Evaluation.create(submission: @sub, testcase: @testcase,
+        e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
                           time: meta['time'] * 1000, memory: meta['max-rss'], message: meta['message'], result: :unknown_error)
         #other status
       end
     else
       #ends normally, runs the comparator
-      e = Evaluation.create(submission: @sub, testcase: @testcase,
-                        time: meta['time'] * 1000,memory: meta['max-rss'])
+      scorer = Scorer.get_scorer(@sub).new(@host_id, @box_id)
+      score = scorer.score(@sub,@testcase)
+      e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
+                        time: meta['time'] * 1000,memory: meta['max-rss'],
+                        result: score[:result], score: score[:score])
     end
     return e;
   end
 
   def prepare_executable
-    result = false
+    @sub.compiled_files.each do |attachment|
+      filename = @bin_path + attachment.filename.to_s
+      unless filename.exist?
+        File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} } 
+        judge_log "Downloaded executable #{filename}"
+      end
+      FileUtils.chmod('a+x',filename)
+    end
+  end
 
-    #check if some other process from our host is preparing the file
+  def prepare_testcase_files
+    # lock problem for this host
     HostProblem.transaction do
       hp = HostProblem.lock("FOR UPDATE").find_or_create_by(host_id: @host_id, problem_id: @sub.problem.id)
-      result = hp.executable_ready?
-      unless result
-        #execute table is not downloaded, do so.
-        @sub.compiled_files.each do |attachment|
-          filename = @bin_path + attachment.filename.to_s
-          File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} }
-          FileUtils.chmod('a+x',filename)
+      if hp.status == 'created'
+        # no one is working on this host problem, I will download
+        hp.update(status: :downloading_testcase)
+
+        #download all testcase
+        @sub.data_set.testcases.each do |tc|
+          prepare_testcase_directory(@sub,tc)
+
+          #download testcase
+          File.write(@input_file,@testcase.input)
+          File.write(@ans_file,@testcase.sol)
+
+          #do the symlink
+          #testcase codename inside prob_id/testcase_id
+          FileUtils.touch(@prob_testcase_path + @testcase.get_name_for_dir)
+
+          #data_set_id/testcase_codename (symlink to prob_id/testcase_id)
+          ds_dir = @problem_path + ('dsid_'+@testcase.data_set.id.to_s)
+          ds_dir.mkpath
+          ds_ts_codename_dir = ds_dir + @testcase.get_name_for_dir
+          ds_codename_dir = @problem_path + ('dsname_'+@testcase.data_set.get_name_for_dir)
+          FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
+          FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
+
+          judge_log("Testcase #{tc.id} (#{tc.code_name}) downloaded")
         end
 
-        #report and commit the transaction
-        FileUtils.touch(@bin_path + 'bin_ready')
-        hp.update(executable_ready: true)
-        result = true
+        # if any lib, dl as well
+
+        # if any manager
+
+        # tell other that we are ready
+        hp.update(status: :ready)
+      elsif hp.status == 'ready'
+        judge_log("Testcases already exists")
+      else
+        # status should be ready, if it stuck at :downloading, the program will stuck
       end
     end
-    return result
+    return default_success_result
+
   end
 
-  def prepare_files_for_evaluate
-    prepare_executable
-
-    #write input/ans files
-    File.write(@input_file,@testcase.input)
-    File.write(@ans_file,@testcase.sol)
-
-    #do the symlink
-    #testcase codename inside prob_id/testcase_id
-    FileUtils.touch(@prob_testcase_path + @testcase.get_name_for_dir)
-
-    #data_set_id/testcase_codename (symlink to prob_id/testcase_id)
-    ds_dir = @problem_path + ('dsid_'+@testcase.data_set.id.to_s)
-    ds_dir.mkpath
-    ds_ts_codename_dir = ds_dir + @testcase.get_name_for_dir
-    ds_codename_dir = @problem_path + ('dsname_'+@testcase.data_set.get_name_for_dir)
-    FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
-    FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
-  end
 
   #return appropriate evaluator class for the submission
   def self.get_evaluator(submission)

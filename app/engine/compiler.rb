@@ -15,7 +15,7 @@ class Compiler
     setup_isolate(@box_id)
 
     #prepare source file
-    prepare_submission_directory
+    prepare_submission_directory(@sub)
     prepare_files_for_compile
 
     #prepare params for running sandbox
@@ -29,21 +29,14 @@ class Compiler
 
     #run the compilation in the isolated environment
     isolate_args = %w(-p -E PATH)
-    output = {"/bin":@bin_path.cleanpath}
+    output = {"/bin":@compile_path.cleanpath}
     input = {"/source":@source_path.cleanpath}
     out,err,status,meta = run_isolate(cmd_string,input: input, output: output, isolate_args: isolate_args, meta: compile_meta)
-
-    #debug
-    puts "STATUS: #{status}"
-    puts "STDOUT:\n"+out
-    puts "STDERR:\n"+err
-    puts "META:"
-    pp meta
 
     #clean up isolate
     cleanup_isolate
 
-    if meta[:exit_code] == 0
+    if meta['exitcode'] == 0
       # the result should be at @bin_path
       upload_compiled_files
       return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
@@ -68,7 +61,7 @@ class Compiler
     form_data = []
 
     #load files
-    Dir.glob(@bin_path + '*').each do |fn|
+    Dir.glob(@compile_path + '*').each do |fn|
       form_data << ['compiled_files',File.open(fn)]
     end
 
