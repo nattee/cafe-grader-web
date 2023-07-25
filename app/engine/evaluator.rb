@@ -39,12 +39,13 @@ class Evaluator
     File.write(@output_path + StdErrFilename,err)
 
     #call evaluate to check the result
-    e = evaluate(out,meta)
-
+    result = evaluate(out,meta)
+    return result
   end
 
   # this should be called after execute, it will runs the comparator
   def evaluate(out,meta)
+    result = default_success_result("evaluation completed successfully")
     unless meta['status'].blank?
       if meta['status'] == 'SG'
         e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
@@ -59,13 +60,13 @@ class Evaluator
       end
     else
       #ends normally, runs the comparator
-      scorer = Scorer.get_scorer(@sub).new(@host_id, @box_id)
-      score = scorer.score(@sub,@testcase)
+      checker = Checker.get_checker(@sub).new(@host_id, @box_id)
+      check_result = checker.process(@sub,@testcase)
       e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
                         time: meta['time'] * 1000,memory: meta['max-rss'],
-                        result: score[:result], score: score[:score])
+                        result: check_result[:result], score: check_result[:score])
     end
-    return e;
+    return result;
   end
 
   def prepare_executable

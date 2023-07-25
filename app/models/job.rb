@@ -1,6 +1,6 @@
 class Job < ApplicationRecord
   enum status: {wait: 0, process: 1, success: 2, error: 3}
-  enum job_type: {preprocess: 0, compile: 1, evaluate: 2, score: 3}
+  enum job_type: {preprocess: 0, compile: 1, evaluate: 2, score: 3}, _prefix: :jt
 
   scope :oldest_waiting, -> {where(status: :wait)}
   scope :finished, -> {where(status: [:done,:error])}
@@ -11,6 +11,14 @@ class Job < ApplicationRecord
     update(status: result[:status],result: result[:result_text])
   end
 
+  def to_text
+    "Job #{id} type: #{job_type}, arg: #{arg}"
+  end
+
+  #
+  # ---- class method
+  #
+
   def self.add_compiling_job(submission,parent_job_id = nil)
     Job.create(parent_job_id: parent_job_id, job_type: :compile, arg: submission.id )
   end
@@ -20,7 +28,7 @@ class Job < ApplicationRecord
       Job.create(parent_job_id: parent_job_id,
                  job_type: :evaluate,
                  arg: submission.id,
-                 param: {testcase: testcases.id}.to_json )
+                 param: {testcase_id: testcase.id}.to_json )
     end
   end
 
@@ -46,7 +54,7 @@ class Job < ApplicationRecord
   end
 
   def self.all_evaluate_job_complete(job)
-    Job.where(parent_job: job.parent_job,job_type: :evaluate).where.not(status: :success).count == 0
+    Job.where(parent_job_id: job.parent_job_id,job_type: :evaluate).where.not(status: :success).count == 0
   end
 
 

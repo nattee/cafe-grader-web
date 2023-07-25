@@ -56,12 +56,16 @@ module JudgeBase
     }
   end
 
-  def default_success_result
-    {status: :ok, result_text: nil}
+  def default_success_result(msg = nil)
+    {status: :success, result_text: msg}
   end
 
-  def judge_log(st)
-    Rails.logger.info "(host: #{@host_id},box: #{@box_id}) #{st}"
+  def judge_log(msg,severity = Logger::INFO)
+    Rails.logger.add(severity,msg,judge_log_tag)
+  end
+
+  def judge_log_tag
+    "Host: #{@host_id}, Box: #{@box_id}"
   end
 
 
