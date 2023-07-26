@@ -15,16 +15,18 @@ class Grader
   attr_accessor :job
   attr_reader :box_id
 
-  def initialize(host_id,box_id)
+  def initialize(worker_id,box_id,key = Rails.configuration.worker[:server_key])
     @box_id = box_id
-    @host_id = box_id
-    @grader_process = GraderProcess.find_or_create_by(box_id: box_id, host_id: host_id)
-    judge_log 'Grader created'
+    @worker_id = box_id
+    @grader_process = GraderProcess.find_or_create_by(box_id: box_id, worker_id: worker_id)
+    @grader_process.update(key: key)
+    JudgeLogger.set_logger Logger.new(Rails.root.join 'log','judge.log')
+    judge_log "Grader created with key #{key}"
   end
 
   def process_job_compile
     sub = Submission.find(@job.arg)
-    compiler = Compiler.get_compiler(sub).new(@host_id,@box_id)
+    compiler = Compiler.get_compiler(sub).new(@worker_id,@box_id)
     result = compiler.compile(sub)
 
     #report compile
@@ -42,7 +44,7 @@ class Grader
     param = JSON.parse(@job.param,symbolize_names: true)
     testcase = Testcase.find(param[:testcase_id])
 
-    evaluator = Evaluator.get_evaluator(sub).new(@host_id,@box_id)
+    evaluator = Evaluator.get_evaluator(sub).new(@worker_id,@box_id)
     result = evaluator.execute(sub,testcase)
 
     @job.report(result)
@@ -58,7 +60,9 @@ class Grader
   end
 
   def check_and_run_job
+    Rails.logger.level = 1
     @job = Job.take_oldest_waiting_job(@grader_process)
+    Rails.logger.level = 0
 
     if (@job)
       judge_log "Process job #{@job.to_text}"
@@ -77,11 +81,18 @@ class Grader
     @job = nil
   end
 
-
   def main_loop
+    last_heartbeat = Time.zone.now
     loop do
       #fetch any job
       check_and_run_job
+
+      # heartbeat
+      current = Time.zone.now
+      if (current - last_heartbeat > 3.0)
+        last_heartbeat = current
+        @grader_process.update(last_heartbeat: current)
+      end
 
       #10 Hz
       sleep (0.1)
@@ -89,9 +100,11 @@ class Grader
   end
 
   # start the main loop, with the given box_id
-  def self.start(box_id)
+  # Key should be unique to each main web app server
+  # and should be in worker.yml
+  def self.start(box_id, key)
     #load parameter
-    g = Grader.new(Rails.configuration.worker[:worker_id],box_id)
+    g = Grader.new(Rails.configuration.worker[:worker_id],box_id,key)
 
     #trying to connect to server, register as a new grader process
 
@@ -100,11 +113,51 @@ class Grader
     g.main_loop
   end
 
+  # watchdog, this function should be runs by cron every few minutes
+  def self.watchdog
+    worker_id = Rails.configuration.worker[:worker_id]
+    server_key = Rails.configuration.worker[:server_key]
+
+    GraderProcess.where(worker_id: worker_id).each do |gp|
+      # check running status
+      grader_process = `ps -e -o pid,args | grep "start([[:blank:]]*#{gp.box_id}[[:blank:]]*,[[:blank:]]*:#{server_key})$" | grep Grader`
+      running = grader_process.lines.count >= 1
+      puts "grader process with box_id #{gp.box_id} is #{running ? 'found' : 'not found'}"
+      #if (gp.request_start_time > gp.request_stop_time)
+      if false
+        # we should have running grader of this box id
+        if !running
+          #start it
+          cmd = "rails runner \"Grader.start(#{gp.box_id},:#{server_key})\""
+          spawn(cmd)
+
+          puts "spawning new grader main loop with #{cmd}"
+        end
+      else
+        # the process should NOT be running
+        #stall = gp.last_heartbeat < 300.seconds.ago
+        stall = true
+        should_be_killed = false
+        pid = grader_process.split[0].to_i
+        if running
+          if should_be_killed
+            puts "sending KILL signal to #{pid}"
+            Process.kill("KILL",pid)
+          elsif stall
+            puts "sending TERM signal to #{pid}"
+            Process.kill("TERM",pid)
+          end
+          #kill it
+        end
+      end
+    end
+  end
+
   def self.test_job
     #init
     s = Submission.last;
     Job.delete_all
-    HostProblem.where(problem: s.problem).delete_all
+    WorkerProblem.where(problem: s.problem).delete_all
 
 
     Job.add_compiling_job(s)

@@ -5,8 +5,8 @@ module JudgeBase
   AnsFilename = 'answer.txt'
 
 
-  def initialize(host_id,box_id)
-    @host_id = host_id
+  def initialize(worker_id,box_id)
+    @worker_id = worker_id
     @box_id = box_id
 
     judge_log "#{self.class.to_s} created"
@@ -61,12 +61,11 @@ module JudgeBase
   end
 
   def judge_log(msg,severity = Logger::INFO)
-    Rails.logger.add(severity,msg,judge_log_tag)
+    JudgeLogger.logger.add(severity,msg,judge_log_tag)
   end
 
   def judge_log_tag
-    "Host: #{@host_id}, Box: #{@box_id}"
+    "Worker: #{@worker_id}, Box: #{@box_id}"
   end
-
 
 end

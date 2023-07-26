@@ -60,7 +60,7 @@ class Evaluator
       end
     else
       #ends normally, runs the comparator
-      checker = Checker.get_checker(@sub).new(@host_id, @box_id)
+      checker = Checker.get_checker(@sub).new(@worker_id, @box_id)
       check_result = checker.process(@sub,@testcase)
       e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
                         time: meta['time'] * 1000,memory: meta['max-rss'],
@@ -81,12 +81,12 @@ class Evaluator
   end
 
   def prepare_testcase_files
-    # lock problem for this host
-    HostProblem.transaction do
-      hp = HostProblem.lock("FOR UPDATE").find_or_create_by(host_id: @host_id, problem_id: @sub.problem.id)
-      if hp.status == 'created'
-        # no one is working on this host problem, I will download
-        hp.update(status: :downloading_testcase)
+    # lock problem for this worker
+    WorkerProblem.transaction do
+      wp = WorkerProblem.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, problem_id: @sub.problem.id)
+      if wp.status == 'created'
+        # no one is working on this worker problem, I will download
+        wp.update(status: :downloading_testcase)
 
         #download all testcase
         @sub.data_set.testcases.each do |tc|
@@ -116,8 +116,8 @@ class Evaluator
         # if any manager
 
         # tell other that we are ready
-        hp.update(status: :ready)
-      elsif hp.status == 'ready'
+        wp.update(status: :ready)
+      elsif wp.status == 'ready'
         judge_log("Testcases already exists")
       else
         # status should be ready, if it stuck at :downloading, the program will stuck

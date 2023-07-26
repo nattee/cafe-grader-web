@@ -126,8 +126,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.integer "task_id"
     t.string "task_type"
     t.boolean "terminated"
-    t.integer "host_id"
+    t.integer "worker_id"
     t.integer "box_id"
+    t.datetime "request_start_time"
+    t.datetime "request_stop_time"
+    t.datetime "last_heartbeat"
+    t.string "key"
     t.index ["host", "pid"], name: "index_grader_processes_on_ip_and_pid"
   end
 
@@ -156,17 +160,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.datetime "updated_at", precision: nil, null: false
     t.string "status"
     t.index ["updated_at"], name: "index_heart_beats_on_updated_at"
-  end
-
-  create_table "host_problems", charset: "utf8mb3", force: :cascade do |t|
-    t.bigint "host_id"
-    t.bigint "problem_id"
-    t.boolean "executable_ready"
-    t.integer "status", limit: 1, default: 0
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["host_id"], name: "index_host_problems_on_host_id"
-    t.index ["problem_id"], name: "index_host_problems_on_problem_id"
   end
 
   create_table "jobs", charset: "utf8mb3", force: :cascade do |t|
@@ -408,6 +401,17 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.string "section"
     t.integer "default_language"
     t.index ["login"], name: "index_users_on_login", unique: true
+  end
+
+  create_table "worker_problems", charset: "utf8mb3", force: :cascade do |t|
+    t.bigint "worker_id"
+    t.bigint "problem_id"
+    t.boolean "executable_ready"
+    t.integer "status", limit: 1, default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["problem_id"], name: "index_worker_problems_on_problem_id"
+    t.index ["worker_id"], name: "index_worker_problems_on_worker_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

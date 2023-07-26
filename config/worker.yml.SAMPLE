@@ -21,5 +21,6 @@ shared:
     web: 127.0.0.1:3000
 
 production:
+  server_key: c2f7966dee
   worker_id: 1
   worker_passcode: aa0429lljka429ukljh3904i2ljk1kj

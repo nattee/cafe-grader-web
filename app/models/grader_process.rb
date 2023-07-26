@@ -45,7 +45,7 @@ class GraderProcess < ApplicationRecord
   def self.find_stalled_process
     where(terminated: false).where(active: true).where("updated_at < ?",Time.now.gmtime - GraderProcess.stalled_time)
   end
-  
+
   def report_active(task=nil)
     self.active = true
     if task!=nil
@@ -56,7 +56,7 @@ class GraderProcess < ApplicationRecord
       self.task_type = nil
     end
     self.save
-  end                
+  end
 
   def report_inactive(task=nil)
     self.active = false
@@ -68,7 +68,7 @@ class GraderProcess < ApplicationRecord
       self.task_type = nil
     end
     self.save
-  end                
+  end
 
   def terminate
     self.terminated = true

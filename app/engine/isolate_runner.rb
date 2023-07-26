@@ -8,7 +8,7 @@ module IsolateRunner
     @box_id = box_id
 
     cmd = "#{@isolate_cmd} --init -b #{@box_id}"
-    Rails.logger.debug "ISOLATE setup command: #{cmd}"
+    judge_log "ISOLATE setup command: #{cmd}", Logger::DEBUG
     system(cmd)
   end
 
@@ -19,9 +19,9 @@ module IsolateRunner
     input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }
 
     cmd = "#{@isolate_cmd} --run -b #{@box_id} --meta=#{meta} #{dir_args.join ' '} #{isolate_args.join ' '} -- #{prog}"
-    judge_log("ISOLATE run command: #{cmd}")
+    judge_log("ISOLATE run command: #{cmd}", Logger::DEBUG)
     out,err,status = Open3.capture3(cmd)
-    judge_log("ISOLATE run completed: status #{status}")
+    judge_log("ISOLATE run completed: status #{status}", Logger::DEBUG)
 
     return out,err,status,parse_meta(meta)
   end
