@@ -9,7 +9,7 @@ module IsolateRunner
 
     cmd = "#{@isolate_cmd} --init -b #{@box_id}"
     judge_log "ISOLATE setup command: #{cmd}", Logger::DEBUG
-    system(cmd)
+    out,err,status = Open3.capture3(cmd)
   end
 
   def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 3,isolate_args: [], meta: MetaFilename)
@@ -21,13 +21,14 @@ module IsolateRunner
     cmd = "#{@isolate_cmd} --run -b #{@box_id} --meta=#{meta} #{dir_args.join ' '} #{isolate_args.join ' '} -- #{prog}"
     judge_log("ISOLATE run command: #{cmd}", Logger::DEBUG)
     out,err,status = Open3.capture3(cmd)
-    judge_log("ISOLATE run completed: status #{status}", Logger::DEBUG)
+    judge_log("ISOLATE run completed: status #{status}, stdout size = #{out.length}", Logger::DEBUG)
 
     return out,err,status,parse_meta(meta)
   end
 
   def cleanup_isolate
     cmd = "#{@isolate_cmd} --cleanup -b #{@box_id}"
+    judge_log "ISOLATE cleanup command: #{cmd}", Logger::DEBUG
     system(cmd)
   end
 

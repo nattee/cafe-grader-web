@@ -11,8 +11,8 @@ class Checker
   # check if required files, that are, output from submttion, answer from problem
   # and any other file is there
   def check_for_required_file
-    raise RuntimeException.new "Output file not exists" unless @output_file.exist?
-    raise RuntimeException.new "Answer file not exists" unless @ans_file.exist?
+    raise "Output file [#{@output_file.cleanpath}] does not exists" unless @output_file.exist?
+    raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
   end
 
   # main run function
@@ -31,6 +31,7 @@ class Checker
 
     cmd = "diff -b #{@output_file} #{@ans_file}"
 
+    judge_log "default diff checker cmd: #{cmd}"
     out,err,status = Open3.capture3(cmd)
 
     if (status.exitstatus == 0)

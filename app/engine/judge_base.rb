@@ -65,7 +65,7 @@ module JudgeBase
   end
 
   def judge_log_tag
-    "Worker: #{@worker_id}, Box: #{@box_id}"
+    "Worker: #{@worker_id}, Box: #{@box_id} (#{self.class.name})"
   end
 
 end

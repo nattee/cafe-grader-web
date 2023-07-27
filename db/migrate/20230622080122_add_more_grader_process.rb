@@ -10,9 +10,8 @@ class AddMoreGraderProcess < ActiveRecord::Migration[7.0]
 
     add_column :grader_processes, :worker_id, :integer
     add_column :grader_processes, :box_id, :integer
-    add_column :grader_processes, :request_start_time, :datetime
-    add_column :grader_processes, :request_stop_time, :datetime
     add_column :grader_processes, :last_heartbeat, :datetime
     add_column :grader_processes, :key, :string
+    add_column :grader_processes, :enabled, :boolean, default: false
   end
 end

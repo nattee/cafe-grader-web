@@ -17,10 +17,9 @@ class Grader
 
   def initialize(worker_id,box_id,key = Rails.configuration.worker[:server_key])
     @box_id = box_id
-    @worker_id = box_id
+    @worker_id = worker_id
     @grader_process = GraderProcess.find_or_create_by(box_id: box_id, worker_id: worker_id)
     @grader_process.update(key: key)
-    JudgeLogger.set_logger Logger.new(Rails.root.join 'log','judge.log')
     judge_log "Grader created with key #{key}"
   end
 
@@ -57,6 +56,10 @@ class Grader
 
   def process_job_scoring
     sub = Submission.find(@job.arg)
+    scorer = Scorer.get_scorer(sub).new(@worker_id,@box_id)
+    result = scorer.process(sub)
+
+    @job.report(result)
   end
 
   def check_and_run_job
@@ -65,17 +68,23 @@ class Grader
     Rails.logger.level = 0
 
     if (@job)
-      judge_log "Process job #{@job.to_text}"
-      @grader_process.update(task_id: @job.id)
-      if @job.jt_compile?
-        process_job_compile
-      elsif @job.jt_evaluate?
-        process_job_evaluate
-      elsif @job.jt_score?
-        process_job_scoring
-      else
-        #we don't know how to process this job, report so
-        @job.report({status: :error,result: 'grader does not have handler for this job_type'})
+      begin
+        judge_log "Process job #{@job.to_text}"
+        @grader_process.update(task_id: @job.id)
+        if @job.jt_compile?
+          process_job_compile
+        elsif @job.jt_evaluate?
+          process_job_evaluate
+        elsif @job.jt_score?
+          process_job_scoring
+        else
+          #we don't know how to process this job, report so
+          @job.report({status: :error,result: 'grader does not have handler for this job_type'})
+        end
+      rescue => e;
+        judge_log "ERROR!!!"
+        judge_log e,Logger::ERROR;
+        @job.update(status: :wait)
       end
     end
     @job = nil
@@ -123,8 +132,7 @@ class Grader
       grader_process = `ps -e -o pid,args | grep "start([[:blank:]]*#{gp.box_id}[[:blank:]]*,[[:blank:]]*:#{server_key})$" | grep Grader`
       running = grader_process.lines.count >= 1
       puts "grader process with box_id #{gp.box_id} is #{running ? 'found' : 'not found'}"
-      #if (gp.request_start_time > gp.request_stop_time)
-      if false
+      if gp.enabled
         # we should have running grader of this box id
         if !running
           #start it
@@ -153,11 +161,21 @@ class Grader
     end
   end
 
+  def self.make_enabled(num)
+    worker_id = Rails.configuration.worker[:worker_id]
+    server_key = Rails.configuration.worker[:server_key]
+    (1..num).each do |box_id|
+      gp = GraderProcess.find_or_create_by(worker_id: worker_id,box_id: box_id)
+      gp.update(key: server_key,enabled: true)
+    end
+    GraderProcess.where(worker_id: worker_id).where.not(box_id: 1..num).update_all(enabled: false)
+  end
+
   def self.test_job
     #init
     s = Submission.last;
-    Job.delete_all
     WorkerProblem.where(problem: s.problem).delete_all
+    Job.delete_all
 
 
     Job.add_compiling_job(s)

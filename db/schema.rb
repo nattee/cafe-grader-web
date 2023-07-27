@@ -128,10 +128,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.boolean "terminated"
     t.integer "worker_id"
     t.integer "box_id"
-    t.datetime "request_start_time"
-    t.datetime "request_stop_time"
     t.datetime "last_heartbeat"
     t.string "key"
+    t.boolean "enabled", default: false
     t.index ["host", "pid"], name: "index_grader_processes_on_ip_and_pid"
   end
 

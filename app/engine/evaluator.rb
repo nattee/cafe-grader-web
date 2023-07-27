@@ -17,8 +17,8 @@ class Evaluator
 
     #prepare data files
     prepare_submission_directory(@sub)
-    prepare_testcase_directory(@sub,@testcase)
     prepare_testcase_files
+    prepare_testcase_directory(@sub, @testcase) # !!! MUST BE CALLED AFTER prepare_testcase_files
     prepare_executable
 
     #prepare params for running sandbox
@@ -34,9 +34,14 @@ class Evaluator
 
     out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file)
 
+    #clean up isolate
+    cleanup_isolate
+
     #save result to disk
-    File.write(@output_path + StdOutFilename,out)
-    File.write(@output_path + StdErrFilename,err)
+    stdout_file = @output_path + StdOutFilename
+    stderr_file = @output_path + StdErrFilename
+    File.write(stdout_file,out)
+    File.write(stderr_file,err)
 
     #call evaluate to check the result
     result = evaluate(out,meta)

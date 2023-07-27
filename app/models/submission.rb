@@ -10,6 +10,8 @@ class Submission < ApplicationRecord
   belongs_to :user
   belongs_to :data_set
 
+  has_many :evaluations
+
   before_validation :assign_problem
   before_validation :assign_language
   before_save :assign_latest_number_if_new_recond
