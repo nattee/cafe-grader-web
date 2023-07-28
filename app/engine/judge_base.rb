@@ -4,6 +4,10 @@ module JudgeBase
   StdErrFilename = 'stderr.txt'
   AnsFilename = 'answer.txt'
 
+  COMPILE_RESULT_STDOUT_FILENAME = 'compile_output'
+  COMPILE_RESULT_STDERR_FILENAME = 'compile_err'
+  COMPILE_RESULT_META_FILENAME = 'compile_meta'
+
 
   def initialize(worker_id,box_id)
     @worker_id = worker_id
@@ -17,6 +21,7 @@ module JudgeBase
     #preparing path name
     @submission_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeSubmissionPath + sub.id.to_s
     @compile_path = @submission_path + Grader::JudgeSubmissionCompilePath
+    @compile_result_path = @submission_path + Grader::JUDGE_SUB_COMPILE_RESULT_PATH
     @bin_path = @submission_path + Grader::JudgeSubmissionBinPath + "#{@box_id}"
     @source_path = @submission_path + Grader::JudgeSubmissionSourcePath
     @lib_path = @submission_path + Grader::JudgeSubmissionLibPath
@@ -24,6 +29,7 @@ module JudgeBase
     #prepare folder
     @compile_path.mkpath
     @compile_path.chmod(0777)
+    @compile_result_path.mkpath
     @bin_path.mkpath
     @bin_path.chmod(0777)
     @source_path.mkpath

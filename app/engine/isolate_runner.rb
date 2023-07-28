@@ -12,13 +12,18 @@ module IsolateRunner
     out,err,status = Open3.capture3(cmd)
   end
 
-  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 3,isolate_args: [], meta: MetaFilename)
+  #  Run isolate,
+  #  time_limit, wall_limit are in second, fractional is allowed
+  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 1,isolate_args: [], meta: MetaFilename)
     #mount directory for output
     dir_args = []
     output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] }
     input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }
 
-    cmd = "#{@isolate_cmd} --run -b #{@box_id} --meta=#{meta} #{dir_args.join ' '} #{isolate_args.join ' '} -- #{prog}"
+    limit_arg = "-t #{time_limit} -x #{wall_limit}"
+    all_arg  = "#{limit_arg} #{dir_args.join ' '} #{isolate_args.join ' '}"
+
+    cmd = "#{@isolate_cmd} --run -b #{@box_id} --meta=#{meta} #{all_arg} -- #{prog}"
     judge_log("ISOLATE run command: #{cmd}", Logger::DEBUG)
     out,err,status = Open3.capture3(cmd)
     judge_log("ISOLATE run completed: status #{status}, stdout size = #{out.length}", Logger::DEBUG)
@@ -38,8 +43,14 @@ module IsolateRunner
     result = Hash.new
     File.open(filename,'r').each do |line|
       a,b = line.split(':')
-      result[a] = b.to_d
-      result[a] = b.to_i if a == 'exitcode'
+      case a
+      when 'exitcode'
+        result[a] = b.to_i
+      when 'status','message'
+        result[a] = b.strip
+      else
+        result[a] = b.to_d
+      end
     end
     return result
   end

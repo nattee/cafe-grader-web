@@ -25,7 +25,11 @@ class Compiler
     cmd = ["#{Rails.configuration.worker[:compiler][:cpp]}"]
     cmd += args
     cmd_string = cmd.join ' '
-    compile_meta = @submission_path + 'compile_meta.txt'
+
+    #output file
+    compile_meta = @compile_result_path + Grader::COMPILE_RESULT_META_FILENAME
+    compile_stdout_file = @compile_result_path + Grader::COMPILE_RESULT_STDOUT_FILENAME
+    compile_stderr_file = @compile_result_path + Grader::COMPILE_RESULT_STDERR_FILENAME
 
     #run the compilation in the isolated environment
     isolate_args = %w(-p -E PATH)
@@ -33,16 +37,21 @@ class Compiler
     input = {"/source":@source_path.cleanpath}
     out,err,status,meta = run_isolate(cmd_string,input: input, output: output, isolate_args: isolate_args, meta: compile_meta)
 
+    #save result
+    File.write(compile_stdout_file,out)
+    File.write(compile_stderr_file,err)
+
     #clean up isolate
     cleanup_isolate
 
     if meta['exitcode'] == 0
       # the result should be at @bin_path
       upload_compiled_files
+      sub.update(status: :compilation_success,compiler_message: out)
       return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
-      sub.update(status: :compilation_error)
+      sub.update(status: :compilation_error,compiler_message: err)
       return {status: :success, result_text: 'Compilation error', compile_result: :error}
     end
   end

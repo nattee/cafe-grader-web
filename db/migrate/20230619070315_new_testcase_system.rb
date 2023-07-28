@@ -1,6 +1,6 @@
 class NewTestcaseSystem < ActiveRecord::Migration[7.0]
   def change
-    create_table :data_sets do |t|
+    create_table :datasets do |t|
       t.references :problem
       t.string  :name
       t.decimal :time_limit, default: 1, precision: 10, scale: 2
@@ -21,11 +21,11 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
       t.decimal :score, precision: 10, scale: 2
     end
 
-    add_reference :testcases, :data_set
+    add_reference :testcases, :dataset
     add_column :testcases, :group_name, :string
     add_column :testcases, :code_name, :string
-    add_reference :problems, :live_data_set
-    add_reference :submissions, :data_set, index: false
+    add_reference :problems, :live_dataset
+    add_reference :submissions, :dataset, index: false
     add_column :submissions, :status, :integer, limit: 1, default: 0
 
   end

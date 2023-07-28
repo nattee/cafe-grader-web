@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
+ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -76,7 +76,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
-  create_table "data_sets", charset: "utf8mb3", force: :cascade do |t|
+  create_table "datasets", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "problem_id"
     t.string "name"
     t.decimal "time_limit", precision: 10, scale: 2, default: "1.0"
@@ -86,7 +86,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.integer "compilation_type", limit: 1
     t.integer "evaluation_type", limit: 1
     t.string "score_param"
-    t.index ["problem_id"], name: "index_data_sets_on_problem_id"
+    t.index ["problem_id"], name: "index_datasets_on_problem_id"
   end
 
   create_table "descriptions", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
@@ -103,6 +103,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.integer "time"
     t.integer "memory"
     t.decimal "score", precision: 10, scale: 2
+    t.string "result_text"
+    t.string "isolate_message"
     t.index ["submission_id"], name: "index_evaluations_on_submission_id"
     t.index ["testcase_id"], name: "index_evaluations_on_testcase_id"
   end
@@ -215,8 +217,8 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.integer "difficulty"
     t.text "description"
     t.boolean "markdown"
-    t.bigint "live_data_set_id"
-    t.index ["live_data_set_id"], name: "index_problems_on_live_data_set_id"
+    t.bigint "live_dataset_id"
+    t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
   create_table "problems_tags", id: :integer, charset: "latin1", force: :cascade do |t|
@@ -293,7 +295,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.integer "effective_code_length"
     t.string "ip_address"
     t.integer "tag", default: 0
-    t.bigint "data_set_id"
+    t.bigint "dataset_id"
     t.integer "status", limit: 1, default: 0
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
@@ -356,10 +358,10 @@ ActiveRecord::Schema[7.0].define(version: 2023_06_22_080122) do
     t.text "sol", size: :long
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
-    t.bigint "data_set_id"
+    t.bigint "dataset_id"
     t.string "group_name"
     t.string "code_name"
-    t.index ["data_set_id"], name: "index_testcases_on_data_set_id"
+    t.index ["dataset_id"], name: "index_testcases_on_dataset_id"
     t.index ["problem_id"], name: "index_testcases_on_problem_id"
   end
 

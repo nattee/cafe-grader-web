@@ -1,14 +1,14 @@
 class Submission < ApplicationRecord
 
   enum tag: {default: 0, model: 1}, _prefix: true
-  enum status: {submitted: 0, evaluating: 1, done: 2, compilation_error: 3}
+  enum status: {submitted: 0, evaluating: 1, done: 2, compilation_error: 3, compilation_success: 4, grader_error: 5}
 
 
   belongs_to :language
-  belongs_to :problem  #this should be changed to delefation
-  #delegate :problem, through: :data_set, allow_nil: true
+  belongs_to :problem  #this should be changed to delegation
+  #delegate :problem, through: :dataset, allow_nil: true
   belongs_to :user
-  belongs_to :data_set
+  belongs_to :dataset
 
   has_many :evaluations
 
@@ -25,6 +25,19 @@ class Submission < ApplicationRecord
   has_one :task
 
   has_many_attached :compiled_files
+
+  def rejudge
+    Job.add_grade_submission_job(self)
+  end
+
+
+  def set_grading_complete(point,grading_text)
+    update(points: point, status: :done, graded_at: Time.zone.now, grader_comment: grading_text)
+  end
+
+  def set_grading_error(error_text)
+    update(points: 0, status: :grader_error, graded_at: Time.zone.now, grader_comment: error_text)
+  end
 
 
   def self.find_last_by_user_and_problem(user_id, problem_id)
@@ -173,6 +186,14 @@ class Submission < ApplicationRecord
     return if !self.new_record?
     latest = Submission.find_last_by_user_and_problem(self.user_id, self.problem_id)
     self.number = (latest==nil) ? 1 : latest.number + 1;
+  end
+
+  public
+  # migrate to new version
+  def debug_migrate_new_dataset
+    ds = problem.datasets.last
+    problem.update(live_dataset: ds)
+    update(dataset: ds)
   end
 
 end

@@ -9,6 +9,7 @@ class Grader
   JudgeSubmissionSourcePath = 'source'
   JudgeSubmissionLibPath = 'lib'
   JudgeSubmissionCompilePath = 'compile'
+  JUDGE_SUB_COMPILE_RESULT_PATH = 'compile_result'
 
   include JudgeBase
 
@@ -22,6 +23,10 @@ class Grader
     @grader_process.update(key: key)
     judge_log "Grader created with key #{key}"
   end
+
+  #
+  # ---- job processing ---
+  #
 
   def process_job_compile
     sub = Submission.find(@job.arg)
@@ -62,9 +67,12 @@ class Grader
     @job.report(result)
   end
 
+  #
+  # -------- main job running function --------------
+  #
   def check_and_run_job
     Rails.logger.level = 1
-    @job = Job.take_oldest_waiting_job(@grader_process)
+    @job = Job.take_oldest_waiting_job(@grader_process) if Job.has_waiting_job
     Rails.logger.level = 0
 
     if (@job)
@@ -81,9 +89,16 @@ class Grader
           #we don't know how to process this job, report so
           @job.report({status: :error,result: 'grader does not have handler for this job_type'})
         end
-      rescue => e;
-        judge_log "ERROR!!!"
+      rescue GraderError => ge
+        judge_log ge,Logger::ERROR;
+        @job.update(status: :error) if ge.end_job
+        if ge.update_submission
+          s = Submission.find(ge.submission_id);
+          s.set_grading_error(ge.message_for_user);
+        end
+      rescue => e
         judge_log e,Logger::ERROR;
+        #reset job status to be run again
         @job.update(status: :wait)
       end
     end
@@ -104,7 +119,7 @@ class Grader
       end
 
       #10 Hz
-      sleep (0.1)
+      sleep (0.2)
     end
   end
 
@@ -171,13 +186,31 @@ class Grader
     GraderProcess.where(worker_id: worker_id).where.not(box_id: 1..num).update_all(enabled: false)
   end
 
+
+  # for testing
+  def self.reload_grader(num)
+    make_enabled(0)
+    watchdog;
+    sleep(1);
+    puts '-------------'
+    make_enabled(num)
+    watchdog;
+  end
+
   def self.test_job
     #init
-    s = Submission.last;
+    #s = Submission.find(422194) # full score
+    #s = Submission.find(422198) # zero score
+    #s = Submission.find(422188) # compile error
+
+    s = Submission.find(422022) # Time Limit & Pass & Wrong
+    #421461
+
     WorkerProblem.where(problem: s.problem).delete_all
     Job.delete_all
 
 
     Job.add_compiling_job(s)
+    return s
   end
 end

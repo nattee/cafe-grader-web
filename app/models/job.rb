@@ -19,12 +19,19 @@ class Job < ApplicationRecord
   # ---- class method
   #
 
+  def self.add_grade_submission_job(submission)
+    # just add normal compile job
+    self.add_compiling_job(submission)
+  end
+
   def self.add_compiling_job(submission,parent_job_id = nil)
     Job.create(parent_job_id: parent_job_id, job_type: :compile, arg: submission.id )
   end
 
   def self.add_evaluation_jobs(submission,parent_job_id = nil)
-    submission.data_set.testcases.each do |testcase|
+    raise GraderError.new("submission #{submission.id} does not have dataset",
+                          submission_id: submission.id) unless submission.dataset
+    submission.dataset.testcases.each do |testcase|
       Job.create(parent_job_id: parent_job_id,
                  job_type: :evaluate,
                  arg: submission.id,
@@ -34,6 +41,10 @@ class Job < ApplicationRecord
 
   def self.add_scoring_job(submission,parent_job_id = nil)
     Job.create(parent_job_id: parent_job_id, job_type: :score, arg: submission.id )
+  end
+
+  def self.has_waiting_job
+    Job.where(status: :wait).count > 0
   end
 
   # fetch jobs from the queue, only for given job_types, if given

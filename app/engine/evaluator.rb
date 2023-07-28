@@ -44,33 +44,37 @@ class Evaluator
     File.write(stderr_file,err)
 
     #call evaluate to check the result
-    result = evaluate(out,meta)
+    result = evaluate(out,meta,err)
     return result
   end
 
   # this should be called after execute, it will runs the comparator
-  def evaluate(out,meta)
+  def evaluate(out,meta,err)
     result = default_success_result("evaluation completed successfully")
+    e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase)
+
+    # any error?
     unless meta['status'].blank?
       if meta['status'] == 'SG'
-        e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
-                          time: meta['time'] * 1000, memory: meta['max-rss'], message: meta['message'],result: :crash)
+        e.update(time: meta['time'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'],result: :crash)
       elsif meta['status'] == 'TO'
-        e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
-                          time: meta['time-wall'] * 1000, memory: meta['max-rss'], message: meta['message'], result: :time_limit)
+        e.update(time: meta['time-wall'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
       else
-        e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
-                          time: meta['time'] * 1000, memory: meta['max-rss'], message: meta['message'], result: :unknown_error)
         #other status
+        e.update(time: meta['time'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error)
       end
+      judge_log "##{@sub.id} Testcase: #{@testcase.id} forced exit by isolate (#{meta['status']}) #{err}"
     else
+      judge_log "##{@sub.id} Testcase: #{@testcase.id} ends normally"
       #ends normally, runs the comparator
       checker = Checker.get_checker(@sub).new(@worker_id, @box_id)
       check_result = checker.process(@sub,@testcase)
-      e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase).update(
-                        time: meta['time'] * 1000,memory: meta['max-rss'],
-                        result: check_result[:result], score: check_result[:score])
+      e.update( time: meta['time'] * 1000,memory: meta['max-rss'],
+                result: check_result[:result], score: check_result[:score])
     end
+
+    #save final result
+    e.set_result_text_from_result
     return result;
   end
 
@@ -94,22 +98,22 @@ class Evaluator
         wp.update(status: :downloading_testcase)
 
         #download all testcase
-        @sub.data_set.testcases.each do |tc|
+        @sub.dataset.testcases.each do |tc|
           prepare_testcase_directory(@sub,tc)
 
           #download testcase
-          File.write(@input_file,@testcase.input)
-          File.write(@ans_file,@testcase.sol)
+          File.write(@input_file,tc.input)
+          File.write(@ans_file,tc.sol)
 
           #do the symlink
           #testcase codename inside prob_id/testcase_id
-          FileUtils.touch(@prob_testcase_path + @testcase.get_name_for_dir)
+          FileUtils.touch(@prob_testcase_path + tc.get_name_for_dir)
 
-          #data_set_id/testcase_codename (symlink to prob_id/testcase_id)
-          ds_dir = @problem_path + ('dsid_'+@testcase.data_set.id.to_s)
+          #dataset_id/testcase_codename (symlink to prob_id/testcase_id)
+          ds_dir = @problem_path + ('dsid_'+tc.dataset.id.to_s)
           ds_dir.mkpath
-          ds_ts_codename_dir = ds_dir + @testcase.get_name_for_dir
-          ds_codename_dir = @problem_path + ('dsname_'+@testcase.data_set.get_name_for_dir)
+          ds_ts_codename_dir = ds_dir + tc.get_name_for_dir
+          ds_codename_dir = @problem_path + ('dsname_'+tc.dataset.get_name_for_dir)
           FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
           FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
 
@@ -123,7 +127,7 @@ class Evaluator
         # tell other that we are ready
         wp.update(status: :ready)
       elsif wp.status == 'ready'
-        judge_log("Testcases already exists")
+        judge_log("Found downloaded testcase")
       else
         # status should be ready, if it stuck at :downloading, the program will stuck
       end

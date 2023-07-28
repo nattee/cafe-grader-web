@@ -1,4 +1,4 @@
-class DataSet < ApplicationRecord
+class Dataset < ApplicationRecord
   belongs_to :problem
 
   has_many :testcases
@@ -17,8 +17,8 @@ class DataSet < ApplicationRecord
 
   def self.migrate_old_testcases
     Problem.all.each do |p|
-      d = DataSet.create(problem: p, name: :default)
-      p.testcases.update_all(data_set_id: d.id)
+      d = Dataset.create(problem: p, name: :default)
+      p.testcases.update_all(dataset_id: d.id)
     end
 
   end

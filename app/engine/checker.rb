@@ -35,10 +35,10 @@ class Checker
     out,err,status = Open3.capture3(cmd)
 
     if (status.exitstatus == 0)
-      judge_log "checking output of sub ##{@sub.id} testcase ##{@testcase.id}: 1 (correct)"
+      judge_log "checking of sub ##{@sub.id} testcase ##{@testcase.id}: 1 (correct)"
       return report_check_correct
     else
-      judge_log "checking output of sub ##{@sub.id} testcase ##{@testcase.id}: 0 (wrong answer)"
+      judge_log "checking of sub ##{@sub.id} testcase ##{@testcase.id}: 0 (wrong answer)"
       return report_check_wrong
     end
 

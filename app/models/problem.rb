@@ -16,8 +16,8 @@ class Problem < ApplicationRecord
 
   has_many :submissions
 
-  has_many :data_sets
-  belongs_to :live_data_set, class_name: 'DataSet'
+  has_many :datasets
+  belongs_to :live_dataset, class_name: 'Dataset'
 
   validates_presence_of :name
   validates_format_of :name, :with => /\A\w+\z/
