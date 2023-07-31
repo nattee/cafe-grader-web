@@ -1,5 +1,9 @@
 class Problem < ApplicationRecord
 
+  #how the submission should be compiled
+  enum compilation_type:  {self_contained: 0,
+                           with_managers: 1}
+  enum task_type: { batch: 0}
   #belongs_to :description
 
   has_and_belongs_to_many :contests, :uniq => true
@@ -28,8 +32,13 @@ class Problem < ApplicationRecord
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
 
+  # attachment here are the public one, it will always be seen by the contestant
   has_one_attached :statement
-  has_many_attached :attachments
+  has_many_attached :attachments  #this is public files seen by contestant
+
+  def set_default_value
+
+  end
 
   def get_jschart_history
     start = 4.month.ago.beginning_of_day
@@ -51,6 +60,16 @@ class Problem < ApplicationRecord
       i+=1
     end
     return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+  end
+
+  def get_next_dataset_name(base = 'Dataset')
+    num = 1
+    name = base + " #{num}"
+    while datasets.where(name: name).count > 0
+      num += 1
+      name = base + " #{num}"
+    end
+    return name
   end
 
   def self.available_problems
@@ -113,7 +132,7 @@ class Problem < ApplicationRecord
   def exec_filename(language)
     'a.out'
   end
-  
+
   protected
 
   def self.to_i_or_default(st, default)

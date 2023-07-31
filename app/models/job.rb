@@ -5,7 +5,7 @@ class Job < ApplicationRecord
   scope :oldest_waiting, -> {where(status: :wait)}
   scope :finished, -> {where(status: [:done,:error])}
 
-  belongs_to :grader_process
+  belongs_to :grader_process, optional: true
 
   def report(result)
     update(status: result[:status],result: result[:result_text])
@@ -19,19 +19,25 @@ class Job < ApplicationRecord
   # ---- class method
   #
 
-  def self.add_grade_submission_job(submission)
+  def self.add_grade_submission_job(submission,dataset)
     # just add normal compile job
-    self.add_compiling_job(submission)
+    self.add_compiling_job(submission,dataset)
   end
 
   def self.add_compiling_job(submission,parent_job_id = nil)
-    Job.create(parent_job_id: parent_job_id, job_type: :compile, arg: submission.id )
+    dataset = submission.problem.live_dataset
+    raise GraderError.new("Sub ##{submission.id} does not have live dataset",
+                          submission_id: submission.id) unless dataset
+    Job.create(parent_job_id: parent_job_id,
+               job_type: :compile,
+               arg: submission.id,
+               param: {dataset_id: dataset.id}.to_json )
   end
 
-  def self.add_evaluation_jobs(submission,parent_job_id = nil)
-    raise GraderError.new("submission #{submission.id} does not have dataset",
-                          submission_id: submission.id) unless submission.dataset
-    submission.dataset.testcases.each do |testcase|
+  def self.add_evaluation_jobs(submission,dataset,parent_job_id = nil)
+    raise GraderError.new("Sub ##{submission.id} cannot find dataset #{dataset.id}",
+                          submission_id: submission.id) unless dataset
+    dataset.testcases.each do |testcase|
       Job.create(parent_job_id: parent_job_id,
                  job_type: :evaluate,
                  arg: submission.id,

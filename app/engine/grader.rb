@@ -10,6 +10,7 @@ class Grader
   JudgeSubmissionLibPath = 'lib'
   JudgeSubmissionCompilePath = 'compile'
   JUDGE_SUB_COMPILE_RESULT_PATH = 'compile_result'
+  JUDGE_MANAGER_PATH = 'source_manager'
 
   include JudgeBase
 
@@ -30,8 +31,11 @@ class Grader
 
   def process_job_compile
     sub = Submission.find(@job.arg)
+    param = JSON.parse(@job.param,symbolize_names: true)
+    dataset = Dataset.find(param[:dataset_id])
+
     compiler = Compiler.get_compiler(sub).new(@worker_id,@box_id)
-    result = compiler.compile(sub)
+    result = compiler.compile(sub,dataset)
 
     #report compile
     judge_log "Job #{@job.to_text} completed with result #{result}"
@@ -39,7 +43,7 @@ class Grader
 
     #add next jobs
     if result[:compile_result] == :success
-      Job.add_evaluation_jobs(sub,@job.id)
+      Job.add_evaluation_jobs(sub,dataset,@job.id)
     end
   end
 
@@ -206,7 +210,7 @@ class Grader
     s = Submission.find(422022) # Time Limit & Pass & Wrong
     #421461
 
-    WorkerProblem.where(problem: s.problem).delete_all
+    WorkerDataset.where(dataset: s.problem.live_dataset).delete_all
     Job.delete_all
 
 

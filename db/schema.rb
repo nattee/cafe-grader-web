@@ -81,11 +81,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.string "name"
     t.decimal "time_limit", precision: 10, scale: 2, default: "1.0"
     t.integer "memory_limit"
-    t.integer "task_type", limit: 1
     t.integer "score_type", limit: 1
-    t.integer "compilation_type", limit: 1
     t.integer "evaluation_type", limit: 1
     t.string "score_param"
+    t.string "main_filename"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["problem_id"], name: "index_datasets_on_problem_id"
   end
 
@@ -102,7 +103,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.integer "result"
     t.integer "time"
     t.integer "memory"
-    t.decimal "score", precision: 10, scale: 2
+    t.decimal "score", precision: 8, scale: 6
     t.string "result_text"
     t.string "isolate_message"
     t.index ["submission_id"], name: "index_evaluations_on_submission_id"
@@ -218,6 +219,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.text "description"
     t.boolean "markdown"
     t.bigint "live_dataset_id"
+    t.string "submission_filename"
+    t.integer "task_type", limit: 1, default: 0
+    t.integer "compilation_type", limit: 1, default: 0
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
@@ -295,7 +299,6 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.integer "effective_code_length"
     t.string "ip_address"
     t.integer "tag", default: 0
-    t.bigint "dataset_id"
     t.integer "status", limit: 1, default: 0
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
@@ -353,7 +356,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.integer "problem_id"
     t.integer "num"
     t.integer "group"
-    t.integer "score"
+    t.integer "weight"
     t.text "input", size: :long
     t.text "sol", size: :long
     t.datetime "created_at", precision: nil
@@ -404,15 +407,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.index ["login"], name: "index_users_on_login", unique: true
   end
 
-  create_table "worker_problems", charset: "utf8mb3", force: :cascade do |t|
+  create_table "worker_datasets", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "worker_id"
-    t.bigint "problem_id"
-    t.boolean "executable_ready"
+    t.bigint "dataset_id"
     t.integer "status", limit: 1, default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["problem_id"], name: "index_worker_problems_on_problem_id"
-    t.index ["worker_id"], name: "index_worker_problems_on_worker_id"
+    t.index ["dataset_id"], name: "index_worker_datasets_on_dataset_id"
+    t.index ["worker_id"], name: "index_worker_datasets_on_worker_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"

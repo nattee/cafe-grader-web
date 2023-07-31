@@ -3,14 +3,12 @@ class Evaluator
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-
-
-
   # main run function
   # run the submission against the testcase
   def execute(sub,testcase)
     @sub = sub
     @testcase = testcase
+    @working_dataset = @testcase.dataset
 
     #init isolate
     setup_isolate(@box_id)
@@ -55,13 +53,16 @@ class Evaluator
 
     # any error?
     unless meta['status'].blank?
+      time = meta['time'] || meta['time-wall'] || 0
       if meta['status'] == 'SG'
-        e.update(time: meta['time'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'],result: :crash)
+        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'],result: :crash)
       elsif meta['status'] == 'TO'
-        e.update(time: meta['time-wall'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
+        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
+      elsif meta['status'] == 'XX'
+        e.update(isolate_message: meta['message'], result: :grader_error)
       else
         #other status
-        e.update(time: meta['time'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error)
+        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error)
       end
       judge_log "##{@sub.id} Testcase: #{@testcase.id} forced exit by isolate (#{meta['status']}) #{err}"
     else
@@ -91,14 +92,14 @@ class Evaluator
 
   def prepare_testcase_files
     # lock problem for this worker
-    WorkerProblem.transaction do
-      wp = WorkerProblem.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, problem_id: @sub.problem.id)
+    WorkerDataset.transaction do
+      wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: @sub.problem.live_dataset.id)
       if wp.status == 'created'
         # no one is working on this worker problem, I will download
         wp.update(status: :downloading_testcase)
 
         #download all testcase
-        @sub.dataset.testcases.each do |tc|
+        @working_dataset.testcases.each do |tc|
           prepare_testcase_directory(@sub,tc)
 
           #download testcase

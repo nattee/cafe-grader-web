@@ -1,5 +1,5 @@
 class Testcase < ApplicationRecord
-  belongs_to :problem
+  belongs_to :problem, optional: true
   belongs_to :dataset
   #attr_accessible :group, :input, :num, :score, :sol
 

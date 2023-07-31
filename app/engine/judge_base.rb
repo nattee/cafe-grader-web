@@ -22,8 +22,9 @@ module JudgeBase
     @submission_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeSubmissionPath + sub.id.to_s
     @compile_path = @submission_path + Grader::JudgeSubmissionCompilePath
     @compile_result_path = @submission_path + Grader::JUDGE_SUB_COMPILE_RESULT_PATH
-    @bin_path = @submission_path + Grader::JudgeSubmissionBinPath + "#{@box_id}"
+    @bin_path = @submission_path + Grader::JudgeSubmissionBinPath
     @source_path = @submission_path + Grader::JudgeSubmissionSourcePath
+    @manager_path = @submission_path + Grader::JUDGE_MANAGER_PATH
     @lib_path = @submission_path + Grader::JudgeSubmissionLibPath
 
     #prepare folder
@@ -33,6 +34,7 @@ module JudgeBase
     @bin_path.mkpath
     @bin_path.chmod(0777)
     @source_path.mkpath
+    @manager_path.mkpath
     @lib_path.mkpath
   end
 

@@ -8,7 +8,6 @@ class Submission < ApplicationRecord
   belongs_to :problem  #this should be changed to delegation
   #delegate :problem, through: :dataset, allow_nil: true
   belongs_to :user
-  belongs_to :dataset
 
   has_many :evaluations
 
@@ -27,7 +26,8 @@ class Submission < ApplicationRecord
   has_many_attached :compiled_files
 
   def rejudge
-    Job.add_grade_submission_job(self)
+    evaluations.delete_all
+    Job.add_grade_submission_job(self,self.problem.live_dataset)
   end
 
 

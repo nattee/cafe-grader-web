@@ -1,6 +1,6 @@
-= simple_form_for problem do |form|
-  .row
-    .col-md-6
+.row
+  .col-md-6
+    = simple_form_for problem do |form|
       = form.input :name
       = form.input :full_name
       = form.input :full_score
@@ -19,6 +19,41 @@
         - else
           no statement attached to this problem
       = form.submit :submit, class: 'btn btn-primary'
+  .col-md-6
+    %h3 Datasets
+    %ul.nav.nav-tabs
+      - @problem.datasets.each do |ds|
+        %li.nav-item
+          %button.nav-link{href: '#', class: ('active' if ds.live?), data: {bs: {toggle: :tab, target: "#ds-#{ds.id}"}}}
+            = ds.name
+            = " (live)" if ds.live?
+    .tab-content
+      - @problem.datasets.each do |ds|
+        %div.tab-pane.fade{id: "ds-#{ds.id}", class: ('show active' if ds.live?)}
+          %h4 Testcases
+          %table
+            %thead
+              %tr
+                %th #
+                %th Codename
+                %th Group
+                %th Weight
+            %tbody
+              - ds.testcases.each.with_index do |tc,idx|
+                %tr
+                  %td
+                    = idx+1
+                  %td
+                    = tc.code_name
+                  %td
+                    = tc.group_name
+                  %td
+                    = tc.weight
+
+
+
+
+
 -#
   = error_messages_for 'problem'
 

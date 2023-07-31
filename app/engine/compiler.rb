@@ -6,11 +6,44 @@ class Compiler
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-  SourceFilename = 'source.cpp'
+
+  # For CPP
+  # prepare argument for compile and runs the compilation
+  def cpp_compile(meta_file)
+    #prepare params for running sandbox
+    args = %w(-O2 -s -std=c++17 -static -DCONTEST -lm -Wall)          # options
+    args << "-iquote /source -iquote /source_manager"
+    args << "-o /bin/#{@sub.problem.exec_filename(@sub.language)}"    # output file
+
+    # add main files
+    if @sub.problem.self_contained?
+      args << "/source/#{self.submission_filename}"                               # the source code
+    else
+      args << "/source_manager/#{@working_dataset.main_filename}"               # the source code
+    end
+
+    cmd = ["#{Rails.configuration.worker[:compiler][:cpp]}"]
+    cmd += args
+    cmd_string = cmd.join ' '
+
+    #run the compilation in the isolated environment
+    isolate_args = %w(-p -E PATH)
+    output = {"/bin":@compile_path.cleanpath}
+    input = {"/source":@source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
+    return run_isolate(cmd_string,time_limit: 10, input: input, output: output, isolate_args: isolate_args, meta: meta_file)
+  end
+
+  def validate
+    raise GraderError.new("Sub ##{@sub.id} cannot find dataset ",
+                          submission_id: @sub.id) unless @working_dataset
+  end
 
   # main compile function
-  def compile(sub)
+  def compile(sub,dataset)
     @sub = sub
+    @working_dataset = dataset
+
+    validate
     #init isolate
     setup_isolate(@box_id)
 
@@ -18,24 +51,13 @@ class Compiler
     prepare_submission_directory(@sub)
     prepare_files_for_compile
 
-    #prepare params for running sandbox
-    args = %w(-O2 -s -std=c++17 -static -DCONTEST -lm -Wall)          # options
-    args << "-o /bin/#{@sub.problem.exec_filename(@sub.language)}"    # output file
-    args << "/source/#{SourceFilename}"                               # the source code
-    cmd = ["#{Rails.configuration.worker[:compiler][:cpp]}"]
-    cmd += args
-    cmd_string = cmd.join ' '
-
     #output file
     compile_meta = @compile_result_path + Grader::COMPILE_RESULT_META_FILENAME
     compile_stdout_file = @compile_result_path + Grader::COMPILE_RESULT_STDOUT_FILENAME
     compile_stderr_file = @compile_result_path + Grader::COMPILE_RESULT_STDERR_FILENAME
 
-    #run the compilation in the isolated environment
-    isolate_args = %w(-p -E PATH)
-    output = {"/bin":@compile_path.cleanpath}
-    input = {"/source":@source_path.cleanpath}
-    out,err,status,meta = run_isolate(cmd_string,input: input, output: output, isolate_args: isolate_args, meta: compile_meta)
+    out,err,status,meta = cpp_compile(compile_meta)
+
 
     #save result
     File.write(compile_stdout_file,out)
@@ -57,8 +79,24 @@ class Compiler
   end
 
   def prepare_files_for_compile
-    #copy required file
-    File.write(@source_path + SourceFilename,@sub.source)
+    #write student files
+    File.write(@source_path + self.submission_filename,@sub.source)
+
+    #write any manager files
+    @working_dataset.managers.each do |mng|
+      basename = mng.filename.base + mng.filename.extension_with_delimiter
+      dest = @manager_path + basename
+
+      mng.open do |tmpfile|
+        FileUtils.move(tmpfile,dest)
+        FileUtils.chmod(0666,dest)
+      end
+      # should we d/b as block??
+      #File.open(dest,"w") do |fn|
+      #  mng.open { |block| fn.write block }
+      #end
+
+    end
   end
 
   def upload_compiled_files
@@ -79,6 +117,10 @@ class Compiler
     res = Net::HTTP.start(hostname,port) do |http|
       http.request(req)
     end
+  end
+
+  def submission_filename
+    @sub.problem.submission_filename || @sub.language.default_submission_filename
   end
 
   def self.get_compiler(sub)

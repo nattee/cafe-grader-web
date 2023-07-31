@@ -1,9 +1,8 @@
 class AddMoreGraderProcess < ActiveRecord::Migration[7.0]
   def change
-    create_table :worker_problems do |t|
+    create_table :worker_datasets do |t|
       t.references :worker
-      t.references :problem
-      t.boolean :executable_ready
+      t.references :dataset
       t.integer :status, limit: 1, default: 0
       t.timestamps
     end

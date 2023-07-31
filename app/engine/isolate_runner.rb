@@ -15,10 +15,10 @@ module IsolateRunner
   #  Run isolate,
   #  time_limit, wall_limit are in second, fractional is allowed
   def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 1,isolate_args: [], meta: MetaFilename)
-    #mount directory for output
+    #mount directory for input /output
     dir_args = []
-    output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] }
-    input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }
+    output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] } #these are mounted read/write
+    input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }     #these are mounted readonly
 
     limit_arg = "-t #{time_limit} -x #{wall_limit}"
     all_arg  = "#{limit_arg} #{dir_args.join ' '} #{isolate_args.join ' '}"

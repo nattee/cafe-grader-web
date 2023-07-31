@@ -8,7 +8,7 @@ class Scorer
     sum_user_score,sum_total_weight = 0.to_d,0.to_d;
     @sub.evaluations.each do |ev|
       score = ev.score || 0
-      weight = ev.testcase.get_weight || 0
+      weight = ev.testcase.weight || 0
       sum_user_score += score * weight
       sum_total_weight += weight
     end

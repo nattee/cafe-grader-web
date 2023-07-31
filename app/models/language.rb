@@ -2,6 +2,10 @@ class Language < ApplicationRecord
 
   @@languages_by_ext = {}
 
+  def default_submission_filename
+    "submission." + self.ext
+  end
+
   def self.cache_ext_hash
     @@languages_by_ext = {}
     Language.all.each do |language|
