@@ -73,7 +73,8 @@ class Compiler
       return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
-      sub.update(status: :compilation_error,compiler_message: err)
+      sub.update(status: :compilation_error,compiler_message: err,
+                 points: nil, grader_comment: 'Compilation error',graded_at: Time.zone.now)
       return {status: :success, result_text: 'Compilation error', compile_result: :error}
     end
   end

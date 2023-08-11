@@ -34,5 +34,14 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
 
     add_column :submissions, :status, :integer, limit: 1, default: 0
 
+    reversible do |dir|
+      dir.up do
+        change_column :submissions, :points, :decimal, precision: 8, scale: 4
+      end
+      dir.down do
+        change_column :submissions, :points, :integer
+      end
+    end
+
   end
 end

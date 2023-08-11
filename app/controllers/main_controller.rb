@@ -50,12 +50,12 @@ class MainController < ApplicationController
   end
 
   def submit
-    user = User.find(session[:user_id])
+    problem = Problem.find(params[:submission][:problem_id])
 
-    @submission = Submission.new
-    @submission.problem_id = params[:submission][:problem_id]
-    @submission.user = user
-    @submission.language_id = 0
+    @submission = Submission.new(user: @current_user,
+                                 problem: problem,
+                                 submitted_at: Time.zone.now,
+                                 ip_address: cookies.encrypted[:uuid])
     if (params['file']) and (params['file']!='')
       @submission.source = File.open(params['file'].path,'r:UTF-8',&:read) 
       @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
@@ -63,33 +63,38 @@ class MainController < ApplicationController
     end
 
     if (params[:editor_text])
-      language = Language.find_by_id(params[:language_id])
+      language = Language.find params[:language_id]
+      @submission.language = language
       @submission.source = params[:editor_text]
       @submission.source_filename = "live_edit.#{language.ext}"
-      @submission.language = language
     end
-
-    @submission.submitted_at = Time.new.gmtime
-    @submission.ip_address = cookies.encrypted[:uuid]
 
     if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
       @submission.errors.add(:base,"The contest is over.")
-      prepare_list_information
-      render :action => 'list' and return
+      #prepare_list_information
+      #render :action => 'list' and return
+      redirect_to list_main_path, notice: 'Error saving your submission' and return
     end
 
-    if @submission.valid?(@current_user)
-      if @submission.save == false
-        flash[:notice] = 'Error saving your submission'
-      elsif Task.create(:submission_id => @submission.id, 
-                        :status => Task::STATUS_INQUEUE) == false
-        flash[:notice] = 'Error adding your submission to task queue'
-      end
+    if @submission.valid? && @submission.save
+      @submission.add_judge_job
+      redirect_to edit_submission_path(@submission)
     else
-      prepare_list_information
-      render :action => 'list' and return
+      redirect_to list_main_path, notice: 'Error saving your submission' and return
     end
-    redirect_to edit_submission_path(@submission)
+
+
+    #f @submission.valid?(@current_user)
+    # if @submission.save == false
+    #   flash[:notice] = 'Error saving your submission'
+    # elsif Task.create(:submission_id => @submission.id, 
+    #                   :status => Task::STATUS_INQUEUE) == false
+    #   flash[:notice] = 'Error adding your submission to task queue'
+    # end
+    #lse
+    # prepare_list_information
+    # render :action => 'list' and return
+    #end
   end
 
   def source

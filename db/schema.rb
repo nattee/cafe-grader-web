@@ -290,7 +290,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.datetime "compiled_at", precision: nil
     t.text "compiler_message"
     t.datetime "graded_at", precision: nil
-    t.integer "points"
+    t.decimal "points", precision: 8, scale: 4
     t.text "grader_comment"
     t.integer "number"
     t.string "source_filename"

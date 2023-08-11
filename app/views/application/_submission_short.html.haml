@@ -3,22 +3,23 @@
 - else
   - if local_assigns[:show_id]
     .row
-      .col-3.fw-bold
+      .col-3.text-secondary
         Sub ID
-      .col-9.text-secondary-x= submission.id
+      .col-9= submission.id
   - unless submission.graded_at
     .row
-      .col-3.fw-bold= t 'main.submitted_at'
-      .col-9.text-secondary-x= format_full_time_ago(submission.submitted_at.localtime)
+      .col-3.text-secondary= t 'main.submitted_at'
+      .col-9= format_full_time_ago(submission.submitted_at.localtime)
   - else
     .row
-      .col-3.fw-bold= t 'main.graded_at'
-      .col-9.text-secondary-x= format_full_time_ago(submission.graded_at.localtime)
+      .col-3.text-secondary= t 'main.graded_at'
+      .col-9= format_full_time_ago(submission.graded_at.localtime)
     - if GraderConfiguration['ui.show_score']
       .row
-        .col-3.fw-bold=t 'main.score'
-        .col-9.text-secondary-x
-          = (submission.points*100/submission.problem.full_score).to_i
+        .col-3.text-secondary=t 'main.score'
+        .col-9
+          //= (submission.points*100/submission.problem.full_score).to_i
+          = (submission.points || 0) * 100
           %tt.grader-comment
             = " [#{submission.grader_comment}]"
   - if local_assigns[:show_button]
