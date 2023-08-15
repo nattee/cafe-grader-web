@@ -4,6 +4,7 @@ class Scorer
   include JudgeBase
   include Rails.application.routes.url_helpers
 
+  # return a score, full score is always 100
   def sum_of_all_testcases
     sum_user_score,sum_total_weight = 0.to_d,0.to_d;
     @sub.evaluations.each do |ev|
@@ -12,7 +13,7 @@ class Scorer
       sum_user_score += score * weight
       sum_total_weight += weight
     end
-    score = sum_user_score / sum_total_weight
+    score = sum_user_score / sum_total_weight * 100.to_d;
     return score;
   end
 
@@ -56,13 +57,18 @@ class Scorer
   def process(sub)
     @sub = sub
 
+    #calculate score
     point = sum_of_all_testcases
 
     grading_text = build_grading_text
     judge_log "Scoring of ##{@sub.id} completed with points = #{point} (#{grading_text})"
 
+    #calculate time
+    max_time = @sub.evaluations.pluck(:time).map { |x| x || 0 }.max
+    max_mem = @sub.evaluations.pluck(:memory).map { |x| x || 0 }.max
+
     #update result
-    @sub.set_grading_complete(point,grading_text)
+    @sub.set_grading_complete(point,grading_text,max_time,max_mem)
 
     # init isolate
     # setup_isolate(@box_id)

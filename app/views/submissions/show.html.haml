@@ -70,7 +70,7 @@
         %tr
           %td.text-right
             %strong Points
-          %td #{@submission.points}/#{@submission.try(:problem).try(:full_score)}
+          %td #{@submission.points}/100
         %tr
           %td.text-right
             %strong Comment
@@ -78,7 +78,7 @@
         %tr
           %td.text-right
             %strong Runtime (s)
-          %td #{@submission.max_runtime}
+          %td #{@submission.max_runtime/1000.to_d}
         %tr
           %td.text-right
             %strong Memory (kb)

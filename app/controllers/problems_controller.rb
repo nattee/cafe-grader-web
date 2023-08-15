@@ -32,7 +32,7 @@ class ProblemsController < ApplicationController
     end
 
     filename = @problem.statement.filename.to_s
-    data =@problem.statement.download
+    data = @problem.statement.download
 
     send_data data, stream: false, disposition: 'inline', filename: filename, type: content_type
   end
@@ -79,7 +79,7 @@ class ProblemsController < ApplicationController
     end
     if @problem.update(problem_params)
       flash[:notice] = 'Problem was successfully updated. '
-      flash[:notice] += 'A new statement PDF is uploaded' if problem_params[:statement] 
+      flash[:notice] += 'A new statement PDF is uploaded' if problem_params[:statement]
       @problem.save
       redirect_to edit_problem_path(@problem)
     else

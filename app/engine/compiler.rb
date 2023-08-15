@@ -101,7 +101,7 @@ class Compiler
   end
 
   def upload_compiled_files
-    uri = URI('http://'+Rails.configuration.worker[:hosts][:web]+worker_compiled_submission_path(@sub))
+    uri = URI(Rails.configuration.worker[:hosts][:web]+worker_compiled_submission_path(@sub))
     hostname = uri.hostname
     port = uri.port
 

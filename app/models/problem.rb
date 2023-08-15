@@ -32,7 +32,8 @@ class Problem < ApplicationRecord
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
 
-  # attachment here are the public one, it will always be seen by the contestant
+  # attachment here are the public one,
+  # if the user has the right to submit, the user can see the attachments (and statement)
   has_one_attached :statement
   has_many_attached :attachments  #this is public files seen by contestant
 

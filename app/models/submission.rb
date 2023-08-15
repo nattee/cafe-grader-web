@@ -32,8 +32,8 @@ class Submission < ApplicationRecord
   end
 
 
-  def set_grading_complete(point,grading_text)
-    update(points: point, status: :done, graded_at: Time.zone.now, grader_comment: grading_text)
+  def set_grading_complete(point,grading_text,max_time,max_mem)
+    update(points: point, status: :done, graded_at: Time.zone.now, grader_comment: grading_text, max_runtime: max_time, peak_memory: max_mem)
   end
 
   def set_grading_error(error_text)
@@ -190,11 +190,5 @@ class Submission < ApplicationRecord
   end
 
   public
-  # migrate to new version
-  def debug_migrate_new_dataset
-    ds = problem.datasets.last
-    problem.update(live_dataset: ds)
-    update(dataset: ds)
-  end
 
 end

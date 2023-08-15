@@ -78,8 +78,9 @@ class SubmissionsController < ApplicationController
 
   # GET /submissions/:id/rejudge
   def rejudge
-    @task = @submission.task
-    @task.status_inqueue! if @task
+    #@task = @submission.task
+    #@task.status_inqueue! if @task
+    @submission.add_judge_job
     respond_to do |format|
       format.js
     end
