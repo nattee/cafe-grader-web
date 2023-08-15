@@ -197,4 +197,13 @@ class Problem < ApplicationRecord
             problem]
   end
 
+  def self.debug_migrate_pdf_to_activestorage
+    Problem.where.not(description_filename: nil).each do |p|
+      file = Rails.root.join('data','tasks',p.id.to_s,p.description_filename)
+      if file.exist?
+        p.statement.attach(io: File.open(file), filename: p.description_filename)
+      end
+    end
+  end
+
 end
