@@ -16,6 +16,8 @@ class Problem < ApplicationRecord
   has_many :tags, through: :problems_tags
 
   has_many :test_pairs, :dependent => :delete_all
+
+  #testcase is all the testcases
   has_many :testcases, :dependent => :destroy
 
   has_many :submissions
@@ -128,6 +130,38 @@ class Problem < ApplicationRecord
   def long_name
     "[#{name}] #{full_name}"
   end
+
+
+  #this function return a content generated for "all_tests.cfg"
+  #  from the legacy code (Aj. Pong's) 
+  #  This is definitely not complete but it works in general cases
+  def build_legacy_config_file
+    default = {
+      time_limit: 1.0,
+      mem_limit: 512,
+      score: 10
+    }
+
+    result = ["problem do"]
+    result << "  num_tests #{testcases.count}"
+    result << "  full_score #{testcases.count}"
+    result << "  time_limit_each #{default[:time_limit]}"
+    result << "  mem_limit_each #{default[:mem_limit]}"
+    result << "  score_each #{default[:score]}"
+    result << ""
+
+    testcases.order(:num).each do |tc|
+      result << "  run #{tc.num} do"
+      result << "    tests #{tc.num}"
+      result << "    scores #{tc.score}"
+      result << "  end"
+      result << ""
+    end
+
+    result << "end\n"
+    return result.join "\n"
+  end
+
 
   #TODO: change to language specific
   def exec_filename(language)
