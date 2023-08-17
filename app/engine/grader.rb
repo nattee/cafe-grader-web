@@ -192,7 +192,7 @@ class Grader
 
 
   # for testing
-  def self.reload_grader(num)
+  def self.restart(num=1)
     make_enabled(0)
     watchdog;
     sleep(1);
