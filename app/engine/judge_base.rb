@@ -8,6 +8,11 @@ module JudgeBase
   COMPILE_RESULT_STDERR_FILENAME = 'compile_err'
   COMPILE_RESULT_META_FILENAME = 'compile_meta'
 
+  ISOLATE_BIN_PATH = 'bin'
+  ISOLATE_SOURCE_PATH = 'source'
+  ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
+
+
 
   def initialize(worker_id,box_id)
     @worker_id = worker_id
@@ -36,6 +41,11 @@ module JudgeBase
     @source_path.mkpath
     @manager_path.mkpath
     @lib_path.mkpath
+
+    #prepare path name inside isolate
+    @isolate_bin_path = Pathname.new('/'+ISOLATE_BIN_PATH)
+    @isolate_source_path = Pathname.new('/'+ISOLATE_SOURCE_PATH)
+    @isolate_source_manager_path = Pathname.new('/'+ISOLATE_SOURCE_MANAGER_PATH)
   end
 
   # set up directory and path/filename of the testcase directory

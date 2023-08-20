@@ -1,4 +1,5 @@
 class Language < ApplicationRecord
+  has_many :submissions
 
   @@languages_by_ext = {}
 

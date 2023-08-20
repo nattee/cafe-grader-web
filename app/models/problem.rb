@@ -165,7 +165,14 @@ class Problem < ApplicationRecord
 
   #TODO: change to language specific
   def exec_filename(language)
-    'a.out'
+    case language.name
+    when 'cpp'
+      'a.out'
+    when 'python'
+      'code.pyc'
+    else
+      'submission'
+    end
   end
 
   protected

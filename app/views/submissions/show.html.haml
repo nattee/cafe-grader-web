@@ -78,7 +78,7 @@
         %tr
           %td.text-right
             %strong Runtime (s)
-          %td #{@submission.max_runtime/1000.to_d}
+          %td #{(@submission.max_runtime || 0)/1000.to_d}
         %tr
           %td.text-right
             %strong Memory (kb)

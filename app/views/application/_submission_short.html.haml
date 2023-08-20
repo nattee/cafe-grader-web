@@ -19,7 +19,7 @@
         .col-3.text-secondary=t 'main.score'
         .col-9
           //= (submission.points*100/submission.problem.full_score).to_i
-          = (submission.points || 0) * 100
+          = submission.points
           %tt.grader-comment
             = " [#{submission.grader_comment}]"
   - if local_assigns[:show_button]

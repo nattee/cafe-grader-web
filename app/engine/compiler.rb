@@ -12,6 +12,35 @@ class Compiler
                           submission_id: @sub.id) unless @working_dataset
   end
 
+  # Each langauge specific sub-class MUST implement this method
+  # it should return shell command that do the compilation
+  def build_compile_command
+  end
+
+  # Each langauge specific sub-class MAY implement this method
+  # it will be run after a compilation is success
+  # normal use case is for scripting language
+  # where compilation is actually linting and
+  # post compile is to modify the source by adding shebang
+  def post_compile(source,bin)
+  end
+
+  # Each langauge specific sub-class MAY override this method
+  # This should return {success: true, compiler_message: xxx}
+  #   out = stdout
+  #   err = stderr
+  #   status = status text from isolate
+  #   meta = meta object from isolate
+  def check_compile_result(out,err,status,meta)
+    if meta['exitcode'] == 0
+      #compiler finished successfully
+      return {success: true, compiler_message: out}
+    else
+      #compiler found some error
+      return {success: false, compiler_message: err}
+    end
+  end
+
   # main compile function
   def compile(sub,dataset)
     @sub = sub
@@ -25,12 +54,32 @@ class Compiler
     prepare_submission_directory(@sub)
     prepare_files_for_compile
 
-    #output file for compile
+    #output file
     compile_meta = @compile_result_path + Grader::COMPILE_RESULT_META_FILENAME
     compile_stdout_file = @compile_result_path + Grader::COMPILE_RESULT_STDOUT_FILENAME
     compile_stderr_file = @compile_result_path + Grader::COMPILE_RESULT_STDERR_FILENAME
 
-    out,err,status,meta = cpp_compile(compile_meta)
+    # isolate filename for source to be compiled (considering self_contain? or task's main file)
+    isolate_source_file = @sub.problem.self_contained? ?
+      @isolate_source_file :
+      @isolate_main_file
+
+    # isolate pathname for executable after compiled
+    isolate_bin_file = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
+
+    #calling language specific method to get cmd for compiling
+    cmd_string = build_compile_command(isolate_source_file,isolate_bin_file)
+
+    # prepare params for isolate
+    isolate_args = %w(-p -E PATH -d /etc/alternatives)
+    output = {"/bin":@compile_path.cleanpath}
+    input = {"/source":@source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
+    out,err,status,meta = run_isolate(cmd_string,
+                       time_limit: 10,
+                       input: input,
+                       output: output,
+                       isolate_args: isolate_args,
+                       meta: compile_meta)
 
     #save result
     File.write(compile_stdout_file,out)
@@ -39,22 +88,34 @@ class Compiler
     #clean up isolate
     cleanup_isolate
 
-    if meta['exitcode'] == 0
+    # call language-specific checking of compilation
+    compile_result = check_compile_result(out,err,status,meta)
+
+    if compile_result[:success]
+      #run any post compilation
+      post_compile(@source_file,@compile_path + @sub.problem.exec_filename(@sub.language))
+
       # the result should be at @bin_path
       upload_compiled_files
-      sub.update(status: :compilation_success,compiler_message: out)
+      sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message])
       return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
-      sub.update(status: :compilation_error,compiler_message: err,
+      sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message],
                  points: nil, grader_comment: 'Compilation error',graded_at: Time.zone.now)
       return {status: :success, result_text: 'Compilation error', compile_result: :error}
     end
   end
 
   def prepare_files_for_compile
+    #setup pathname
+    @source_file = @source_path + self.submission_filename;
+    @source_main_file = @manager_path + (@sub.problem.live_dataset.main_filename || '')
+    @isolate_source_file = @isolate_source_path + self.submission_filename;
+    @isolate_main_file = @isolate_source_manager_path + (@sub.problem.live_dataset.main_filename || '')
+
     #write student files
-    File.write(@source_path + self.submission_filename,@sub.source)
+    File.write(@source_file.cleanpath,@sub.source)
 
     #write any manager files
     @working_dataset.managers.each do |mng|
@@ -69,7 +130,6 @@ class Compiler
       #File.open(dest,"w") do |fn|
       #  mng.open { |block| fn.write block }
       #end
-
     end
   end
 
@@ -101,12 +161,16 @@ class Compiler
     #TODO: should return appropriate compiler class
     case sub.language.name
     when 'cpp'
-      return Compiler::CppCompiler
+      return Compiler::Cpp
     when 'python'
-      return Compiler::PythonCompiler
+      return Compiler::Python
+    when 'ruby'
+      return Compiler::Ruby
+    when 'java'
+      return Compiler::Java
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
-                            submission_id: @sub.id)
+                            submission_id: sub.id)
     end
   end
 

@@ -94,7 +94,8 @@ class Grader
           @job.report({status: :error,result: 'grader does not have handler for this job_type'})
         end
       rescue GraderError => ge
-        judge_log ge,Logger::ERROR;
+        #judge_log ge,Logger::ERROR;
+        judge_log '(GraderError)' + ge.message, Logger::ERROR
         @job.update(status: :error) if ge.end_job
         if ge.update_submission
           s = Submission.find(ge.submission_id);

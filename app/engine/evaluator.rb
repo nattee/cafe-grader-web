@@ -27,7 +27,7 @@ class Evaluator
     #run the evaluation in the isolated environment
     isolate_args = %w(-p -E PATH)
     isolate_args += %w(-i /input/input.txt)
-    input = {"/input":@input_file.dirname, "/mybin":@bin_path.cleanpath}
+    input = {"/input":@input_file.dirname, "/mybin":@mybin_path.cleanpath}
     meta_file = @output_path + 'meta.txt'
 
     out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file)
@@ -58,6 +58,8 @@ class Evaluator
         e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'],result: :crash)
       elsif meta['status'] == 'TO'
         e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
+      elsif meta['status'] == 'RE'
+        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash)
       elsif meta['status'] == 'XX'
         e.update(isolate_message: meta['message'], result: :grader_error)
       else
@@ -80,8 +82,11 @@ class Evaluator
   end
 
   def prepare_executable
+    @mybin_path = @bin_path + @worker_id.to_s
+    @mybin_path.mkpath
+
     @sub.compiled_files.each do |attachment|
-      filename = @bin_path + attachment.filename.to_s
+      filename = @mybin_path + attachment.filename.to_s
       unless filename.exist?
         File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} } 
         judge_log "Downloaded executable #{filename}"
