@@ -86,4 +86,12 @@ module JudgeBase
     "Worker: #{@worker_id}, Box: #{@box_id} (#{self.class.name})"
   end
 
+  def test_log(keyword)
+    n = 1_000_000
+    n.times do |i|
+      judge_log "#{keyword} test " + i.to_s
+    end
+
+  end
+
 end

@@ -1,19 +1,24 @@
 class Compiler::Java < Compiler
   def pre_compile(source,bin)
     @classname = nil
-    @new_source_file = @compile_path + "#{@classname}.java"
     new_source = []
 
     @sub.source.each_line do |line|
       line.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
       md = /\s*public\s*class\s*(\w*)/.match(line)
-      @classname=md[1] if md
-      new_source += line unless line =~ /\s*package\s*\w+\s*\;/
+      if md
+        @classname=md[1]
+        judge_log "detect classname #{@classname}"
+      end
+      new_source << line unless line =~ /\s*package\s*\w+\s*\;/
     end
 
     if @classname
+      @new_source_file = @source_path + "#{@classname}.java"
       File.write(@new_source_file,new_source.join("\n"))
+      judge_log "writing new file to #{@new_source_file}"
     end
+
   end
 
   def build_compile_command(source,bin)
@@ -27,9 +32,7 @@ class Compiler::Java < Compiler
   end
 
   def post_compile(source,bin)
-    source_text = File.read(source)
-
-    bin_text = "#!#{Rails.configuration.worker[:compiler][:ruby]}\n"+source_text
+    bin_text = "java #{@classname}"
     File.write(bin,bin_text)
   end
 end

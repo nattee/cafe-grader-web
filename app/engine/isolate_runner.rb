@@ -7,7 +7,7 @@ module IsolateRunner
     @isolate_cmd = Rails.configuration.worker.isolate_path
     @box_id = box_id
 
-    cmd = "#{@isolate_cmd} --init -b #{@box_id}"
+    cmd = "#{@isolate_cmd} --init --cg -b #{@box_id}"
     judge_log "ISOLATE setup command: #{cmd}", Logger::DEBUG
     out,err,status = Open3.capture3(cmd)
   end

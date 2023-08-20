@@ -18,6 +18,12 @@ class Compiler
   end
 
   # Each langauge specific sub-class MAY implement this method
+  # it will be run BEFORE a compilation is success
+  # normal use case is for java when we have to detect the classname of the file
+  def pre_compile(source,bin)
+  end
+
+  # Each langauge specific sub-class MAY implement this method
   # it will be run after a compilation is success
   # normal use case is for scripting language
   # where compilation is actually linting and
@@ -54,6 +60,10 @@ class Compiler
     prepare_submission_directory(@sub)
     prepare_files_for_compile
 
+    #running any precompile script
+    pre_compile(@source_file,@compile_path + @sub.problem.exec_filename(@sub.language))
+
+    # ------ run the compilation ------
     #output file
     compile_meta = @compile_result_path + Grader::COMPILE_RESULT_META_FILENAME
     compile_stdout_file = @compile_result_path + Grader::COMPILE_RESULT_STDOUT_FILENAME
@@ -71,7 +81,7 @@ class Compiler
     cmd_string = build_compile_command(isolate_source_file,isolate_bin_file)
 
     # prepare params for isolate
-    isolate_args = %w(-p -E PATH -d /etc/alternatives)
+    isolate_args = %w(-p -E PATH -d /etc/alternatives --cg)
     output = {"/bin":@compile_path.cleanpath}
     input = {"/source":@source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
     out,err,status,meta = run_isolate(cmd_string,

@@ -112,7 +112,16 @@ class Grader
 
   def main_loop
     last_heartbeat = Time.zone.now
-    loop do
+    running = true
+
+    #trap signal
+    Signal.trap("TERM") do
+      puts "got TERM signal, next iteration of main loop will be stopped"
+      running = false
+    end
+
+    # THE MAIN LOOP
+    while(running) do
       #fetch any job
       check_and_run_job
 
@@ -121,9 +130,13 @@ class Grader
       if (current - last_heartbeat > 3.0)
         last_heartbeat = current
         @grader_process.update(last_heartbeat: current)
+
+        #check if the database tell us to stop
+        @grader_process.reload
+        running = @grader_process.enabled
       end
 
-      #10 Hz
+      #5 Hz
       sleep (0.2)
     end
   end
@@ -138,8 +151,9 @@ class Grader
     #trying to connect to server, register as a new grader process
 
     # successfully connected, enter the loop
-    puts "grader main loop started"
+    puts "--------  grader main loop started #{Time.zone.now} --------"
     g.main_loop
+    puts "grader main loop exit gracefully at #{Time.zone.now}"
   end
 
   # watchdog, this function should be runs by cron every few minutes
@@ -156,10 +170,11 @@ class Grader
         # we should have running grader of this box id
         if !running
           #start it
+          stdout_file = Rails.configuration.worker[:directory][:grader_stdout_base_file] + gp.box_id.to_s + '.txt'
           cmd = "rails runner \"Grader.start(#{gp.box_id},:#{server_key})\""
-          spawn(cmd)
+          spawn(cmd,[:out,:err] => [stdout_file,'a'])
 
-          puts "spawning new grader main loop with #{cmd}"
+          puts "spawning new grader main loop with #{cmd}, redirecting :out,:err to #{stdout_file}"
         end
       else
         # the process should NOT be running
@@ -219,3 +234,4 @@ class Grader
     return s
   end
 end
+
