@@ -1,26 +1,35 @@
 # cafe_grader judge configuration
 # this is per machine configuration
 
+#any config under shared is merged into development and production
 shared:
 
   #directory
   directory:
     isolate_working_dir: /var/local/lib/isolate/
     judge_path: <%= ENV['HOME'] %>/cafe_grader/judge
+    judge_log_file: <%= Rails.root.join 'log','judge' %>
+    grader_stdout_base_file: <%= Rails.root.join 'log','grader-' %>
 
   #executable
   compiler:
     cpp: /usr/bin/g++
     c: <%= `which g++`.strip %>
     ruby: <%= `which ruby`.strip %>
-    python3: <%= `which python3`.strip %>
+    python: <%= `which python3`.strip %>
+    javac: <%= `which javac`.strip %>
+    java: <%= `which java`.strip %>
   isolate_path: <%= `which isolate`.strip %>
 
   #hosts
   hosts:
     web: http://127.0.0.1:3000
 
-production:
+development:
   server_key: c2f7966dee
+  worker_id: 1
+  worker_passcode: aa0429lljka429ukljh3904i2ljk1kj
+
+production:
   worker_id: 1
   worker_passcode: aa0429lljka429ukljh3904i2ljk1kj

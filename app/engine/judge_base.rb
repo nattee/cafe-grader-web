@@ -8,7 +8,7 @@ module JudgeBase
   COMPILE_RESULT_STDERR_FILENAME = 'compile_err'
   COMPILE_RESULT_META_FILENAME = 'compile_meta'
 
-  ISOLATE_BIN_PATH = 'bin'
+  ISOLATE_BIN_PATH = 'mybin'
   ISOLATE_SOURCE_PATH = 'source'
   ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
 

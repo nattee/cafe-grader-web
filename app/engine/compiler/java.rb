@@ -17,6 +17,9 @@ class Compiler::Java < Compiler
       @new_source_file = @source_path + "#{@classname}.java"
       File.write(@new_source_file,new_source.join("\n"))
       judge_log "writing new file to #{@new_source_file}"
+    else
+      raise GraderError.new("Cannot find a public class in the file",
+                            submission_id: @sub.id)
     end
 
   end
@@ -32,7 +35,7 @@ class Compiler::Java < Compiler
   end
 
   def post_compile(source,bin)
-    bin_text = "java #{@classname}"
+    bin_text = "#!/bin/sh\njava -cp #{@isolate_bin_path} #{@classname}"
     File.write(bin,bin_text)
   end
 end

@@ -82,8 +82,8 @@ class Compiler
 
     # prepare params for isolate
     isolate_args = %w(-p -E PATH -d /etc/alternatives --cg)
-    output = {"/bin":@compile_path.cleanpath}
-    input = {"/source":@source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
+    output = { "#{@isolate_bin_path}": @compile_path.cleanpath}
+    input = {"#{@isolate_source_path}": @source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
     out,err,status,meta = run_isolate(cmd_string,
                        time_limit: 10,
                        input: input,
@@ -149,15 +149,16 @@ class Compiler
     port = uri.port
 
     req = Net::HTTP::Post.new(uri) # => #<Net::HTTP::Post POST>
-    form_data = []
+    files = []
+
 
     #load files
     Dir.glob(@compile_path + '*').each do |fn|
-      form_data << ['compiled_files',File.open(fn)]
+      files << ['compiled_files[]',File.open(fn)]
+      judge_log "Bundling compiled files #{fn}"
     end
 
-    #POST
-    req.set_form form_data, 'multipart/form-data'
+    req.set_form files, 'multipart/form-data'
     res = Net::HTTP.start(hostname,port) do |http|
       http.request(req)
     end

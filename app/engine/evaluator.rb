@@ -20,14 +20,14 @@ class Evaluator
     prepare_executable
 
     #prepare params for running sandbox
-    executable = '/mybin/' + @sub.problem.exec_filename(@sub.language)
+    executable = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
     cmd = [executable]
     cmd_string = cmd.join ' '
 
     #run the evaluation in the isolated environment
-    isolate_args = %w(-p -E PATH)
+    isolate_args = %w(-p -E PATH -d /etc/alternatives --cg)
     isolate_args += %w(-i /input/input.txt)
-    input = {"/input":@input_file.dirname, "/mybin":@mybin_path.cleanpath}
+    input = {"/input":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
     meta_file = @output_path + 'meta.txt'
 
     out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file)

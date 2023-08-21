@@ -19,7 +19,7 @@ class WorkerController < ApplicationController
     end
 
     def upload_compiled_params
-      return params.permit(:compiled_files)
+      return params.permit({compiled_files: []})
     end
 end
 
