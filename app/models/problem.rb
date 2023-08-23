@@ -250,4 +250,57 @@ class Problem < ApplicationRecord
     end
   end
 
+  def self.parse_all_test_cfg(filename,problem)
+    on_run = false
+    run = nil
+    tests = nil
+    scores = nil
+    result = {}
+    File.foreach(filename).each do |line|
+      #time limit
+      md = /time_limit_each\s+(\d+\.?\d*)/.match line
+      result[:time_limit] = md[1].to_f if md
+
+      # mem limit
+      md = /mem_limit_each\s+(\d+\.?\d*)/.match line
+      result[:mem_limit] = md[1].to_f if md
+
+      # score_each
+      md = /score_each\s+(\d+\.?\d*)/.match line
+      result[:score_each] = md[1].to_f if md
+
+      #run detect
+      md = /run\s+(\d+)\s+do/.match line
+      if (md && !on_run)
+        run = md[1].to_i
+        on_run = true
+        tests = nil
+        scores = nil
+      end
+
+      #test on run
+      md = /tests\s+([\d,\s]*)/.match line
+      if (md && on_run)
+        tests = md[1].split(',').map { |x| x.to_i}
+      end
+
+      #score on run
+      md = /scores\s+([\d,\s]*)/.match line
+      if (md && on_run)
+        scores = md[1].split(',').map { |x| x.to_i}
+      end
+
+      md = /end/.match line
+      if (md && on_run)
+        result[:group] = true if tests && tests.count > 1
+        on_run = false
+        result[run] = {tests: tests,scores: scores, errors: []}
+        result[run][:errors] << "no test" unless tests
+        result[run][:errors] << "no scores" unless scores
+      end
+    end
+    puts "done #{filename}"
+    return result
+  end
+
 end

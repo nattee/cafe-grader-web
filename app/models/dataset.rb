@@ -34,7 +34,6 @@ class Dataset < ApplicationRecord
     Problem.all.each do |p|
       d = Dataset.create(problem: p, name: :default)
       p.testcases.update_all(dataset_id: d.id)
-      p.submission.all
       p.update(live_dataset: d)
     end
   end
