@@ -297,6 +297,9 @@ class Problem < ApplicationRecord
         result[run] = {tests: tests,scores: scores, errors: []}
         result[run][:errors] << "no test" unless tests
         result[run][:errors] << "no scores" unless scores
+        tests.each do |num|
+          problem.live_dataset.testcases.where(num: num).update(group: run,weight: scores[0])
+        end
       end
     end
     puts "done #{filename}"
