@@ -21,6 +21,16 @@ module JudgeBase
     judge_log "#{self.class.to_s} created"
   end
 
+  def isolate_options_by_lang(language_name)
+    case language_name
+    when 'java', 'dig'
+      '--cg -p -d /etc/alternatives'
+    else
+      ''
+    end
+
+  end
+
   # set up directory and path/filename of the submission directory
   def prepare_submission_directory(sub)
     #preparing path name

@@ -45,8 +45,8 @@ class Job < ApplicationRecord
     end
   end
 
-  def self.add_scoring_job(submission,parent_job_id = nil)
-    Job.create(parent_job_id: parent_job_id, job_type: :score, arg: submission.id )
+  def self.add_scoring_job(submission,dataset,parent_job_id = nil)
+    Job.create(parent_job_id: parent_job_id, job_type: :score, arg: submission.id, param: {dataset_id: dataset.id}.to_json )
   end
 
   def self.has_waiting_job

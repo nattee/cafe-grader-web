@@ -25,7 +25,8 @@ class Evaluator
     cmd_string = cmd.join ' '
 
     #run the evaluation in the isolated environment
-    isolate_args = %w(-p -E PATH -d /etc/alternatives --cg)
+    isolate_args = %w(-p -E PATH)
+    isolate_args << isolate_options_by_lang(@sub.language.name)
     isolate_args += %w(-i /input/input.txt)
     input = {"/input":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
     meta_file = @output_path + 'meta.txt'
@@ -98,7 +99,7 @@ class Evaluator
   def prepare_testcase_files
     # lock problem for this worker
     WorkerDataset.transaction do
-      wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: @sub.problem.live_dataset.id)
+      wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: @working_dataset.id)
       if wp.status == 'created'
         # no one is working on this worker problem, I will download
         wp.update(status: :downloading_testcase)

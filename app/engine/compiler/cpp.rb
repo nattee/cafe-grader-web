@@ -10,4 +10,5 @@ class Compiler::Cpp < Compiler
     ]
     return cmd.join ' '
   end
+
 end

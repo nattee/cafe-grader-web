@@ -8,17 +8,29 @@
 - if @problem and @problem.errors
   =error_messages_for 'problem'
 
-= form_with url: do_import_problems_path, :multipart => true  do |f|
-  .row.mb-2
-    .col-md-1
-      = f.label :name, 'Name'
-    .col-md-11
-      = f.text_field :name, class: 'form-control'
-  .row.mb-2
-    .col-md-1
-      = f.label :full_name, 'Full Name'
-    .col-md-11
-      = f.text_field :full_name, class: 'form-control'
+.row
+  .col-md-4
+    = form_with url: do_import_problems_path, :multipart => true  do |f|
+      .row.mb-2
+        .col-md-3
+          = f.label :name, 'Name'
+        .col-md-9
+          = f.text_field :name, class: 'form-control'
+      .row.mb-2
+        .col-md-3
+          = f.label :full_name, 'Full Name'
+        .col-md-9
+          = f.text_field :full_name, class: 'form-control'
+      .row.mb-2
+        .col-md-3
+          = f.label :archive_file, 'Data File'
+        .col-md-9
+          = f.file_field :archive_file, class: 'form-control'
+      .row.mb-2
+        .col-md-3
+        .col-md-9
+          = f.submit 'Import Problem'
+  .col-md-8
 
   .submitbox
     %table

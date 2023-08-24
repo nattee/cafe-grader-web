@@ -14,7 +14,7 @@ class Compiler
 
   # Each langauge specific sub-class MUST implement this method
   # it should return shell command that do the compilation
-  def build_compile_command
+  def build_compile_command(isolate_source, isolate_bin)
   end
 
   # Each langauge specific sub-class MAY implement this method
@@ -61,7 +61,8 @@ class Compiler
     prepare_files_for_compile
 
     #running any precompile script
-    pre_compile(@source_file,@compile_path + @sub.problem.exec_filename(@sub.language))
+    @exec_file = @compile_path + @sub.problem.exec_filename(@sub.language)
+    pre_compile(@source_file,@exec_file)
 
     # ------ run the compilation ------
     #output file
@@ -81,7 +82,8 @@ class Compiler
     cmd_string = build_compile_command(isolate_source_file,isolate_bin_file)
 
     # prepare params for isolate
-    isolate_args = %w(-p -E PATH -d /etc/alternatives --cg)
+    isolate_args = %w(-p -E PATH)
+    isolate_args << isolate_options_by_lang(@sub.language.name)
     output = { "#{@isolate_bin_path}": @compile_path.cleanpath}
     input = {"#{@isolate_source_path}": @source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
     out,err,status,meta = run_isolate(cmd_string,
@@ -103,7 +105,7 @@ class Compiler
 
     if compile_result[:success]
       #run any post compilation
-      post_compile(@source_file,@compile_path + @sub.problem.exec_filename(@sub.language))
+      post_compile(@source_file,@exec_file)
 
       # the result should be at @bin_path
       upload_compiled_files
@@ -120,9 +122,9 @@ class Compiler
   def prepare_files_for_compile
     #setup pathname
     @source_file = @source_path + self.submission_filename;
-    @source_main_file = @manager_path + (@sub.problem.live_dataset.main_filename || '')
+    @source_main_file = @manager_path + (@working_dataset.main_filename || '')
     @isolate_source_file = @isolate_source_path + self.submission_filename;
-    @isolate_main_file = @isolate_source_manager_path + (@sub.problem.live_dataset.main_filename || '')
+    @isolate_main_file = @isolate_source_manager_path + (@working_dataset.main_filename || '')
 
     #write student files
     File.write(@source_file.cleanpath,@sub.source)

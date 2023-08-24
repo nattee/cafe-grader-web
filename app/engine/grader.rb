@@ -59,14 +59,17 @@ class Grader
 
     #add scoring when all evaluation is done
     if Job.all_evaluate_job_complete(job)
-      Job.add_scoring_job(sub)
+      Job.add_scoring_job(sub,testcase.dataset)
     end
   end
 
   def process_job_scoring
     sub = Submission.find(@job.arg)
+    param = JSON.parse(@job.param,symbolize_names: true)
+    dataset = Dataset.find(param[:dataset_id])
+
     scorer = Scorer.get_scorer(sub).new(@worker_id,@box_id)
-    result = scorer.process(sub)
+    result = scorer.process(sub,dataset)
 
     @job.report(result)
   end
