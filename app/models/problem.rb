@@ -241,11 +241,27 @@ class Problem < ApplicationRecord
             problem]
   end
 
-  def self.debug_migrate_pdf_to_activestorage
+  def self.migrate_pdf_to_activestorage
     Problem.where.not(description_filename: nil).each do |p|
       file = Rails.root.join('data','tasks',p.id.to_s,p.description_filename)
       if file.exist?
         p.statement.attach(io: File.open(file), filename: p.description_filename)
+      end
+    end
+  end
+
+  def self.migrate_subtask
+    dir = Rails.root.join '../judge/ev/*'
+    Dir[dir].each do |ev_dir|
+      pn = Pathname.new ev_dir
+      p = Problem.where(name: pn.basename.to_s).first
+      next unless p
+
+      r = parse_all_test_cfg(pn + 'test_cases/all_tests.cfg',p)
+      if (r[:group])
+
+        puts [p.id,p.name].join ' '
+        pp r
       end
     end
   end
@@ -298,11 +314,10 @@ class Problem < ApplicationRecord
         result[run][:errors] << "no test" unless tests
         result[run][:errors] << "no scores" unless scores
         tests.each do |num|
-          problem.live_dataset.testcases.where(num: num).update(group: run,weight: scores[0])
+          problem.live_dataset.testcases.where(num: num).update(group: run,weight: scores[0], group_name: run)
         end
       end
     end
-    puts "done #{filename}"
     return result
   end
 

@@ -168,6 +168,7 @@ class ProblemImporter
 
   # import dataset in the dir into a problem,
   # might also set it as a live dataset
+  # If the problem with the same problem_name exist, this will add another dataset
   def import_dataset_from_dir(dir,
     problem_name: ,full_name: ,          #required keyword
     set_as_live: false,
@@ -181,7 +182,8 @@ class ProblemImporter
 
       # init problem and dataset
       @base_dir = dir
-      @prob = Problem.find_or_create_by(name: problem_name,full_name: full_name)
+      @prob = Problem.find_or_create_by(name: problem_name)
+      @prob.full_name = full_name
       @prob.set_default_value unless @prob.id
       @dataset = Dataset.new(name: @prob.get_next_dataset_name)
       @prob.live_dataset = @dataset if set_as_live || @prob.datasets.count == 0
@@ -215,7 +217,6 @@ class ProblemImporter
 
     pi = ProblemImporter.new
     log = pi.import_dataset_from_dir(destination,**options)
-    pp log
   end
 
   def self.find_next_available_dir(name,uploaded_root_folder)

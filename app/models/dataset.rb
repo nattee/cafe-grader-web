@@ -7,7 +7,7 @@ class Dataset < ApplicationRecord
   enum evaluation_type: {wdiff: 0,
                          custom: 1}
 
-  enum score_type:        {sum: 0,      # summation of all testcase
+  enum score_type:        {sum: 0,      # summation of all testcase, default
                            group_min: 1,
                           }, _prefix: :st
 
@@ -36,6 +36,7 @@ class Dataset < ApplicationRecord
       p.testcases.update_all(dataset_id: d.id)
       p.update(live_dataset: d)
     end
+    Testcase.update_all('code_name = num')
   end
 
   def live?

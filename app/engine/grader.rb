@@ -210,7 +210,7 @@ class Grader
   end
 
 
-  # for testing
+  # for testing and migrate
   def self.restart(num=1)
     make_enabled(0)
     watchdog;
@@ -235,6 +235,16 @@ class Grader
 
     Job.add_compiling_job(s)
     return s
+  end
+
+  def self.migrate_new_grader
+    Dataset.migrate_old_testcases
+    puts "dataset imported"
+
+    Problem.migrate_pdf_to_activestorage
+    puts "PDF imported"
+
+
   end
 end
 

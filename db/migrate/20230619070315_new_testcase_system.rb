@@ -5,8 +5,8 @@ class NewTestcaseSystem < ActiveRecord::Migration[7.0]
       t.string  :name
       t.decimal :time_limit, default: 1, precision: 10, scale: 2
       t.integer :memory_limit
-      t.integer :score_type, limit: 1
-      t.integer :evaluation_type, limit: 1
+      t.integer :score_type, limit: 1, default: 0
+      t.integer :evaluation_type, limit: 1, default: 0
       t.string  :score_param
       t.string  :main_filename
       t.timestamps
