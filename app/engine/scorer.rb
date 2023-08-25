@@ -6,7 +6,7 @@ class Scorer
 
   def sorted_evaluation
     @sub.evaluations.joins(:testcase).includes(:testcase)
-          .order(:group_name,:code_name,'testcases.id ASC')
+          .order(:group,:code_name,'testcases.id ASC')
   end
 
   # return a score, full score is always 100
@@ -24,19 +24,20 @@ class Scorer
 
   def group_min
     evs = sorted_evaluation.select(:group_name,:score,:weight,:testcase_id).map{ |r| r.attributes.symbolize_keys }
-    evs << {group_name: (evs[-1][:group_name].nil? ? 1 : nil)} #sentinel
+    max_group = evs.max { |x,y| x[:group] || 0 && y[:group] || 0 }
+    evs << {group: max_group[:group]+1, result_text: ''}
 
+    last_group = max_group[:group]+2
     sum_user_score,sum_total_weight = 0.to_d,0.to_d;
-    last_group = nil
     min_score = 0
     max_weight = 0
     evs.each.with_index do |ev,idx|
-      group_name = ev[:group_name]
+      group = ev[:group]
       score = ev[:score] || 0
       weight = ev[:weight] || 0
 
       #process group
-      if last_group != group_name
+      if last_group != group
         #found new group, save old group result
         # the nil group has min_score, max_weight as 0
         sum_user_score += min_score * max_weight
@@ -49,7 +50,7 @@ class Scorer
         min_score = [min_score,score].min
         max_weight = [max_weight,weight].min
       end
-      last_group = group_name
+      last_group = group
     end
 
     score = sum_user_score / sum_total_weight * 100.to_d;
@@ -60,22 +61,23 @@ class Scorer
     result = ''
 
     #gen group info
-    evs = sorted_evaluation.select(:group_name,:result_text,:testcase_id).map{ |r| r.attributes.symbolize_keys }
-    evs << {group_name: (evs[-1][:group_name].nil? ? 1 : nil), result_text: ''} #sentinel
+    evs = sorted_evaluation.select(:group,:group_name,:result_text,:testcase_id).map{ |r| r.attributes.symbolize_keys }
+    max_group = evs.max { |x,y| x[:group] || 0 && y[:group] || 0 }
+    evs << {group: max_group[:group]+1, result_text: ''}
 
-    last_group = nil
+    last_group = max_group[:group]+2
     group_result = ''
     current_group_count = 0
     # build the string
     evs.each do |ev|
-      group_name = ev[:group_name]
+      group = ev[:group]
       result_text = ev[:result_text]
 
       #process group
-      if last_group != group_name
+      if last_group != group
         #found new group, save old group result
         if last_group != nil
-          if current_group_count == 1
+          if current_group_count <= 1
             result += group_result
           else
             # multiple testcase in group
@@ -90,7 +92,7 @@ class Scorer
 
       group_result += result_text
       current_group_count += 1
-      last_group = group_name
+      last_group = group
     end
     return result
   end

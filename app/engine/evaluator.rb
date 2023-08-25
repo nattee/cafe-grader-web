@@ -31,7 +31,8 @@ class Evaluator
     input = {"/input":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
     meta_file = @output_path + 'meta.txt'
 
-    out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file)
+    out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file,
+                                      time_limit: @working_dataset.time_limit,mem_limit: @working_dataset.memory_limit)
 
     #clean up isolate
     cleanup_isolate

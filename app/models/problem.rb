@@ -263,6 +263,7 @@ class Problem < ApplicationRecord
         puts [p.id,p.name].join ' '
         pp r
       end
+      p.live_dataset.update(memory_limit: r[:mem_limit], time_limit: r[:time_limit])
     end
   end
 

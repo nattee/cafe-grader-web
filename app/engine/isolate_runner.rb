@@ -14,13 +14,15 @@ module IsolateRunner
 
   #  Run isolate,
   #  time_limit, wall_limit are in second, fractional is allowed
-  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 1,isolate_args: [], meta: MetaFilename)
+  #  mem_limit is in MB
+  #  time_limit is in sec
+  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 1,mem_limit: 2048, isolate_args: [], meta: MetaFilename)
     #mount directory for input /output
     dir_args = []
     output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] } #these are mounted read/write
     input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }     #these are mounted readonly
 
-    limit_arg = "-t #{time_limit} -x #{wall_limit}"
+    limit_arg = "-t #{time_limit} -x #{wall_limit} -m #{mem_limit * 1024}"
     all_arg  = "#{limit_arg} #{dir_args.join ' '} #{isolate_args.join ' '}"
 
     cmd = "#{@isolate_cmd} --run -b #{@box_id} --meta=#{meta} #{all_arg} -- #{prog}"
