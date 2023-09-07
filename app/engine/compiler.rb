@@ -20,7 +20,7 @@ class Compiler
   # Each langauge specific sub-class MAY implement this method
   # it will be run BEFORE a compilation is success
   # normal use case is for java when we have to detect the classname of the file
-  def pre_compile(source,bin)
+  def pre_compile
   end
 
   # Each langauge specific sub-class MAY implement this method
@@ -28,7 +28,8 @@ class Compiler
   # normal use case is for scripting language
   # where compilation is actually linting and
   # post compile is to modify the source by adding shebang
-  def post_compile(source,bin)
+  # or add a script
+  def post_compile
   end
 
   # Each langauge specific sub-class MAY override this method

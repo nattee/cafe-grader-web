@@ -1,4 +1,5 @@
 class Compiler::Digital < Compiler
+  SUBMIT_DIGITAL_FILENAME = 'submitted.dig'
   def build_compile_command(source,bin)
     # this basically is no-op
     cmd = [
@@ -7,11 +8,15 @@ class Compiler::Digital < Compiler
     return cmd.join ' '
   end
 
-  def post_compile(source,bin)
+  def post_compile
+    # running script
     bin_text = "#!/bin/sh\njava -cp #{Rails.configuration.worker[:compiler][:ruby]} " +
       "CLI TEST " +
-      "-circ #{source} " +
-      "-test /input/input.txt \n"
-    File.write(bin,bin_text)
+      "-circ #{@isolate_bin_path}/#{SUBMIT_DIGITAL_FILENAME} " +
+      "-test #{@isolate_input_file}\n"
+    File.write(@exec_file,bin_text)
+
+    # the submitted file
+    File.copy(@source_file,SUBMIT_DIGITAL_FILENAME)
   end
 end

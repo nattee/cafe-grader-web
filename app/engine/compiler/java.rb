@@ -1,5 +1,5 @@
 class Compiler::Java < Compiler
-  def pre_compile(source,bin)
+  def pre_compile
     @classname = nil
     new_source = []
 
@@ -34,8 +34,8 @@ class Compiler::Java < Compiler
     return cmd.join ' '
   end
 
-  def post_compile(source,bin)
+  def post_compile
     bin_text = "#!/bin/sh\njava -cp #{@isolate_bin_path} #{@classname}"
-    File.write(bin,bin_text)
+    File.write(@exec_file,bin_text)
   end
 end

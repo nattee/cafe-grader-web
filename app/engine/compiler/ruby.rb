@@ -7,10 +7,10 @@ class Compiler::Ruby < Compiler
     return cmd.join ' '
   end
 
-  def post_compile(source,bin)
-    source_text = File.read(source)
+  def post_compile
+    source_text = File.read(@source_file)
 
     bin_text = "#!#{Rails.configuration.worker[:compiler][:ruby]}\n"+source_text
-    File.write(bin,bin_text)
+    File.write(@exec_file,bin_text)
   end
 end

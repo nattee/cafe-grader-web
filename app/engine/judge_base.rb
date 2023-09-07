@@ -1,5 +1,5 @@
 module JudgeBase
-  InputFilename = 'input.txt'
+  INPUT_FILENAME = 'input.txt'
   StdOutFilename = 'stdout.txt'
   StdErrFilename = 'stderr.txt'
   AnsFilename = 'answer.txt'
@@ -11,6 +11,7 @@ module JudgeBase
   ISOLATE_BIN_PATH = 'mybin'
   ISOLATE_SOURCE_PATH = 'source'
   ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
+  ISOLATE_INPUT_PATH = 'input'
 
 
 
@@ -66,6 +67,8 @@ module JudgeBase
     @isolate_bin_path = Pathname.new('/'+ISOLATE_BIN_PATH)
     @isolate_source_path = Pathname.new('/'+ISOLATE_SOURCE_PATH)
     @isolate_source_manager_path = Pathname.new('/'+ISOLATE_SOURCE_MANAGER_PATH)
+    @isolate_input_path = Pathname.new('/'+ISOLATE_INPUT_PATH)
+    @isolate_input_file = @isolate_input_path + INPUT_FILENAME
   end
 
   # set up directory and path/filename of the testcase directory
@@ -77,7 +80,7 @@ module JudgeBase
     @output_path = @sub_testcase_path + 'output'
     @output_file = @output_path + StdOutFilename
     @input_path = @prob_testcase_path + 'input' #we need additional dir because we will mount this dir to the isolate
-    @input_file = @input_path + InputFilename
+    @input_file = @input_path + INPUT_FILENAME
     @ans_file = @prob_testcase_path + AnsFilename
 
     #prepare folder

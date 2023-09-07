@@ -11,22 +11,29 @@ class ProblemImporter
     @tc = Hash.new { |h,k| h[k] = Hash.new }
     Dir["#{@base_dir}/**/#{input_pattern}"].each do |fn|
       input_fn = Pathname.new(@base_dir) + fn
-      codename = input_fn.basename('.*') # default codename to the file without extension
+      codename = input_fn.basename(input_pattern[(input_pattern.index('*')+1)..].to_s) # default codename to the * part of the input_pattern
+      puts "#{fn} input codename = #{codename}"
 
       #try to match the codename with the regex
       mc = input_fn.basename.to_s.match code_name_regex
       codename = mc[1] if mc
+      puts "#{fn} input codename = #{codename}"
       @tc[codename][:input] = input_fn.cleanpath
     end
     Dir["#{@base_dir}/**/#{sol_pattern}"].each do |fn|
       sol_fn = Pathname.new(@base_dir) + fn
-      codename = sol_fn.basename('.*') # default codename to the file without extension
+      codename = sol_fn.basename(sol_pattern[(sol_pattern.index('*')+1)..]).to_s # default codename to the * part of the sol_pattern
+
+      puts "#{fn} sol codename = #{codename}"
 
       #try to match the codename with the regex
       mc = sol_fn.basename.to_s.match code_name_regex
       codename = mc[1] if mc
+      puts "#{fn} sol codename = #{codename}"
       @tc[codename][:sol] = sol_fn.cleanpath
     end
+
+    pp @tc
 
     # load into dataset and testcase
     num = 1
@@ -176,7 +183,7 @@ class ProblemImporter
     sol_pattern: '*.sol',
     code_name_regex: /(.+?)(\.[^.]*$|$)/,   # how we get code_name (default to filename without extension)
                                             # see https://www.movingtofreedom.org/2008/04/01/regex-match-filename-base-and-extension/
-    group_name_regex: /^(\d+)/              #how we extract group name form filename
+    group_name_regex: /^(\d+)/              #how we extract group name from codename
   )
     Dataset.transaction do
 
