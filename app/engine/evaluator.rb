@@ -25,9 +25,9 @@ class Evaluator
     cmd_string = cmd.join ' '
 
     #run the evaluation in the isolated environment
-    isolate_args = %w(-p -E PATH)
+    isolate_args = %w(-E PATH)
     isolate_args << isolate_options_by_lang(@sub.language.name)
-    isolate_args += %w(-i /input/input.txt)
+    isolate_args += %w(-i /input/input.txt) if input_redirect_by_lang(@sub.language.name)
     input = {"/input":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
     meta_file = @output_path + 'meta.txt'
 

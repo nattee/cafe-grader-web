@@ -21,6 +21,7 @@ module JudgeBase
     judge_log "#{self.class.to_s} created"
   end
 
+  # additional options for isolate for each language
   def isolate_options_by_lang(language_name)
     case language_name
     when 'java', 'dig'
@@ -28,7 +29,16 @@ module JudgeBase
     else
       ''
     end
+  end
 
+  # return true when we must redirect the input into stdin
+  def input_redirect_by_lang(language_name)
+    case language_name
+    when 'dig'
+      return false
+    else
+      return true
+    end
   end
 
   # set up directory and path/filename of the submission directory
