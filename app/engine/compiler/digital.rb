@@ -3,7 +3,7 @@ class Compiler::Digital < Compiler
   def build_compile_command(source,bin)
     # this basically is no-op
     cmd = [
-      "echo "
+      "/usr/bin/echo "
     ]
     return cmd.join ' '
   end
@@ -17,6 +17,6 @@ class Compiler::Digital < Compiler
     File.write(@exec_file,bin_text)
 
     # the submitted file
-    File.copy(@source_file,SUBMIT_DIGITAL_FILENAME)
+    FileUtils.cp(@source_file,SUBMIT_DIGITAL_FILENAME)
   end
 end

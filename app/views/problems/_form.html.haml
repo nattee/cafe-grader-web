@@ -31,7 +31,7 @@
       - @problem.datasets.each do |ds|
         %div.tab-pane.fade{id: "ds-#{ds.id}", class: ('show active' if ds.live?)}
           %h4 Testcases
-          %table
+          %table.datatable
             %thead
               %tr
                 %th #

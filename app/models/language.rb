@@ -7,6 +7,16 @@ class Language < ApplicationRecord
     "submission." + self.ext
   end
 
+  def self.seed
+    Language.find_or_create_by( name: 'c').update(pretty_name: 'C', ext: 'c', common_ext: 'c' )
+    Language.find_or_create_by( name: 'cpp').update(pretty_name: 'C++', ext: 'cpp', common_ext: 'cpp,cc' )
+    Language.find_or_create_by( name: 'pas').update(pretty_name: 'Pascal', ext: 'pas', common_ext: 'pas' )
+    Language.find_or_create_by( name: 'ruby').update(pretty_name: 'Ruby', ext: 'rb', common_ext: 'rb' )
+    Language.find_or_create_by( name: 'python').update(pretty_name: 'Python', ext: 'py', common_ext: 'py' )
+    Language.find_or_create_by( name: 'java').update(pretty_name: 'Java', ext: 'java', common_ext: 'java' )
+    Language.find_or_create_by( name: 'digital').update(pretty_name: 'Digital', ext: 'dig', common_ext: 'dig' )
+  end
+
   def self.cache_ext_hash
     @@languages_by_ext = {}
     Language.all.each do |language|

@@ -248,12 +248,12 @@ end
 
 def seed_root
   return if User.find_by_login('root')
-  
+
   root = User.new(:login => 'root',
                   :full_name => 'Administrator',
                   :alias => 'root')
   root.password = 'ioionrails';
-  
+
   class << root
     public :encrypt_new_password
     def valid?(context=nil)
@@ -274,17 +274,6 @@ def seed_users_and_roles
   seed_root
 end
 
-def seed_more_languages
-  #Language.delete_all
-  Language.find_or_create_by( name: 'c').update(pretty_name: 'C', ext: 'c', common_ext: 'c' )
-  Language.find_or_create_by( name: 'cpp').update(pretty_name: 'C++', ext: 'cpp', common_ext: 'cpp,cc' )
-  Language.find_or_create_by( name: 'pas').update(pretty_name: 'Pascal', ext: 'pas', common_ext: 'pas' )
-  Language.find_or_create_by( name: 'ruby').update(pretty_name: 'Ruby', ext: 'rb', common_ext: 'rb' )
-  Language.find_or_create_by( name: 'python').update(pretty_name: 'Python', ext: 'py', common_ext: 'py' )
-  Language.find_or_create_by( name: 'java').update(pretty_name: 'Java', ext: 'java', common_ext: 'java' )
-  Language.find_or_create_by( name: 'digital').update(pretty_name: 'Digital', ext: 'dig', common_ext: 'dig' )
-end
-
 seed_config
 seed_users_and_roles
-seed_more_languages
+Language.seed

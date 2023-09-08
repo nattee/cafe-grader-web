@@ -11,24 +11,42 @@ class ProblemImporter
     @tc = Hash.new { |h,k| h[k] = Hash.new }
     Dir["#{@base_dir}/**/#{input_pattern}"].each do |fn|
       input_fn = Pathname.new(@base_dir) + fn
-      codename = input_fn.basename(input_pattern[(input_pattern.index('*')+1)..].to_s) # default codename to the * part of the input_pattern
-      puts "#{fn} input codename = #{codename}"
+      regex = Regexp.new input_pattern.gsub('*','(.+)')
+      #codename = input_fn.basename(input_pattern[(input_pattern.index('*')+1)..].to_s) # default codename to the * part of the input_pattern
+      #puts "#{fn} input codename = #{codename}"
 
       #try to match the codename with the regex
-      mc = input_fn.basename.to_s.match code_name_regex
+      mc = input_fn.basename.to_s.match regex
+      next unless mc
+      name = mc[1]
+
+      #default codename, use the part that match the wildcard
+      codename = name
+
+      #parse codename according to regex
+      codename_mc = name.match code_name_regex
       codename = mc[1] if mc
+
       puts "#{fn} input codename = #{codename}"
       @tc[codename][:input] = input_fn.cleanpath
     end
     Dir["#{@base_dir}/**/#{sol_pattern}"].each do |fn|
       sol_fn = Pathname.new(@base_dir) + fn
-      codename = sol_fn.basename(sol_pattern[(sol_pattern.index('*')+1)..]).to_s # default codename to the * part of the sol_pattern
-
-      puts "#{fn} sol codename = #{codename}"
+      regex = Regexp.new sol_pattern.gsub('*','(.+)')
+      #codename = sol_fn.basename(sol_pattern[(sol_pattern.index('*')+1)..]).to_s # default codename to the * part of the sol_pattern
 
       #try to match the codename with the regex
-      mc = sol_fn.basename.to_s.match code_name_regex
+      mc = sol_fn.basename.to_s.match regex
+      next unless mc
+      name = mc[1]
+
+      #default codename, use the part that match the wildcard
+      codename = name
+
+      #parse codename according to regex
+      codename_mc = name.match code_name_regex
       codename = mc[1] if mc
+
       puts "#{fn} sol codename = #{codename}"
       @tc[codename][:sol] = sol_fn.cleanpath
     end
@@ -181,15 +199,15 @@ class ProblemImporter
     set_as_live: false,
     input_pattern: '*.in',
     sol_pattern: '*.sol',
-    code_name_regex: /(.+?)(\.[^.]*$|$)/,   # how we get code_name (default to filename without extension)
-                                            # see https://www.movingtofreedom.org/2008/04/01/regex-match-filename-base-and-extension/
-    group_name_regex: /^(\d+)/              #how we extract group name from codename
+    code_name_regex: /(.*)/,      # how we get code_name from the matched wildcard
+    group_name_regex: /^(\d+)-/   # how we extract group name from codename
   )
     Dataset.transaction do
 
       # init problem and dataset
       @base_dir = dir
       @prob = Problem.find_or_create_by(name: problem_name)
+      @prob.date_added = Time.zone.now unless @prob.date_added
       @prob.full_name = full_name
       @prob.set_default_value unless @prob.id
       @dataset = Dataset.new(name: @prob.get_next_dataset_name)

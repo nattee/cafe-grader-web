@@ -63,7 +63,7 @@ class Compiler
 
     #running any precompile script
     @exec_file = @compile_path + @sub.problem.exec_filename(@sub.language)
-    pre_compile(@source_file,@exec_file)
+    pre_compile
 
     # ------ run the compilation ------
     #output file
@@ -106,7 +106,7 @@ class Compiler
 
     if compile_result[:success]
       #run any post compilation
-      post_compile(@source_file,@exec_file)
+      post_compile
 
       # the result should be at @bin_path
       upload_compiled_files
@@ -182,6 +182,8 @@ class Compiler
       return Compiler::Ruby
     when 'java'
       return Compiler::Java
+    when 'digital'
+      return Compiler::Digital
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)
