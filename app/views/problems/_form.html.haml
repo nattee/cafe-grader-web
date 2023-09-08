@@ -37,6 +37,7 @@
                 %th #
                 %th Codename
                 %th Group
+                %th Group Name
                 %th Weight
             %tbody
               - ds.testcases.each.with_index do |tc,idx|
@@ -45,6 +46,8 @@
                     = idx+1
                   %td
                     = tc.code_name
+                  %td
+                    = tc.group
                   %td
                     = tc.group_name
                   %td

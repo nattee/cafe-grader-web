@@ -56,7 +56,8 @@ class ProblemImporter
     # load into dataset and testcase
     num = 1
     group = 1
-    group_hash = Hash.new { |h,k| h[k] = [] }
+    #group_hash = Hash.new { |h,k| h[k] = [] }
+    group_hash = {}
 
     # we sort the filename by their natural sort order
     natural_order_sorted = @tc.keys.sort_by{ |s| s.split(/(\d+)/).map{ |e| Integer(e) rescue e}}
@@ -70,7 +71,12 @@ class ProblemImporter
         mg = @tc[k][:input].basename.to_s.match group_name_regex
         group_name = mg[1] if mg # if match, we will use the captured pattern
 
-        group_hash[group_name] << k
+        if group_hash.has_key? group_name
+          group = group_hash[group_name]
+        else
+          group = group_hash.count + 1
+          group_hash[group_name] = group
+        end
 
         #create new testcase
         new_tc = Testcase.new(num: num, group: group,weight: 1,group_name: group_name, code_name: k)
@@ -199,8 +205,10 @@ class ProblemImporter
     set_as_live: false,
     input_pattern: '*.in',
     sol_pattern: '*.sol',
-    code_name_regex: /(.*)/,      # how we get code_name from the matched wildcard
-    group_name_regex: /^(\d+)-/   # how we extract group name from codename
+    code_name_regex: /(.*)/,       # how we get code_name from the matched wildcard
+    group_name_regex: /^(\d+)-/,   # how we extract group name from codename
+    memory_limit: 512,
+    time_limit: 1
   )
     Dataset.transaction do
 
@@ -211,6 +219,8 @@ class ProblemImporter
       @prob.full_name = full_name
       @prob.set_default_value unless @prob.id
       @dataset = Dataset.new(name: @prob.get_next_dataset_name)
+      @dataset.memory_limit = memory_limit
+      @dataset.time_limit = time_limit
       @prob.live_dataset = @dataset if set_as_live || @prob.datasets.count == 0
       @prob.datasets << @dataset
       @prob.save

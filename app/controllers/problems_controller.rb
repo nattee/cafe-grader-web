@@ -143,7 +143,7 @@ class ProblemsController < ApplicationController
     @submissions.find_each do |sub|
       d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
       @histogram[:data][d.to_i] += 1 if d < range
-      user[sub.user_id] = [user[sub.user_id], ((sub.try(:points) || 0) >= @problem.full_score) ? 1 : 0].max
+      user[sub.user_id] = [user[sub.user_id], ((sub.try(:points) || 0) >= (@problem.full_score || 100)) ? 1 : 0].max
     end
     @histogram[:summary][:max] = [@histogram[:data].max,1].max
 

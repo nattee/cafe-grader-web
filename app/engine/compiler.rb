@@ -55,7 +55,7 @@ class Compiler
 
     validate
     #init isolate
-    setup_isolate(@box_id)
+    setup_isolate(@box_id, isolate_need_cg_by_lang(@sub.language.name))
 
     #prepare source file
     prepare_submission_directory(@sub)
@@ -92,7 +92,8 @@ class Compiler
                        input: input,
                        output: output,
                        isolate_args: isolate_args,
-                       meta: compile_meta)
+                       meta: compile_meta,
+                       cg: isolate_need_cg_by_lang(@sub.language.name))
 
     #save result
     File.write(compile_stdout_file,out)

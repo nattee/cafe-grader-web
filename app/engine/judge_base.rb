@@ -22,11 +22,22 @@ module JudgeBase
     judge_log "#{self.class.to_s} created"
   end
 
+  def isolate_need_cg_by_lang(language_name)
+    case language_name
+    when 'java', 'digital'
+      true
+    else
+      false
+    end
+  end
+
   # additional options for isolate for each language
   def isolate_options_by_lang(language_name)
     case language_name
-    when 'java', 'dig'
-      '--cg -p -d /etc/alternatives'
+    when 'java'
+      '-p -d /etc/alternatives'
+    when 'digital'
+      "-p -d /etc -d /tmp:rw -d /my_lib=#{Pathname.new(Rails.configuration.worker[:compiler][:digital]).dirname}"
     else
       ''
     end
@@ -35,7 +46,7 @@ module JudgeBase
   # return true when we must redirect the input into stdin
   def input_redirect_by_lang(language_name)
     case language_name
-    when 'dig'
+    when 'digital'
       return false
     else
       return true

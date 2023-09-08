@@ -83,6 +83,7 @@ class Scorer
             # multiple testcase in group
             result += '[' +  group_result + ']'
           end
+          puts "now result is " + result
         end
 
         #reset group tally

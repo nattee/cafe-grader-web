@@ -11,7 +11,7 @@ class Evaluator
     @working_dataset = @testcase.dataset
 
     #init isolate
-    setup_isolate(@box_id)
+    setup_isolate(@box_id, isolate_need_cg_by_lang(@sub.language.name))
 
     #prepare data files
     prepare_submission_directory(@sub)
@@ -32,8 +32,8 @@ class Evaluator
     meta_file = @output_path + 'meta.txt'
 
     out,err,status,meta = run_isolate(cmd_string,input: input, isolate_args: isolate_args,meta: meta_file,
-                                      time_limit: @working_dataset.time_limit,mem_limit: @working_dataset.memory_limit)
-
+                                      time_limit: @working_dataset.time_limit,mem_limit: @working_dataset.memory_limit,
+                                      cg: isolate_need_cg_by_lang(@sub.language.name))
     #clean up isolate
     cleanup_isolate
 

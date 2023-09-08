@@ -170,7 +170,7 @@ class Problem < ApplicationRecord
       'a.out'
     when 'python'
       'code.pyc'
-    when 'java','dig'
+    when 'java','digital'
       #for java, the compilation create a shell script that runs the file
       'run.sh'
     else
