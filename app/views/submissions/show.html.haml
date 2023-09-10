@@ -25,10 +25,10 @@
         e.getSession().setMode("#{get_ace_mode(@submission.language)}")
         e.setReadOnly(true)
     .col-md-5
-      %table.table.table-striped
+      %table.table
         %tr
-          %td.text-right
-            %strong User
+          %td.text-end.text-secondary
+            User
           %td
             - if @current_user.admin? ||@current_user == @submission.user
               - if @submission.user
@@ -39,8 +39,8 @@
             - else
               = '-- REDACTED --'
         %tr
-          %td.text-right
-            %strong Task
+          %td.text-end.text-secondary
+            Task
           %td
             - if @submission.problem!=nil
               = link_to "[#{@submission.problem.name}]", stat_problem_path(@submission.problem)
@@ -49,62 +49,62 @@
             - else
               = "(n/a)"
         %tr
-          %td.text-right
-            %strong Tries
+          %td.text-end.text-secondary
+            Tries
           %td= @submission.number
         %tr
-          %td.text-right
-            %strong Language
+          %td.text-end.text-secondary
+            Language
           %td= @submission.language.pretty_name
         %tr
-          %td.text-right
-            %strong Submitted
+          %td.text-end.text-secondary
+            Submitted
           %td #{time_ago_in_words(@submission.submitted_at)} ago (at #{@submission.submitted_at.to_formatted_s(:long)})
         %tr
-          %td.text-right
-            %strong Graded
+          %td.text-end.text-secondary
+            Graded
           - if @submission.graded_at
             %td #{time_ago_in_words(@submission.graded_at)} ago (at #{@submission.graded_at.to_formatted_s(:long)})
           - else
             %td -
         %tr
-          %td.text-right
-            %strong Points
+          %td.text-end.text-secondary
+            Points
           %td #{@submission.points}/100
         %tr
-          %td.text-right
-            %strong Comment
+          %td.text-end.text-secondary
+            Comment
           %td 
             %tt.grader-comment #{@submission.grader_comment}
         %tr
-          %td.text-right
-            %strong Runtime (s)
+          %td.text-end.text-secondary
+            Runtime (s)
           %td #{(@submission.max_runtime || 0)/1000.to_d}
         %tr
-          %td.text-right
-            %strong Memory (kb)
+          %td.text-end.text-secondary
+            Memory (kb)
           %td #{@submission.peak_memory}
         %tr
-          %td.text-right
-            %strong Compiler result
+          %td.text-end.text-secondary
+            Compiler result
           %td
             %button.btn.btn-info.btn-sm{type: 'button', data: {bs: {toggle: 'modal', target: '#compiler'}}}
               View
         %tr
-          %td.text-right
-            %strong Grading Task Status
+          %td.text-end.text-secondary
+            Grading Task Status
           %td
             = @task.status_str if @task
             - if @current_user.admin?
               = link_to "rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-info btn-sm'
         - if @current_user.has_role?('ta')
           %tr
-            %td.text-right
-              %strong IP
+            %td.text-end.text-secondary
+              IP
             %td #{@submission.ip_address}
           %tr
-            %td.text-right
-              %strong Model solution
+            %td.text-end.text-secondary
+              Model solution
             %td
               - if @submission.tag_model?
                 YES
