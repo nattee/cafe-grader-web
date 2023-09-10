@@ -250,6 +250,12 @@ class Problem < ApplicationRecord
     end
   end
 
+  # check the old /judge/ev folder for test_cases/all_tests.cfg
+  # change the live dataset of the problem of that ev folder
+  # with the memory limit and time limit
+  #
+  # Additionally, see if this one has grouped subtask
+  # if so, change the scoring of the live-dataset of to :GroupMin
   def self.migrate_subtask
     dir = Rails.root.join '../judge/ev/*'
     Dir[dir].each do |ev_dir|
@@ -258,12 +264,13 @@ class Problem < ApplicationRecord
       next unless p
 
       r = parse_all_test_cfg(pn + 'test_cases/all_tests.cfg',p)
-      if (r[:group])
-
-        puts [p.id,p.name].join ' '
-        pp r
-      end
       p.live_dataset.update(memory_limit: r[:mem_limit], time_limit: r[:time_limit])
+      if (r[:group])
+        p.live_dataset.st_group_min!
+
+        #show debug info
+        puts "Found problem #{p.name} (#{p.id}) with grouped testcase"
+      end
     end
   end
 

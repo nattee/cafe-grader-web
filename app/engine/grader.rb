@@ -22,6 +22,7 @@ class Grader
     @worker_id = worker_id
     @grader_process = GraderProcess.find_or_create_by(box_id: box_id, worker_id: worker_id)
     @grader_process.update(key: key)
+    @last_job_time = Time.zone.now
     judge_log "Grader created with key #{key}"
   end
 
@@ -83,9 +84,10 @@ class Grader
     Rails.logger.level = 0
 
     if (@job)
+      @last_job_time = Time.zone.now
       begin
         judge_log "Process job #{@job.to_text}"
-        @grader_process.update(task_id: @job.id)
+        @grader_process.update(task_id: @job.id, status: :working)
         if @job.jt_compile?
           process_job_compile
         elsif @job.jt_evaluate?
@@ -109,8 +111,12 @@ class Grader
         #reset job status to be run again
         @job.update(status: :wait)
       end
+      result = true
+    else 
+      result = false
     end
     @job = nil
+    return result
   end
 
   def main_loop
@@ -126,21 +132,27 @@ class Grader
     # THE MAIN LOOP
     while(running) do
       #fetch any job
-      check_and_run_job
+      result = check_and_run_job
 
       # heartbeat
       current = Time.zone.now
       if (current - last_heartbeat > 3.0)
         last_heartbeat = current
-        @grader_process.update(last_heartbeat: current)
+        @grader_process.update(last_heartbeat: current, status: (Time.zone.now - @last_job_time > 5.second) ? :idle : :working)
 
         #check if the database tell us to stop
         @grader_process.reload
         running = @grader_process.enabled
       end
 
-      #5 Hz
-      sleep (0.2)
+      if result
+        #if we have done something
+      else
+        #if no job is found, we sleep
+
+        #5 Hz
+        sleep (0.2)
+      end
     end
   end
 
@@ -238,12 +250,17 @@ class Grader
   end
 
   def self.migrate_new_grader
+    puts "Making dataset..."
     Dataset.migrate_old_testcases
     puts "dataset imported"
 
+    puts "Reading pdf files..."
     Problem.migrate_pdf_to_activestorage
     puts "PDF imported"
 
+    puts "Reading ev dir..."
+    Problem.migrate_subtask
+    puts "checked the subtask DONE"
 
   end
 end

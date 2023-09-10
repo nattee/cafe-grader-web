@@ -5,31 +5,29 @@
 
 %p= link_to '[Back to problem list]', problems_path
 
-- if @problem and @problem.errors
-  =error_messages_for 'problem'
+- if @errors
+  -# show errors
+  .alert.alert-danger
+    There are following errors
+    %ul
+      - @errors.each do |msg|
+        %li= msg
 
 .row
   .col-md-4
-    = form_with url: do_import_problems_path, :multipart => true  do |f|
-      .row.mb-2
-        .col-md-3
-          = f.label :name, 'Name'
-        .col-md-9
-          = f.text_field :name, class: 'form-control'
-      .row.mb-2
-        .col-md-3
-          = f.label :full_name, 'Full Name'
-        .col-md-9
-          = f.text_field :full_name, class: 'form-control'
-      .row.mb-2
-        .col-md-3
-          = f.label :archive_file, 'Data File'
-        .col-md-9
-          = f.file_field :archive_file, class: 'form-control'
-      .row.mb-2
-        .col-md-3
-        .col-md-9
-          = f.submit 'Import Problem'
+    = simple_form_for :problem, url: do_import_problems_path, html: {multipart: true}, wrapper: :horizontal_form do |f|
+      = f.input :name
+      = f.input :full_name
+      = f.input :time_limit, required: false
+      = f.input :memory_limit, required: false
+      .card.mb-2
+        .card-body
+          %h5.card-title Dataset
+          = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
+          = f.input :input_pattern, input_html: { value: '*.in' }
+          = f.input :sol_pattern, input_html: { value: '*.sol' }
+          = f.input :replace, label: 'replace all existing datasets of this problem', as: :boolean, wrapper: :horizontal_boolean
+      = f.button :submit, class: 'btn-primary'
   .col-md-8
 
   .submitbox

@@ -190,21 +190,49 @@ class ProblemsController < ApplicationController
   end
 
   def do_import
-    old_problem = Problem.find_by_name(params[:name])
-    if !allow_test_pair_import? and params.has_key? :import_to_db
-      params.delete :import_to_db
-    end
-    @problem, import_log = Problem.create_from_import_form_params(params,
-                                                                  old_problem)
+    # old_problem = Problem.find_by_name(params[:name])
+    # if !allow_test_pair_import? and params.has_key? :import_to_db
+    #   params.delete :import_to_db
+    # end
+    # @problem, import_log = Problem.create_from_import_form_params(params,
+    #                                                               old_problem)
 
-    if !@problem.errors.empty?
-      render :action => 'import' and return
+    # if !@problem.errors.empty?
+    #   render :action => 'import' and return
+    # end
+
+    # if old_problem!=nil
+    #   flash[:notice] = "The test data has been replaced for problem #{@problem.name}"
+    # end
+    # @log = import_log
+    #
+
+    name = params[:problem][:name]
+    uploaded_file_path = params[:problem][:file].to_path
+
+    pi = ProblemImporter.new
+
+    # unzip uploaded file to raw folder
+    extracted_path = pi.unzip_to_dir(
+      uploaded_file_path,
+      name,
+      Rails.configuration.worker[:directory][:judge_raw_path])
+
+    if pi.errors.count > 0
+      @errors = pi.errors
+      render :import and return
     end
 
-    if old_problem!=nil
-      flash[:notice] = "The test data has been replaced for problem #{@problem.name}"
-    end
-    @log = import_log
+    # load data
+    pi.import_dataset_from_dir(extracted_path, params[:problem][:name],
+      full_name: params[:problem][:full_name],
+      input_pattern: params[:problem][:input_pattern],
+      sol_pattern: params[:problem][:sol_pattern],
+      delete_existing: params[:problem][:replace] == '1',
+      set_as_live: params[:problem][:replace] == '1',
+    )
+    @log = pi.log
+    @problem = pi.problem
   end
 
   def remove_contest

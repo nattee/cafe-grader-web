@@ -23,7 +23,7 @@ class Scorer
   end
 
   def group_min
-    evs = sorted_evaluation.select(:group_name,:score,:weight,:testcase_id).map{ |r| r.attributes.symbolize_keys }
+    evs = sorted_evaluation.select(:group, :group_name,:score,:weight,:testcase_id).map{ |r| r.attributes.symbolize_keys }
     max_group = evs.max { |x,y| x[:group] || 0 && y[:group] || 0 }
     evs << {group: max_group[:group]+1, result_text: ''}
 
@@ -83,7 +83,6 @@ class Scorer
             # multiple testcase in group
             result += '[' +  group_result + ']'
           end
-          puts "now result is " + result
         end
 
         #reset group tally

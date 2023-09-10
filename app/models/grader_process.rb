@@ -1,5 +1,7 @@
 class GraderProcess < ApplicationRecord
 
+  enum status: {idle: 0, working: 1}
+
   def self.lock_for_fetching_submission(host_id,sub_id)
     GraderProcess.lock("FOR UPDATE").where(host_id: host_id, fetching_sub_id: sub_id)
   end

@@ -8,6 +8,7 @@ shared:
   directory:
     isolate_working_dir: /var/local/lib/isolate/
     judge_path: <%= ENV['HOME'] %>/cafe_grader/judge
+    judge_raw_path: <%= Rails.root.join('..', 'judge','raw').cleanpath %>
     judge_log_file: <%= Rails.root.join 'log','judge' %>
     grader_stdout_base_file: <%= Rails.root.join 'log','grader-' %>
 
@@ -19,6 +20,7 @@ shared:
     python: <%= `which python3`.strip %>
     javac: <%= `which javac`.strip %>
     java: <%= `which java`.strip %>
+    digital: <%= Rails.root.join 'lib','language', 'digital','Digital.jar' %>
   isolate_path: <%= `which isolate`.strip %>
 
   #hosts

@@ -1,9 +1,12 @@
 class ProblemImporter
 
+  attr_reader :problem, :log, :errors
+
   require 'open3'
   def initialize
     @log = []
     @options = {}
+    @errors = []
   end
 
   def read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
@@ -92,7 +95,7 @@ class ProblemImporter
       end
     end
 
-    @prob.save
+    @problem.save
 
   end
 
@@ -105,8 +108,8 @@ class ProblemImporter
       @dataset.process_import_options(@options,@log)
 
 
-      @prob.full_name = @options[:full_name] if @options.has_key? :fullname
-      @prob.submission_filename = @options[:submission_filename] if @options.has_key? :submission_filename
+      @problem.full_name = @options[:full_name] if @options.has_key? :fullname
+      @problem.submission_filename = @options[:submission_filename] if @options.has_key? :submission_filename
     end
   end
 
@@ -114,7 +117,7 @@ class ProblemImporter
     # pdf
     pdf,fn = get_content_of_first_match('*.pdf')
     if pdf
-      @prob.statement.attach(io: StringIO.new(pdf),filename: fn)
+      @problem.statement.attach(io: StringIO.new(pdf),filename: fn)
       @log << "Found a pdf statement, [#{fn}]"
     else
       @log << "no pdf file is given as a statement"
@@ -123,7 +126,7 @@ class ProblemImporter
     # additional description
     md,fn = get_content_of_first_match('*.md')
     if (md)
-      @prob.update(description: md)
+      @problem.update(description: md)
       @log << "Found addtional Markdown file, [#{fn}]"
     end
   end
@@ -139,7 +142,7 @@ class ProblemImporter
       @log << "Found the main file, [#{fn}]"
       @dataset.managers.attach(io: StringIO.new(main),filename: Pathname.new(fn).basename)
       @dataset.main_filename = Pathname.new(fn).basename
-      @prob.compilation_type = 'with_managers'
+      @problem.compilation_type = 'with_managers'
     end
 
     # any .h
@@ -163,7 +166,7 @@ class ProblemImporter
     checker,fn = get_content_of_first_match('checker.*')
     if (checker)
       @log << "Found custom checker file, [#{fn}]"
-      @prob.checker.attach(io: StringIO.new(checker),filename: fn)
+      @problem.checker.attach(io: StringIO.new(checker),filename: fn)
     end
   end
 
@@ -199,10 +202,11 @@ class ProblemImporter
 
   # import dataset in the dir into a problem,
   # might also set it as a live dataset
-  # If the problem with the same problem_name exist, this will add another dataset
-  def import_dataset_from_dir(dir,
-    problem_name: ,full_name: ,          #required keyword
+  # If the problem with the same name exist, this will add another dataset
+  def import_dataset_from_dir(dir, name,
+    full_name: ,          #required keyword
     set_as_live: false,
+    delete_existing: false,
     input_pattern: '*.in',
     sol_pattern: '*.sol',
     code_name_regex: /(.*)/,       # how we get code_name from the matched wildcard
@@ -214,26 +218,27 @@ class ProblemImporter
 
       # init problem and dataset
       @base_dir = dir
-      @prob = Problem.find_or_create_by(name: problem_name)
-      @prob.date_added = Time.zone.now unless @prob.date_added
-      @prob.full_name = full_name
-      @prob.set_default_value unless @prob.id
-      @dataset = Dataset.new(name: @prob.get_next_dataset_name)
+      @problem = Problem.find_or_create_by(name: name)
+      @problem.date_added = Time.zone.now unless @problem.date_added
+      @problem.full_name = full_name
+      @problem.set_default_value unless @problem.id
+      @dataset = Dataset.new(name: @problem.get_next_dataset_name)
       @dataset.memory_limit = memory_limit
       @dataset.time_limit = time_limit
-      @prob.live_dataset = @dataset if set_as_live || @prob.datasets.count == 0
-      @prob.datasets << @dataset
-      @prob.save
+      @problem.datasets.each { |ds| ds.destroy } if delete_existing
+      @problem.datasets << @dataset
+      @problem.live_dataset = @dataset if set_as_live || @problem.datasets.count == 0
+      @problem.save
       @dataset.save
 
-      @log << "Importing dataset for #{@prob.name} (#{@prob.id})"
+      @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
 
       read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
       read_options
       read_statement
       read_checker
       read_cpp_extras
-      @prob.save
+      @problem.save
       @dataset.save
       @log << "Done successfully"
     end
@@ -241,27 +246,24 @@ class ProblemImporter
     return @log
   end
 
-  # unzip the archive file into uploaded_folder
-  # and process it as a new problem (or replace existing one of the same name)
-  def self.load_problem_from_zip_file(problem_name,zip_file,uploaded_root_folder,options)
-    #unzip the file
-    destination = find_next_available_dir(problem_name,uploaded_root_folder)
-
-    cmd = "unzip #{zip_file} -d #{destination}"
-    out,err,status = Open3.capture3(cmd)
-
-    pi = ProblemImporter.new
-    log = pi.import_dataset_from_dir(destination,**options)
-  end
-
-  def self.find_next_available_dir(name,uploaded_root_folder)
-    pn  = Pathname.new(uploaded_root_folder)+name
+  def unzip_to_dir(file,name,dir)
+    pn  = Pathname.new(dir)+name
     num = 1
     while pn.exist?
-      pn  = Pathname.new(uploaded_root_folder)+"#{name}.#{num}"
+      pn  = Pathname.new(dir)+"#{name}.#{num}"
       num+=1
     end
-    return pn.cleanpath
+
+    destination = pn.cleanpath
+
+    cmd = "unzip #{file} -d #{destination}"
+    out,err,status = Open3.capture3(cmd)
+    if status.exitstatus == 0
+      return destination
+    else
+      @errors << err
+      return nil
+    end
   end
 
 end

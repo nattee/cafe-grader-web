@@ -6,7 +6,7 @@ class Compiler::Cpp < Compiler
       "-iquote #{@isolate_source_path}",
       "-iquote #{@isolate_source_manager_path}",
       "-DEVAL -std=gnu++17 -O2 -pipe -s",
-      @source_file
+      source
     ]
     return cmd.join ' '
   end

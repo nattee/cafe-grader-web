@@ -7,15 +7,22 @@ class GradersController < ApplicationController
   end
 
   def list
+    @graders = GraderProcess.all
     @grader_processes = GraderProcess.find_running_graders
     @stalled_processes = GraderProcess.find_stalled_process
 
     @terminated_processes = GraderProcess.find_terminated_graders
-    
+
     @last_task = Task.last
     @last_test_request = TestRequest.last
-    @submission = Submission.order("id desc").limit(20)
-    @backlog_submission = Submission.where('graded_at is null')
+    @submission = Submission.order("id desc").limit(20).includes(:user,:problem)
+    @backlog_submission = Submission.where('graded_at is null').includes(:user,:problem)
+  end
+
+  def set_enabled
+    @grader = GraderProcess.where(id: params[:id]).first
+    @grader.update(enabled: params[:enabled])
+    redirect_to action: :list
   end
 
   def clear

@@ -6,14 +6,16 @@
 %p
   = link_to 'Refresh', { :action => 'list' }, class: 'btn btn-info'
 
-.panel.panel-primary
-  .panel-heading
-    Grader control:
-  .panel-body
-    =link_to 'Start Graders in grading env', { action: 'start_grading'}, class: 'btn btn-secondary'
-    =link_to 'Start Graders in exam env', { action: 'start_exam'}, class: 'btn btn-secondary'
-    =link_to 'Stop all running Graders', { action: 'stop_all'}, class: 'btn btn-secondary'
-    =link_to 'Clear all data', { action: 'clear_all'}, class: 'btn btn-secondary'
+
+-#
+  .panel.panel-primary
+    .panel-heading
+      Grader control:
+    .panel-body
+      =link_to 'Start Graders in grading env', { action: 'start_grading'}, class: 'btn btn-secondary'
+      =link_to 'Start Graders in exam env', { action: 'start_exam'}, class: 'btn btn-secondary'
+      =link_to 'Stop all running Graders', { action: 'stop_all'}, class: 'btn btn-secondary'
+      =link_to 'Clear all data', { action: 'clear_all'}, class: 'btn btn-secondary'
 
 .row
   .col-md-6
@@ -27,19 +29,46 @@
       Last test_request:
       = link_to "#{@last_test_request.id}", :action => 'view', :id => @last_test_request.id, :type => 'TestRequest'
 
-    %h2 Current graders
+    %h3 Worker and Grader
+    %table.table
+      %thead
+        %tr
+          %th worker id
+          %th box id
+          %th host
+          %th Last Heartbeat
+          %th Status
+          %th Job
+          %th Action
+      %tbody
+        - @graders.each do |grader|
+          %tr
+            %td= grader.worker_id
+            %td= grader.box_id
+            %td
+            %td= "#{time_ago_in_words(grader.last_heartbeat, include_seconds: true) if grader.last_heartbeat} ago"
+            %td= grader.status
+            %td= grader.task_id
+            %td
+              - if grader.enabled?
+                = button_to 'Disable',graders_set_enabled_path(grader,0), class: 'btn btn-secondary btn-sm'
+              - else
+                = button_to 'Enable', graders_set_enabled_path(grader,1), class: 'btn btn-primary btn-sm'
 
-    = render :partial => 'grader_list', :locals => {:grader_list => @grader_processes}
+    -#
+      %h2 Current graders
 
-    %h2 Stalled graders
+      = render :partial => 'grader_list', :locals => {:grader_list => @grader_processes}
 
-    = render :partial => 'grader_list', :locals => {:grader_list => @stalled_processes}
+      %h2 Stalled graders
 
-    %h2 Terminated graders
+      = render :partial => 'grader_list', :locals => {:grader_list => @stalled_processes}
 
-    %p= link_to 'Clear data for terminated graders', { action: 'clear_terminated'}, class: 'btn btn-default', method: 'post'
+      %h2 Terminated graders
 
-    = render :partial => 'grader_list', :locals => {:grader_list => @terminated_processes}
+      %p= link_to 'Clear data for terminated graders', { action: 'clear_terminated'}, class: 'btn btn-default', method: 'post'
+
+      = render :partial => 'grader_list', :locals => {:grader_list => @terminated_processes}
   .col-md-6
     %h2 Last 20 submissions
     %table.table.table-striped.table-condensed

@@ -47,6 +47,8 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :datasets, only: [:update]
+
   resources :groups do
     member do
       post 'add_user', to: 'groups#add_user', as: 'add_user'
@@ -202,15 +204,16 @@ Rails.application.routes.draw do
   namespace :graders do
     get 'task/:id/:type', action: 'task', as: 'task'
     get 'view/:id/:type', action: 'view', as: 'view'
-    get 'clear/:id', action: 'clear', as: 'clear'
-    get 'start_grading'
-    get 'start_exam'
-    get 'clear_all'
-    get 'stop_all'
+    #get 'clear/:id', action: 'clear', as: 'clear'
+    #get 'start_grading'
+    #get 'start_exam'
+    #get 'clear_all'
+    #get 'stop_all'
 
-    get 'stop'
-    get 'clear_terminated'
+    #get 'stop'
+    #get 'clear_terminated'
     get 'list'
+    post 'set_enabled/:id/:enabled', as: :set_enabled, action: :set_enabled
   end
 
 

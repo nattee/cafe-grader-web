@@ -1,0 +1,43 @@
+= turbo_frame_tag dom_id(ds), data: {turbo: true} do
+  %div.mb-2
+  - if local_assigns[:updated]
+    .alert.alert-info
+      Updated on
+      = updated
+  %h4 Dataset
+  = simple_form_for ds, wrapper: :horizontal_form do |f|
+    = f.input :name
+    = f.input :time_limit
+    = f.input :memory_limit
+    = f.input :score_type
+    = f.input :evaluation_type
+    = f.button :submit, class: 'btn-primary'
+  %h4 Testcases
+  %table.datatable.table-hover
+    %thead
+      %tr
+        %th #
+        %th Codename
+        %th Group
+        %th Group Name
+        %th Weight
+    %tbody
+      - last_group = nil
+      - odd = true
+      - ds.testcases.each.with_index do |tc,idx|
+        - if tc.group != last_group
+          - odd = !odd
+          - last_group = tc.group
+        %tr{class: (odd ? 'bg-secondary bg-opacity-25' : '')}
+          %td
+            = idx+1
+          %td
+            = tc.code_name
+          %td
+            = tc.group
+          %td
+            = tc.group_name
+          %td
+            = tc.weight
+  :javascript
+    $('.datatable').DataTable({destroy: true, searching: false, paging: false})

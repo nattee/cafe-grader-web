@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
+ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -134,6 +134,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_07_28_055327) do
     t.datetime "last_heartbeat"
     t.string "key"
     t.boolean "enabled", default: false
+    t.integer "status", default: 0
     t.index ["host", "pid"], name: "index_grader_processes_on_ip_and_pid"
   end
 
