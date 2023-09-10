@@ -50,7 +50,12 @@ class MainController < ApplicationController
   end
 
   def submit
-    problem = Problem.find(params[:submission][:problem_id])
+    problem = Problem.where(id: params[:submission][:problem_id]).first
+    unless problem
+      redirect_to list_main_path, alert: 'You must specify a problem' and return
+
+    end
+
 
     @submission = Submission.new(user: @current_user,
                                  problem: problem,
@@ -69,6 +74,10 @@ class MainController < ApplicationController
       @submission.source_filename = "live_edit.#{language.ext}"
     end
 
+    if @submission.source.blank?
+      redirect_to list_main_path, alert: 'You must add a source code' and return
+    end
+
     if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
       @submission.errors.add(:base,"The contest is over.")
       #prepare_list_information
@@ -80,7 +89,7 @@ class MainController < ApplicationController
       @submission.add_judge_job
       redirect_to edit_submission_path(@submission)
     else
-      redirect_to list_main_path, notice: 'Error saving your submission' and return
+      redirect_to list_main_path, alert: "Error saving your submission: #{@submission.errors.full_messages.join(', ')}" and return
     end
 
 
