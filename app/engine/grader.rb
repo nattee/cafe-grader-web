@@ -138,7 +138,9 @@ class Grader
       current = Time.zone.now
       if (current - last_heartbeat > 3.0)
         last_heartbeat = current
+        Rails.logger.level = 0
         @grader_process.update(last_heartbeat: current, status: (Time.zone.now - @last_job_time > 5.second) ? :idle : :working)
+        Rails.logger.level = 1
 
         #check if the database tell us to stop
         @grader_process.reload
@@ -146,7 +148,8 @@ class Grader
       end
 
       if result
-        #if we have done something
+        #if we have done something just sleep for a very short time
+        sleep (0.01)
       else
         #if no job is found, we sleep
 
@@ -261,6 +264,8 @@ class Grader
     puts "Reading ev dir..."
     Problem.migrate_subtask
     puts "checked the subtask DONE"
+
+    Language.seed
 
   end
 end

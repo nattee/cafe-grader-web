@@ -53,7 +53,6 @@ gem 'haml-rails'
 
 gem 'jbuilder'
 
-
 # jquery addition
 gem 'jquery-rails'
 #gem 'jquery-ui-rails'
@@ -84,6 +83,8 @@ gem 'ace-rails-ap'
 
 gem 'mail'
 gem 'rdiscount'  #markdown
+
+gem 'whenever', require: false
 
 
 #---------------- testiing -----------------------

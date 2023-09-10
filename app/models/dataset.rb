@@ -32,7 +32,7 @@ class Dataset < ApplicationRecord
 
   def self.migrate_old_testcases
     Problem.all.each do |p|
-      d = Dataset.create(problem: p, name: :default)
+      d = Dataset.create(problem: p, name: :default, time_limit: 1, memory_limit: 512)
       p.testcases.update_all(dataset_id: d.id)
       p.update(live_dataset: d)
     end
