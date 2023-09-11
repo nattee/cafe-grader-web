@@ -5,6 +5,6 @@
         %h4 Compiler message
         %button.btn-close{type: 'button', 'data-bs': {dismiss: :modal}, aria: {label: 'Close'}}
       .modal-body
-        %pre#compiler_msg= submission.compiler_message
+        %pre#compiler_msg= submission&.compiler_message
       .modal-footer
         %button.btn.btn-secondary{type: 'button', 'data-bs': {dismiss: 'modal'}} Close

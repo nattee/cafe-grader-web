@@ -246,6 +246,7 @@ class Problem < ApplicationRecord
       file = Rails.root.join('data','tasks',p.id.to_s,p.description_filename)
       if file.exist?
         p.statement.attach(io: File.open(file), filename: p.description_filename)
+        puts "Add #{file} to #{p.name}"
       end
     end
   end

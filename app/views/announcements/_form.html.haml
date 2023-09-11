@@ -17,7 +17,7 @@
       = f.input :author
       = f.input :published
       = f.input :frontpage, label: 'Display in the front page only?'
-      = f.input :on_nav_bar, label: 'Show on menu bar?', wrapper: :custom_boolean
+      = f.input :on_nav_bar, label: 'Show on menu bar?', as: :boolean
       = f.input :contest_only, label: 'Display in contest only?'
       = f.submit "Create", class: 'btn btn-primary'
       -if content_for?(:form_buttons)

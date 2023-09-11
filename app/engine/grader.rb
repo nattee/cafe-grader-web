@@ -263,9 +263,12 @@ class Grader
 
     puts "Reading ev dir..."
     Problem.migrate_subtask
-    puts "checked the subtask DONE"
+    puts "checked the subtask"
 
     Language.seed
+
+    GraderProcess.delete_all
+    puts "DONE"
 
   end
 end

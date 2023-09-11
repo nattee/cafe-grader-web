@@ -1,7 +1,7 @@
 %h1= GraderConfiguration['ui.front.title']
 
-.row
-  .col-md-6
+.row.mt-4
+  .col-md-6.col-sm-12
     - if @announcements.count > 0
       .card
         .card-header
@@ -9,6 +9,6 @@
           = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
         %ul.list-group.list-group-flush
           = render :partial => 'announcement', :collection => @announcements
-  .col-md-4{style: "padding-left: 20px;"}
+  .col-lg-4.col-md-6.col-sm-12{style: "padding-left: 20px;"}
     = render :partial => 'login_box'
     = "current ip is #{@remote_ip}"

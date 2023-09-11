@@ -111,11 +111,11 @@ class Compiler
 
       # the result should be at @bin_path
       upload_compiled_files
-      sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message])
+      sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message].truncate(65000))
       return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
-      sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message],
+      sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(65000),
                  points: nil, grader_comment: 'Compilation error',graded_at: Time.zone.now)
       return {status: :success, result_text: 'Compilation error', compile_result: :error}
     end

@@ -4,7 +4,6 @@
     .alert.alert-info
       Updated on
       = updated
-  %h4 Dataset
   = simple_form_for ds, wrapper: :horizontal_form do |f|
     = f.input :name
     = f.input :time_limit
@@ -12,6 +11,7 @@
     = f.input :score_type
     = f.input :evaluation_type
     = f.button :submit, class: 'btn-primary'
+    = f.button :make_active, class: 'btn-primary' if ds.problem.live_dataset != ds
   %h4 Testcases
   %table.datatable.table-hover
     %thead

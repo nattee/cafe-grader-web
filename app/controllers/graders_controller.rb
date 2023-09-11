@@ -8,15 +8,12 @@ class GradersController < ApplicationController
 
   def list
     @graders = GraderProcess.all
-    @grader_processes = GraderProcess.find_running_graders
-    @stalled_processes = GraderProcess.find_stalled_process
 
-    @terminated_processes = GraderProcess.find_terminated_graders
-
-    @last_task = Task.last
-    @last_test_request = TestRequest.last
     @submission = Submission.order("id desc").limit(20).includes(:user,:problem)
     @backlog_submission = Submission.where('graded_at is null').includes(:user,:problem)
+
+    @wait_compile_job_count = Job.where(job_type: :compile, status: :wait).count
+    @wait_eval_job_count = Job.where(job_type: :evaluate, status: :wait).count
   end
 
   def set_enabled

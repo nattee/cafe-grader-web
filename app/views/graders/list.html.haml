@@ -19,17 +19,19 @@
 
 .row
   .col-md-6
-    - if @last_task
-      Last task:
-      = link_to "#{@last_task.id}", :action => 'view', :id => @last_task.id, :type => 'Task'
+    %h4.mt-3 Queue Status
+    .row
+      .col-3.text-end.h3
+        = @wait_compile_job_count
+      .col-auto.text-secondary.d-flex.align-items-end.mb-2
+        to be compiled
+    .row
+      .col-3.text-end.h3
+        = @wait_eval_job_count
+      .col-auto.text-secondary.d-flex.align-items-end.mb-2
+        to be evaluated
 
-      %br/
-
-    - if @last_test_request
-      Last test_request:
-      = link_to "#{@last_test_request.id}", :action => 'view', :id => @last_test_request.id, :type => 'TestRequest'
-
-    %h3 Worker and Grader
+    %h4.mt-3 Worker and Grader
     %table.table
       %thead
         %tr
@@ -54,6 +56,11 @@
                 = button_to 'Disable',graders_set_enabled_path(grader,0), class: 'btn btn-secondary btn-sm'
               - else
                 = button_to 'Enable', graders_set_enabled_path(grader,1), class: 'btn btn-primary btn-sm'
+
+
+
+    
+
 
     -#
       %h2 Current graders

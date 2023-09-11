@@ -1,6 +1,7 @@
 .row
   .col-md-6
     = simple_form_for problem, wrapper: :horizontal_form do |form|
+      %h4 Basic Information
       = form.input :name
       = form.input :full_name
       = form.input :full_score
@@ -9,10 +10,11 @@
       = form.input :available, wrapper: :horizontal_boolean
       = form.input :test_allowed, wrapper: :horizontal_boolean
       = form.input :output_only, wrapper: :horizontal_boolean
+      %h4 Statements
       = form.input :description, as: :text
       = form.input :markdown, wrapper: :horizontal_boolean
       = form.input :url
-      = form.input :statement
+      = form.input :statement, wrapper: :horizontal_file
       %p
         - if @problem.statement.attached?
           %a{href: get_statement_problem_path(@problem)} [Download current Statement]
