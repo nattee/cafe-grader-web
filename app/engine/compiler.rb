@@ -116,7 +116,7 @@ class Compiler
     else
       # error in compilation
       sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(65000),
-                 points: nil, grader_comment: 'Compilation error',graded_at: Time.zone.now)
+                 points: 0, grader_comment: 'Compilation error',graded_at: Time.zone.now)
       return {status: :success, result_text: 'Compilation error', compile_result: :error}
     end
   end

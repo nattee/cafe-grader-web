@@ -22,14 +22,19 @@
     %h4.mt-3 Queue Status
     .row
       .col-3.text-end.h3
-        = @wait_compile_job_count
+        = @wait_count['compile'] || 0
       .col-auto.text-secondary.d-flex.align-items-end.mb-2
         to be compiled
     .row
       .col-3.text-end.h3
-        = @wait_eval_job_count
+        = @wait_count['evaluate'] || 0
       .col-auto.text-secondary.d-flex.align-items-end.mb-2
         to be evaluated
+    .row
+      .col-3.text-end.h3
+        = @wait_count['score'] || 0
+      .col-auto.text-secondary.d-flex.align-items-end.mb-2
+        to be scored
 
     %h4.mt-3 Worker and Grader
     %table.table

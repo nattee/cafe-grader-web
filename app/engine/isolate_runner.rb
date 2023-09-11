@@ -16,7 +16,7 @@ module IsolateRunner
   #  time_limit, wall_limit are in second, fractional is allowed
   #  mem_limit is in MB
   #  time_limit is in sec
-  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 1,mem_limit: 1024, isolate_args: [], meta: MetaFilename, cg: false)
+  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 0.5,mem_limit: 1024, isolate_args: [], meta: MetaFilename, cg: false)
     #mount directory for input /output
     dir_args = []
     output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] } #these are mounted read/write

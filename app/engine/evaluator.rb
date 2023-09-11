@@ -84,7 +84,7 @@ class Evaluator
   end
 
   def prepare_executable
-    @mybin_path = @bin_path + @worker_id.to_s
+    @mybin_path = @bin_path + @box_id.to_s
     @mybin_path.mkpath
 
     @sub.compiled_files.each do |attachment|

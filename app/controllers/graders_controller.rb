@@ -8,6 +8,7 @@ class GradersController < ApplicationController
 
   def list
     @graders = GraderProcess.all
+    @wait_count = Job.where(status: :wait).group(:job_type).count
 
     @submission = Submission.order("id desc").limit(20).includes(:user,:problem)
     @backlog_submission = Submission.where('graded_at is null').includes(:user,:problem)
