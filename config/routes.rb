@@ -47,7 +47,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :datasets, only: [:update]
+  resources :datasets, only: [:update] do
+    member do
+      post 'manager/delete/:mg_id', action: 'manager_delete', as: 'manager_delete'
+    end
+  end
 
   resources :groups do
     member do

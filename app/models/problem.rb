@@ -216,6 +216,14 @@ class Problem < ApplicationRecord
     end
   end
 
+  public
+  def read_managers_from_ev(ev_dir)
+    pi = ProblemImporter.new
+    pi.import_dataset_from_dir(ev_dir,self.name, full_name: self.full_name, dataset: self.live_dataset, do_testcase: false, do_statement: false)
+  end
+
+  protected
+
   def self.migrate_manager_from_ev
     dir = Rails.root.join '../judge/ev/*'
     Dir[dir].each do |ev_dir|
@@ -225,7 +233,7 @@ class Problem < ApplicationRecord
 
       #now p is the problem with the same name as the ev sub-dir
       pi = ProblemImporter.new
-      #pi.import_dataset_from_dir(ev_dir,p.name,full_name,p.full_name
+      pi.import_dataset_from_dir(ev_dir,p.name,full_name: p.full_name, dataset: p.live_dataset, do_testcase: false, do_statement: false)
     end
   end
 

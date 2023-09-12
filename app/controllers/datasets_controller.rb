@@ -1,5 +1,5 @@
 class DatasetsController < ApplicationController
-  before_action :set_dataset, only: %i[ show edit update destroy ]
+  before_action :set_dataset, only: %i[ show edit update destroy manager_delete]
   before_action :admin_authorization, except: [:stat]
 
   # GET /datasets/new
@@ -40,6 +40,11 @@ class DatasetsController < ApplicationController
         format.turbo_stream
       end
     end
+  end
+
+  def manager_delete
+    mg = @dataset.managers.find(params[:mg_id])
+    mg.purge
   end
 
   # DELETE /datasets/1 or /datasets/1.json

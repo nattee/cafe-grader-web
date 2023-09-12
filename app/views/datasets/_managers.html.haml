@@ -1,0 +1,10 @@
+= turbo_frame_tag dom_id(ds, :manager), data: {turbo: true} do
+  %h4 Managers
+  - ds.managers.each do |mg|
+    .row
+      .col-md-4
+        = mg.filename
+      .col-md-8
+        [
+        %span= link_to 'delete', manager_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post' }
+        ]

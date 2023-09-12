@@ -138,9 +138,15 @@ class ProblemImporter
     main,fn = get_content_of_first_match(main_filename,path: path)
     if (main)
       @log << "Found the main file, [#{fn}]"
+      # delete existing
+      @dataset.managers.each { |f| f.purge if f.filename == Pathname.new(fn).basename }
+
+      # add new file
       @dataset.managers.attach(io: StringIO.new(main),filename: Pathname.new(fn).basename)
       @dataset.main_filename = Pathname.new(fn).basename
       @problem.compilation_type = 'with_managers'
+      @problem.save
+      @dataset.save
     end
 
     # any .h
@@ -154,6 +160,7 @@ class ProblemImporter
         @log << "  ERROR: multiple managers of the same name #{basename}"
       else
         managers_fn[basename] = true
+        @dataset.managers.each { |f| f.purge if f.filename == basename }
         @dataset.managers.attach(io: File.open(fn),filename: basename)
       end
     end
@@ -190,7 +197,7 @@ class ProblemImporter
   def build_glob(glob_patterns, recursive: false, path: '')
     glob_patterns = [glob_patterns] unless glob_patterns.is_a? Array
     result = glob_patterns.map do |p|
-      pattern = @base_dir
+      pattern = @base_dir+'/'
       pattern += path + '/' unless path.blank?
       pattern += '**/' if recursive
       pattern += p
@@ -202,9 +209,12 @@ class ProblemImporter
   # import dataset in the dir into a problem,
   # might also set it as a live dataset
   # If the problem with the same name exist, this will add another dataset
+  # if *dataset* is nil, this will be imported to a new dataset
+  # if not, it will override the given dataset "without deleting anything of that dataset" 
+  #    a testcase with the same codename will be replaced
   def import_dataset_from_dir(dir, name,
     full_name: ,          #required keyword
-    set_as_live: false,
+    dataset: nil,
     delete_existing: false,
     input_pattern: '*.in',
     sol_pattern: '*.sol',
@@ -225,22 +235,28 @@ class ProblemImporter
       @problem.date_added = Time.zone.now unless @problem.date_added
       @problem.full_name = full_name
       @problem.set_default_value unless @problem.id
-      @dataset = Dataset.new(name: @problem.get_next_dataset_name)
+      if dataset && dataset.problem == @problem
+        @dataset = dataset
+      else
+        @dataset = Dataset.new(name: @problem.get_next_dataset_name)
+      end
+      @problem.datasets.where.not(id: @dataset.id).each { |ds| ds.destroy } if delete_existing
+      @problem.datasets.reload
+
       @dataset.memory_limit = memory_limit
       @dataset.time_limit = time_limit
-      @problem.datasets.each { |ds| ds.destroy } if delete_existing
       @problem.datasets << @dataset
-      @problem.live_dataset = @dataset if set_as_live || @problem.datasets.count == 0
+      @problem.live_dataset = @dataset if Dataset.where(id: @problem.live_dataset).count == 0
       @problem.save
       @dataset.save
 
       @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
 
-      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
+      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
       read_options
-      read_statement
-      read_checker
-      read_cpp_extras
+      read_statement if do_statement
+      read_checker if do_checker
+      read_cpp_extras if do_cpp_extras
       @problem.save
       @dataset.save
       @log << "Done successfully"

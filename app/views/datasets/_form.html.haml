@@ -4,14 +4,18 @@
     .alert.alert-info
       Updated on
       = updated
-  = simple_form_for ds, wrapper: :horizontal_form do |f|
-    = f.input :name
-    = f.input :time_limit
-    = f.input :memory_limit
-    = f.input :score_type
-    = f.input :evaluation_type
-    = f.button :submit, class: 'btn-primary'
-    = f.button :make_active, class: 'btn-primary' if ds.problem.live_dataset != ds
+  .row
+    .col-md-6
+      = simple_form_for ds, wrapper: :horizontal_form do |f|
+        = f.input :name
+        = f.input :time_limit
+        = f.input :memory_limit
+        = f.input :score_type
+        = f.input :evaluation_type
+        = f.button :submit, class: 'btn-primary'
+        = f.button :make_active, class: 'btn-primary' if ds.problem.live_dataset != ds
+    .col-md-6
+      = render partial: 'datasets/managers', locals: {ds: ds}
   %h4 Testcases
   %table.datatable.table-hover
     %thead
