@@ -215,7 +215,7 @@ class ProblemImporter
     do_testcase: true,
     do_statement: true,
     do_checker: true,
-    do_cpp_extras: true,
+    do_cpp_extras: true
   )
     Dataset.transaction do
 
