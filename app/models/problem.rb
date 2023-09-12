@@ -180,67 +180,6 @@ class Problem < ApplicationRecord
 
   protected
 
-  def self.to_i_or_default(st, default)
-    if st!=''
-      result = st.to_i
-    end
-    result ||= default 
-  end
-
-  def self.to_f_or_default(st, default)
-    if st!=''
-      result = st.to_f
-    end
-    result ||= default
-  end
-
-  def self.extract_params_and_check(params, problem)
-    time_limit = Problem.to_f_or_default(params[:time_limit],
-                                         DEFAULT_TIME_LIMIT)
-    memory_limit = Problem.to_i_or_default(params[:memory_limit],
-                                           DEFAULT_MEMORY_LIMIT)
-
-    if time_limit<=0 or time_limit >60
-      problem.errors.add(:base,'Time limit out of range.')
-    end
-
-    if memory_limit==0 and params[:memory_limit]!='0'
-      problem.errors.add(:base,'Memory limit format errors.')
-    elsif memory_limit<=0 or memory_limit >512
-      problem.errors.add(:base,'Memory limit out of range.')
-    end
-
-    if params[:file]==nil or params[:file]==''
-      problem.errors.add(:base,'No testdata file.')
-    end
-
-    checker_name = 'text'
-    if ['text','float'].include? params[:checker]
-      checker_name = params[:checker]
-    end
-
-    file = params[:file]
-
-    if !problem.errors.empty?
-      return nil, problem
-    end
-
-    problem.name = params[:name]
-    if params[:full_name]!=''
-      problem.full_name = params[:full_name]
-    else
-      problem.full_name = params[:name]
-    end
-
-    return [{
-              :time_limit => time_limit,
-              :memory_limit => memory_limit,
-              :file => file,
-              :checker_name => checker_name
-            },
-            problem]
-  end
-
   def self.migrate_pdf_to_activestorage
     Problem.where.not(description_filename: nil).each do |p|
       file = Rails.root.join('data','tasks',p.id.to_s,p.description_filename)
@@ -264,6 +203,8 @@ class Problem < ApplicationRecord
       p = Problem.where(name: pn.basename.to_s).first
       next unless p
 
+      #now p is the problem with the same name as the ev sub-dir
+
       r = parse_all_test_cfg(pn + 'test_cases/all_tests.cfg',p)
       p.live_dataset.update(memory_limit: r[:mem_limit], time_limit: r[:time_limit])
       if (r[:group])
@@ -272,6 +213,19 @@ class Problem < ApplicationRecord
         #show debug info
         puts "Found problem #{p.name} (#{p.id}) with grouped testcase"
       end
+    end
+  end
+
+  def self.migrate_manager_from_ev
+    dir = Rails.root.join '../judge/ev/*'
+    Dir[dir].each do |ev_dir|
+      pn = Pathname.new ev_dir
+      p = Problem.where(name: pn.basename.to_s).first
+      next unless p
+
+      #now p is the problem with the same name as the ev sub-dir
+      pi = ProblemImporter.new
+      #pi.import_dataset_from_dir(ev_dir,p.name,full_name,p.full_name
     end
   end
 

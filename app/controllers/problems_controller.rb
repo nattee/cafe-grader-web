@@ -2,7 +2,7 @@ class ProblemsController < ApplicationController
 
   include ActiveStorage::SetCurrent
 
-  before_action :admin_authorization, except: [:stat]
+  before_action :admin_authorization, except: [:stat, :get_statement]
   before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :toggle, :toggle_test, :toggle_view_testcase, :stat]
   before_action only: [:stat] do
     authorization_by_roles(['admin','ta'])
@@ -10,7 +10,7 @@ class ProblemsController < ApplicationController
 
 
   def index
-    @problems = Problem.includes(:tags).order(date_added: :desc)
+    @problems = Problem.includes(:tags).order(date_added: :desc).with_attached_statement
     @multi_contest = GraderConfiguration.multicontests?
   end
 
@@ -21,7 +21,7 @@ class ProblemsController < ApplicationController
   #get statement download link
   def get_statement
     unless @current_user.can_view_problem? @problem
-      redirect_to list_main_path, error: 'You are not authorized to access this file'
+      redirect_to list_main_path, alert: 'You are not authorized to access this file'
       return
     end
 
@@ -114,18 +114,12 @@ class ProblemsController < ApplicationController
   end
 
   def turn_all_off
-    Problem.available.all.each do |problem|
-      problem.available = false
-      problem.save
-    end
+    Problem.where(available: true).update_all(available: false)
     redirect_to action: :index
   end
 
   def turn_all_on
-    Problem.where.not(available: true).each do |problem|
-      problem.available = true
-      problem.save
-    end
+    Problem.where(available: false).update_all(available: true)
     redirect_to action: :index
   end
 

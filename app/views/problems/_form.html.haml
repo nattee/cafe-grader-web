@@ -5,21 +5,24 @@
       = form.input :name
       = form.input :full_name
       = form.input :full_score
-      = form.input :tag_ids, collection: Tag.all, class: 'select2'
+      = form.input :tag_ids, collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
       = form.input :date_added, wrapper: :horizontal_form
       = form.input :available, wrapper: :horizontal_boolean
       = form.input :test_allowed, wrapper: :horizontal_boolean
       = form.input :output_only, wrapper: :horizontal_boolean
       %h4 Statements
+      = form.input :statement, wrapper: :horizontal_file
+      .row
+        .col-md-3
+        .col-md-9
+          %p
+            - if @problem.statement.attached?
+              %a{href: get_statement_problem_path(@problem)} [Download current Statement]
+            - else
+              no statement attached to this problem
       = form.input :description, as: :text
       = form.input :markdown, wrapper: :horizontal_boolean
       = form.input :url
-      = form.input :statement, wrapper: :horizontal_file
-      %p
-        - if @problem.statement.attached?
-          %a{href: get_statement_problem_path(@problem)} [Download current Statement]
-        - else
-          no statement attached to this problem
       = form.submit :submit, class: 'btn btn-primary'
   .col-md-6
     %h3 Datasets
@@ -36,4 +39,5 @@
 :javascript
   $(document).on('import-map-loaded',function(e) {
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})
+    $('.select2').select2()
   });

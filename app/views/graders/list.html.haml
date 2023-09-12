@@ -21,21 +21,18 @@
   .col-md-6
     %h4.mt-3 Queue Status
     .row
-      .col-3.text-end.h3
-        = @wait_count['compile'] || 0
-      .col-auto.text-secondary.d-flex.align-items-end.mb-2
-        to be compiled
-    .row
-      .col-3.text-end.h3
-        = @wait_count['evaluate'] || 0
-      .col-auto.text-secondary.d-flex.align-items-end.mb-2
-        to be evaluated
-    .row
-      .col-3.text-end.h3
-        = @wait_count['score'] || 0
-      .col-auto.text-secondary.d-flex.align-items-end.mb-2
-        to be scored
-
+      .col-4
+        .alert.alert-info.text-center
+          %strong.h4.mx-2 #{@wait_count['compile'] || 0}
+          to be compiled
+      .col-4
+        .alert.alert-warning.text-center
+          %strong.h4.mx-2 #{@wait_count['evaluate'] || 0}
+          to be evaluated
+      .col-4
+        .alert.alert-success.text-center
+          %strong.h4.mx-2 #{@wait_count['score'] || 0}
+          to be scored
     %h4.mt-3 Worker and Grader
     %table.table
       %thead
@@ -62,25 +59,6 @@
               - else
                 = button_to 'Enable', graders_set_enabled_path(grader,1), class: 'btn btn-primary btn-sm'
 
-
-
-    
-
-
-    -#
-      %h2 Current graders
-
-      = render :partial => 'grader_list', :locals => {:grader_list => @grader_processes}
-
-      %h2 Stalled graders
-
-      = render :partial => 'grader_list', :locals => {:grader_list => @stalled_processes}
-
-      %h2 Terminated graders
-
-      %p= link_to 'Clear data for terminated graders', { action: 'clear_terminated'}, class: 'btn btn-default', method: 'post'
-
-      = render :partial => 'grader_list', :locals => {:grader_list => @terminated_processes}
   .col-md-6
     %h2 Last 20 submissions
     %table.table.table-striped.table-condensed
@@ -99,7 +77,8 @@
             %td= ("" unless sub.problem) || link_to(sub.try(:problem).try(:full_name), stat_problem_path(sub.problem.id))
             %td= "#{time_ago_in_words(sub.submitted_at)} ago"
             %td= sub.graded_at ? "#{time_ago_in_words(sub.graded_at)} ago" : " "
-            %td= sub.grader_comment
+            %td
+              %tt.grader-comment= sub.grader_comment
     %h2 Ungraded submission
     %table.table.table-striped.table-condensed
       %thead

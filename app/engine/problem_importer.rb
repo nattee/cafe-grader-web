@@ -54,8 +54,6 @@ class ProblemImporter
       @tc[codename][:sol] = sol_fn.cleanpath
     end
 
-    pp @tc
-
     # load into dataset and testcase
     num = 1
     group = 1
@@ -187,7 +185,8 @@ class ProblemImporter
     return nil
   end
 
-  #build glob pattern array from glob_patterns
+  # build glob pattern array from glob_patterns
+  # add recursive path if needed
   def build_glob(glob_patterns, recursive: false, path: '')
     glob_patterns = [glob_patterns] unless glob_patterns.is_a? Array
     result = glob_patterns.map do |p|
@@ -212,7 +211,11 @@ class ProblemImporter
     code_name_regex: /(.*)/,       # how we get code_name from the matched wildcard
     group_name_regex: /^(\d+)-/,   # how we extract group name from codename
     memory_limit: 512,
-    time_limit: 1
+    time_limit: 1,
+    do_testcase: true,
+    do_statement: true,
+    do_checker: true,
+    do_cpp_extras: true,
   )
     Dataset.transaction do
 

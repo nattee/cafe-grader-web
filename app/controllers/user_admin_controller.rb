@@ -81,9 +81,8 @@ class UserAdminController < ApplicationController
 
   def update
     @user = User.find(params[:id])
-    if @user.update_attributes(user_params)
-      flash[:notice] = 'User was successfully updated.'
-      redirect_to :action => 'show', :id => @user
+    if @user.update(user_params)
+      redirect_to edit_user_admin_path(@user), notice: 'User was successfully updated.'
     else
       render :action => 'edit'
     end
