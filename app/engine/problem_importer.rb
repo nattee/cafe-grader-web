@@ -1,9 +1,10 @@
 class ProblemImporter
 
-  attr_reader :problem, :log, :errors
+  attr_reader :problem, :log, :errors, :got
 
   require 'open3'
   def initialize
+    @got = []
     @log = []
     @options = {}
     @errors = []
@@ -15,8 +16,6 @@ class ProblemImporter
     Dir["#{@base_dir}/**/#{input_pattern}"].each do |fn|
       input_fn = Pathname.new(@base_dir) + fn
       regex = Regexp.new input_pattern.gsub('*','(.+)')
-      #codename = input_fn.basename(input_pattern[(input_pattern.index('*')+1)..].to_s) # default codename to the * part of the input_pattern
-      #puts "#{fn} input codename = #{codename}"
 
       #try to match the codename with the regex
       mc = input_fn.basename.to_s.match regex
@@ -30,7 +29,6 @@ class ProblemImporter
       codename_mc = name.match code_name_regex
       codename = mc[1] if mc
 
-      puts "#{fn} input codename = #{codename}"
       @tc[codename][:input] = input_fn.cleanpath
     end
     Dir["#{@base_dir}/**/#{sol_pattern}"].each do |fn|
@@ -50,7 +48,6 @@ class ProblemImporter
       codename_mc = name.match code_name_regex
       codename = mc[1] if mc
 
-      puts "#{fn} sol codename = #{codename}"
       @tc[codename][:sol] = sol_fn.cleanpath
     end
 
@@ -116,7 +113,8 @@ class ProblemImporter
     pdf,fn = get_content_of_first_match('*.pdf')
     if pdf
       @problem.statement.attach(io: StringIO.new(pdf),filename: fn)
-      @log << "Found a pdf statement, [#{fn}]"
+      @log << "Found a pdf statement [#{fn}]"
+      @got << fn
     else
       @log << "no pdf file is given as a statement"
     end
@@ -125,7 +123,8 @@ class ProblemImporter
     md,fn = get_content_of_first_match('*.md')
     if (md)
       @problem.update(description: md)
-      @log << "Found addtional Markdown file, [#{fn}]"
+      @log << "Found addtional Markdown file [#{fn}]"
+      @got << fn
     end
   end
 
@@ -137,14 +136,17 @@ class ProblemImporter
     path = @options[:managers_dir] || ''
     main,fn = get_content_of_first_match(main_filename,path: path)
     if (main)
-      @log << "Found the main file, [#{fn}]"
+      @log << "Found the main file [#{fn}]"
+      @got << fn
       # delete existing
-      @dataset.managers.each { |f| f.purge if f.filename == Pathname.new(fn).basename }
+      #@dataset.managers.each { |f| f.purge if f.filename == Pathname.new(fn).basename }
+      #@dataset.reload
 
       # add new file
-      @dataset.managers.attach(io: StringIO.new(main),filename: Pathname.new(fn).basename)
+      @dataset.managers.attach(io: File.open(fn),filename: Pathname.new(fn).basename)
       @dataset.main_filename = Pathname.new(fn).basename
       @problem.compilation_type = 'with_managers'
+      @problem.submission_filename = 'student.h'
       @problem.save
       @dataset.save
     end
@@ -154,24 +156,30 @@ class ProblemImporter
     pattern = build_glob(managers,path: @options[:managers_dir] || '')
     managers_fn = {}
     Dir.glob(pattern).each do |fn|
-      @log << "Found additional manager file, [#{fn}]"
+      @log << "Found an additional manager file [#{fn}]"
+      @got << fn
       basename = Pathname.new(fn).basename
       if managers_fn.has_key? basename
         @log << "  ERROR: multiple managers of the same name #{basename}"
       else
         managers_fn[basename] = true
-        @dataset.managers.each { |f| f.purge if f.filename == basename }
+        # delete existing
+        #@dataset.managers.each { |f| f.purge if f.filename == basename }
+        #@dataset.reload
+
         @dataset.managers.attach(io: File.open(fn),filename: basename)
       end
     end
+    @dataset.save
   end
 
   def read_checker
     #glob checker
     checker,fn = get_content_of_first_match('checker.*')
     if (checker)
-      @log << "Found custom checker file, [#{fn}]"
-      @problem.checker.attach(io: StringIO.new(checker),filename: fn)
+      @log << "Found a custom checker file [#{fn}]"
+      @got << fn
+      @dataset.checker.attach(io: StringIO.new(checker),filename: fn)
     end
   end
 
@@ -197,7 +205,7 @@ class ProblemImporter
   def build_glob(glob_patterns, recursive: false, path: '')
     glob_patterns = [glob_patterns] unless glob_patterns.is_a? Array
     result = glob_patterns.map do |p|
-      pattern = @base_dir+'/'
+      pattern = @base_dir.to_s + '/'
       pattern += path + '/' unless path.blank?
       pattern += '**/' if recursive
       pattern += p
@@ -227,40 +235,39 @@ class ProblemImporter
     do_checker: true,
     do_cpp_extras: true
   )
-    Dataset.transaction do
 
-      # init problem and dataset
-      @base_dir = dir
-      @problem = Problem.find_or_create_by(name: name)
-      @problem.date_added = Time.zone.now unless @problem.date_added
-      @problem.full_name = full_name
-      @problem.set_default_value unless @problem.id
-      if dataset && dataset.problem == @problem
-        @dataset = dataset
-      else
-        @dataset = Dataset.new(name: @problem.get_next_dataset_name)
-      end
-      @problem.datasets.where.not(id: @dataset.id).each { |ds| ds.destroy } if delete_existing
-      @problem.datasets.reload
-
-      @dataset.memory_limit = memory_limit
-      @dataset.time_limit = time_limit
-      @problem.datasets << @dataset
-      @problem.live_dataset = @dataset if Dataset.where(id: @problem.live_dataset).count == 0
-      @problem.save
-      @dataset.save
-
-      @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
-
-      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
-      read_options
-      read_statement if do_statement
-      read_checker if do_checker
-      read_cpp_extras if do_cpp_extras
-      @problem.save
-      @dataset.save
-      @log << "Done successfully"
+    # init problem and dataset
+    @base_dir = dir
+    @problem = Problem.find_or_create_by(name: name)
+    @problem.date_added = Time.zone.now unless @problem.date_added
+    @problem.full_name = full_name
+    @problem.set_default_value unless @problem.id
+    if dataset && dataset.problem == @problem
+      @dataset = dataset
+    else
+      @dataset = Dataset.new(name: @problem.get_next_dataset_name)
     end
+    @problem.datasets.where.not(id: @dataset.id).each { |ds| ds.destroy } if delete_existing
+    @problem.datasets.reload
+
+    @dataset.memory_limit = memory_limit
+    @dataset.time_limit = time_limit
+    @problem.datasets << @dataset
+    @problem.live_dataset = @dataset if Dataset.where(id: @problem.live_dataset).count == 0
+    @problem.save
+    @dataset.save
+
+    @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
+
+
+    read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
+    read_options
+    read_statement if do_statement
+    read_checker if do_checker
+    read_cpp_extras if do_cpp_extras
+    @problem.save
+    @dataset.save
+    @log << "Done successfully"
 
     return @log
   end

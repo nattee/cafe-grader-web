@@ -264,6 +264,8 @@ class Grader
     puts "Reading ev dir..."
     Problem.migrate_subtask
     puts "checked the subtask"
+    Problem.migrate_manager_from_ev
+    puts "read managers"
 
     Language.seed
 

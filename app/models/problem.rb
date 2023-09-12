@@ -178,7 +178,6 @@ class Problem < ApplicationRecord
     end
   end
 
-  protected
 
   def self.migrate_pdf_to_activestorage
     Problem.where.not(description_filename: nil).each do |p|
@@ -216,13 +215,11 @@ class Problem < ApplicationRecord
     end
   end
 
-  public
-  def read_managers_from_ev(ev_dir)
+  def read_managers_from_ev(ev_dir = Rails.root.join('../judge/ev/',self.name) )
     pi = ProblemImporter.new
     pi.import_dataset_from_dir(ev_dir,self.name, full_name: self.full_name, dataset: self.live_dataset, do_testcase: false, do_statement: false)
+    pp pi.log if pi.got.count > 0
   end
-
-  protected
 
   def self.migrate_manager_from_ev
     dir = Rails.root.join '../judge/ev/*'
@@ -231,10 +228,9 @@ class Problem < ApplicationRecord
       p = Problem.where(name: pn.basename.to_s).first
       next unless p
 
-      #now p is the problem with the same name as the ev sub-dir
-      pi = ProblemImporter.new
-      pi.import_dataset_from_dir(ev_dir,p.name,full_name: p.full_name, dataset: p.live_dataset, do_testcase: false, do_statement: false)
+      p.read_managers_from_ev(ev_dir)
     end
+    return nil
   end
 
   def self.parse_all_test_cfg(filename,problem)
