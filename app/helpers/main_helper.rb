@@ -4,7 +4,7 @@ module MainHelper
     if !problem.url.blank?
       return link_to name, problem.url
     elsif problem.statement.attached?
-      return link_to name, get_statement_problem_path(problem), target: '_blank'
+      return link_to name, get_statement_problem_path(problem), target: '_blank', data: {turbo: false}
     #elsif !problem.description_filename.blank?
     #  basename, ext = problem.description_filename.split('.')
     #  return link_to name, download_task_path(problem.id,basename,ext), target: '_blank'

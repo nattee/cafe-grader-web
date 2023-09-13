@@ -25,16 +25,10 @@ class ProblemsController < ApplicationController
       return
     end
 
-    if params[:ext]=='pdf'
-      content_type = 'application/pdf'
-    else
-      content_type = 'application/octet-stream'
-    end
-
     filename = @problem.statement.filename.to_s
     data = @problem.statement.download
 
-    send_data data, stream: false, disposition: 'inline', filename: filename, type: content_type
+    send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
   end
 
   def new
