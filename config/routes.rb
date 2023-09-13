@@ -34,7 +34,7 @@ Rails.application.routes.draw do
       get 'toggle_test'
       get 'toggle_view_testcase'
       get 'stat'
-      get 'get_statement'
+      get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
     end
     collection do
       get 'turn_all_off'

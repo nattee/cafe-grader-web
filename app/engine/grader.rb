@@ -79,9 +79,9 @@ class Grader
   # -------- main job running function --------------
   #
   def check_and_run_job
-    Rails.logger.level = 1
-    @job = Job.take_oldest_waiting_job(@grader_process) if Job.has_waiting_job
     Rails.logger.level = 0
+    @job = Job.take_oldest_waiting_job(@grader_process) if Job.has_waiting_job
+    Rails.logger.level = 1
 
     if (@job)
       @last_job_time = Time.zone.now
