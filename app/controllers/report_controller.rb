@@ -252,8 +252,8 @@ class ReportController < ApplicationController
         @by_lang[lang.pretty_name][:first] = { avail: true, user_id: sub.user_id, value: sub.submitted_at, sub_id: sub.id }
       end
 
-      if @by_lang[lang.pretty_name][:length][:value] > sub.effective_code_length
-        @by_lang[lang.pretty_name][:length] = { avail: true, user_id: sub.user_id, value: sub.effective_code_length, sub_id: sub.id }
+      if @by_lang[lang.pretty_name][:length][:value] > (sub.source.length || 2**30-1)
+        @by_lang[lang.pretty_name][:length] = { avail: true, user_id: sub.user_id, value: (sub.source.length || 2**30-1) , sub_id: sub.id }
       end
     end
 
