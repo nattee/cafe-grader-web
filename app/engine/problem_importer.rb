@@ -131,7 +131,7 @@ class ProblemImporter
 
   def read_cpp_extras
     # main
-    main_filename = 'main.cpp'
+    main_filename = ['main.cpp','main_grader.cpp','grader.cpp']
     main_filename = @options[:main] if @options.has_key?(:main)
     path = @options[:managers_dir] || ''
     main,fn = get_content_of_first_match(main_filename,path: path)
@@ -139,8 +139,8 @@ class ProblemImporter
       @log << "Found the main file [#{fn}]"
       @got << fn
       # delete existing
-      #@dataset.managers.each { |f| f.purge if f.filename == Pathname.new(fn).basename }
-      #@dataset.reload
+      @dataset.managers.each { |f| f.purge if f.filename == Pathname.new(fn).basename }
+      @dataset.reload
 
       # add new file
       @dataset.managers.attach(io: File.open(fn),filename: Pathname.new(fn).basename)
@@ -164,8 +164,8 @@ class ProblemImporter
       else
         managers_fn[basename] = true
         # delete existing
-        #@dataset.managers.each { |f| f.purge if f.filename == basename }
-        #@dataset.reload
+        @dataset.managers.each { |f| f.purge if f.filename == basename }
+        @dataset.reload
 
         @dataset.managers.attach(io: File.open(fn),filename: basename)
       end
