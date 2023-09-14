@@ -25,21 +25,30 @@
           = form.input :description, as: :text
           = form.input :markdown, wrapper: :horizontal_boolean
           = form.input :url
-          = form.submit :submit, class: 'btn btn-primary'
+          = form.button :submit, class: 'btn btn-primary'
   .col-md-7
     .card
       .card-body
         %h4 Datasets
         %ul.nav.nav-tabs
-          - @problem.datasets.each do |ds|
-            %li.nav-item
-              %button.nav-link{href: '#', class: ('active' if ds.live?), data: {bs: {toggle: :tab, target: "#ds-#{ds.id}"}}}
-                = ds.name
-                = " (live)" if ds.live?
+          %li.nav-item
+            %button.nav-link{href: '#', class: 'active', data: {bs: {toggle: :tab, target: "#dataset"}}} Dataset
+          %li.nav-item
+            %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#upload"}}} Import
+
+          -#
+            - @problem.datasets.each do |ds|
+              %li.nav-item
+                %button.nav-link{href: '#', class: ('active' if ds.live?), data: {bs: {toggle: :tab, target: "#ds-#{ds.id}"}}}
+                  = ds.name
+                  = " (live)" if ds.live?
         .tab-content
-          - @problem.datasets.each do |ds|
-            %div.tab-pane.fade{id: "ds-#{ds.id}", class: ('show active' if ds.live?)}
-              = render partial: "datasets/form", locals: {ds: ds}
+          -# @problem.datasets.each do |ds|
+          %div#dataset.tab-pane.fade.show.active
+            %div.mt-4
+
+            = render partial: "datasets/form", locals: {ds: @problem.live_dataset}
+          %div#upload.tab-pane.fade
 :javascript
   $(document).on('import-map-loaded',function(e) {
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})

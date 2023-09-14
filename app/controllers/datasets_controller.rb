@@ -2,6 +2,7 @@ class DatasetsController < ApplicationController
   before_action :set_dataset, only: %i[ show edit update destroy
                                         manager_delete manager_view
                                         testcase_input testcase_sol testcase_delete
+                                        view set_as_live
                                       ]
   before_action :admin_authorization, except: [:stat]
 
@@ -33,7 +34,7 @@ class DatasetsController < ApplicationController
   def update
     respond_to do |format|
       if @dataset.update(dataset_params)
-        @updated = Time.zone.now
+        @updated = "Updated at #{Time.zone.now}"
         #format.html { redirect_to dataset_url(@dataset), notice: "Dataset was successfully updated." }
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
@@ -47,6 +48,7 @@ class DatasetsController < ApplicationController
 
   def manager_delete
     mg = @dataset.managers.find(params[:mg_id])
+    @updated = "#{mg.filename} is deleted"
     mg.purge
   end
 
@@ -70,18 +72,34 @@ class DatasetsController < ApplicationController
 
   # as turbo
   def testcase_delete
+    @updated = "Testcase ##{tc.num} is deleted"
     tc = Testcase.find(params[:tc_id])
     tc.destroy
     render :update
   end
 
+  def view
+    @dataset = Dataset.find(params[:null][:dsid])
+    render :update
+  end
+
+  def set_as_live
+    @updated = "Dataset #{@dataset.name} is live"
+    @dataset.problem.update(live_dataset: @dataset)
+    render :update
+  end
+
   # DELETE /datasets/1 or /datasets/1.json
   def destroy
+    p = @dataset.problem
     @dataset.destroy
+    @dataset = p.datasets.first
+    
 
     respond_to do |format|
       format.html { redirect_to datasets_url, notice: "Dataset was successfully destroyed." }
       format.json { head :no_content }
+      format.turbo_stream { render :update}
     end
   end
 

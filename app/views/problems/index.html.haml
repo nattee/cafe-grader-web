@@ -20,7 +20,7 @@
   %thead
     %th Name
     %th Full name
-    %th.text-end #Dataset
+    %th.text-end #Dataset (#testcases)
     %th Tags
     %th
       Submit
@@ -44,7 +44,7 @@
       %td
         = problem.full_name
         = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='glyphicon glyphicon-file'></span>".html_safe, problem
-      %td.text-end= problem.dataset_count
+      %td.text-end= "#{problem.dataset_count} (#{problem.tc_count})"
       %td
         - problem.tags.each do |t|
           - #%button.btn.btn-default.btn-sm= t.name

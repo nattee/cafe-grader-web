@@ -1,22 +1,32 @@
-= turbo_frame_tag dom_id(ds), data: {turbo: true} do
+= turbo_frame_tag :dataset_update, data: {turbo: true} do
   %div.mb-2
   - if local_assigns[:updated]
-    .alert.alert-info
-      Updated on
-      = updated
+    .alert.alert-info= updated
+  /row row-cols-lg-auto g-3 align-items-center
+  .row.row-cols-lg-auto.g-3.align-items-center
+    .col
+      .form-check
+        %label.form-check-label choose dataset
+    .col
+      = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(ds), wrapper: :inline_form do |f|
+        = f.input :dsid, collection: ds.problem.datasets, selected: ds.id, input_html: {class: 'form-control-sm', onchange: 'ds_change()'}, wrapper: :inline_form
+    .col
+      = link_to 'Add', add_dataset_problem_path(ds.problem), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-success btn-sm'
+      = link_to 'Set as live', set_as_live_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm' if ds != ds.problem.live_dataset
+      = link_to 'Delete', dataset_path(ds), data: {turbo: true, 'turbo-method': 'delete', turbo_confirm: 'Really delete?'}, class: 'btn btn-danger btn-sm'
   .row
     .col-md-6
+      %h4.my-2 Basic Info
       = simple_form_for ds, wrapper: :horizontal_form_half do |f|
         = f.input :name
         = f.input :time_limit
         = f.input :memory_limit
-        = f.input :score_type
-        = f.input :evaluation_type
+        = f.input :score_type, collection: Dataset.score_types.keys, wrapper: :horizontal_select_half
+        = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, wrapper: :horizontal_select_half
         = f.button :submit, class: 'btn-primary'
-        = f.button :make_active, class: 'btn-primary' if ds.problem.live_dataset != ds
     .col-md-6
       = render partial: 'datasets/managers', locals: {ds: ds}
-  %h4 Testcases
+  %h4.mt-4 Testcases
   %table.datatable.table-hover
     %thead
       %tr
@@ -54,3 +64,6 @@
             ]
   :javascript
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})
+    function ds_change() {
+      $('#ds_select_form')[0].requestSubmit();
+    }

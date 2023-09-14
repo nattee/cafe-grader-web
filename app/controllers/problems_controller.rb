@@ -3,19 +3,29 @@ class ProblemsController < ApplicationController
   include ActiveStorage::SetCurrent
 
   before_action :admin_authorization, except: [:stat, :get_statement]
-  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :toggle, :toggle_test, :toggle_view_testcase, :stat]
+  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement,
+                                     :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                                     :add_dataset,
+                                    ]
   before_action only: [:stat] do
     authorization_by_roles(['admin','ta'])
   end
 
 
   def index
-    @problems = Problem.joins(:datasets).includes(:tags).order(date_added: :desc).select("problems.*","count(datasets.id) as dataset_count").group('problems.id').with_attached_statement
+    tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
+    @problems = Problem.joins(:datasets).joins("INNER JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id").includes(:tags).order(date_added: :desc).select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count").group('problems.id').with_attached_statement
     @multi_contest = GraderConfiguration.multicontests?
   end
 
 
   def show
+  end
+
+  # as turbo
+  def add_dataset
+    @dataset = @problem.datasets.create(name: @problem.get_next_dataset_name)
+    render 'datasets/update'
   end
 
   #get statement download link

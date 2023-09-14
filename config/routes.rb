@@ -35,6 +35,7 @@ Rails.application.routes.draw do
       get 'toggle_view_testcase'
       get 'stat'
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
+      post 'add_dataset'
     end
     collection do
       get 'turn_all_off'
@@ -47,13 +48,15 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :datasets, only: [:update] do
+  resources :datasets, only: [:update, :destroy] do
     member do
       post 'manager/delete/:mg_id', action: 'manager_delete', as: 'manager_delete'
       get 'manager/view/:mg_id', action: 'manager_view', as: 'manager_view'
       post 'testcase/input/:tc_id', action: 'testcase_input', as: 'testcase_input'
       post 'testcase/sol/:tc_id', action: 'testcase_sol', as: 'testcase_sol'
       post 'testcase/delete/:tc_id', action: 'testcase_delete', as: 'testcase_delete'
+      post 'set_as_live'
+      post 'view'
     end
   end
 

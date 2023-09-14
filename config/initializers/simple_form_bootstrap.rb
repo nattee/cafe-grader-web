@@ -263,6 +263,18 @@ SimpleForm.setup do |config|
     end
   end
 
+  # horizontal select input
+  config.wrappers :horizontal_select_half, class: 'row mb-3' do |b|
+    b.use :html5
+    b.optional :readonly
+    b.use :label, class: 'col-sm-6 col-form-label'
+    b.wrapper :grid_wrapper, class: 'col-sm-6' do |ba|
+      ba.use :input, class: 'form-select', error_class: 'is-invalid'
+      ba.use :full_error, wrap_with: { class: 'invalid-feedback' }
+      ba.use :hint, wrap_with: { class: 'form-text' }
+    end
+  end
+
   # horizontal multi select
   config.wrappers :horizontal_multi_select, class: 'row mb-3' do |b|
     b.use :html5
