@@ -1,6 +1,9 @@
-%h1 Editing Problem
+.row
+  .col-auto
+    %h2 Problem #{@problem.id}
+  .col
+    = link_to 'back', problems_path, class: 'btn btn-secondary'
 
 = render 'form', problem: @problem
 .row.my-3
   .col-md-4
-    = link_to 'Back', problems_path, class: 'btn btn-secondary'

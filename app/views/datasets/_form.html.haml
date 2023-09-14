@@ -6,7 +6,7 @@
       = updated
   .row
     .col-md-6
-      = simple_form_for ds, wrapper: :horizontal_form do |f|
+      = simple_form_for ds, wrapper: :horizontal_form_half do |f|
         = f.input :name
         = f.input :time_limit
         = f.input :memory_limit
@@ -25,6 +25,7 @@
         %th Group
         %th Group Name
         %th Weight
+        %th Action
     %tbody
       - last_group = nil
       - odd = true
@@ -34,7 +35,7 @@
           - last_group = tc.group
         %tr{class: (odd ? 'bg-secondary bg-opacity-25' : '')}
           %td
-            = idx+1
+            = tc.num
           %td
             = tc.code_name
           %td
@@ -43,5 +44,9 @@
             = tc.group_name
           %td
             = tc.weight
+          %td
+            [
+            
+            ]
   :javascript
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})

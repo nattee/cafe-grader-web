@@ -40,9 +40,7 @@ class SubmissionsController < ApplicationController
   end
 
   def compiler_msg
-    respond_to do |format|
-      format.js
-    end
+    render partial: "shared/msg_modal_show", locals: {modal_header: 'Compiler message', modal_body: @submission.compiler_message}
   end
 
   #on-site new submission on specific problem

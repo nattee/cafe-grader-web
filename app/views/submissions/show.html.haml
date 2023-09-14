@@ -88,7 +88,7 @@
           %td.text-end.text-secondary
             Compiler result
           %td
-            %button.btn.btn-info.btn-sm{type: 'button', data: {bs: {toggle: 'modal', target: '#compiler'}}}
+            %button.btn.btn-info.btn-sm{type: 'button', data: {bs: {toggle: 'modal', target: '#msg_modal'}}}
               View
         %tr
           %td.text-end.text-secondary
@@ -116,7 +116,7 @@
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
 
 
-= render partial: 'submissions/compiler_msg_modal', locals: {submission: @submission}
+= render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission.compiler_message}
 -#
   .modal.fade#compiler{tabindex: -1,role: 'dialog'}
     .modal-dialog.modal-lg{role:'document'}

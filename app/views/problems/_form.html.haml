@@ -1,41 +1,45 @@
 .row
-  .col-md-6
-    = simple_form_for problem, wrapper: :horizontal_form do |form|
-      %h4 Basic Information
-      = form.input :name
-      = form.input :full_name
-      = form.input :full_score
-      = form.input :tag_ids, collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
-      = form.input :date_added, wrapper: :horizontal_form
-      = form.input :available, wrapper: :horizontal_boolean
-      = form.input :test_allowed, wrapper: :horizontal_boolean
-      = form.input :output_only, wrapper: :horizontal_boolean
-      %h4 Statements
-      = form.input :statement, wrapper: :horizontal_file
-      .row
-        .col-md-3
-        .col-md-9
-          %p
-            - if @problem.statement.attached?
-              %a{href: get_statement_problem_path(@problem)} [Download current Statement]
-            - else
-              no statement attached to this problem
-      = form.input :description, as: :text
-      = form.input :markdown, wrapper: :horizontal_boolean
-      = form.input :url
-      = form.submit :submit, class: 'btn btn-primary'
-  .col-md-6
-    %h3 Datasets
-    %ul.nav.nav-tabs
-      - @problem.datasets.each do |ds|
-        %li.nav-item
-          %button.nav-link{href: '#', class: ('active' if ds.live?), data: {bs: {toggle: :tab, target: "#ds-#{ds.id}"}}}
-            = ds.name
-            = " (live)" if ds.live?
-    .tab-content
-      - @problem.datasets.each do |ds|
-        %div.tab-pane.fade{id: "ds-#{ds.id}", class: ('show active' if ds.live?)}
-          = render partial: "datasets/form", locals: {ds: ds}
+  .col-md-5
+    .card
+      .card-body
+        = simple_form_for problem, wrapper: :horizontal_form do |form|
+          %h4 Basic Information
+          = form.input :name
+          = form.input :full_name
+          = form.input :full_score
+          = form.input :tag_ids, collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
+          = form.input :date_added, wrapper: :horizontal_form
+          = form.input :available, wrapper: :horizontal_boolean
+          = form.input :test_allowed, wrapper: :horizontal_boolean
+          = form.input :output_only, wrapper: :horizontal_boolean
+          %h4 Statements
+          = form.input :statement, wrapper: :horizontal_file
+          .row
+            .col-md-3
+            .col-md-9
+              %p
+                - if @problem.statement.attached?
+                  %a{href: get_statement_problem_path(@problem)} [Download current Statement]
+                - else
+                  no statement attached to this problem
+          = form.input :description, as: :text
+          = form.input :markdown, wrapper: :horizontal_boolean
+          = form.input :url
+          = form.submit :submit, class: 'btn btn-primary'
+  .col-md-7
+    .card
+      .card-body
+        %h4 Datasets
+        %ul.nav.nav-tabs
+          - @problem.datasets.each do |ds|
+            %li.nav-item
+              %button.nav-link{href: '#', class: ('active' if ds.live?), data: {bs: {toggle: :tab, target: "#ds-#{ds.id}"}}}
+                = ds.name
+                = " (live)" if ds.live?
+        .tab-content
+          - @problem.datasets.each do |ds|
+            %div.tab-pane.fade{id: "ds-#{ds.id}", class: ('show active' if ds.live?)}
+              = render partial: "datasets/form", locals: {ds: ds}
 :javascript
   $(document).on('import-map-loaded',function(e) {
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})

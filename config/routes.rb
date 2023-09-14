@@ -50,6 +50,7 @@ Rails.application.routes.draw do
   resources :datasets, only: [:update] do
     member do
       post 'manager/delete/:mg_id', action: 'manager_delete', as: 'manager_delete'
+      post 'manager/view/:mg_id', action: 'manager_view', as: 'manager_view'
     end
   end
 
@@ -196,11 +197,6 @@ Rails.application.routes.draw do
     post 'compiled_submission/:id', action: :compiled_submission, as: :compiled_submission
   end
 
-
-
-  #
-  get 'tasks/view/:file.:ext' => 'tasks#view'
-  get 'tasks/download/:id/:file.:ext' => 'tasks#download', as: 'download_task'
   get 'heartbeat/:id/edit' => 'heartbeat#edit'
 
   #grader

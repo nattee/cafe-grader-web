@@ -110,8 +110,8 @@ class Evaluator
           prepare_testcase_directory(@sub,tc)
 
           #download testcase
-          File.write(@input_file,tc.input)
-          File.write(@ans_file,tc.sol)
+          File.write(@input_file,tc.input.gsub(/\r$/, ''))
+          File.write(@ans_file,tc.sol.gsub(/\r$/, ''))
 
           #do the symlink
           #testcase codename inside prob_id/testcase_id
@@ -129,8 +129,6 @@ class Evaluator
         end
 
         # if any lib, dl as well
-
-        # if any manager
 
         # tell other that we are ready
         wp.update(status: :ready)

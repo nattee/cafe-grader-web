@@ -20,9 +20,9 @@
   %thead
     %th Name
     %th Full name
-    %th.text-right Full score
+    %th.text-end #Dataset
     %th Tags
-    %th 
+    %th
       Submit
       %sup{class: 'text-primary',data: {toggle: 'tooltip'}, title: 'Admin can always submit to any problem' } [?]
     %th Date added
@@ -32,9 +32,6 @@
     %th.text-center
       View Data?
       %sup{class: 'text-primary',data: {toggle: 'tooltip'}, title: 'Let user view the testcase of this problem?' } [?]
-    %th.text-center
-      Test?
-      %sup{class: 'text-primary',data: {toggle: 'tooltip'}, title: 'Let user uses test interface on this problem?' } [?]
     - if GraderConfiguration.multicontests?
       %th Contests
     %th.text-center
@@ -47,7 +44,7 @@
       %td
         = problem.full_name
         = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='glyphicon glyphicon-file'></span>".html_safe, problem
-      %td.text-right= problem.full_score
+      %td.text-end= problem.dataset_count
       %td
         - problem.tags.each do |t|
           - #%button.btn.btn-default.btn-sm= t.name
@@ -56,7 +53,6 @@
       %td= problem.date_added
       %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
       %td= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
-      %td= toggle_button(@problem.test_allowed?, toggle_test_problem_path(@problem), "problem-test-#{@problem.id}")
       - if @multi_contest
         %td
           = problem.contests.collect { |c| c.name }.join(', ')

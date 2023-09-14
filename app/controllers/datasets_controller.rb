@@ -47,6 +47,12 @@ class DatasetsController < ApplicationController
     mg.purge
   end
 
+  def manager_view
+    mg = @dataset.managers.find(params[:mg_id])
+    mg.download
+    render 
+  end
+
   # DELETE /datasets/1 or /datasets/1.json
   def destroy
     @dataset.destroy

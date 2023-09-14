@@ -2,9 +2,11 @@
   %h4 Managers
   - ds.managers.each do |mg|
     .row
-      .col-md-4
+      .col-md-6
         = mg.filename
-      .col-md-8
+      .col-md-6
         [
+        %span= link_to 'view', manager_view_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', confirm: true }
+        |
         %span= link_to 'delete', manager_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post' }
         ]

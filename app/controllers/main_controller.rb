@@ -120,16 +120,6 @@ class MainController < ApplicationController
     end
   end
 
-  def compiler_msg
-    @submission = Submission.find(params[:id])
-    if @submission.user_id == session[:user_id]
-      render :action => 'compiler_msg', :layout => 'empty'
-    else
-      flash[:notice] = 'Error viewing source'
-      redirect_to :action => 'list'
-    end
-  end
-
   def result
     if !GraderConfiguration.show_grading_result
       redirect_to :action => 'list' and return

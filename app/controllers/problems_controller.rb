@@ -10,7 +10,7 @@ class ProblemsController < ApplicationController
 
 
   def index
-    @problems = Problem.includes(:tags).order(date_added: :desc).with_attached_statement
+    @problems = Problem.joins(:datasets).includes(:tags).order(date_added: :desc).select("problems.*","count(datasets.id) as dataset_count").group('problems.id').with_attached_statement
     @multi_contest = GraderConfiguration.multicontests?
   end
 
