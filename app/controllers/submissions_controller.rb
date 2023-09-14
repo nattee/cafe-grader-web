@@ -40,7 +40,7 @@ class SubmissionsController < ApplicationController
   end
 
   def compiler_msg
-    render partial: "shared/msg_modal_show", locals: {modal_header: 'Compiler message', modal_body: @submission.compiler_message}
+    render partial: "shared/msg_modal_show", locals: {header_msg: 'Compiler message', body_msg: @submission.compiler_message}
   end
 
   #on-site new submission on specific problem

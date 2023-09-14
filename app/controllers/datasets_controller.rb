@@ -1,5 +1,8 @@
 class DatasetsController < ApplicationController
-  before_action :set_dataset, only: %i[ show edit update destroy manager_delete]
+  before_action :set_dataset, only: %i[ show edit update destroy
+                                        manager_delete manager_view
+                                        testcase_input testcase_sol testcase_delete
+                                      ]
   before_action :admin_authorization, except: [:stat]
 
   # GET /datasets/new
@@ -49,8 +52,27 @@ class DatasetsController < ApplicationController
 
   def manager_view
     mg = @dataset.managers.find(params[:mg_id])
-    mg.download
-    render 
+    render partial: 'shared/msg_modal_show', locals: {header_msg: mg.filename, body_msg: mg.download}
+  end
+
+  # as turbo
+  def testcase_input
+    tc = Testcase.find(params[:tc_id])
+    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.input }
+
+  end
+
+  # as turbo
+  def testcase_sol
+    tc = Testcase.find(params[:tc_id])
+    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.sol }
+  end
+
+  # as turbo
+  def testcase_delete
+    tc = Testcase.find(params[:tc_id])
+    tc.destroy
+    render :update
   end
 
   # DELETE /datasets/1 or /datasets/1.json

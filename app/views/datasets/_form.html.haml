@@ -46,7 +46,11 @@
             = tc.weight
           %td
             [
-            
+            %span= link_to 'input', testcase_input_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
+            |
+            %span= link_to 'output', testcase_sol_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
+            |
+            %span= link_to 'delete', testcase_delete_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
             ]
   :javascript
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})
