@@ -179,6 +179,10 @@ class Problem < ApplicationRecord
   end
 
 
+  #
+  # ---- these feature are used in migrating to grader 2023
+  #
+
   def self.migrate_pdf_to_activestorage
     Problem.where.not(description_filename: nil).each do |p|
       file = Rails.root.join('data','tasks',p.id.to_s,p.description_filename)
@@ -219,6 +223,57 @@ class Problem < ApplicationRecord
     pi = ProblemImporter.new
     pi.import_dataset_from_dir(ev_dir,self.name, full_name: self.full_name, dataset: self.live_dataset, do_testcase: false, do_statement: false)
     pp pi.log if pi.got.count > 0
+  end
+
+  # check whether the testcases in the live dataset match the one in the ev
+  def check_testcases_from_ev(detail = false, ev_dir = Rails.root.join('../judge/ev/',self.name) )
+    live_dataset.testcases.order(:num).each do |tc|
+      input = tc.input.gsub /\r$/, ''
+      sol = tc.sol.gsub /\r$/, ''
+
+      if input.blank?
+        puts "#{name} #{tc.num} db input blank"
+      end
+      if sol.blank?
+        puts "#{name} #{tc.num} db sol blank"
+      end
+
+      file_input = File.read(ev_dir + 'test_cases' + tc.num.to_s + "input-#{tc.num}.txt").gsub /\r$/, ''
+      file_sol   = File.read(ev_dir + 'test_cases' + tc.num.to_s + "answer-#{tc.num}.txt").gsub /\r$/, ''
+
+      input_ok = input == file_input
+      sol_ok   = sol == file_sol
+      unless (input_ok && sol_ok)
+        puts "unmatch at #{id} #{name} #{tc.num}"
+        if (detail)
+          puts "-- db input --\n#{input.truncate(500)}"
+          puts "-- file input --\n#{file_input.truncate(500)}"
+          puts "-- db sol --\n#{sol.truncate(500)}"
+          puts "-- file sol --\n#{file_sol.truncate(500)}"
+          puts "copy file to db (NO/yes)? "
+          ans = gets.chomp
+          if ans == "yes"
+            puts "copying..."
+            tc.update(input: file_input, sol: file_sol)
+            puts "done..."
+          end
+          break
+        end
+      end
+
+    end
+  end
+
+  def self.check_all_testcases_from_ev
+    dir = Rails.root.join '../judge/ev/*'
+    Dir[dir].each do |ev_dir|
+      pn = Pathname.new ev_dir
+      p = Problem.where(name: pn.basename.to_s).first
+      next unless p
+
+      p.check_testcases_from_ev
+    end
+    return nil
   end
 
   def self.migrate_manager_from_ev
