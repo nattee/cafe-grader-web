@@ -32,19 +32,4 @@
 
   .row
     .col-md-12
-      - if GraderConfiguration.config_cached?
-        %br/
-        Your config is saved, but it does not automatically take effect.
-        %br/
-        If you have one mongrel process running, you can
-        = link_to '[click]', :action => 'reload'
-        here to reload.
-        %br/
-        If you have more than one process running, you should restart 
-        them manually.
 
-:javascript
-  function hahaha(e) {
-    window.xxx = e
-    console.log('asdf')
-  }

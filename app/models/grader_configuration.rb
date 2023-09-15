@@ -23,7 +23,7 @@ class GraderConfiguration < ApplicationRecord
   GraderConfiguration.task_grading_info_cache = nil
 
   def self.config_cached?
-    true
+    false
   end
 
   def self.get(key)

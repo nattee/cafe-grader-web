@@ -51,7 +51,7 @@
         .card-body
           #latest_status
 
-= render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission.compiler_message}
+= render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission&.compiler_message}
 
 :javascript
   $(document).ready(function() {

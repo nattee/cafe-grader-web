@@ -282,26 +282,8 @@ class User < ApplicationRecord
 
   # new feature, get list of available problem in all enabled group that the user belongs to
   def available_problems_in_group
-    problem = []
-    self.groups.where(enabled: true).each do |group|
-      group.problems.where(available: true).each { |p| problem << p }
-    end
-    problem.uniq!
-    if problem
-      problem.sort! do |a,b|
-        case
-        when a.date_added < b.date_added
-          1
-        when a.date_added > b.date_added
-          -1
-        else
-          a.name <=> b.name
-        end
-      end
-      return problem
-    else
-      return []
-    end
+    pids = self.groups.where(enabled: true).joins(:problems).select('distinct problem_id').pluck :problem_id
+    return Problem.where(id: pids).where(available: true).order('date_added DESC')
   end
 
   #check if the user has the right to view that problem
