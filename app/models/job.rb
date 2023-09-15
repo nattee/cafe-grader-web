@@ -24,11 +24,10 @@ class Job < ApplicationRecord
     self.add_compiling_job(submission,dataset)
   end
 
-  def self.add_compiling_job(submission,parent_job_id = nil)
-    dataset = submission.problem.live_dataset
+  def self.add_compiling_job(submission,dataset)
     raise GraderError.new("Sub ##{submission.id} does not have live dataset",
                           submission_id: submission.id) unless dataset
-    Job.create(parent_job_id: parent_job_id,
+    Job.create(parent_job_id: nil,
                job_type: :compile,
                arg: submission.id,
                param: {dataset_id: dataset.id}.to_json )

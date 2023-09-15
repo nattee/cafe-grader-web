@@ -36,6 +36,7 @@ Rails.application.routes.draw do
       get 'stat'
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
       post 'add_dataset'
+      post 'import_testcases'
     end
     collection do
       get 'turn_all_off'
@@ -51,12 +52,13 @@ Rails.application.routes.draw do
   resources :datasets, only: [:update, :destroy] do
     member do
       post 'manager/delete/:mg_id', action: 'manager_delete', as: 'manager_delete'
-      get 'manager/view/:mg_id', action: 'manager_view', as: 'manager_view'
+      post 'manager/view/:mg_id', action: 'manager_view', as: 'manager_view'
       post 'testcase/input/:tc_id', action: 'testcase_input', as: 'testcase_input'
       post 'testcase/sol/:tc_id', action: 'testcase_sol', as: 'testcase_sol'
       post 'testcase/delete/:tc_id', action: 'testcase_delete', as: 'testcase_delete'
       post 'set_as_live'
       post 'view'
+      post 'rejudge'
     end
   end
 
@@ -111,7 +113,7 @@ Rails.application.routes.draw do
   resources :submissions do
     member do
       get 'download'
-      get 'compiler_msg'
+      post 'compiler_msg'
       get 'rejudge'
       get 'set_tag'
     end

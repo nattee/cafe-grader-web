@@ -25,10 +25,10 @@ class Submission < ApplicationRecord
 
   has_many_attached :compiled_files
 
-  def add_judge_job
+  def add_judge_job(dataset = problem.live_dataset)
     evaluations.delete_all
     self.update(points: nil, grader_comment: nil,graded_at: nil)
-    Job.add_grade_submission_job(self,self.problem.live_dataset)
+    Job.add_grade_submission_job(self,dataset)
   end
 
 

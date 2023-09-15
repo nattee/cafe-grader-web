@@ -1,19 +1,29 @@
 = turbo_frame_tag :dataset_update, data: {turbo: true} do
   %div.mb-2
   - if local_assigns[:updated]
-    .alert.alert-info= updated
-  /row row-cols-lg-auto g-3 align-items-center
-  .row.row-cols-lg-auto.g-3.align-items-center
-    .col
-      .form-check
-        %label.form-check-label choose dataset
-    .col
-      = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(ds), wrapper: :inline_form do |f|
-        = f.input :dsid, collection: ds.problem.datasets, selected: ds.id, input_html: {class: 'form-control-sm', onchange: 'ds_change()'}, wrapper: :inline_form
-    .col
-      = link_to 'Add', add_dataset_problem_path(ds.problem), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-success btn-sm'
-      = link_to 'Set as live', set_as_live_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm' if ds != ds.problem.live_dataset
-      = link_to 'Delete', dataset_path(ds), data: {turbo: true, 'turbo-method': 'delete', turbo_confirm: 'Really delete?'}, class: 'btn btn-danger btn-sm'
+    .alert.alert-info.alert-dismissible
+      = updated
+      %button.btn-close{data: {'bs-dismiss': :alert}}
+  .alert.alert-info
+    .row.row-cols-lg-auto.g-3.align-items-center
+      .col
+        .form-check
+          %label.form-check-label Select a dataset to view
+      .col
+        = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(ds), wrapper: :inline_form do |f|
+          = f.input :dsid, collection: ds.problem.datasets, selected: ds.id, input_html: {class: 'form-select-sm form-select', onchange: 'ds_change()'}, wrapper: :inline_form
+      .col
+        .form-check
+          %label.form-check-label Action
+      .col
+        = link_to 'Add', add_dataset_problem_path(ds.problem), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-success btn-sm'
+        = link_to 'Set as live', set_as_live_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm' if ds != ds.problem.live_dataset
+        = link_to 'Delete', dataset_path(ds), data: {turbo: true,
+          'turbo-method': 'delete',
+          turbo_confirm: "Really delete the dataset [#{ds.name}]?"}, class: 'btn btn-danger btn-sm'
+        = link_to 'Rejudge', rejudge_dataset_path(ds), data: {turbo: true,
+          'turbo-method': 'post',
+          turbo_confirm: "Rejudge all #{ds.problem.submissions.count} submissions of #{ds.problem.name} using the dataset [#{ds.name}]?"}, class: 'btn btn-warning btn-sm'
   .row
     .col-md-6
       %h4.my-2 Basic Info

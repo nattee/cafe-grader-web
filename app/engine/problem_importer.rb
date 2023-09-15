@@ -1,6 +1,6 @@
 class ProblemImporter
 
-  attr_reader :problem, :log, :errors, :got
+  attr_reader :problem, :log, :errors, :got, :dataset
 
   require 'open3'
   def initialize
@@ -52,7 +52,7 @@ class ProblemImporter
     end
 
     # load into dataset and testcase
-    num = 1
+    num = @dataset.testcases.count + 1
     group = 1
     #group_hash = Hash.new { |h,k| h[k] = [] }
     group_hash = {}
@@ -77,16 +77,19 @@ class ProblemImporter
         end
 
         #create new testcase
-        new_tc = Testcase.new(num: num, group: group,weight: 1,group_name: group_name, code_name: k)
-        new_tc.input = File.read(@tc[k][:input])
-        new_tc.sol = File.read(@tc[k][:sol])
+        new_tc = @dataset.testcases.where(code_name: k).first
+        if new_tc
+          @log << "replace existing testcase with codename #{k} (num and group are #{new_tc.num} #{new_tc.group})"
+        else
+          @log << "add a testcase #{num} with codename #{k} and group #{group}"
+          new_tc = Testcase.new(code_name: k, num: num, group: group,weight: 1,group_name: group_name)
+          num +=1
+        end
+        new_tc.input = File.read(@tc[k][:input]).gsub(/\r$/, '')
+        new_tc.sol = File.read(@tc[k][:sol]).gsub(/\r$/, '')
         @dataset.testcases << new_tc
-        @log << "add a testcase #{num} with codename #{k} and group #{group}"
         @log << "  #{@tc[k][:input]} is the input"
         @log << "  #{@tc[k][:sol]} is the sol"
-
-        #prepare next testcase
-        num +=1
       end
     end
 
@@ -222,7 +225,7 @@ class ProblemImporter
   #    a testcase with the same codename will be replaced
   def import_dataset_from_dir(dir, name,
     full_name: ,          #required keyword
-    dataset: nil,
+    dataset: nil,         # if nil, we will create a new dataset
     delete_existing: false,
     input_pattern: '*.in',
     sol_pattern: '*.sol',
@@ -245,17 +248,19 @@ class ProblemImporter
     if dataset && dataset.problem == @problem
       @dataset = dataset
     else
-      @dataset = Dataset.new(name: @problem.get_next_dataset_name)
+      @dataset = Dataset.new(name: @problem.get_next_dataset_name, problem: @problem)
     end
     @problem.datasets.where.not(id: @dataset.id).each { |ds| ds.destroy } if delete_existing
     @problem.datasets.reload
 
     @dataset.memory_limit = memory_limit
     @dataset.time_limit = time_limit
-    @problem.datasets << @dataset
-    @problem.live_dataset = @dataset if Dataset.where(id: @problem.live_dataset).count == 0
-    @problem.save
+    @problem.live_dataset = @dataset if delete_existing
     @dataset.save
+    unless @problem.save
+      @errors += @problem.errors.full_messages
+      return
+    end
 
     @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
 

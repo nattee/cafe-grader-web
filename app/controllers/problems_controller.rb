@@ -5,7 +5,7 @@ class ProblemsController < ApplicationController
   before_action :admin_authorization, except: [:stat, :get_statement]
   before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement,
                                      :toggle, :toggle_test, :toggle_view_testcase, :stat,
-                                     :add_dataset,
+                                     :add_dataset,:import_testcases
                                     ]
   before_action only: [:stat] do
     authorization_by_roles(['admin','ta'])
@@ -187,24 +187,13 @@ class ProblemsController < ApplicationController
     @allow_test_pair_import = allow_test_pair_import?
   end
 
+
+  # import as a new problem
   def do_import
-    # old_problem = Problem.find_by_name(params[:name])
-    # if !allow_test_pair_import? and params.has_key? :import_to_db
-    #   params.delete :import_to_db
-    # end
-    # @problem, import_log = Problem.create_from_import_form_params(params,
-    #                                                               old_problem)
-
-    # if !@problem.errors.empty?
-    #   render :action => 'import' and return
-    # end
-
-    # if old_problem!=nil
-    #   flash[:notice] = "The test data has been replaced for problem #{@problem.name}"
-    # end
-    # @log = import_log
-    #
-
+    unless params[:problem][:file]
+      @errors = ['You must upload a valid ZIP file']
+      render :import and return
+    end
     name = params[:problem][:name]
     uploaded_file_path = params[:problem][:file].to_path
 
@@ -222,16 +211,68 @@ class ProblemsController < ApplicationController
     end
 
     # load data
+    memory_limit = params[:problem][:memory_limit]
+    memory_limit = 512 if memory_limit.blank?
+    time_limit = params[:problem][:time_limit]
+    time_limit = 1 if time_limit.blank?
+
     pi.import_dataset_from_dir(extracted_path, params[:problem][:name],
       full_name: params[:problem][:full_name],
       input_pattern: params[:problem][:input_pattern],
       sol_pattern: params[:problem][:sol_pattern],
       delete_existing: params[:problem][:replace] == '1',
-      set_as_live: params[:problem][:replace] == '1',
+      memory_limit: memory_limit,
+      time_limit: time_limit,
     )
+
+    if pi.errors.count > 0
+      @errors = pi.errors
+      render :import and return
+    else
+      @log = pi.log
+      @problem = pi.problem
+    end
+  end
+
+  # import into existing problem
+  def import_testcases
+    unless params[:import][:file]
+      @errors = ['There is no uploaded file']
+      return
+    end
+    uploaded_file_path = params[:import][:file].to_path
+
+    pi = ProblemImporter.new
+
+    # unzip uploaded file to raw folder
+    extracted_path = pi.unzip_to_dir(
+      uploaded_file_path,
+      @problem.name,
+      Rails.configuration.worker[:directory][:judge_raw_path])
+
+    if pi.errors.count > 0
+      @errors = pi.errors
+      render :import and return
+    end
+
+    @dataset = @problem.datasets.where(id: params[:import][:dataset]).first if params[:import][:target] == 'replace'
+
+    # load data
+    pi.import_dataset_from_dir( extracted_path, @problem.name,
+                                full_name: @problem.full_name,
+                                input_pattern: params[:import][:input_pattern],
+                                sol_pattern: params[:import][:sol_pattern],
+                                dataset: @dataset,
+                                do_statement: false,
+                                do_checker: false,
+                                do_cpp_extras: false
+                              )
+    @updated = 'Testcases has been imported'
     @log = pi.log
     @problem = pi.problem
+    @dataset = pi.dataset
   end
+
 
   def remove_contest
     problem = Problem.find(params[:id])

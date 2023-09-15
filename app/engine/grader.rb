@@ -235,23 +235,6 @@ class Grader
     watchdog;
   end
 
-  def self.test_job
-    #init
-    #s = Submission.find(422194) # full score
-    #s = Submission.find(422198) # zero score
-    #s = Submission.find(422188) # compile error
-
-    s = Submission.find(422022) # Time Limit & Pass & Wrong
-    #421461
-
-    WorkerDataset.where(dataset: s.problem.live_dataset).delete_all
-    Job.delete_all
-
-
-    Job.add_compiling_job(s)
-    return s
-  end
-
   def self.migrate_new_grader
     puts "Making dataset..."
     Dataset.migrate_old_testcases

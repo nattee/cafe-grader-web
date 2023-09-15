@@ -6,7 +6,7 @@
         = mg.filename
       .col-md-6
         [
-        %span= link_to 'view', manager_view_dataset_path(ds,mg), remote: true
+        %span= link_to 'view', manager_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
         |
         %span= link_to 'delete', manager_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
         ]

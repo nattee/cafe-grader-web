@@ -117,14 +117,3 @@
 
 
 = render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission.compiler_message}
--#
-  .modal.fade#compiler{tabindex: -1,role: 'dialog'}
-    .modal-dialog.modal-lg{role:'document'}
-      .modal-content
-        .modal-header
-          %h4 Compiler message
-          %button.btn-close{type: 'button', 'data-bs': {dismiss: :modal}, aria: {label: 'Close'}}
-        .modal-body
-          %pre#compiler_msg= @submission.compiler_message
-        .modal-footer
-          %button.btn.btn-secondary{type: 'button', 'data-bs': {dismiss: 'modal'}} Close
