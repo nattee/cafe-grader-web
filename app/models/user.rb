@@ -87,7 +87,8 @@ class User < ApplicationRecord
   end
 
   def admin?
-    has_role?('admin')
+    @is_admin = has_role?('admin') if @is_admin.nil?
+    return @is_admin
   end
 
   def has_role?(role)

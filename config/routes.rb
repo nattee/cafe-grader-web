@@ -94,7 +94,8 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :users do
+  #for each user editing their own
+  resources :users, only: [:new] do
     member do
       get 'toggle_activate', 'toggle_enable'
       get 'stat'
@@ -103,6 +104,7 @@ Rails.application.routes.draw do
       get 'profile'
       post 'chg_passwd'
       post 'chg_default_language'
+      patch 'update_self'
     end
   end
 

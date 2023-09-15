@@ -23,7 +23,7 @@ class GraderConfiguration < ApplicationRecord
   GraderConfiguration.task_grading_info_cache = nil
 
   def self.config_cached?
-    (defined? CONFIGURATION_CACHE_ENABLED) and (CONFIGURATION_CACHE_ENABLED)
+    true
   end
 
   def self.get(key)
@@ -137,7 +137,7 @@ class GraderConfiguration < ApplicationRecord
       if tmatch = /(\d+):(\d+)/.match(contest_time_str)
         h = tmatch[1].to_i
         m = tmatch[2].to_i
-        
+
         GraderConfiguration.contest_time = h.hour + m.minute
       else
         GraderConfiguration.contest_time = nil
@@ -152,14 +152,14 @@ class GraderConfiguration < ApplicationRecord
     case type
     when 'string'
       return val
-      
+
     when 'integer'
       return val.to_i
-      
+
     when 'boolean'
       return (val=='true')
     end
-  end    
+  end
 
   def self.read_config
     GraderConfiguration.config_cache = {}
@@ -184,5 +184,5 @@ class GraderConfiguration < ApplicationRecord
     GraderConfiguration.task_grading_info_cache = YAML.load(f)
     f.close
   end
-  
+
 end

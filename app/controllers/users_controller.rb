@@ -57,6 +57,15 @@ class UsersController < ApplicationController
     redirect_to :action => 'profile'
   end
 
+  def update_self
+    user = @current_user
+    if user.update(user_update_params)
+      redirect_to profile_users_path, notice: 'Updated successfully'
+    else
+      render :profile
+    end
+  end
+
   def new
     @user = User.new
     render :action => 'new', :layout => 'empty'
@@ -223,5 +232,9 @@ class UsersController < ApplicationController
   private
     def user_params
       params.require(:user).permit(:login, :full_name, :email)
+    end
+
+    def user_update_params
+      params.require(:user).permit(:default_language, :password, :password_confirmation)
     end
 end

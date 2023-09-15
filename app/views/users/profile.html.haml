@@ -1,29 +1,11 @@
-
-.container-fluid
-  .row
-    .col-md-6
-      %h1 Your account settings
-      .form-group
-        %label{:for => "login"} Login
-        =@user.login
-      .form-group
-        %label{:for => "full_name"} Full name
-        =@user.full_name
-      = form_tag :action => 'chg_default_language', :method => 'post' do
-        %h2 Change default submission language
-        .form-group
-          = select_tag 'default_language', options_from_collection_for_select(Language.all, 'id', 'pretty_name', @user.default_language || Language.find_by_pretty_name("Python").id || Language.first.id), class: 'form-control select', style: "width: 100px"
-        = submit_tag 'Save', class: 'btn btn-success'
-      %br
-      = form_tag :action => 'chg_passwd', :method => 'post' do
-        %h2 Change password
-        .form-group
-          %label{:for => "password"} Password
-          =password_field_tag :password, nil, class: 'form-control'
-        .form-group
-          %label{:for => "password_confirmation"} Password confirmation
-          =password_field_tag :password_confirmation, nil, class: 'form-control'
-        =submit_tag 'Edit', class: 'btn btn-primary'
+%h1 Account Setting
+.row
+  .col-md-6
+    = simple_form_for @current_user, url: update_self_users_path do |f|
+      = f.input :default_language, collection: Language.all
+      = f.input :password
+      = f.input :password_confirmation
+      = f.button :submit, class: 'btn btn-primary'
 
 
 
