@@ -79,9 +79,7 @@ class Grader
   # -------- main job running function --------------
   #
   def check_and_run_job
-    Rails.logger.level = 0
     @job = Job.take_oldest_waiting_job(@grader_process) if Job.has_waiting_job
-    Rails.logger.level = 1
 
     if (@job)
       @last_job_time = Time.zone.now
@@ -138,9 +136,7 @@ class Grader
       current = Time.zone.now
       if (current - last_heartbeat > 3.0)
         last_heartbeat = current
-        Rails.logger.level = 0
         @grader_process.update(last_heartbeat: current, status: (Time.zone.now - @last_job_time > 5.second) ? :idle : :working)
-        Rails.logger.level = 1
 
         #check if the database tell us to stop
         @grader_process.reload
