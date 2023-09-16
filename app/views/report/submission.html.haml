@@ -8,12 +8,15 @@
   .col-md-4
     = render partial: 'shared/user_select'
 
-.row
-  .col-md-6
+.row.mt-3
+  .col-md-4
     .alert.alert-info
       %ul
         %li Display a maximum of 100,000 entries to save computation power
         %li You have to click refresh when changing the filter above
+        %li From date is required, blank from date is convert to today
+  .col-md-8
+    %canvas#chart
 
 .row
   .col-sm-12
@@ -21,6 +24,7 @@
 
 
 :javascript
+  sub_count = null;
   $(document).on('import-map-loaded', (e) => {
     submission_table = $('#table').DataTable({
       dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
@@ -43,9 +47,9 @@
       ],
       columns: [
         {title: 'Sub ID', data: 'id'},
-        {title: 'User', data: 'user.login'},
-        {title: 'Problem', data: 'problem.long_name'},
-        {title: 'Language', data: 'language.pretty_name'},
+        {title: 'User', data: 'login'},
+        {title: 'Problem', data: 'full_name'},
+        {title: 'Language', data: 'pretty_name'},
         {title: 'Submit at', data: 'submitted_at'},
         {title: 'Result', data: 'grader_comment'},
         {title: 'Score', data: 'points'},
@@ -66,7 +70,34 @@
         beforeSend: (request) => {
           request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
         },
+        dataSrc: function (json) {
+          sub_count = json.sub_count_by_date
+          //history graph
+          data = {
+            labels: Object.keys(sub_count || {}),
+            datasets: [
+              {
+                data: Object.values(sub_count || {})
+              },
+            ]
+          }
+          config = {
+            type: 'line',
+            data: data,
+            options: {
+              aspectRatio: 6,
+            }
+          }
+          if (typeof my_chart !== 'undefined') {
+            my_chart.destroy()
+          }
+          Chart.defaults.font.size = 15
+          my_chart = new Chart($('#chart'),config)
+
+          return json.data
+        }
       }, //end ajax
     });
+
 
   });

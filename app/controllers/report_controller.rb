@@ -45,9 +45,9 @@ class ReportController < ApplicationController
     @until_id = nil if @until_id == 0
 
     #calculate the routine
-    @result = calculate_max_score_2(@problems, @users, @since_id, @until_id)
+    @result = calculate_max_score(@problems, @users, @since_id, @until_id)
 
-    #this only render as turbo stream
+    # this only render as turbo stream
     # see show_max_score.turbo_stream
   end
 
@@ -134,13 +134,14 @@ class ReportController < ApplicationController
 
   def submission_query
     @submissions = Submission
-      .includes(:problem).includes(:user).includes(:language)
+      .joins(:problem).joins(:language)
+      #.includes(:problem).includes(:user).includes(:language)
 
     case params[:users]
     when 'enabled'
       @submissions = @submissions.where(users: {enabled: true})
     when 'group'
-      @submissions = @submissions.joins(user: :groups).where(user: {groups: {id: params[:groups]}}) if params[:groups]
+      @submissions = @submissions.joins(user: :groups).where(users: {groups: {id: params[:groups]}}) if params[:groups]
     end
 
     case params[:problems]
@@ -151,15 +152,15 @@ class ReportController < ApplicationController
     end
 
     #set default
-    params[:since_datetime] = Date.today.to_s if params[:since_datetime].blank?
+    datetime_since = Time.zone.parse( params[:since_datetime] ) || Time.zone.now rescue Time.zone.now
+    datetime_until = Time.zone.parse( params[:until_datetime] ) || Time.zone.now rescue Time.zone.now
+    datetime_range= datetime_since..datetime_until
 
-    @submissions, @recordsTotal, @recordsFiltered = process_query_record( @submissions,
-      global_search: ['user.login','user.full_name','problem.name','problem.full_name','points'],
-      date_filter: 'submitted_at',
-      date_param_since: 'since_datetime',
-      date_param_until: 'until_datetime',
-      hard_limit: 100_000
-    )
+    @submissions = @submissions.where(submitted_at: datetime_range).limit(100_000)
+    @submissions = @submissions.select('submissions.id,points,ip_address,submitted_at,grader_comment')
+      .select('users.login')
+      .select('problems.full_name')
+      .select('languages.pretty_name')
   end
 
   def login
@@ -463,35 +464,6 @@ ORDER BY submitted_at
   protected
 
   def calculate_max_score(problems, users,since_id,until_id, get_last_score = false)
-    #scorearray[i] = user #i's user stat where i is the index (not id)
-    scorearray = Array.new
-    users.each do |u|
-      ustat = Array.new
-      ustat[0] = u
-      problems.each do |p|
-        unless get_last_score
-          #get max score
-          max_points = 0
-          Submission.find_in_range_by_user_and_problem(u.id,p.id,since_id,until_id).each do |sub|
-            max_points = sub.points if sub and sub.points and (sub.points > max_points)
-          end
-          ustat << [(max_points.to_f*100/p.full_score).round, (max_points>=p.full_score)]
-        else
-          #get latest score
-          sub = Submission.find_last_by_user_and_problem(u.id,p.id)
-          if (sub!=nil) and (sub.points!=nil) and p and p.full_score
-            ustat << [(sub.points.to_f*100/p.full_score).round, (sub.points>=p.full_score)]
-          else
-            ustat << [0,false]
-          end
-        end
-      end
-      scorearray << ustat
-    end
-    return scorearray
-  end
-
-  def calculate_max_score_2(problems, users,since_id,until_id, get_last_score = false)
     result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0 } } }
     query = Submission.joins(:user).joins(:problem).where(user: users, problem: problems).group('users.id,problems.id')
       .select('users.id,users.login,users.full_name')
