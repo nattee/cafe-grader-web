@@ -255,7 +255,7 @@ class ProblemImporter
 
     @dataset.memory_limit = memory_limit
     @dataset.time_limit = time_limit
-    @problem.live_dataset = @dataset if delete_existing
+    @problem.live_dataset = @dataset if delete_existing || @problem.live_dataset.nil?
     @dataset.save
     unless @problem.save
       @errors += @problem.errors.full_messages
