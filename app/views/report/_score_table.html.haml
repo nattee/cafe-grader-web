@@ -4,66 +4,36 @@
       %tr
         %th Login
         %th Name
-        / %th Activated?
-        / %th Logged_in
-        / %th Contest(s)
         %th Remark
         - @problems.each do |p|
           %th.text-right= p.name.gsub('_',' ')
         %th.text-right Total
         %th.text-right Passed
     %tbody
-      - sum = Array.new(@problems.count+1,0)
-      - nonzero = Array.new(@problems.count+1,0)
-      - full = Array.new(@problems.count+1,0)
-      - @scorearray.each do |sc|
+      - super_sum, super_pass = 0,0
+      - @result[:score].each do |login,score|
         %tr
-          - total,num_passed = 0,0
-          - sc.each_index do |i|
-            - if i == 0
-              %td= link_to sc[i].login, stat_user_path(sc[i])
-              %td= sc[i].full_name
-              / %td= sc[i].activated
-              / %td= sc[i].try(:contest_stat).try(:started_at) ? 'yes' : 'no'
-              / %td= sc[i].contests.collect {|c| c.name}.join(', ') 
-              %td= sc[i].remark
-            - else
-              %td.text-right= sc[i][0]
-              - total += sc[i][0]
-              - num_passed += 1 if sc[i][1]
-              - sum[i] += sc[i][0]
-              - nonzero[i] += 1 if sc[i][0] > 0
-              - full[i] += 1 if sc[i][1]
-          %td.text-right= total
-          %td.text-right= num_passed
-      %tfoot
-        %tr
-          %td Summation
-          %td
-          %td
-          - sum.each.with_index do |s,i|
-            - next if i == 0
-            %td.text-right= number_with_delimiter(s)
-          %td
-          %td
-        %tr
-          %td partial solver
-          %td
-          %td
-          - nonzero.each.with_index do |s,i|
-            - next if i == 0
-            %td.text-right= number_with_delimiter(s)
-          %td
-          %td
-        %tr
-          %td Full solver
-          %td
-          %td
-          - full.each.with_index do |s,i|
-            - next if i == 0
-            %td.text-right= number_with_delimiter(s)
-          %td
-          %td
+          %td= link_to login, stat_user_path(score['id'])
+          %td= score['full_name']
+          %td= score['remark']
+          - sum,pass = 0,0
+          - @problems.each do |p|
+            - this_prob_score = score['prob_'+p.name] || 0; sum += this_prob_score
+            - pass += 1 if this_prob_score >= 100
+            %td.text-end= number_with_precision(score['prob_'+p.name], precision: 0)
+          - super_sum += sum
+          - super_pass += pass
+          %td.text-end= number_with_precision(sum, precision: 0)
+          %td.text-end= pass
+    %tfoot
+      %tr
+        %td Summation
+        %td
+        %td
+        - @problems.each do |p|
+          %td.text-end= number_with_delimiter(@result[:stat][p.name][:sum], precision: 0)
+        %td.text-end= number_with_delimiter(super_sum, precision: 0)
+        %td.text-end= number_with_delimiter(super_pass, precision: 0)
   :javascript
     $('#score-table').DataTable({
       paging: false,
@@ -73,3 +43,57 @@
           'excelHtml5',
       ]
     })
+
+    //history graph
+    data = {
+      labels: [#{@problems.pluck(:name).map{ |x| '"'+x+'"'}.join(',').html_safe}],
+      datasets: [
+        {
+          label: 'Zero',
+          borderColor: '#ff6384',
+          backgroundColor: '#ffe0e6',
+          borderWidth: 1,
+          data: [#{@result[:count][:zero].join(',')}],
+        }, {
+          label: 'Partial',
+          borderColor: '#36a2eb',
+          backgroundColor: '#d7ecfb',
+          borderWidth: 1,
+          data: [#{@result[:count][:partial].join(',')}]
+        }, {
+          label: 'Full',
+          borderColor: '#4bc0c0',
+          backgroundColor: '#dbf2f2',
+          borderWidth: 1,
+          data: [#{@result[:count][:full].join(',')}]
+        },
+      ]
+    }
+    np = #{[1,@problems.count].max}
+    config = {
+      type: 'bar',
+      data: data,
+      options: {
+        indexAxis: 'y', //horizontal bar
+        aspectRatio: 17/np - (0.3*np),
+        plugins: {
+          legend: {
+            display: false
+          },
+        },
+        scales: {
+          y: {
+            stacked: true
+          },
+          x: {
+            stacked: true
+          }
+        }
+      }
+    }
+    if (typeof my_chart !== 'undefined') {
+      my_chart.destroy()
+    }
+    Chart.defaults.font.size = 15
+    //Chart.defaults.font.family = 'Sarabun Light'
+    my_chart = new Chart($('#chart'),config)

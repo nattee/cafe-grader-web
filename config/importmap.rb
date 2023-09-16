@@ -55,7 +55,7 @@ pin "select2", to: "select2.min.js"
 pin "custom", to: "custom.js"
 
 #pin "ace-rails-ap"
-pin "chart", to: 'chart.js' # @3.9.1
+pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js
 pin "@eonasdan/tempus-dominus", to: "tempus-dominus/@eonasdan--tempus-dominus.js" # @6.2.4
 pin "@eonasdan/tempus-dominus-esm", to: "tempus-dominus/tempus-dominus.esm.js" # @6.2.4
 pin "@eonasdan/tempus-dominus/customDateFormat", to: "tempus-dominus/customDateFormat.js" # @6.2.4

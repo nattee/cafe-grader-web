@@ -45,7 +45,7 @@ class ReportController < ApplicationController
     @until_id = nil if @until_id == 0
 
     #calculate the routine
-    @scorearray = calculate_max_score(@problems, @users, @since_id, @until_id)
+    @result = calculate_max_score_2(@problems, @users, @since_id, @until_id)
 
     #this only render as turbo stream
     # see show_max_score.turbo_stream
@@ -489,6 +489,39 @@ ORDER BY submitted_at
       scorearray << ustat
     end
     return scorearray
+  end
+
+  def calculate_max_score_2(problems, users,since_id,until_id, get_last_score = false)
+    result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0 } } }
+    query = Submission.joins(:user).joins(:problem).where(user: users, problem: problems).group('users.id,problems.id')
+      .select('users.id,users.login,users.full_name')
+      .select('problems.name')
+      .select('MAX(submissions.points) as max_score')
+    query = query.where('submissions.id >= ?',since_id) if since_id && since_id > 0
+    query = query.where('submissions.id <= ?',until_id) if until_id && until_id > 0
+    query.each do |score|
+        result[:score][score.login]['id'] = score.id
+        result[:score][score.login]['full_name'] = score.full_name
+        result[:score][score.login]['prob_'+score.name] = score.max_score || 0
+        result[:stat][score.name][:sum] += score.max_score || 0
+        if score.max_score == 0
+          result[:stat][score.name][:zero] += 1
+        elsif score.max_score == 100
+          result[:stat][score.name][:full] += 1
+        else
+          result[:stat][score.name][:partial] += 1
+        end
+      end
+    # summary result
+    count = {zero: [], partial: [], full: []}
+    problems.each do |p|
+      count[:zero] << result[:stat][p.name][:zero]
+      count[:full] << result[:stat][p.name][:full]
+      count[:partial] << result[:stat][p.name][:partial]
+    end
+    result[:count] = count
+    pp result
+    return result
   end
 
   def gen_csv_from_scorearray(scorearray,problem)

@@ -28,28 +28,12 @@
             = text_field_tag 'to_id', @until_id, class: "form-control"
     .col-md-4
       = render partial: 'shared/user_select'
-
-      -#
-        .card.border-primary.mb-2
-          .card-header.text-bg-primary.border-primary
-            Users
-          .card-body
-            .form-check.mt-2.mb-3
-              = f.radio_button :users, :all, class: 'form-check-input'
-              = f.label :users_all, 'All Users'
-            .form-check.my-2
-              = f.radio_button :users, :enabled, class: 'form-check-input'
-              = f.label :users_enabled, 'Only enabled users'
-            .row.row-cols-lg-auto.align-items-center
-              .col-12
-                .form-check.form-check-inline
-                  = f.radio_button :users, :group, class: 'form-check-input'
-                  = f.label :users_group, 'Only users from this group'
-              .col-12
-                = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), id: 'group_name',class: 'select2', style: 'width: 20em';
   .row
-    .col-md-12
+    .col-md-1
       = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
+    .col-md-11
+      %div
+        %canvas#chart
 
 .mt-3
   = turbo_frame_tag "max_score_result", data: {turbo: "true"}
