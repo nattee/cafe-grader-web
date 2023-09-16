@@ -278,6 +278,7 @@ class ProblemImporter
   end
 
   def unzip_to_dir(file,name,dir)
+    Pathname.new(dir).mkdir
     pn  = Pathname.new(dir)+name
     num = 1
     while pn.exist?

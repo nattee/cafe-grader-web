@@ -22,31 +22,27 @@ class GraderConfiguration < ApplicationRecord
   GraderConfiguration.config_cache = nil
   GraderConfiguration.task_grading_info_cache = nil
 
-  def self.config_cached?
-    false
-  end
-
   def self.get(key)
-    if GraderConfiguration.config_cached?
-      if GraderConfiguration.config_cache == nil
-        self.read_config
-      end
-      return GraderConfiguration.config_cache[key]
-    else
-      return GraderConfiguration.read_one_key(key)
+    if GraderConfiguration.config_cache.nil?
+      raise "CONFIG ERROR #{key}"
     end
+
+    return GraderConfiguration.config_cache[key]
+
+
+    # old cache logic
+    # if GraderConfiguration.config_cached?
+    #   if GraderConfiguration.config_cache == nil
+    #     self.read_config
+    #   end
+    #   return GraderConfiguration.config_cache[key]
+    # else
+    #   return GraderConfiguration.read_one_key(key)
+    # end
   end
 
   def self.[](key)
     self.get(key)
-  end
-
-  def self.reload
-    self.read_config
-  end
-
-  def self.clear
-    GraderConfiguration.config_cache = nil
   end
 
   #
@@ -162,22 +158,24 @@ class GraderConfiguration < ApplicationRecord
   end
 
   def self.read_config
+    puts '-------------------------- config read -------------------------'
     GraderConfiguration.config_cache = {}
     GraderConfiguration.all.each do |conf|
       key = conf.key
       val = conf.value
       GraderConfiguration.config_cache[key] = GraderConfiguration.convert_type(val,conf.value_type)
     end
+    return GraderConfiguration.config_cache
   end
 
-  def self.read_one_key(key)
-    conf = GraderConfiguration.find_by_key(key)
-    if conf
-      return GraderConfiguration.convert_type(conf.value,conf.value_type)
-    else
-      return nil
-    end
-  end
+  #def self.read_one_key(key)
+  #  conf = GraderConfiguration.find_by_key(key)
+  #  if conf
+  #    return GraderConfiguration.convert_type(conf.value,conf.value_type)
+  #  else
+  #    return nil
+  #  end
+  #end
 
   def self.read_grading_info
     f = File.open(TASK_GRADING_INFO_FILENAME)

@@ -4,6 +4,7 @@ require "securerandom"
 class ApplicationController < ActionController::Base
   protect_from_forgery
 
+  before_action :read_grader_configuration
   before_action :current_user
   before_action :nav_announcement
   before_action :unique_visitor_id
@@ -23,6 +24,13 @@ class ApplicationController < ActionController::Base
   def current_user
     return nil unless session[:user_id]
     @current_user ||= User.find(session[:user_id])
+  end
+
+  def read_grader_configuration
+    #read all config into a hash and store at BOTH @grader_config of the controller and the class variable of GraderConfiguration
+    if @grader_configuration.nil?
+      @grader_configuration = GraderConfiguration.read_config
+    end
   end
 
   def nav_announcement

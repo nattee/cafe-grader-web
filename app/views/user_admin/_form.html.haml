@@ -1,4 +1,4 @@
-= simple_form_for(@user) do |f|
+= simple_form_for @user, url: user_admin_path(@user) do |f|
   = f.error_notification
   .mb-2
     = f.input :login, label: 'Login'
@@ -16,5 +16,5 @@
     = f.input :remark
   .mb-2
     = f.button :submit, class: 'btn btn-primary'
-    = link_to 'Cancel', user_admin_index_path, class: 'btn btn-secondary'
+    = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary'
 

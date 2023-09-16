@@ -51,27 +51,6 @@ class ReportController < ApplicationController
     # see show_max_score.turbo_stream
   end
 
-  def current_score
-    @problems = Problem.available_problems
-    if params[:group_id] && params[:users] == 'group'
-      @group = Group.find(params[:group_id])
-      @users = @group.users.where(enabled: true)
-    else
-      @users = User.includes(:contests).includes(:contest_stat).where(enabled: true)
-    end
-    @scorearray = calculate_max_score(@problems, @users,0,0,true)
-
-    #rencer accordingly
-    if params[:button] == 'download' then
-      csv = gen_csv_from_scorearray(@scorearray,@problems)
-      send_data csv, filename: 'max_score.csv'
-    else
-      #render template: 'user_admin/user_stat'
-      render 'current_score'
-    end
-  end
-
-
   def score
     if params[:commit] == 'download csv'
       @problems = Problem.all

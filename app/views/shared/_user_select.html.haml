@@ -14,4 +14,4 @@
           = radio_button_tag :users, :group, false, class: 'form-check-input'
           = label_tag :users_group, 'Only users from this group'
       .col-12
-        = select_tag "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_id]), class: 'select2', style: 'width: 20em';
+        = select_tag "group_id", options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]), class: 'select2', style: 'width: 20em';
