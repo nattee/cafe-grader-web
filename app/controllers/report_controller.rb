@@ -134,14 +134,14 @@ class ReportController < ApplicationController
 
   def submission_query
     @submissions = Submission
-      .joins(:problem).joins(:language)
+      .joins(:problem).joins(:language).joins(user: :groups).group('submissions.id')
       #.includes(:problem).includes(:user).includes(:language)
 
     case params[:users]
     when 'enabled'
       @submissions = @submissions.where(users: {enabled: true})
     when 'group'
-      @submissions = @submissions.joins(user: :groups).where(users: {groups: {id: params[:groups]}}) if params[:groups]
+      @submissions = @submissions.where(users: {groups: {id: params[:groups]}}) if params[:groups]
     end
 
     case params[:problems]
@@ -158,8 +158,8 @@ class ReportController < ApplicationController
 
     @submissions = @submissions.where(submitted_at: datetime_range).limit(100_000)
     @submissions = @submissions.select('submissions.id,points,ip_address,submitted_at,grader_comment')
-      .select('users.login')
-      .select('problems.full_name')
+      .select('users.login, users.full_name as user_full_name, users.id as user_id')
+      .select('problems.full_name, problems.name, problems.id as problem_id')
       .select('languages.pretty_name')
   end
 
