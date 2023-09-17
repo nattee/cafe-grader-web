@@ -2,11 +2,14 @@ class ProblemsController < ApplicationController
 
   include ActiveStorage::SetCurrent
 
-  before_action :admin_authorization, except: [:stat, :get_statement]
   before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement,
                                      :toggle, :toggle_test, :toggle_view_testcase, :stat,
-                                     :add_dataset,:import_testcases
+                                     :add_dataset,:import_testcases, :view_live_testcases
                                     ]
+
+  before_action :admin_authorization, except: [:stat, :get_statement]
+  before_action :check_valid_login, only: [:stat, :get_statement]
+  before_action :can_view_problem, only: [:get_statement]
   before_action only: [:stat] do
     authorization_by_roles(['admin','ta'])
   end
@@ -26,6 +29,10 @@ class ProblemsController < ApplicationController
   def add_dataset
     @dataset = @problem.datasets.create(name: @problem.get_next_dataset_name)
     render 'datasets/update'
+  end
+
+  def view_live_testcases
+    @dataset = @problem.live_dataset
   end
 
   #get statement download link
@@ -348,6 +355,10 @@ class ProblemsController < ApplicationController
 
     def description_params
       params.require(:description).permit(:body, :markdowned)
+    end
+
+    def can_view_problem
+      unauthorized_redirect unless @current_user.can_view_problem?(@problem)
     end
 
 end

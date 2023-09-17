@@ -22,7 +22,7 @@
   /= content_tag(:p,flash[:notice],class: 'alert alert-success') if flash[:notice]!=nil
   .container-fluid
     - flash.each do |msg_type, message|
-      .alert.alert-dismissible.fade.show{class: bootstrap_class_for(msg_type)}
+      .alert.alert-dismissible.my-2.fade.show{class: bootstrap_class_for(msg_type)}
         = message
         %button.btn-close{type: 'button', 'data-bs-dismiss': :alert}
     = yield

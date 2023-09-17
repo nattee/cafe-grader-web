@@ -17,7 +17,11 @@ class ApplicationController < ActionController::Base
 
   #report and redirect for unauthorized activities
   def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')
-    redirect_to login_main_path, alert: msg
+    if @current_user
+      redirect_to list_main_path, alert: msg
+    else
+      redirect_to login_main_path, alert: msg
+    end
   end
 
   # Returns the current logged-in user (if any).
@@ -62,12 +66,6 @@ class ApplicationController < ActionController::Base
     unauthorized_redirect
   end
 
-  def testcase_authorization
-    #admin always has privileged
-    return true if @current_user.admin?
-
-    unauthorized_redirect unless GraderConfiguration["right.view_testcase"]
-  end
 
   def unique_visitor_id
     unless cookies.encrypted[:uuid]

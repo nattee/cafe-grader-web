@@ -3,31 +3,31 @@
 - else
   - if local_assigns[:show_id]
     .row
-      .col-3.text-secondary
+      .col-lg-3.text-secondary
         Sub ID
-      .col-9= submission.id
+      .col-lg-9= submission.id
   - unless submission.graded_at
     .row
-      .col-3.text-secondary= t 'main.submitted_at'
-      .col-9
+      .col-lg-3.text-secondary= t 'main.submitted_at'
+      .col-lg-9
         -#= format_full_time_ago(submission.submitted_at.localtime)
         %span= time_ago_in_words(submission.submitted_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.submitted_at)})
         .text-secondary (#{1+2})
   - else
     .row
-      .col-3.text-secondary= t 'main.graded_at'
-      .col-9
+      .col-lg-3.text-secondary= t 'main.graded_at'
+      .col-lg-9
         %span= time_ago_in_words(submission.graded_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.graded_at)})
     - if GraderConfiguration['ui.show_score']
       .row
-        .col-3.text-secondary=t 'main.score'
-        .col-9
+        .col-lg-3.text-secondary=t 'main.score'
+        .col-lg-9
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points
-          %tt.grader-comment
-            = " [#{submission.grader_comment}]"
+          %span.grader-comment
+            = " [#{submission.grader_comment.split('').join("&ZeroWidthSpace;")}]".html_safe
   - if local_assigns[:show_button]
     - if submission.graded_at
       = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: 'btn btn-sm btn-info', data: {turbo: true, turbo_method: :post} }

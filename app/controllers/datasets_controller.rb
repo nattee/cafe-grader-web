@@ -4,11 +4,16 @@ class DatasetsController < ApplicationController
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge
                                       ]
-  before_action :admin_authorization, except: [:stat]
+  before_action :admin_authorization, except: [:show]
+  before_action :check_valid_login
 
   # GET /datasets/new
   def new
     @dataset = Dataset.new
+  end
+
+  def show
+
   end
 
   # GET /datasets/1/edit
@@ -101,7 +106,6 @@ class DatasetsController < ApplicationController
     p = @dataset.problem
     @dataset.destroy
     @dataset = p.datasets.first
-    
 
     respond_to do |format|
       format.html { redirect_to datasets_url, notice: "Dataset was successfully destroyed." }
@@ -121,4 +125,5 @@ class DatasetsController < ApplicationController
       params.fetch(:dataset, {})
       params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type)
     end
+
 end

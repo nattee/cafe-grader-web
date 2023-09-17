@@ -25,9 +25,9 @@
             %thead
               %tr
                 %th Task name
-                %th Full name
+                %th.all Full name
                 %th # of sub(s)
-                %th Results
+                %th.all Results
                 %th.all
             %tbody
               = render :partial => 'problem', :collection => @problems
@@ -38,11 +38,11 @@
               = "#{cp[:contest] ? cp[:contest].title : 'Public problems'}"
             %table.info
               %tr.info-head
-                %th Task name
-                %th Full name
-                %th # of sub(s)
-                %th Results
-                %th.all
+                %td Task name
+                %td Full name
+                %td # of sub(s)
+                %td Results
+                %td
               = render :partial => 'problem', :collection => cp[:problems]
   .col-lg-5
     .card

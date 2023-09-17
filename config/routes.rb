@@ -78,12 +78,13 @@ Rails.application.routes.draw do
   end
 
   resources :testcases, only: [] do
-    member do 
+    member do
       get 'download_input'
       get 'download_sol'
     end
     collection do
       get 'show_problem/:problem_id(/:test_num)' => 'testcases#show_problem', as: 'show_problem'
+      get 'download_manager/:problem_id/:mg_id', as: 'download_manager', action: 'download_manager'
     end
   end
 
