@@ -46,13 +46,19 @@ import "datatables-staterestore-bs5"
 import "select2"
 import "chart"
 
-//tempus dominus
-import { TempusDominus } from "@eonasdan/tempus-dominus"
-import * as TD from "@eonasdan/tempus-dominus-esm"
-import * as customDateFormat from '@eonasdan/tempus-dominus/customDateFormat'
-window.TD = TD
-window.TempusDominus = TempusDominus
-window.customDateFormat = customDateFormat
+
+// TempusDominus
+// -- normal --
+import "tempus-dominus-js" //this import as tempusDominus
+// -- esm --
+//import * as tempusDominus from  "tempus-dominus-esm"
+// since any of the above import does not set the window directly, I have to do it
+window.tempusDominus = tempusDominus
+
+//too lazy to use the tempusDominus namespace, just use TempusDominus directly
+window.TempusDominus = tempusDominus.TempusDominus
+
+
 
 //my own customization
 import 'custom'

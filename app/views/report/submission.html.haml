@@ -92,9 +92,10 @@
           sub_date = Object.keys(sub_count).sort()
           //history graph
           data = {
-            labels: sub_date,
+            labels: sub_date.map( (x) => { return moment(x).locale('en-uk').format('D-MMM')} ),
             datasets: [
               {
+                label: '#sub',
                 data: sub_date.map( (x) => { return sub_count[x]; }),
               },
             ]
@@ -104,7 +105,25 @@
             data: data,
             options: {
               aspectRatio: 6,
-            }
+              plugins: {
+                legend: {
+                  display: false,
+                }
+              },
+              scales: {
+                y: {
+                  title: {
+                    text: '#sub',
+                    display: true,
+                  }
+                },
+                x: {
+                  ticks: {
+                    maxRotation: 0,
+                  }
+                }
+              }
+            },
           }
           if (typeof my_chart !== 'undefined') {
             my_chart.destroy()
