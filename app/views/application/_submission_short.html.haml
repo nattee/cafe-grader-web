@@ -12,7 +12,6 @@
       .col-lg-9
         %span= time_ago_in_words(submission.submitted_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.submitted_at)})
-        .text-secondary (#{1+2})
   - else
     .row
       .col-lg-3.text-secondary= t 'main.graded_at'

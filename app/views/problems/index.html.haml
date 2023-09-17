@@ -38,7 +38,6 @@
       %td.text-end= "#{problem.dataset_count} (#{problem.tc_count})"
       %td
         - problem.tags.each do |t|
-          - #%button.btn.btn-default.btn-sm= t.name
           %span.badge.text-bg-secondary.bg-opacity-100= t.name
       %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
       %td= problem.date_added

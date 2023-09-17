@@ -96,7 +96,7 @@
           %td
             = @task.status_str if @task
             - if @current_user.admin?
-              = link_to "rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-info btn-sm'
+              = link_to "Rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-info btn-sm'
         - if @current_user.has_role?('ta')
           %tr
             %td.text-end.text-secondary

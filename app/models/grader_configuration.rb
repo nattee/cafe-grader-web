@@ -159,7 +159,6 @@ class GraderConfiguration < ApplicationRecord
   end
 
   def self.read_config
-    puts '-------------------------- config read -------------------------'
     GraderConfiguration.config_cache = {}
     GraderConfiguration.all.each do |conf|
       key = conf.key
