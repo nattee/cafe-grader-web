@@ -7,7 +7,7 @@
         From Date:
       .col-md-6
         .input-group.td-date
-          = text_field_tag :since_datetime, nil, class: 'form-control'
+          = text_field_tag :since_datetime, '1/3/2025', class: 'form-control'
           %span.input-group-text
             %span.mi event
     .row.mb-3
@@ -21,6 +21,6 @@
 
 :javascript
   $( document ).on('import-map-loaded', (e) => {
-    a = new TempusDominus(document.getElementById('since_datetime'), default_td_options );
-    b = new TempusDominus(document.getElementById('until_datetime'), default_td_options );
+    since_datetime = new TempusDominus(document.getElementById('since_datetime'), default_td_options );
+    until_datetime = new TempusDominus(document.getElementById('until_datetime'), default_td_options );
   })

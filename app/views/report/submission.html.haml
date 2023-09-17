@@ -1,21 +1,21 @@
 %h1 Submissions detail
 
 .row
-  .col-md-4
+  .col-lg-4
     = render partial: 'shared/problem_select'
-  .col-md-4
+  .col-lg-4
     = render partial: 'shared/date_filter'
-  .col-md-4
+  .col-lg-4
     = render partial: 'shared/user_select'
 
 .row.mt-3
-  .col-md-4
+  .col-lg-4
     .alert.alert-info
       %ul
         %li Display a maximum of 100,000 entries to save computation power
         %li You have to click refresh when changing the filter above
         %li From date is required, blank from date is convert to today
-  .col-md-8
+  .col-lg-8
     %canvas#chart
 
 .row

@@ -11,7 +11,7 @@
   %p=t 'main.start_soon'
 
 .row
-  .col-md-7
+  .col-lg-7
     - if GraderConfiguration.show_submitbox_to?(@user)
       .card.border-primary
         .card-header.text-bg-primary
@@ -44,7 +44,7 @@
                 %th Results
                 %th
               = render :partial => 'problem', :collection => cp[:problems]
-  .col-md-5
+  .col-lg-5
     .card
       .card-header
         Announcement

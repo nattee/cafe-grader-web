@@ -2,7 +2,7 @@
 
 = form_with url: show_max_score_report_path, data: {turbo: true} do |f|
   .row
-    .col-md-4
+    .col-lg-4
       .card.border-primary.mb-2
         .card-header.text-bg-primary.border-primary
           Problems
@@ -13,7 +13,7 @@
           = select_tag 'problem_id[]',
               options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
               { class: 'select2 form-control', multiple: "true" }
-    .col-md-4
+    .col-lg-4
       .card.border-primary.mb-2
         .card-header.text-bg-primary.border-primary
           Submission range
@@ -26,12 +26,12 @@
           .form-group
             = label_tag :from, "Max"
             = text_field_tag 'to_id', @until_id, class: "form-control"
-    .col-md-4
+    .col-lg-4
       = render partial: 'shared/user_select'
   .row
-    .col-md-1
+    .col-lg-1
       = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
-    .col-md-11
+    .col-lg-11
       %div
         %canvas#chart
 
