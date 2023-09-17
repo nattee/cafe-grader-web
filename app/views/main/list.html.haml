@@ -28,7 +28,7 @@
                 %th Full name
                 %th # of sub(s)
                 %th Results
-                %th
+                %th.all
             %tbody
               = render :partial => 'problem', :collection => @problems
       - else
@@ -42,7 +42,7 @@
                 %th Full name
                 %th # of sub(s)
                 %th Results
-                %th
+                %th.all
               = render :partial => 'problem', :collection => cp[:problems]
   .col-lg-5
     .card
