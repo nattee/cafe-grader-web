@@ -7,15 +7,6 @@
   = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info btn-sm'
   = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-secondary btn-sm'
   = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-secondary btn-sm'
-.submitbox
-  = form_tag action: 'quick_create', controller: 'problems' do
-    %b Quick New:
-    %label{:for => "problem_name"} Name
-    = text_field 'problem', 'name'
-    |
-    %label{:for => "problem_full_name"} Full name
-    = text_field 'problem', 'full_name'
-    = submit_tag "Create"
 %table.table.table-condense.table-hover
   %thead
     %th Name
@@ -60,4 +51,3 @@
       %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-sm btn-block'
       %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, :confirm => 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 %br/
-= link_to '[New problem]', :action => 'new'

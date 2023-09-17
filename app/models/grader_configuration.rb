@@ -24,7 +24,8 @@ class GraderConfiguration < ApplicationRecord
 
   def self.get(key)
     if GraderConfiguration.config_cache.nil?
-      raise "CONFIG ERROR #{key}"
+      self.read_config
+      #raise "CONFIG ERROR #{key}"
     end
 
     return GraderConfiguration.config_cache[key]

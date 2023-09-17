@@ -114,7 +114,6 @@ class Scorer
     end
 
     grading_text = build_grading_text
-    judge_log "Scoring of ##{@sub.id} completed with points = #{point} (#{grading_text})"
 
     #calculate time
     max_time = @sub.evaluations.pluck(:time).map { |x| x || 0 }.max
@@ -123,8 +122,7 @@ class Scorer
     #update result
     @sub.set_grading_complete(point,grading_text,max_time,max_mem)
 
-    # init isolate
-    # setup_isolate(@box_id)
+    judge_log "#{rb_sub(@sub)} completed with points = " + Rainbow("#{point} (#{grading_text})").color(COLOR_SCORE_RESULT)
     return default_success_result
   end
 

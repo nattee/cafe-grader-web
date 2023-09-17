@@ -5,7 +5,7 @@
     - else
       = "#{problem.name}"
   %td
-    = "#{problem.full_name}"
+    = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
 
     %br
     = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='mi mi-bs'>description</span>".html_safe, problem

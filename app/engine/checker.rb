@@ -29,16 +29,15 @@ class Checker
     prepare_testcase_directory(@sub,@testcase)
     check_for_required_file
 
-    cmd = "diff -b #{@output_file} #{@ans_file}"
+    cmd = "diff -q -b #{@output_file} #{@ans_file}"
 
-    judge_log "default diff checker cmd: #{cmd}"
     out,err,status = Open3.capture3(cmd)
 
     if (status.exitstatus == 0)
-      judge_log "checking of sub ##{@sub.id} testcase ##{@testcase.id}: 1 (correct)"
+      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: #{Rainbow('correct').color(COLOR_GRADING_CORRECT)}"
       return report_check_correct
     else
-      judge_log "checking of sub ##{@sub.id} testcase ##{@testcase.id}: 0 (wrong answer)"
+      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: #{Rainbow('wrong answer').color(COLOR_GRADING_WRONG)}"
       return report_check_wrong
     end
 

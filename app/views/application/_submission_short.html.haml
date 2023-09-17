@@ -10,7 +10,6 @@
     .row
       .col-lg-3.text-secondary= t 'main.submitted_at'
       .col-lg-9
-        -#= format_full_time_ago(submission.submitted_at.localtime)
         %span= time_ago_in_words(submission.submitted_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.submitted_at)})
         .text-secondary (#{1+2})

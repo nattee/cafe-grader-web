@@ -50,11 +50,13 @@ class Evaluator
 
   # this should be called after execute, it will runs the comparator
   def evaluate(out,meta,err)
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} checking execution result..."
     result = default_success_result("evaluation completed successfully")
     e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase)
 
     # any error?
     unless meta['status'].blank?
+      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} forced exit by isolate (#{Rainbow(meta['status']).color(COLOR_EVALUATION_FORCE_EXIT)}) #{Rainbow(err).color(COLOR_EVALUATION_FORCE_EXIT)} "
       time = meta['time'] || meta['time-wall'] || 0
       if meta['status'] == 'SG'
         e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'],result: :crash)
@@ -68,9 +70,8 @@ class Evaluator
         #other status
         e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error)
       end
-      judge_log "##{@sub.id} Testcase: #{@testcase.id} forced exit by isolate (#{meta['status']}) #{err}"
     else
-      judge_log "##{@sub.id} Testcase: #{@testcase.id} ends normally"
+      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} ends normally"
       #ends normally, runs the comparator
       checker = Checker.get_checker(@sub).new(@worker_id, @box_id)
       check_result = checker.process(@sub,@testcase)
@@ -80,6 +81,7 @@ class Evaluator
 
     #save final result
     e.set_result_text_from_result
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"
     return result;
   end
 

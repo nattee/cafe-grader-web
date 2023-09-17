@@ -23,6 +23,7 @@ class Grader
     @grader_process = GraderProcess.find_or_create_by(box_id: box_id, worker_id: worker_id)
     @grader_process.update(key: key)
     @last_job_time = Time.zone.now
+    Rainbow.enabled = true
     judge_log "Grader created with key #{key}"
   end
 
@@ -97,14 +98,14 @@ class Grader
           @job.report({status: :error,result: 'grader does not have handler for this job_type'})
         end
       rescue GraderError => ge
-        #judge_log ge,Logger::ERROR;
-        judge_log '(GraderError)' + ge.message, Logger::ERROR
+        judge_log Rainbow('(GraderError)').bg(COLOR_ERROR).color(:yellow) + ge.message, Logger::ERROR
         @job.update(status: :error) if ge.end_job
         if ge.update_submission
           s = Submission.find(ge.submission_id);
           s.set_grading_error(ge.message_for_user);
         end
       rescue => e
+        judge_log Rainbow('(ERROR)').bg(COLOR_ERROR).color(:black), Logger::ERROR
         judge_log e,Logger::ERROR;
         #reset job status to be run again
         @job.update(status: :wait)

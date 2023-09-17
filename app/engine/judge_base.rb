@@ -13,6 +13,19 @@ module JudgeBase
   ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
   ISOLATE_INPUT_PATH = 'input'
 
+  #color for Rainbow
+  COLOR_SUB = :skyblue
+  COLOR_TESTCASE = :salmon
+  COLOR_PROB = :deepink
+  COLOR_COMPILE_SUCCESS = :lawngreen
+  COLOR_COMPILE_ERROR = :deeppink
+  COLOR_EVALUATION_DONE = :yellowgreen
+  COLOR_EVALUATION_FORCE_EXIT = :orangered
+  COLOR_GRADING_CORRECT = :seagreen
+  COLOR_GRADING_WRONG = :crimson
+  COLOR_SCORE_RESULT = :orange
+  COLOR_ERROR = :darkred
+
 
 
   def initialize(worker_id,box_id)
@@ -125,7 +138,19 @@ module JudgeBase
     n.times do |i|
       judge_log "#{keyword} test " + i.to_s
     end
+  end
 
+  # -------------- coloring with rainbow ----------------
+  def rb_sub(sub)
+    Rainbow('#'+sub.id.to_s).color(COLOR_SUB)
+  end
+
+  def rb_prob(prob)
+    Rainbow(prob.id).color(COLOR_PROB)
+  end
+
+  def rb_testcase(testcase)
+    Rainbow(testcase.id).color(COLOR_TESTCASE)
   end
 
 end
