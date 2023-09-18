@@ -1,7 +1,6 @@
 = turbo_frame_tag :import_dataset_into_problem, data: {turbo: true} do
   %h4 Import testcases into this problem
   - if @errors
-    -# show errors
     .alert.alert-danger
       There are following errors
       %ul
@@ -18,7 +17,7 @@
         = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
         = f.input :input_pattern, input_html: { value: '*.in' }
         = f.input :sol_pattern, input_html: { value: '*.sol' }
-        = f.input :target, label: "Import to dataset",  collection: [['As a new dataset','new'],['Into the selected dataset','replace']], as: :radio_buttons, wrapper: :horizontal_collection, input_html: {onclick: 'update_import_target()'}
+        = f.input :target, label: "Import to dataset",  collection: [['As a new dataset','new'],['Into the selected dataset','replace']], checked: :new,  as: :radio_buttons, wrapper: :horizontal_collection, input_html: {onclick: 'update_import_target()'}
         = f.input :dataset, collection: problem.datasets, selected: problem.live_dataset, wrapper: :horizontal_select
         = f.button :submit, value: 'Import', class: 'btn-primary'
   - if @log

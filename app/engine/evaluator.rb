@@ -27,7 +27,8 @@ class Evaluator
     #run the evaluation in the isolated environment
     isolate_args = %w(-E PATH)
     isolate_args << isolate_options_by_lang(@sub.language.name)
-    isolate_args += ["-o","#{@isolate_stdout_file}",'--stderr-to-stdout']  #redirect program stdout, stderr to @isolate_stdout_file
+    isolate_args += ["-o","#{@isolate_stdout_file}"] #redirect program stdout to @isolate_stdout_file
+    isolate_atgs += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
     isolate_args += ["-i","#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) #redirect input, if needed
     isolate_args += ['-f 10000'] # allow max 10MB output
     input = {"#{@isolate_input_path}":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
