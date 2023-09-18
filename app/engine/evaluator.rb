@@ -28,7 +28,7 @@ class Evaluator
     isolate_args = %w(-E PATH)
     isolate_args << isolate_options_by_lang(@sub.language.name)
     isolate_args += ["-o","#{@isolate_stdout_file}"] #redirect program stdout to @isolate_stdout_file
-    isolate_atgs += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
+    isolate_args += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
     isolate_args += ["-i","#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) #redirect input, if needed
     isolate_args += ['-f 10000'] # allow max 10MB output
     input = {"#{@isolate_input_path}":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
@@ -38,6 +38,9 @@ class Evaluator
     out,err,status,meta = run_isolate(cmd_string,input: input, output: output, isolate_args: isolate_args,meta: meta_file,
                                   time_limit: @working_dataset.time_limit,mem_limit: @working_dataset.memory_limit,
                                   cg: isolate_need_cg_by_lang(@sub.language.name))
+
+    # also run isolate to chmod the outputfile
+    run_isolate('/usr/bin/chmod 0777 '+@isolate_stdout_file.to_s,output: output)
 
     #clean up isolate
     cleanup_isolate
