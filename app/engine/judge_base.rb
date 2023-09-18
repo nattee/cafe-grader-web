@@ -1,6 +1,6 @@
 module JudgeBase
   INPUT_FILENAME = 'input.txt'
-  StdOutFilename = 'stdout.txt'
+  STDOUT_FILENAME = 'stdout.txt'
   StdErrFilename = 'stderr.txt'
   AnsFilename = 'answer.txt'
 
@@ -12,6 +12,7 @@ module JudgeBase
   ISOLATE_SOURCE_PATH = 'source'
   ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
   ISOLATE_INPUT_PATH = 'input'
+  ISOLATE_OUTPUT_PATH = 'output'
 
   #color for Rainbow
   COLOR_SUB = :skyblue
@@ -93,6 +94,8 @@ module JudgeBase
     @isolate_source_manager_path = Pathname.new('/'+ISOLATE_SOURCE_MANAGER_PATH)
     @isolate_input_path = Pathname.new('/'+ISOLATE_INPUT_PATH)
     @isolate_input_file = @isolate_input_path + INPUT_FILENAME
+    @isolate_output_path = Pathname.new('/'+ISOLATE_OUTPUT_PATH)
+    @isolate_stdout_file = @isolate_output_path + STDOUT_FILENAME
   end
 
   # set up directory and path/filename of the testcase directory
@@ -102,7 +105,7 @@ module JudgeBase
     @prob_testcase_path = @problem_path + testcase.id.to_s
     @sub_testcase_path = @submission_path + testcase.get_name_for_dir
     @output_path = @sub_testcase_path + 'output'
-    @output_file = @output_path + StdOutFilename
+    @output_file = @output_path + STDOUT_FILENAME
     @input_path = @prob_testcase_path + 'input' #we need additional dir because we will mount this dir to the isolate
     @input_file = @input_path + INPUT_FILENAME
     @ans_file = @prob_testcase_path + AnsFilename
@@ -112,6 +115,8 @@ module JudgeBase
     @sub_testcase_path.mkpath
     @input_path.mkpath
     @output_path.mkpath
+
+    @output_path.chmod(0777)
   end
 
 

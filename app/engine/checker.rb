@@ -5,8 +5,6 @@ class Checker
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-  StdOutFilename = 'stdout.txt'
-  StdErrFilename = 'stderr.txt'
 
   # check if required files, that are, output from submttion, answer from problem
   # and any other file is there

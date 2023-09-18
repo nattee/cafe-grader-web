@@ -57,8 +57,8 @@
           %td= sub.user.full_name
           %td{data: {order: sub.submitted_at}}= time_ago_in_words(sub.submitted_at) + " ago"
           %td= sub.language.name
-          %td= sub.points
-          %td.fix-width= sub.grader_comment
+          %td.text-end= sub.points
+          %td.grader-comment= sub.grader_comment
           %td= sub.ip_address
 - else
   No submission
