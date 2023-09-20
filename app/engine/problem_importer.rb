@@ -115,7 +115,7 @@ class ProblemImporter
     # pdf
     pdf,fn = get_content_of_first_match('*.pdf')
     if pdf
-      @problem.statement.attach(io: StringIO.new(pdf),filename: fn)
+      @problem.statement.attach(io: StringIO.new(pdf),filename: fn.basename)
       @log << "Found a pdf statement [#{fn}]"
       @got << fn
     else
@@ -182,7 +182,7 @@ class ProblemImporter
     if (checker)
       @log << "Found a custom checker file [#{fn}]"
       @got << fn
-      @dataset.checker.attach(io: StringIO.new(checker),filename: fn)
+      @dataset.checker.attach(io: StringIO.new(checker),filename: fn.basename)
     end
   end
 
