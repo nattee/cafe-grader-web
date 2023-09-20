@@ -93,67 +93,6 @@ class UserAdminController < ApplicationController
     redirect_to :action => 'index'
   end
 
-  def user_stat
-    if params[:commit] == 'download csv'
-      @problems = Problem.all
-    else
-      @problems = Problem.available_problems
-    end
-    @users = User.includes(:contests, :contest_stat).where(enabled: true) 
-    @scorearray = Array.new
-    @users.each do |u|
-      ustat = Array.new
-      ustat[0] = u
-      @problems.each do |p|
-        sub = Submission.find_last_by_user_and_problem(u.id,p.id)
-        if (sub!=nil) and (sub.points!=nil) and p and p.full_score
-          ustat << [(sub.points.to_f*100/p.full_score).round, (sub.points>=p.full_score)]
-        else
-          ustat << [0,false]
-        end
-      end
-      @scorearray << ustat
-    end
-    if params[:commit] == 'download csv' then
-      csv = gen_csv_from_scorearray(@scorearray,@problems)
-      send_data csv, filename: 'last_score.csv'
-    else
-      render template: 'user_admin/user_stat'
-    end
-  end
-
-  def user_stat_max
-    if params[:commit] == 'download csv'
-      @problems = Problem.all
-    else
-      @problems = Problem.available_problems
-    end
-    @users = User.includes(:contests).includes(:contest_stat).all
-    @scorearray = Array.new
-    #set up range from param
-    since_id = params.fetch(:since_id, 0).to_i
-    until_id = params.fetch(:until_id, 0).to_i
-    @users.each do |u|
-      ustat = Array.new
-      ustat[0] = u
-      @problems.each do |p|
-        max_points = 0
-        Submission.find_in_range_by_user_and_problem(u.id,p.id,since_id,until_id).each do |sub|
-          max_points = sub.points if sub and sub.points and (sub.points > max_points)
-        end
-        ustat << [(max_points.to_f*100/p.full_score).round, (max_points>=p.full_score)]
-      end
-      @scorearray << ustat
-    end
-
-    if params[:commit] == 'download csv' then
-      csv = gen_csv_from_scorearray(@scorearray,@problems)
-      send_data csv, filename: 'max_score.csv'
-    else
-      render template: 'user_admin/user_stat'
-    end
-  end
-
   def import
     if params[:file]==''
       flash[:notice] = 'Error importing no file'

@@ -131,7 +131,6 @@ Rails.application.routes.draw do
     collection do
       match 'bulk_manage', via: [:get, :post]
       get 'bulk_mail'
-      get 'user_stat'
       get 'import'
       get 'new_list'
       get 'admin'

@@ -89,7 +89,6 @@ class Problem < ApplicationRecord
       return problem, 'Error importing'
     end
 
-    problem.full_score = 100
     problem.date_added = Time.new
     problem.test_allowed = true
     problem.output_only = false
@@ -123,7 +122,7 @@ class Problem < ApplicationRecord
     #total number of submission
     result[:total_sub] = Submission.where(problem_id: self.id).count
     result[:attempted_user] = Submission.where(problem_id: self.id).group(:user_id)
-    result[:pass] = Submission.where(problem_id: self.id).where("points >= ?",self.full_score).count
+    result[:pass] = Submission.where(problem_id: self.id).where("points >= ?",100).count
     return result
   end
 

@@ -64,7 +64,6 @@ class ProblemsController < ApplicationController
   def quick_create
     @problem = Problem.new(problem_params)
     @problem.full_name = @problem.name if @problem.full_name == ''
-    @problem.full_score = 100
     @problem.available = false
     @problem.test_allowed = true
     @problem.output_only = false
@@ -148,7 +147,7 @@ class ProblemsController < ApplicationController
     @submissions.find_each do |sub|
       d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
       @histogram[:data][d.to_i] += 1 if d < range
-      user[sub.user_id] = [user[sub.user_id], ((sub.try(:points) || 0) >= (@problem.full_score || 100)) ? 1 : 0].max
+      user[sub.user_id] = [user[sub.user_id], ((sub.try(:points) || 0) >= 100) ? 1 : 0].max
     end
     @histogram[:summary][:max] = [@histogram[:data].max,1].max
 
@@ -349,7 +348,7 @@ class ProblemsController < ApplicationController
     end
 
     def problem_params
-      params.require(:problem).permit(:name, :full_name, :full_score, :change_date_added, :date_added, :available,
+      params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available,
                                       :test_allowed, :output_only, :url, :description, :statement, :description, tag_ids:[])
     end
 

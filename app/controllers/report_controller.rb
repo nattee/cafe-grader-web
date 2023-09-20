@@ -51,36 +51,6 @@ class ReportController < ApplicationController
     # see show_max_score.turbo_stream
   end
 
-  def score
-    if params[:commit] == 'download csv'
-      @problems = Problem.all
-    else
-      @problems = Problem.available_problems
-    end
-    @users = User.includes(:contests, :contest_stat).where(enabled: true) 
-    @scorearray = Array.new
-    @users.each do |u|
-      ustat = Array.new
-      ustat[0] = u
-      @problems.each do |p|
-        sub = Submission.find_last_by_user_and_problem(u.id,p.id)
-        if (sub!=nil) and (sub.points!=nil) and p and p.full_score
-          ustat << [(sub.points.to_f*100/p.full_score).round, (sub.points>=p.full_score)]
-        else
-          ustat << [0,false]
-        end
-      end
-      @scorearray << ustat
-    end
-    if params[:commit] == 'download csv' then
-      csv = gen_csv_from_scorearray(@scorearray,@problems)
-      send_data csv, filename: 'last_score.csv'
-    else
-      render template: 'user_admin/user_stat'
-    end
-
-  end
-
   def login
   end
 
@@ -202,12 +172,12 @@ class ReportController < ApplicationController
 
       next unless sub.points
       @summary[:count] += 1
-      user[sub.user_id] = [user[sub.user_id], (sub.points >= @problem.full_score) ? 1 : 0].max
+      user[sub.user_id] = [user[sub.user_id], (sub.points >= 100) ? 1 : 0].max
 
       #lang = Language.find_by_id(sub.language_id)
       lang = sub.language
       next unless lang
-      next unless sub.points >= @problem.full_score
+      next unless sub.points >= 100
 
       #initialize
       unless @by_lang.has_key?(lang.pretty_name)
@@ -292,7 +262,7 @@ class ReportController < ApplicationController
         solve = false
         tries = 0
       end
-      if sub.points >= sub.problem.full_score
+      if sub.points >= 100
         solve = true
       else
         tries += 1

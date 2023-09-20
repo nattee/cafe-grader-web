@@ -102,6 +102,6 @@
           %td= link_to( l[:login], stat_user_path(l.user_id))
           %td= l[:full_name]
           %td= l[:id] == -1 ? "" : l.problem.name
-          %td.text-right= l[:id] == -1 ? "" : l.points * 100/ l.problem.full_score
+          %td.text-right= l[:id] == -1 ? "" : l.points
 
 

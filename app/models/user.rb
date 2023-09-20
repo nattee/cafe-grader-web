@@ -246,7 +246,7 @@ class User < ApplicationRecord
     available_problems.each do |p|
       u = self
       sub = Submission.find_last_by_user_and_problem(u.id,p.id)
-      return false if !p or !sub or sub.points < p.full_score
+      return false if !p || !sub || sub.points < 100
     end
     return true
   end

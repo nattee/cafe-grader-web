@@ -78,7 +78,7 @@
             %tr
               %th name
               %th Full name
-              %th Full score
+              %th #Dataset
               %th= link_to 'Remove All', remove_all_problem_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL PROBLEMS from group?" }, class: 'btn btn-danger btn-sm'
 
           %tbody
@@ -86,7 +86,7 @@
               %tr
                 %td= problem.name
                 %td= problem.full_name
-                %td= problem.full_score
+                %td= problem.datasets.count
                 %td= link_to 'Remove', remove_problem_group_path(@group,problem), :method => :delete, :data => { :confirm => "Remove #{problem.full_name}?" }, class: 'btn btn-danger btn-sm'
 
 

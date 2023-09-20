@@ -239,7 +239,7 @@ class MainController < ApplicationController
       grading_info = GraderConfiguration.task_grading_info[submission.problem.name]
     else
       # guess task info from problem.full_score
-      cases = submission.problem.full_score / 10
+      cases = submission.problem.live_dataset.testcases.count
       grading_info = {
         'testruns' => cases, 
         'testcases' => cases
