@@ -11,6 +11,7 @@
           = form.input :available, wrapper: :horizontal_boolean
           = form.input :test_allowed, wrapper: :horizontal_boolean
           = form.input :output_only, wrapper: :horizontal_boolean
+          = form.input :compilation_type, collection: Problem.compilation_types.keys, wrapper: :horizontal_select
           %h4 Statements
           = form.input :statement, wrapper: :horizontal_file
           .row
@@ -25,6 +26,7 @@
           = form.input :markdown, wrapper: :horizontal_boolean
           = form.input :url
           = form.button :submit, class: 'btn btn-primary'
+          = link_to 'Back', problems_path, class: 'btn btn-outline-secondary mx-2'
   .col-md-7
     .card
       .card-body

@@ -10,7 +10,6 @@
       %th Public
       %th
       %th
-      %th
 
   %tbody
     - @tags.each do |tag|
@@ -18,7 +17,6 @@
         %td= tag.name
         %td= tag.description
         %td= tag.public
-        %td= link_to 'Show', tag, class: 'btn btn-info'
         %td= link_to 'Edit', edit_tag_path(tag), class: 'btn btn-info'
         %td= button_to 'Destroy', tag, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger'
 

@@ -1,8 +1,7 @@
 .row
   .col-auto
-    %h2 Problem #{@problem.id}
+    %h2 Edit Problem #{@problem.id}
   .col
-    = link_to 'back', problems_path, class: 'btn btn-secondary'
 
 = render 'form', problem: @problem
 = render 'shared/msg_modal'

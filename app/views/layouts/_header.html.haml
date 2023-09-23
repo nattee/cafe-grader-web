@@ -35,7 +35,8 @@
           - if (@current_user!=nil) and (session[:admin])
             / management
             %li.nav-item.dropdown.mx-2
-              %a.nav-link.dropdown-toggle.active-with-children{href: '#', 'data-bs': {toggle:'dropdown'}, aria: {haspopup:"true", expanded:"false"}, role: "button"}
+              %a.nav-link.dropdown-toggle.active-with-children{href: '#', 
+                'data-bs': {toggle:'dropdown'}, aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Manage
               %ul.dropdown-menu
                 %li= link_to 'Announcements', announcements_path, class: 'dropdown-item'+active_class_when(controller: :announcements)
@@ -65,6 +66,11 @@
               =link_to "#{ungraded} backlogs!",
                 graders_list_path,
                 class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
+            = form_with url: view_submissions_path do |f|
+              .input-group.mx-2
+                %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}
+                %button#view_sub.btn.btn-secondary{type: :button, onclick: "go_to_sub();"} View
+
           / announcement
           - @nav_announcement.each do |ann|
             %p.navbar-text
@@ -85,8 +91,17 @@
               %span.mi.mi-bs.md-18 exit_to_app
               = @current_user.full_name
 :javascript
-  $('.active-with-children').each( (index,obj) => { 
-    if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
-      $(obj).addClass('active')
+  $(document).on('import-map-loaded',(e) => {
+    $('.active-with-children').each( (index,obj) => { 
+      if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
+        $(obj).addClass('active')
+      }
+    } )
+
+  });
+  function go_to_sub() {
+    sub_num = $('#view_sub_num').val();
+    if (!isNaN(sub_num) && !isNaN(parseFloat(sub_num))) {
+      window.location.href = "#{submission_path(-1234)}".replace('-1234',parseInt(sub_num))
     }
-  } )
+  }

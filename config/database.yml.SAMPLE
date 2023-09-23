@@ -1,21 +1,26 @@
 shared:
-  pool: 5
   adapter: mysql2
   encoding: utf8
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   host: localhost
   socket: /var/run/mysqld/mysqld.sock
 
-development:
+user_pass: &user_pass
   username: grader
   password: grader
+
+development:
+  <<: [*user_pass]
   database: grader
+
+# Warning: The database defined as "test" will be erased and
+# re-generated from your development database when you run "rake".
+# Do not set this db to the same as development or production.
+test:
+  <<: [*user_pass]
+  database: grader_test
 
 production:
-  username: grader
-  password: grader
+  <<: [*user_pass]
   database: grader
 
-test:
-  database: grader_test
-  username: grader
-  password: grader

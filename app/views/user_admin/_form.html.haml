@@ -1,20 +1,12 @@
 = simple_form_for @user, url: user_admin_path(@user) do |f|
   = f.error_notification
-  .mb-2
-    = f.input :login, label: 'Login'
-  .mb-2
-    = f.input :full_name, label: 'Full name'
-  .mb-2
-    = f.input :password
-  .mb-2
-    = f.input :password_confirmation
-  .mb-2
-    = f.input :email
-  .mb-2
-    = f.input :alias
-  .mb-2
-    = f.input :remark
-  .mb-2
-    = f.button :submit, class: 'btn btn-primary'
-    = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary'
+  = f.input :login, label: 'Login'
+  = f.input :full_name, label: 'Full name'
+  = f.input :password
+  = f.input :password_confirmation
+  = f.input :email
+  = f.input :alias
+  = f.input :remark
+  = f.button :submit, class: 'btn btn-primary'
+  = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
 

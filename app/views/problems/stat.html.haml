@@ -16,22 +16,26 @@
     .card
       .card-body
         %h2.card-title General Info
-        .row
+        .row.my-2
           .col-sm-6
             Name
           .col-sm-6
             = @problem.full_name
             = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='glyphicon glyphicon-file'></span>".html_safe, @problem
-        .row
+        .row.my-2
           .col-sm-6
             Subs
           .col-sm-6
             = @submissions.count
-        .row
+        .row.my-2
           .col-sm-6
             Solved/Attempted User
           .col-sm-6
             #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
+        .row.my-2
+          .col-sm-6
+          .col-sm-6
+            = link_to 'Edit', edit_problem_path(@problem), class: 'btn btn-outline-primary'
 
 %h2 Submissions
 - if @submissions and @submissions.count > 0

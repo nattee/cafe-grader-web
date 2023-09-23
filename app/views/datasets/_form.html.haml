@@ -11,7 +11,7 @@
           %label.form-check-label Select a dataset to view
       .col
         = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(ds), wrapper: :inline_form do |f|
-          = f.input :dsid, collection: ds.problem.datasets, selected: ds.id, input_html: {class: 'form-select-sm form-select', onchange: 'ds_change()'}, wrapper: :inline_form
+          = f.input :dsid, collection: ds.problem.datasets.reload, selected: ds.id, input_html: {class: 'form-select-sm form-select', onchange: 'ds_change()'}, wrapper: :inline_form
       .col
         .form-check
           %label.form-check-label Action

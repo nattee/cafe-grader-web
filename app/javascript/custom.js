@@ -77,6 +77,19 @@ $(function() {
     theme: "bootstrap-5",
   });
 
+  //make select2 focus on search box
+  //see https://stackoverflow.com/questions/25882999/set-focus-to-search-text-field-when-we-click-on-select-2-drop-down
+  $(document).on('select2:open', (e) => {
+    const selectId = e.target.id
+
+    $(".select2-search__field[aria-controls='select2-" + selectId + "-results']").each(function (
+        key,
+        value,
+    ){
+        value.focus();
+    })
+  })
+
   $('.btn-file :file').on('fileselect', function(event, numFiles, label) {
     var input, log;
     input = $(this).parents('.input-group').find(':text');
@@ -89,6 +102,7 @@ $(function() {
       }
     }
   });
+
   $('.ajax-toggle').on('click', function(event) {
     var target;
     target = $(event.target);
@@ -97,6 +111,7 @@ $(function() {
     target.addClass('btn-warning');
     target.text('...');
   });
+
   if ($("#editor").length > 0) {
     e = ace.edit("editor");
     e.setTheme('ace/theme/merbivore');

@@ -1,25 +1,26 @@
-.row.mb-3
-  .col-md-6
-    %h1 Editing Group members and problems
-.row.mb-3
-  .col-md-6
-    %b Name:
-    = @group.name
-.row.mb-3
-  .col-md-6
-    %b Description:
-    = @group.description
-.row.mb-3
-  .col-md-6
-    = link_to 'Edit', edit_group_path(@group), class: 'btn btn-primary'
+%h1 Editing Group members and problems
+.card
+  .card-body
+    %h4 Group details
+    .row.mb-3
+      .col-md-6
+        %b Name:
+        = @group.name
+    .row.mb-3
+      .col-md-6
+        %b Description:
+        = @group.description
+    .row.mb-3
+      .col-md-6
+        = link_to 'Edit', edit_group_path(@group), class: 'btn btn-primary'
+        = link_to 'Back', groups_path, class: 'btn btn-outline-secondary mx-2'
 .row.mb-3
   .col-md-12
-    %h1 Group details
 .row
   .col-md-6
     .card
       .card-header
-        Users in this group
+        Users of this group
       .card-body
         %ul
           %li
@@ -56,7 +57,7 @@
   .col-md-6
     .card
       .card-header
-        Problems
+        Problems of this group
       .card-body
         %ul
           %li
@@ -71,8 +72,6 @@
               =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', style: 'width: 25em';
             .col-auto
               =submit_tag "Add",class: 'btn btn-primary'
-
-
         %table.table.table-hover
           %thead
             %tr

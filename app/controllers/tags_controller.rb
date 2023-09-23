@@ -34,7 +34,7 @@ class TagsController < ApplicationController
   # PATCH/PUT /tags/1
   def update
     if @tag.update(tag_params)
-      redirect_to @tag, notice: 'Tag was successfully updated.'
+      redirect_to tags_path, notice: "Tag #{@tag.name} was successfully updated."
     else
       render :edit
     end

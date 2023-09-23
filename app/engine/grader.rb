@@ -45,7 +45,12 @@ class Grader
 
     #add next jobs
     if result[:compile_result] == :success
-      Job.add_evaluation_jobs(sub,dataset,@job.id)
+      if dataset.testcases.count > 0
+        Job.add_evaluation_jobs(sub,dataset,@job.id)
+      else
+        #no testcase
+        sub.update(status: :done,points: 0, grader_comment: 'No testcase',graded_at: Time.zone.now)
+      end
     end
   end
 
@@ -223,7 +228,10 @@ class Grader
 
 
   # for testing and migrate
-  def self.restart(num=1)
+  def self.restart(num=-1)
+    if num == -1
+      num = GraderProcess.where(worker_id: Rails.configuration.worker[:worker_id],enabled: true).pluck('MAX(box_id)').first || 1
+    end
     make_enabled(0)
     watchdog;
     sleep(1);

@@ -1,4 +1,5 @@
-= render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_submissions_path}
+.my-2
+  = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_submissions_path}
 
 - if @problem!=nil
   %h2= "Task: #{@problem.full_name} (#{@problem.name})"

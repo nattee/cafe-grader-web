@@ -277,6 +277,7 @@ class ProblemsController < ApplicationController
     @log = pi.log
     @problem = pi.problem
     @dataset = pi.dataset
+    @problem.datasets.reload
   end
 
 
@@ -348,7 +349,7 @@ class ProblemsController < ApplicationController
     end
 
     def problem_params
-      params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available,
+      params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
                                       :test_allowed, :output_only, :url, :description, :statement, :description, tag_ids:[])
     end
 
