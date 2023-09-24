@@ -5,17 +5,12 @@ shared:
   host: localhost
   socket: /var/run/mysqld/mysqld.sock
 
+#change this to your setting
 user_pass: &user_pass
   username: grader
   password: grader
 
-development:
-  <<: [*user_pass]
-  database: grader
 
-# Warning: The database defined as "test" will be erased and
-# re-generated from your development database when you run "rake".
-# Do not set this db to the same as development or production.
 test:
   <<: [*user_pass]
   database: grader_test
@@ -24,3 +19,6 @@ production:
   <<: [*user_pass]
   database: grader
 
+development:
+  <<: [*user_pass]
+  database: grader

@@ -25,7 +25,7 @@ shared:
 
   #hosts
   hosts:
-    web: http://127.0.0.1:3000
+    web: http://grader.example.com
 
 development:
   server_key: c2f7966dee
@@ -33,5 +33,6 @@ development:
   worker_passcode: aa0429lljka429ukljh3904i2ljk1kj
 
 production:
+  server_key: c2f7966dee
   worker_id: 1
   worker_passcode: aa0429lljka429ukljh3904i2ljk1kj
