@@ -39,3 +39,5 @@
 
 /.byebug_history
 /storage/*
+
+/config/master.key

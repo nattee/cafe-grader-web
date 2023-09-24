@@ -11,7 +11,7 @@
           = form.input :available, wrapper: :horizontal_boolean
           = form.input :test_allowed, wrapper: :horizontal_boolean
           = form.input :output_only, wrapper: :horizontal_boolean
-          = form.input :compilation_type, collection: Problem.compilation_types.keys, wrapper: :horizontal_select
+          = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
           %h4 Statements
           = form.input :statement, wrapper: :horizontal_file
           .row

@@ -72,6 +72,7 @@ class ApplicationController < ActionController::Base
       value = SecureRandom.uuid
       cookies.encrypted[:uuid] = { value: value, expires: 20.year }
     end
+    return cookies.encrypted[:uuid]
   end
 
   protected
@@ -130,14 +131,15 @@ class ApplicationController < ActionController::Base
   def authenticate_by_ip_address
     #this assume that we have already authenticate normally
     unless GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY]
+      visitor_id = unique_visitor_id
       user = User.find(session[:user_id])
-      if (!user.admin? && user.last_ip && user.last_ip != request.remote_ip)
-        flash[:notice] = "You cannot use the system from #{request.remote_ip}. Your last ip is #{user.last_ip}"
-        redirect_to :controller => 'main', :action => 'login'
+      if (!user.admin? && user.last_ip && user.last_ip != visitor_id)
+        #flash[:notice] = "You cannot use the system from #{request.remote_ip}. Your last ip is #{user.last_ip}"
+        redirect_to login_main_path, alert: "You cannot login from two different places"
         return false
       end
       unless user.last_ip
-        user.last_ip = request.remote_ip
+        user.last_ip = visitor_id
         user.save
       end
     end

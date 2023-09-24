@@ -31,7 +31,7 @@
         = f.input :name
         = f.input :time_limit
         = f.input :memory_limit
-        = f.input :score_type, collection: Dataset.score_types.keys, wrapper: :horizontal_select_half
+        = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], wrapper: :horizontal_select_half
         = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, wrapper: :horizontal_select_half
         = f.button :submit, class: 'btn-primary'
     .col-md-6
