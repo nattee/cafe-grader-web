@@ -52,6 +52,8 @@ module JudgeBase
       '-p -d /etc/alternatives'
     when 'digital'
       "-p -d /etc -d /tmp:rw -d /my_lib=#{Pathname.new(Rails.configuration.worker[:compiler][:digital]).dirname}"
+    when 'rust'
+      '-p -d /etc/alternatives'
     else
       ''
     end

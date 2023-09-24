@@ -188,6 +188,8 @@ class Compiler
       return Compiler::Java
     when 'digital'
       return Compiler::Digital
+    when 'rust'
+      return Compiler::Rust
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)
