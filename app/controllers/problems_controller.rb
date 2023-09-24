@@ -246,6 +246,8 @@ class ProblemsController < ApplicationController
       @errors = ['There is no uploaded file']
       return
     end
+
+    replacing = params[:import][:target] == 'replace'
     uploaded_file_path = params[:import][:file].to_path
 
     pi = ProblemImporter.new
@@ -261,7 +263,10 @@ class ProblemsController < ApplicationController
       render :import and return
     end
 
-    @dataset = @problem.datasets.where(id: params[:import][:dataset]).first if params[:import][:target] == 'replace'
+    if replacing
+      @dataset = @problem.datasets.where(id: params[:import][:dataset]).first
+      WorkerDataset.where(dataset_id: @dataset).delete_all
+    end
 
     # load data
     pi.import_dataset_from_dir( extracted_path, @problem.name,

@@ -1,10 +1,10 @@
 = turbo_frame_tag :dataset_update, data: {turbo: true} do
-  %div.mb-2
+  %div.mb-3
   - if local_assigns[:updated]
     .alert.alert-info.alert-dismissible
       = updated
       %button.btn-close{data: {'bs-dismiss': :alert}}
-  .alert.alert-info
+  .alert.alert-secondary
     .row.row-cols-lg-auto.g-3.align-items-center
       .col
         .form-check

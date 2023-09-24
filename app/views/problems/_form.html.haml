@@ -37,11 +37,11 @@
           %li.nav-item
             %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#upload"}}} Import
         .tab-content
-          %div#dataset.tab-pane.fade.show.active.mb-2
-            %div.mb-2
+          %div#dataset.tab-pane.fade.show.active
+            %div.mb-3
             = render partial: "datasets/form", locals: {ds: @problem.live_dataset}
           %div#upload.tab-pane.fade
-            %div.mb-2
+            %div.mb-3
             = render partial: "ds_import", locals: {problem: @problem}
 :javascript
   $(document).on('import-map-loaded',function(e) {

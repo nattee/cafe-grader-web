@@ -1,17 +1,15 @@
 - content_for :head do
   = stylesheet_link_tag 'problems'
 
-%h1 Import problems: successful
+%h1 Import problems result
 
 %p
   %b Problem:
   = "#{@problem.full_name} (#{@problem.name})"
-  %br/
-  = "Note that the full score has been set to #{@problem.full_score}."
 
 %p
-  = link_to '[Back to problem list]', problems_path
-  = link_to '[Import other problems]', :action => 'import'
+  = link_to '[Back to problem list]', problems_path, class: 'btn btn-outline-secondary'
+  = link_to '[Import other problems]', :action => 'import', class: 'btn btn-outline-secondary'
 
 %h3 Import log
 %pre.import-log

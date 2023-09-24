@@ -11,7 +11,7 @@ class ProblemImporter
   end
 
   def read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
-    # glob testcase
+    # glob testcase filename and build hash of key: testcase codename, value: {input: input_file, output: output_file}
     @tc = Hash.new { |h,k| h[k] = Hash.new }
     Dir["#{@base_dir}/**/#{input_pattern}"].each do |fn|
       input_fn = Pathname.new(@base_dir) + fn
@@ -54,7 +54,6 @@ class ProblemImporter
     # load into dataset and testcase
     num = @dataset.testcases.count + 1
     group = 1
-    #group_hash = Hash.new { |h,k| h[k] = [] }
     group_hash = {}
 
     # we sort the filename by their natural sort order
@@ -64,7 +63,7 @@ class ProblemImporter
         # we found both the input and sol
         # the codename is the key of the hash
 
-        #parse group_name
+        #parse group_name and build group number
         group_name = group_hash.count + 1
         mg = @tc[k][:input].basename.to_s.match group_name_regex
         group_name = mg[1] if mg # if match, we will use the captured pattern
@@ -80,6 +79,7 @@ class ProblemImporter
         new_tc = @dataset.testcases.where(code_name: k).first
         if new_tc
           @log << "replace existing testcase with codename #{k} (num and group are #{new_tc.num} #{new_tc.group})"
+          new_tc.weight = 1
         else
           @log << "add a testcase #{num} with codename #{k} and group #{group}"
           new_tc = Testcase.new(code_name: k, num: num, group: group,weight: 1,group_name: group_name)
