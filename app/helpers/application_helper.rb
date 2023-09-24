@@ -134,6 +134,8 @@ module ApplicationHelper
         'ace/mode/python'
       when 'Java'
         'ace/mode/java'
+      when 'Rust'
+        'ace/mode/rust'
       else
         'ace/mode/c_cpp'
     end
