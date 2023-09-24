@@ -138,14 +138,23 @@ class Compiler
       basename = mng.filename.base + mng.filename.extension_with_delimiter
       dest = @manager_path + basename
 
-      mng.open do |tmpfile|
-        FileUtils.move(tmpfile,dest)
-        FileUtils.chmod(0666,dest)
+      #download from server
+      uri = URI(Rails.configuration.worker[:hosts][:web]+worker_get_manager_path(@working_dataset,mng.id))
+      hostname = uri.hostname
+      port = uri.port
+      req = Net::HTTP::Get.new(uri)
+      Net::HTTP.start(hostname,port) do |http|
+        resp = http.request(req)
+        if resp.kind_of?(Net::HTTPSuccess)
+          File.open(dest.to_s,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
+          FileUtils.chmod(0666,dest)
+          judge_log "Download manager #{basename} from the server success"
+        else
+          judge_log "Error downloading #{basename} from the server"
+          #raise the exception
+          resp.value
+        end
       end
-      # should we d/b as block??
-      #File.open(dest,"w") do |fn|
-      #  mng.open { |block| fn.write block }
-      #end
     end
   end
 

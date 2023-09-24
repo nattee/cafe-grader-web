@@ -14,7 +14,12 @@ class WorkerController < ApplicationController
     sub = Submission.find(params[:sub_id])
     compiled_file = sub.compiled_files.find(params[:attach_id])
     send_data compiled_file.download, :filename => compiled_file.filename.to_s, :type => 'application/octet-stream'
+  end
 
+  def get_manager
+    dataset = Dataset.find(params[:ds_id])
+    file = dataset.managers.find(params[:manager_id])
+    send_data file.download, :filename => file.filename.to_s, :type => 'application/octet-stream'
   end
 
 

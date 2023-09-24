@@ -94,7 +94,7 @@
           %td.text-end.text-secondary
             Grading Task Status
           %td
-            = @task.status_str if @task
+            = @submission.status
             - if @current_user.admin?
               = link_to "Rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-info btn-sm'
         - if @current_user.has_role?('ta')
@@ -114,6 +114,27 @@
                 No
                 - if @current_user.has_role?('ta')
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
-
+      - if @submission.evaluations.count > 0
+        %h2 Evaluations
+        %table.table
+          %thead
+            %tr
+              %th.text-end Num
+              %th.text-end Group
+              %th.text-end Weight
+              %th.text-end Time (s)
+              %th.text-end Memory (MB)
+              %th Result
+              %th.text-end Score
+          %tbody
+            - @submission.evaluations.each do |ev|
+              %tr
+                %td.text-end= ev.testcase.num
+                %td.text-end= ev.testcase.group
+                %td.text-end= ev.testcase.weight
+                %td.text-end= ev.time / 1000.0
+                %td.text-end= ev.memory / 1024.0
+                %td= ev.result_text
+                %td.text-end= ev.score
 
 = render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission.compiler_message}
