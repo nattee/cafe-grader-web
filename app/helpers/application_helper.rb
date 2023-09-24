@@ -136,6 +136,8 @@ module ApplicationHelper
         'ace/mode/java'
       when 'Rust'
         'ace/mode/rust'
+      when 'Go'
+        'ace/mode/golang'
       else
         'ace/mode/c_cpp'
     end
