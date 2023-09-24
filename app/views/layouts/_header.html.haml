@@ -66,7 +66,7 @@
               =link_to "#{ungraded} backlogs!",
                 graders_list_path,
                 class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
-            = form_with url: view_submissions_path do |f|
+            = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
               .input-group.mx-2
                 %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}
                 %button#view_sub.btn.btn-secondary{type: :button, onclick: "go_to_sub();"} View
@@ -99,9 +99,17 @@
     } )
 
   });
+
   function go_to_sub() {
     sub_num = $('#view_sub_num').val();
     if (!isNaN(sub_num) && !isNaN(parseFloat(sub_num))) {
       window.location.href = "#{submission_path(-1234)}".replace('-1234',parseInt(sub_num))
     }
   }
+
+  //make view sub form use go_to_sub()
+  $("#view_sub_form").on('submit',function(e){
+      e.preventDefault();
+      go_to_sub();
+  });
+

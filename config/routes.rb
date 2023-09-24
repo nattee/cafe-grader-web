@@ -204,6 +204,7 @@ Rails.application.routes.draw do
 
   namespace :worker do
     post 'compiled_submission/:id', action: :compiled_submission, as: :compiled_submission
+    get 'get_compiled_submission/:sub_id/:attach_id', action: :get_compiled_submission, as: :get_compiled_submission
   end
 
   get 'heartbeat/:id/edit' => 'heartbeat#edit'

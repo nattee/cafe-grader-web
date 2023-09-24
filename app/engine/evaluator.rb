@@ -1,3 +1,5 @@
+require 'net/http'
+
 class Evaluator
   include IsolateRunner
   include JudgeBase
@@ -96,12 +98,33 @@ class Evaluator
     @mybin_path = @bin_path + @box_id.to_s
     @mybin_path.mkpath
 
+    # download each compiled files
     @sub.compiled_files.each do |attachment|
       filename = @mybin_path + attachment.filename.to_s
-      unless filename.exist?
-        File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} } 
-        judge_log "Downloaded executable #{filename}"
+
+      #download from server
+      uri = URI(Rails.configuration.worker[:hosts][:web]+worker_get_compiled_submission_path(@sub,attachment.id))
+      hostname = uri.hostname
+      port = uri.port
+      req = Net::HTTP::Get.new(uri)
+      Net::HTTP.start(hostname,port) do |http|
+        resp = http.request(req)
+        if resp.kind_of?(Net::HTTPSuccess)
+          File.open(filename,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
+          judge_log "Download executable #{filename} from the server"
+        else
+          judge_log "Error downloading #{filename} from the server"
+          #raise the exception
+          resp.value
+        end
       end
+
+
+      # filename = @mybin_path + attachment.filename.to_s
+      # unless filename.exist?
+      #   File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} } 
+      #   judge_log "Downloaded executable #{filename}"
+      # end
       FileUtils.chmod('a+x',filename)
     end
   end

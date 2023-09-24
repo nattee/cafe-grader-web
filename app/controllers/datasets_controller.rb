@@ -95,7 +95,7 @@ class DatasetsController < ApplicationController
   end
 
   def rejudge
-    @dataset.problem.submissions.limit(3).each do |sub|
+    @dataset.problem.submissions.each do |sub|
       sub.add_judge_job(@dataset)
     end
 

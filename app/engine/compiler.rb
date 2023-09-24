@@ -164,6 +164,7 @@ class Compiler
       judge_log "Bundling compiled files #{fn}"
     end
 
+    # upload compiled files to server
     req.set_form files, 'multipart/form-data'
     res = Net::HTTP.start(hostname,port) do |http|
       http.request(req)
