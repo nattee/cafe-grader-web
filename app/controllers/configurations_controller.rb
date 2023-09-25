@@ -16,16 +16,8 @@ class ConfigurationsController < ApplicationController
     redirect_to :action => 'index'
   end
 
-  def update
-    User.clear_last_login if @config.key == GraderConfiguration::MULTIPLE_IP_LOGIN_KEY and @config.value == 'true' and params[:grader_configuration][:value] == 'false'
-    respond_to do |format|
-      if @config.update(configuration_params)
-        format.json { head :ok }
-        format.turbo_stream
-      else
-        format.json { respond_with_bip(@config) }
-      end
-    end
+  def clear_user_ip
+    User.clear_last_login
   end
 
   def toggle

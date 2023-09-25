@@ -294,7 +294,7 @@ class User < ApplicationRecord
   end
 
   def self.clear_last_login
-    User.update_all(:last_ip => nil)
+    User.update_all(last_ip: nil)
   end
 
   def get_jschart_user_sub_history

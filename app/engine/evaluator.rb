@@ -42,7 +42,7 @@ class Evaluator
                                   cg: isolate_need_cg_by_lang(@sub.language.name))
 
     # also run isolate to chmod the outputfile
-    run_isolate('/usr/bin/chmod 0777 '+@isolate_stdout_file.to_s,output: output)
+    run_isolate('/usr/bin/chmod 0777 '+@isolate_stdout_file.to_s,output: output, meta: nil)
 
     #clean up isolate
     cleanup_isolate
@@ -70,7 +70,7 @@ class Evaluator
       if meta['status'] == 'SG'
         e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'],result: :crash)
       elsif meta['status'] == 'TO'
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
+        e.update(time: meta['time-wall'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
       elsif meta['status'] == 'RE'
         e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash)
       elsif meta['status'] == 'XX'

@@ -36,6 +36,7 @@
 
 /config/secrets.yml
 /config/worker.yml
+/config/credentials.yml.enc
 
 /.byebug_history
 /storage/*

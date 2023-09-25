@@ -119,22 +119,22 @@
         %table.table
           %thead
             %tr
-              %th.text-end Num
+              %th.text-end ID
               %th.text-end Group
-              %th.text-end Weight
               %th.text-end Time (s)
               %th.text-end Memory (MB)
               %th Result
               %th.text-end Score
+              %th.text-end Weight
           %tbody
-            - @submission.evaluations.each do |ev|
+            - @evaluations.each do |ev|
               %tr
-                %td.text-end= ev.testcase.num
-                %td.text-end= ev.testcase.group
-                %td.text-end= ev.testcase.weight
+                %td.text-end= ev.num
+                %td.text-end= ev.group_name
                 %td.text-end= ev.time / 1000.0
-                %td.text-end= ev.memory / 1024.0
+                %td.text-end= number_with_precision ev.memory / 1024.0, precision: 2
                 %td= ev.result_text
-                %td.text-end= ev.score
+                %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
+                %td.text-end= ev.weight
 
 = render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission.compiler_message}

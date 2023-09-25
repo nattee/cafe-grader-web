@@ -26,7 +26,7 @@ module IsolateRunner
     limit_arg = "-t #{time_limit} -x #{wall_limit} #{cg ? '--cg-mem' : '-m'} #{mem_limit * 1024}"
     all_arg  = "#{limit_arg} #{dir_args.join ' '} #{isolate_args.join ' '}"
 
-    cmd = "#{@isolate_cmd} #{'--cg' if cg} --run -b #{@box_id} --meta=#{meta} #{all_arg} -- #{prog}"
+    cmd = "#{@isolate_cmd} #{'--cg' if cg} --run -b #{@box_id} #{"--meta=#{meta}" if meta} #{all_arg} -- #{prog}"
     judge_log("ISOLATE run command: #{cmd}", Logger::DEBUG)
     out,err,status = Open3.capture3(cmd)
     judge_log("ISOLATE run completed: status #{status}, stdout size = #{out.length}", Logger::DEBUG)
@@ -44,6 +44,7 @@ module IsolateRunner
   # return a hash
   def parse_meta(filename)
     result = Hash.new
+    return result unless filename
     File.open(filename,'r').each do |line|
       a,b = line.split(':')
       case a

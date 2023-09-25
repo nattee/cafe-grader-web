@@ -91,6 +91,7 @@ Rails.application.routes.draw do
   resources :grader_configuration, controller: 'configurations' do
     collection do
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
+      post 'clear_user_ip'
     end
     member do
       patch 'toggle'

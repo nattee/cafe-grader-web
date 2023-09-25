@@ -32,7 +32,10 @@ class SubmissionsController < ApplicationController
     user = User.find(session[:user_id])
     SubmissionViewLog.create(user_id: session[:user_id],submission_id: @submission.id) unless user.admin?
 
-    @task = @submission.task
+    @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
+      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text)
+
+
   end
 
   def download
