@@ -38,7 +38,7 @@ module JudgeBase
 
   def isolate_need_cg_by_lang(language_name)
     case language_name
-    when 'java', 'digital'
+    when 'java', 'digital', 'go'
       true
     else
       false
@@ -52,6 +52,10 @@ module JudgeBase
       '-p -d /etc/alternatives'
     when 'digital'
       "-p -d /etc -d /tmp:rw -d /my_lib=#{Pathname.new(Rails.configuration.worker[:compiler][:digital]).dirname}"
+    when 'rust'
+      '-p -d /etc/alternatives'
+    when 'go'
+      '-p -d /gocache:tmp --env=GOCACHE=/gocache'
     else
       ''
     end

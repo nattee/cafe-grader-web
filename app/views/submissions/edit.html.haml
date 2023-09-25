@@ -78,25 +78,7 @@
 
     $("#language_id").on("change", function(event) {
       text = $("#language_id option:selected").text();
-      mode = 'ace/mode/c_cpp';
-      switch (text) {
-        case 'Pascal':
-          mode = 'ace/mode/pascal';
-          break;
-        case 'C++':
-        case 'C':
-          mode = 'ace/mode/c_cpp';
-          break;
-        case 'Ruby':
-          mode = 'ace/mode/ruby';
-          break;
-        case 'Python':
-          mode = 'ace/mode/python';
-          break;
-        case 'Java':
-          mode = 'ace/mode/java';
-      }
-      e.getSession().setMode(mode);
+      e.getSession().setMode("#{get_ace_mode(@submission.language)}");
     });
 
     $('#refresh').click()

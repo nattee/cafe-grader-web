@@ -15,6 +15,8 @@ class Language < ApplicationRecord
     Language.find_or_create_by( name: 'python').update(pretty_name: 'Python', ext: 'py', common_ext: 'py' )
     Language.find_or_create_by( name: 'java').update(pretty_name: 'Java', ext: 'java', common_ext: 'java' )
     Language.find_or_create_by( name: 'digital').update(pretty_name: 'Digital', ext: 'dig', common_ext: 'dig' )
+    Language.find_or_create_by( name: 'rust').update(pretty_name: 'Rust', ext: 'rs', common_ext: 'rs' )
+    Language.find_or_create_by( name: 'go').update(pretty_name: 'Go', ext: 'go', common_ext: 'go' )
   end
 
   def self.cache_ext_hash
