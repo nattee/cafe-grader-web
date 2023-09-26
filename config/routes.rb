@@ -195,6 +195,7 @@ Rails.application.routes.draw do
     get 'announcements'
     get 'help'
     post 'submit'
+    post 'prob_grop'
   end
   #main
   #get "main/list"

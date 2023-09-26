@@ -19,31 +19,42 @@
         .card-body
           = render 'submission_box'
     - if GraderConfiguration.show_tasks_to?(@user)
-      - if not GraderConfiguration.multicontests?
-        .mt-2
-          %table#main_table.table.table-striped.table-condensed{width: '100%'}
-            %thead
-              %tr
-                %th Task name
-                %th.all Full name
-                %th # of sub(s)
-                %th.all Results
-                %th.all
-            %tbody
-              = render :partial => 'problem', :collection => @problems
-      - else
-        - @contest_problems.each do |cp|
-          - if cp[:problems].length > 0
-            %h2{:class =>'contest-title'}
-              = "#{cp[:contest] ? cp[:contest].title : 'Public problems'}"
-            %table.info
-              %tr.info-head
-                %td Task name
-                %td Full name
-                %td # of sub(s)
-                %td Results
-                %td
-              = render :partial => 'problem', :collection => cp[:problems]
+      .mt-3
+        #prob-list-template.hide
+          = form_with url: prob_grop_main_path, id: 'prob-list-form' do
+            .row
+              .col-3.col-form-label
+                %label Problem Group
+              .col-9
+                %select#prob-group-select.form-control.select2{onchange: 'prob_group_change()'}
+                  = options_for_select @groups
+        = turbo_frame_tag :problem_list, data: {turbo: true} do
+          = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
+        -#
+          - if not GraderConfiguration.multicontests?
+              %table#main_table.table.table-striped.table-condensed{width: '100%'}
+                %thead
+                  %tr
+                    %th Task name
+                    %th.all Full name
+                    %th # of sub(s)
+                    %th.all Results
+                    %th.all
+                %tbody
+                  = render :partial => 'problem', :collection => @problems
+          - else
+            - @contest_problems.each do |cp|
+              - if cp[:problems].length > 0
+                %h2{:class =>'contest-title'}
+                  = "#{cp[:contest] ? cp[:contest].title : 'Public problems'}"
+                %table.info
+                  %tr.info-head
+                    %td Task name
+                    %td Full name
+                    %td # of sub(s)
+                    %td Results
+                    %td
+                  = render :partial => 'problem', :collection => cp[:problems]
   .col-lg-5
     .card
       .card-header
@@ -68,3 +79,7 @@
         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     })
   });
+
+  function prob_group_change() {
+    console.log('asdf')
+  }
