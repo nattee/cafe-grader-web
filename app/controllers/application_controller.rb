@@ -6,7 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
-  before_action :nav_announcement
+  before_action :header_info
   before_action :unique_visitor_id
   before_action :active_controller_action
 
@@ -37,8 +37,12 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def nav_announcement
+  def header_info
     @nav_announcement = Announcement.where(on_nav_bar: true)
+    if @current_user.admin?
+      #if not admin, this info is not needed
+      @backlog = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count
+    end
   end
 
   def active_controller_action

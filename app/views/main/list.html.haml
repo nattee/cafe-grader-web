@@ -20,14 +20,15 @@
           = render 'submission_box'
     - if GraderConfiguration.show_tasks_to?(@user)
       .mt-3
-        #prob-list-template.hide
-          = form_with url: prob_grop_main_path, id: 'prob-list-form' do
-            .row
-              .col-3.col-form-label
-                %label Problem Group
-              .col-9
-                %select#prob-group-select.form-control.select2{onchange: 'prob_group_change()'}
-                  = options_for_select @groups
+        -#
+          #prob-list-template.hide
+            = form_with url: prob_grop_main_path, id: 'prob-list-form' do
+              .row
+                .col-3.col-form-label
+                  %label Problem Group
+                .col-9
+                  %select#prob-group-select.form-control.select2{onchange: 'prob_group_change()'}
+                    = options_for_select @groups
         = turbo_frame_tag :problem_list, data: {turbo: true} do
           = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
         -#
