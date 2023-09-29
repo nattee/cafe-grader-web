@@ -43,6 +43,11 @@ class MainController < ApplicationController
 
   def list
     prepare_list_information
+    @groups = [['All',-1]] + @current_user.groups.pluck(:name,:id)
+  end
+
+  def prob_group
+
   end
 
   def help
@@ -207,12 +212,11 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
-    @user = User.find(session[:user_id])
     if not GraderConfiguration.multicontests?
-      @problems = @user.available_problems.with_attached_statement
+      @problems = @current_user.available_problems.with_attached_statement
     else
-      @contest_problems = @user.available_problems_group_by_contests
-      @problems = @user.available_problems.with_attached_statement
+      @contest_problems = @current_user.available_problems_group_by_contests
+      @problems = @current_user.available_problems.with_attached_statement
     end
     @prob_submissions = {}
     @problems.each do |p|

@@ -295,7 +295,6 @@ class UserAdminController < ApplicationController
 
   #bulk manage
   def bulk_manage
-
     begin
       if params[:filter_group]
         @users = Group.find_by(id: params[:filter_group_id]).users

@@ -62,10 +62,9 @@
                 %li= link_to 'Score Report', max_score_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :max_score)
                 %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
-            - if (ungraded = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count) > 0
-              =link_to "#{ungraded} backlogs!",
-                graders_list_path,
-                class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
+            =link_to "#{@backlog} backlogs!",
+              graders_list_path,
+              class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
             = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
               .input-group.mx-2
                 %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}

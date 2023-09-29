@@ -1,0 +1,39 @@
+- if not GraderConfiguration.multicontests?
+  %table#main_table.table.table-striped.table-condensed{width: '100%'}
+    %thead
+      %tr
+        %th Task name
+        %th.all Full name
+        %th # of sub(s)
+        %th.all Results
+        %th.all
+    %tbody
+      = render :partial => 'problem', collection: problems
+- else
+  - contest_problems.each do |cp|
+    - if cp[:problems].length > 0
+      %h2{:class =>'contest-title'}
+        = "#{cp[:contest] ? cp[:contest].title : 'Public problems'}"
+      %table#main_table.table.table-striped.table-condensed{width: '100%'}
+        %thead
+          %tr
+            %th Task name
+            %th.all Full name
+            %th # of sub(s)
+            %th.all Results
+            %th.all
+        %tbody
+          = render :partial => 'problem', :collection => cp[:problems]
+
+:javascript
+  $("#main_table").DataTable({
+    destroy: true,
+    sorting: false,
+    paging: false,
+    responsive: true,
+    dom: "<'row'<'#prob-group.col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+      "<'row'<'col-sm-12'tr>>" +
+      "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+  })
+
+

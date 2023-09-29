@@ -20,11 +20,9 @@
               = f.label :password, "Password", class: 'form-label'
               = f.password_field :password, class: 'form-control'
             - unless GraderConfiguration['right.bypass_agreement']
-              .col-sm-offset-3.col-sm-9
-                .checkbox
-                  %label
-                    = check_box_tag 'accept_agree'
-                    ยอมรับข้อตกลงการใช้งาน
+              .form-check.mb-3
+                %input#accept-agree.form-check-input{type: :checkbox, name: :accept_agree}
+                %label.form-check-label{for: 'accept-agree'} ยอมรับข้อตกลงการใช้งาน
             .mb-3
               .col-sm-offset-3.col-sm-9
                 = submit_tag t('login.login_submit'), class: 'btn btn-primary'
