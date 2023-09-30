@@ -6,12 +6,12 @@
       = radio_button_tag :problems, :all, false, class: 'form-check-input'
       = label_tag :problems_all, 'All problems'
     .form-check.my-2
-      = radio_button_tag :problems, :enabled, true, class: 'form-check-input'
+      = radio_button_tag :problems, :enabled, false, class: 'form-check-input'
       = label_tag :problems_enabled, 'Only available problems'
     .row.row-cols-lg-auto.align-items-center
       .col-12
         .form-check.form-check-inline
-          = radio_button_tag :problems, :selected, false, class: 'form-check-input'
+          = radio_button_tag :problems, :selected, true, class: 'form-check-input'
           = label_tag :problems_selected, 'Only selected problems'
       .col-12
         = select_tag 'problem_id[]',

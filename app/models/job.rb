@@ -3,7 +3,8 @@ class Job < ApplicationRecord
   enum job_type: {preprocess: 0, compile: 1, evaluate: 2, score: 3}, _prefix: :jt
 
   scope :oldest_waiting, -> {where(status: :wait)}
-  scope :finished, -> {where(status: [:done,:error])}
+  scope :finished, -> {where(status: [:success,:error])}
+
 
   belongs_to :grader_process, optional: true
 
@@ -71,6 +72,10 @@ class Job < ApplicationRecord
 
   def self.all_evaluate_job_complete(job)
     Job.where(parent_job_id: job.parent_job_id,job_type: :evaluate).where.not(status: :success).count == 0
+  end
+
+  def self.clean_old_job
+    Job.finished.where('updated_at < ?'.Time.zone.now - 1.day).delete_all
   end
 
 

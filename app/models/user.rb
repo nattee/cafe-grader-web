@@ -24,6 +24,8 @@ class User < ApplicationRecord
 
   has_many :logins
 
+  has_many :submissions
+
   has_one :contest_stat, :class_name => "UserContestStat", :dependent => :destroy
 
   belongs_to :site, optional: true

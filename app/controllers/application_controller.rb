@@ -39,7 +39,7 @@ class ApplicationController < ActionController::Base
 
   def header_info
     @nav_announcement = Announcement.where(on_nav_bar: true)
-    if @current_user.admin?
+    if @current_user && @current_user.admin?
       #if not admin, this info is not needed
       @backlog = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count
     end

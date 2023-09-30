@@ -4,7 +4,7 @@
   .col-lg-4
     = render partial: 'shared/problem_select'
   .col-lg-4
-    = render partial: 'shared/date_filter'
+    = render partial: 'submission_range'
   .col-lg-4
     = render partial: 'shared/user_select'
 
@@ -82,6 +82,8 @@
           d.groups = $("#group_id").val()
           d.problems = $("input[name='problems']:checked").val()
           d.problem_id = $("#problem_id").val()
+          $('input[name^="sub_range"]').each( function(a,b) {d[b.name]  = b.value }  )
+          d['sub_range[use]'] = $('input[name="sub_range[use]"]:checked').val()
         },
         dataType: 'json',
         beforeSend: (request) => {

@@ -17,6 +17,7 @@ class ReportController < ApplicationController
   def max_score
   end
 
+  # post max_score
   def show_max_score
     #process parameters
     #problems
@@ -39,13 +40,15 @@ class ReportController < ApplicationController
              end
 
     #set up range from param
-    @since_id = params.fetch(:from_id, 0).to_i
-    @until_id = params.fetch(:to_id, 0).to_i
-    @since_id = nil if @since_id == 0
-    @until_id = nil if @until_id == 0
+    records = Submission.joins(:user).joins(:problem).where(user: @users, problem: @problems).group('users.id,problems.id')
+      .select('users.id,users.login,users.full_name')
+      .select('problems.name')
+      .select('MAX(submissions.points) as max_score')
 
-    #calculate the routine
-    @result = calculate_max_score(@problems, @users, @since_id, @until_id)
+    records = submission_in_range(records,params[:sub_range])
+
+    #calculate the score
+    @result = calculate_max_score(records,@problems)
 
     # this only render as turbo stream
     # see show_max_score.turbo_stream
@@ -106,6 +109,7 @@ class ReportController < ApplicationController
     @submissions = Submission
       .joins(:problem).joins(:language).joins(user: :groups).group('submissions.id')
       #.includes(:problem).includes(:user).includes(:language)
+    @submissions = submission_in_range(@submissions,params[:sub_range])
 
     case params[:users]
     when 'enabled'
@@ -121,12 +125,7 @@ class ReportController < ApplicationController
       @submissions = @submissions.where(problem_id: params[:problem_id])
     end
 
-    #set default
-    datetime_since = Time.zone.parse( params[:since_datetime] ) || Time.zone.now rescue Time.zone.now
-    datetime_until = Time.zone.parse( params[:until_datetime] ) || Time.zone.now rescue Time.zone.now
-    datetime_range= datetime_since..datetime_until
-
-    @submissions = @submissions.where(submitted_at: datetime_range).limit(100_000)
+    @submissions.limit(100_000)
     @submissions = @submissions.select('submissions.id,points,ip_address,submitted_at,grader_comment')
       .select('users.login, users.full_name as user_full_name, users.id as user_id')
       .select('problems.full_name, problems.name, problems.id as problem_id')
@@ -433,15 +432,26 @@ ORDER BY submitted_at
 
   protected
 
-  def calculate_max_score(problems, users,since_id,until_id, get_last_score = false)
+  def submission_in_range(query,range_params)
+    if range_params[:use] ==  'sub_id'
+      #use sub id
+      since_id = range_params.fetch(:from_id,0).to_i
+      until_id = range_params.fetch(:to_id,0).to_i
+      query = query.where('submissions.id >= ?',range_params[:from_id]) if since_id > 0
+      query = query.where('submissions.id <= ?',range_params[:to_id]) if until_id > 0
+    else
+      #use sub time
+      since_time = Time.zone.parse( range_params[:from_time] ) || Time.zone.now rescue Time.zone.now
+      until_time = Time.zone.parse( range_params[:to_time] ) || Time.zone.now rescue Time.zone.now
+      datetime_range= since_time..until_time
+      query = query.where(submitted_at: datetime_range)
+    end
+    return query
+  end
+
+  def calculate_max_score(records,problems)
     result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0 } } }
-    query = Submission.joins(:user).joins(:problem).where(user: users, problem: problems).group('users.id,problems.id')
-      .select('users.id,users.login,users.full_name')
-      .select('problems.name')
-      .select('MAX(submissions.points) as max_score')
-    query = query.where('submissions.id >= ?',since_id) if since_id && since_id > 0
-    query = query.where('submissions.id <= ?',until_id) if until_id && until_id > 0
-    query.each do |score|
+    records.each do |score|
         result[:score][score.login]['id'] = score.id
         result[:score][score.login]['full_name'] = score.full_name
         result[:score][score.login]['prob_'+score.name] = score.max_score || 0
@@ -462,7 +472,6 @@ ORDER BY submitted_at
       count[:partial] << result[:stat][p.name][:partial]
     end
     result[:count] = count
-    pp result
     return result
   end
 
