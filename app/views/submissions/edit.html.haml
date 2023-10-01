@@ -78,7 +78,39 @@
 
     $("#language_id").on("change", function(event) {
       text = $("#language_id option:selected").text();
-      e.getSession().setMode("#{get_ace_mode(@submission.language)}");
+      mode = 'ace/mode/c_cpp';
+      switch (text) {
+        case 'Pascal':
+          mode = 'ace/mode/pascal';
+          break;
+        case 'C++':
+        case 'C':
+          mode = 'ace/mode/c_cpp';
+          break;
+        case 'Ruby':
+          mode = 'ace/mode/ruby';
+          break;
+        case 'Python':
+          mode = 'ace/mode/python';
+          break;
+        case 'Java':
+          mode = 'ace/mode/java';
+          break;
+        case 'Rust':
+          mode = 'ace/mode/rust';
+          break;
+        case 'Go':
+          mode = 'ace/mode/golang';
+          break;
+        case 'PHP':
+          mode = 'ace/mode/php';
+          break;
+        case 'Haskell':
+          mode = 'ace/mode/haskell';
+          break;
+      }
+      console.log(mode);
+      e.getSession().setMode(mode);
     });
 
     $('#refresh').click()

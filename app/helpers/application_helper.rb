@@ -123,6 +123,7 @@ module ApplicationHelper
   def get_ace_mode(language)
     # return ace mode string from Language
 
+    return 'ace/mode/c_cpp' unless language
     case language.pretty_name
       when 'Pascal'
         'ace/mode/pascal'
