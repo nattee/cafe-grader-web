@@ -72,7 +72,9 @@
 :javascript
   $(document).on('import-map-loaded',(e) => {
     $("#main_table").DataTable({
-      sorting: false,
+      columnDefs: [
+        { targets: [3,4], sortable: false },
+      ],
       paging: false,
       responsive: true,
       dom: "<'row'<'#prob-group.col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +

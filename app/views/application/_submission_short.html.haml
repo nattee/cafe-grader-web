@@ -24,8 +24,8 @@
         .col-lg-9
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points
-          %span.grader-comment
-            = " [#{submission.grader_comment.split('').join("&ZeroWidthSpace;")}]".html_safe
+          %span.grader-comment.text-break
+            = " [#{submission.grader_comment}]"
   - if local_assigns[:show_button]
     - if submission.graded_at
       = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: 'btn btn-sm btn-info', data: {turbo: true, turbo_method: :post} }

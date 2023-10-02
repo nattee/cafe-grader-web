@@ -8,7 +8,7 @@
         %th.all Latest Results
         %th.all
     %tbody
-      - @numbering = 0
+      - @numbering = 1
       = render :partial => 'problem', collection: problems
 - else
   - contest_problems.each do |cp|
@@ -25,16 +25,4 @@
             %th.all
         %tbody
           = render :partial => 'problem', :collection => cp[:problems]
-
-:javascript
-  $("#main_table").DataTable({
-    destroy: true,
-    sorting: false,
-    paging: false,
-    responsive: true,
-    dom: "<'row'<'#prob-group.col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-      "<'row'<'col-sm-12'tr>>" +
-      "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-  })
-
 

@@ -1,23 +1,22 @@
 %tr
-  %td= @numbering
+  %td.text-end= @numbering
   - @numbering+=1
   %td
-    %div
+    %strong
       = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
     .text-muted
+      = "#{problem.name}"
       - if @current_user and @current_user.admin?
-        = link_to problem.name, stat_problem_path(problem)
-      - else
-        = "#{problem.name}"
+        = link_to '(stat)', stat_problem_path(problem)
     %div
       = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='mi mi-bs'>description</span>".html_safe, problem
-  %td
-    = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
-    %br
-    = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='mi mi-bs'>description</span>".html_safe, problem
-    %br
-  %td
-    = @prob_submissions[problem.id][:count]
+  -# score column
+  - score = @prob_submissions[problem.id][:max_score];
+  - cc =  score == 100 ? 'bg-success' : 'bg-warning'
+  %td{style: "width: 12em; vertical-align: middle", 'data-order': score}
+    .progress
+      .progress-bar{style: "width: #{score}%", class: cc}
+        = score
   %td
     = render partial: 'submission_short',
       locals: {:submission => @prob_submissions[problem.id][:submission], :problem_name => problem.name, :problem_id => problem.id, sub_count: @prob_submissions[problem.id][:count], show_button: true }

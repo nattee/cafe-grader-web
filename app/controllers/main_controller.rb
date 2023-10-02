@@ -212,13 +212,41 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
-    if not GraderConfiguration.multicontests?
-      @problems = @current_user.available_problems.with_attached_statement
-    else
+    if GraderConfiguration.multicontests?
       @contest_problems = @current_user.available_problems_group_by_contests
       @problems = @current_user.available_problems.with_attached_statement
+    else
+      @problems = @current_user.available_problems.with_attached_statement
     end
-    @prob_submissions = {}
+    #max score
+
+    @prob_submissions = Hash.new { |h,k| h[k] = {count: 0, submission: nil} }
+    last_sub_ids = Submission.where(user: @current_user).group(:problem_id).pluck('max(id)')
+    Submission.where(id: last_sub_ids).each do |sub|
+      @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
+    end
+
+    Submission.where(user: @current_user).group(:problem_id).pluck('problem_id','max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
+
+
+    # @problems.each do |p|
+    #   sub = Submission.find_last_by_user_and_problem(@user.id,p.id)
+    #   if sub!=nil
+    #     @prob_submissions[p.id] = { :count => sub.number, :submission => sub }
+    #   else
+    #     @prob_submissions[p.id] = { :count => 0, :submission => nil }
+    #   end
+    # end
+    prepare_announcements
+  end
+
+  def prepare_list_information_old
+    if GraderConfiguration.multicontests?
+      @contest_problems = @current_user.available_problems_group_by_contests
+      @problems = @current_user.available_problems.with_attached_statement
+    else
+      @problems = @current_user.available_problems.with_attached_statement
+    end
     @problems.each do |p|
       sub = Submission.find_last_by_user_and_problem(@user.id,p.id)
       if sub!=nil
