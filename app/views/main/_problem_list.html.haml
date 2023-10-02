@@ -2,12 +2,13 @@
   %table#main_table.table.table-striped.table-condensed{width: '100%'}
     %thead
       %tr
-        %th Task name
-        %th.all Full name
-        %th # of sub(s)
-        %th.all Results
+        %th No.
+        %th.all Name
+        %th Score
+        %th.all Latest Results
         %th.all
     %tbody
+      - @numbering = 0
       = render :partial => 'problem', collection: problems
 - else
   - contest_problems.each do |cp|
