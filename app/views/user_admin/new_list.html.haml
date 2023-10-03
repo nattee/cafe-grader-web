@@ -18,14 +18,12 @@
           .col-12
             = f.text_area :user_list, value: nil, class: 'form-control', style: 'height: 30rem'
     .col-md-6
-      .card.card-default
-        .card-header
-          .card-title Info
+      .card.text-bg-info
         .card-body
           %ul
             %li
               List of user information in this format:
-              %tt user_id,name(,passwd(,alias(,remark)))
+              %span.rounded.bg-secondary-subtle.p-1.text-monospace user_id,name(,passwd(,alias(,remark)))
             %li
               Note that
               %tt passwd, alias

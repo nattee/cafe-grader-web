@@ -1,6 +1,7 @@
 class TestController < ApplicationController
 
   before_action :check_valid_login, :check_viewability
+  before_action :admin_authorization
 
 
   def index

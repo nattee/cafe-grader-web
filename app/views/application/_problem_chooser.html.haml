@@ -4,11 +4,9 @@
   .card-body
     .row
       .col-6
-        = select 'submission',
-          'problem_id',
-          problems.collect {|p| ["[#{p.name}] #{p.full_name}", send(target_url_method,p.id)]},
-          { selected: (selected_problem ? problem_submissions_url(selected_problem) : -1) },
-          { class: 'select2 form-control'}
+        = select_tag 'submission_problem_id',
+          options_for_select(problems.map {|p| ["#{p.name}] #{p.full_name}", send(target_url_method,p.id)]}, selected_problem ? send(target_url_method,selected_problem.id) : -1),
+          class: 'select2 form-control'
       .col-6
         %a.btn.btn-primary.go-button#problem_go{data: {source: '#submission_problem_id'}} Go
 :javascript
