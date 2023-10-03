@@ -28,9 +28,9 @@
             = " [#{submission.grader_comment}]"
   - if local_assigns[:show_button]
     - if submission.graded_at
-      = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: 'btn btn-sm btn-info', data: {turbo: true, turbo_method: :post} }
-    = link_to "#{t 'main.src_link'}",download_submission_path(submission), class: 'btn btn-sm btn-info'
-    = link_to "#{t 'main.submissions_link'} (#{sub_count rescue '-'})", problem_submissions_path(submission.problem_id), class: 'btn btn-sm btn-info'
+      = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: 'my-1 btn btn-sm btn-info', data: {turbo: true, turbo_method: :post} }
+    = link_to "#{t 'main.src_link'}",download_submission_path(submission), class: 'my-1 btn btn-sm btn-info'
+    = link_to "#{t 'main.submissions_link'} (#{sub_count rescue '-'})", problem_submissions_path(submission.problem_id), class: 'my-1 btn btn-sm btn-info'
     - if GraderConfiguration.show_testcase
-      = link_to "testcases", show_problem_testcases_path(submission.problem_id), class: 'btn btn-sm btn-info'
+      = link_to "testcases", show_problem_testcases_path(submission.problem_id), class: 'my-1 btn btn-sm btn-info'
 

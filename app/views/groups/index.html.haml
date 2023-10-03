@@ -1,7 +1,11 @@
-%h1 Groups
+.row
+  .col-md-4
+    %h1 Groups
+    %p
+      = link_to 'New Group', new_group_path, class: 'btn btn-success'
+  .col-md-8
+    = render partial: 'group_help'
 
-%p
-  = link_to 'New Group', new_group_path, class: 'btn btn-success'
 %table.table.table-hover
   %thead
     %tr

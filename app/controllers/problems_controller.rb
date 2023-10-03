@@ -48,10 +48,6 @@ class ProblemsController < ApplicationController
     send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
   end
 
-  def new
-    @problem = Problem.new
-  end
-
   def create
     @problem = Problem.new(problem_params)
     if @problem.save

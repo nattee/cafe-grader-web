@@ -15,13 +15,6 @@ class UserAdminController < ApplicationController
   end
 
   def active
-    sessions = ActiveRecord::SessionStore::Session.where("updated_at >= ?", 60.minutes.ago)
-    @users = []
-    sessions.each do |session|
-      if session.data[:user_id]
-        @users << User.find(session.data[:user_id])
-      end
-    end
   end
 
   def show
@@ -99,22 +92,6 @@ class UserAdminController < ApplicationController
       redirect_to :action => 'index' and return
     end
     import_from_file(params[:file])
-  end
-
-  def random_all_passwords
-    users = User.all
-    @prefix = params[:prefix] || ''
-    @non_admin_users = User.find_non_admin_with_prefix(@prefix)
-    @changed = false
-    if params[:commit] == 'Go ahead'
-      @non_admin_users.each do |user|
-        password = random_password
-        user.password = password
-        user.password_confirmation = password
-        user.save
-      end
-      @changed = true
-    end
   end
 
   # contest management

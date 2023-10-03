@@ -1,0 +1,13 @@
+.card.bg-warning-subtle
+  .card-body
+    .card-title
+      %h4 What is a group?
+    %p
+      Group is a collections of users and problems. A user will have access only to problems in the groups that contain that user. Be noted that a problem's "avalability" is required for a user to have access to that problem as well. Problems' availabilities can be set in 
+      = link_to 'Setting/Problems', problems_path
+
+    %p 
+      To use group, turn on the option
+      %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
+      in the
+      = link_to 'System Configuration', grader_configuration_index_path

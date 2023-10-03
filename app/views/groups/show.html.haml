@@ -17,13 +17,7 @@
             = link_to 'Edit', edit_group_path(@group), class: 'btn btn-primary'
             = link_to 'Back', groups_path, class: 'btn btn-outline-secondary mx-2'
   .col-md-8
-    .card.text-bg-info
-      .card-body
-        .card-title
-          %h4 What is a group?
-        %p Group is a collections of users and problems. A user will have access only to problems in the groups that contain that user. Be noted that a problem's "avalability" is required for a user to have access to that problem as well. Problems' availabilities can be set in "Setting/Problems".
-
-        %p To use group, "system.use_problem_group" must be turned on in the System Configuration.
+    = render partial: 'group_help'
 
 .row.mb-3
   .col-md-12

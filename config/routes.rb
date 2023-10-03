@@ -28,7 +28,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :problems do
+  resources :problems, except: [:new] do
     member do
       get 'toggle'
       get 'toggle_test'

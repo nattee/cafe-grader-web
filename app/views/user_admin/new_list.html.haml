@@ -18,33 +18,36 @@
           .col-12
             = f.text_area :user_list, value: nil, class: 'form-control', style: 'height: 30rem'
     .col-md-6
-      .card.text-bg-info
+      .card.bg-warning-subtle
         .card-body
+          %h5 How to
+          A user will be created/updated for each line in the text box.
           %ul
             %li
-              List of user information in this format:
-              %span.rounded.bg-secondary-subtle.p-1.text-monospace user_id,name(,passwd(,alias(,remark)))
+              Each line must be in the following format. A square bracket indicates that the parameter is optional.
+              %span.rounded.bg-light.p-1.font-monospace user_id,name[,passwd[,alias[,remark]]]
             %li
               Note that
-              %tt passwd, alias
+              %span.rounded.bg-light.p-1.font-monospace passwd, alias
               and
-              %tt remark
+              %span.rounded.bg-light.p-1.font-monospace remark
               is optional.
             %li
-              When
-              %tt passwd
-              or
-              %tt alias
-              is empty, the original value will be used instead.
-            %li
               If the users with the same user_id already exists, existing information will be overwritten.
-          Example:
-          %ol
-            %li 
-              %pre user1,Somchai Jaidee
+            %li
+              When
+              %span.rounded.bg-light.p-1.font-monospace  passwd
+              or
+              %span.rounded.bg-light.p-1.font-monospace alias
+              is empty (but not missing), the original value will be used.
+          .card-title
+            %h5 Example
+          %ul
+            %li.mb-2
+              .rounded.bg-light.p-1.font-monospace user1,Somchai Jaidee
               will create (or update) a user with login "user1" and setting the fullname to "Somchai Jaidee", also setting a random password.
-            %li 
-              %pre user1,Somchai Jaidee,
+            %li.mb-2
+              .rounded.bg-light.p-1.font-monospace user1,Somchai Jaidee,
               will create (or update) a user with login "user1" and and setting the fullname "Somchai Jaidee". No change is made to the password unless this is a new user. If this is a new user, a random password will be generated.
 
 :javascript

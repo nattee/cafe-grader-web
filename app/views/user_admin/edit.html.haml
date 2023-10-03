@@ -5,5 +5,5 @@
   .row
     .col-md-6
       = simple_form_for @user, url: user_admin_path(@user) do |f|
-        = render partial: 'form', local: f
+        = render partial: 'form', locals: {f: f}
 

@@ -100,3 +100,29 @@
   font-style: italic;
   src: font-url('sarabun/Sarabun-ExtraBoldItalic.ttf') format('truetype'),
 }
+
+//ubuntu mono font
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-weight: 400;
+  font-style: normal;
+  src: font-url('ubuntu_mono/UbuntuMono-Regular.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-weight: 700;
+  font-style: normal;
+  src: font-url('ubuntu_mono/UbuntuMono-Bold.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-weight: 400;
+  font-style: italic;
+  src: font-url('ubuntu_mono/UbuntuMono-Italic.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-weight: 700;
+  font-style: italic;
+  src: font-url('ubuntu_mono/UbuntuMono-BoldItalic.ttf') format('truetype'),
+}
