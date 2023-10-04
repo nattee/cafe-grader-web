@@ -142,8 +142,10 @@ class Evaluator
           prepare_testcase_directory(@sub,tc)
 
           #download testcase
-          File.write(@input_file,tc.input.gsub(/\r$/, ''))
-          File.write(@ans_file,tc.sol.gsub(/\r$/, ''))
+          #File.write(@input_file,tc.input.gsub(/\r$/, ''))
+          #File.write(@ans_file,tc.sol.gsub(/\r$/, ''))
+          download_from_web(Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id),@input_file,download_type: 'input file')
+          download_from_web(Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id),@ans_file,download_type: 'answer file')
 
           #do the symlink
           #testcase codename inside prob_id/testcase_id
@@ -157,7 +159,7 @@ class Evaluator
           FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
           FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
 
-          judge_log("Testcase #{tc.id} (#{tc.code_name}) downloaded")
+          judge_log("Testcase #{tc.id} (#{tc.code_name}) download and prepared")
         end
 
         # if any lib, dl as well

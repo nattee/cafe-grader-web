@@ -22,6 +22,11 @@ class WorkerController < ApplicationController
     send_data file.download, :filename => file.filename.to_s, :type => 'application/octet-stream'
   end
 
+  def get_attachment
+    file = ActiveStorage::Attachment.find(params[:id])
+    send_data file.download, :filename => file.filename.to_s, :type => 'application/octet-stream'
+  end
+
 
   private
     # make sure that this is the worker that we allow
