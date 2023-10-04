@@ -71,6 +71,28 @@ module JudgeBase
     end
   end
 
+  # download (via worker controller) files from the web server
+  # and save to dest (which is a Pathname), raise exception on any error
+  def download_from_web(path,dest,download_type)
+    uri = URI(path)
+    hostname = uri.hostname
+    port = uri.port
+    req = Net::HTTP::Get.new(uri)
+    basename = dest.basename
+    Net::HTTP.start(hostname,port) do |http|
+      resp = http.request(req)
+      if resp.kind_of?(Net::HTTPSuccess)
+        File.open(dest.to_s,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
+        FileUtils.chmod(0666,dest)
+        judge_log "Download #{download_type} #{basename} from the server success"
+      else
+        judge_log "Error downloading #{download_type} #{basename} from the server"
+        #raise the exception
+        resp.value
+      end
+    end
+  end
+
   # set up directory and path/filename of the submission directory
   def prepare_submission_directory(sub)
     #preparing path name
@@ -122,7 +144,6 @@ module JudgeBase
 
     @output_path.chmod(0777)
   end
-
 
   def build_result_hash
     {status: nil,

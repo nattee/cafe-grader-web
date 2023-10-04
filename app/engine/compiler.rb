@@ -123,6 +123,7 @@ class Compiler
     end
   end
 
+  # Download (or save from db) source file and any manager files to their respective directory
   def prepare_files_for_compile
     #setup pathname
     @source_file = @source_path + self.submission_filename;
