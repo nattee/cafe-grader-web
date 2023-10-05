@@ -5,7 +5,8 @@
 #   3. read any manager and store in active storage
 #   4. read any checker
 
-BASE_EV_DIRECTORY = Rails.root.join '../judge/ev/*'
+#BASE_EV_DIRECTORY = Rails.root.join '../judge/ev/*'
+BASE_EV_DIRECTORY = '/home/dae/old-evaluator/judge/ev/*'
 
 def import_all_testcase(prob_ev_dir,problem)
   ds = Dataset.create(problem: problem,name: 'import')
@@ -99,31 +100,53 @@ def read_managers_from_ev(prob_ev_dir,ds)
   pp pi.log if pi.got.count > 0
 end
 
-def read_default_checker(default_checker_file =  Rails.root.join('../judge/scripts/std-script/check') )
-  return if @default_checker
-  @default_checker = File.read(default_checker_file).gsub(/\r$/, '')
+def read_default_checker(judge_script_dir =  Rails.root.join('../judge/scripts') )
+  return unless @default_checker_text.nil?
+  @default_checker_text = File.read(judge_script_dir + 'templates' + 'check.text').gsub(/\r$/, '')
+  @default_checker_float = File.read(judge_script_dir + 'templates' + 'check.float').gsub(/\r$/, '')
+  @default_checker_int = File.read(judge_script_dir + 'templates' + 'check.integer').gsub(/\r$/, '')
+end
+
+def cmp_default_checker(prob_checker, default_checker)
+  return true if default_checker == prob_checker
+  return true if default_checker == prob_checker.gsub('#!/usr/bin/ruby','#!/usr/bin/env ruby')
+  return false
 end
 
 def read_checker_from_ev(prob_ev_dir,ds)
   read_default_checker
   check_file = prob_ev_dir + 'script' + 'check'
+  unless check_file.exist?
+    puts "skipping #{prob_ev_dir} because no check"
+    return
+  end
   my_checker = File.read(check_file).gsub(/\r$/, '')
+  prob_name = prob_ev_dir
+
+  if cmp_default_checker(my_checker , @default_checker_text)
+    puts "Problem #{prob_name} has " + Rainbow("text checker").color(:deeppink)
+  elsif cmp_default_checker(my_checker , @default_checker_float)
+    puts "Problem #{prob_name} has " + Rainbow("float checker").color(:seagreen)
+  elsif cmp_default_checker(my_checker , @default_checker_int)
+    puts "Problem #{prob_name} has " + Rainbow("int checker").color(:orange)
+  else
+    puts "Problem #{prob_name} has " + Rainbow("CUSTOM checker").color(:skyblue)
+  end
 
   if (my_checker != @default_checker)
-    byebug
-    puts "Problem #{ds.problem.name} has custom checker"
   end
 end
 
 
 def do_dir(prob_ev_dir)
+  # read checker
+  read_checker_from_ev(prob_ev_dir,nil)
+  return
+
   p = Problem.where(name: prob_ev_dir.basename.to_s).first
   return unless p
 
   ds = p.live_dataset
-  # read checker
-  read_checker_from_ev(prob_ev_dir,ds)
-  return
 
   #now p is the problem with the same name as the ev sub-dir
 

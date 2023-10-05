@@ -5,7 +5,8 @@ class Dataset < ApplicationRecord
   has_many :submissions
 
   enum evaluation_type: {wdiff: 0,
-                         custom: 1}
+                         relative: 1,
+                         custom: 2}
 
   enum score_type:        {sum: 0,      # summation of all testcase, default
                            group_min: 1,
