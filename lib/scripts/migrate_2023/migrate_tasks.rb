@@ -5,28 +5,29 @@
 #   3. read any manager and store in active storage
 #   4. read any checker
 
-#BASE_EV_DIRECTORY = Rails.root.join '../judge/ev/*'
-BASE_EV_DIRECTORY = '/home/dae/old-evaluator/judge/ev/*'
+BASE_EV_DIRECTORY = Rails.root.join '../judge/ev/*'
+#BASE_EV_DIRECTORY = '/home/dae/old-evaluator/judge/ev/*'
 
 def import_all_testcase(prob_ev_dir,problem)
-  ds = Dataset.create(problem: problem,name: 'import')
+  ds = Dataset.create(problem: problem,name: 'default')
 
-  testcases_root = ev_dir + 'test_cases'
+  testcases_root = prob_ev_dir + 'test_cases'
   num = 1
   loop do
-    file_root = testcases_root + "/#{num}/"
-    break unless File.exists? file_root
-    inp = File.read(file_root + "/input-#{num}.txt").gsub(/\r$/, '')
-    ans = File.read(file_root + "/answer-#{num}.txt").gsub(/\r$/, '')
+    file_root = testcases_root + "#{num}"
+    break unless File.exist? file_root
+    inp = File.read(file_root + "input-#{num}.txt").gsub(/\r$/, '')
+    ans = File.read(file_root + "answer-#{num}.txt").gsub(/\r$/, '')
     puts "  got test case ##{num} of size #{inp.size} and #{ans.size}"
 
-    tc = Testcase.create(num: num,weight: 10,group: num,dataset: ds)
+    tc = Testcase.create(num: num,code_name: num, weight: 10,group: num,dataset: ds)
     tc.inp_file.attach(io: StringIO.new(inp), filename: 'input.txt', content_type: 'text/plain',  identify: false)
     tc.ans_file.attach(io: StringIO.new(ans), filename: 'answer.txt', content_type: 'text/plain',  identify: false)
+    tc.save
     num += 1
   end
-  p.live_dataset = ds
-  p.save
+  problem.live_dataset = ds
+  problem.save
   return ds
 end
 
@@ -123,25 +124,33 @@ def read_checker_from_ev(prob_ev_dir,ds)
   my_checker = File.read(check_file).gsub(/\r$/, '')
   prob_name = prob_ev_dir
 
+  md = /REAL_CHECK_SCRIPT = "(.*)"/.match(my_checker)
+
   if cmp_default_checker(my_checker , @default_checker_text)
+    ds.evaluation_type = 'default'
     puts "Problem #{prob_name} has " + Rainbow("text checker").color(:deeppink)
   elsif cmp_default_checker(my_checker , @default_checker_float)
+    ds.evaluation_type = 'relative'
     puts "Problem #{prob_name} has " + Rainbow("float checker").color(:seagreen)
   elsif cmp_default_checker(my_checker , @default_checker_int)
+    ds.evaluation_type = 'default'
     puts "Problem #{prob_name} has " + Rainbow("int checker").color(:orange)
+  elsif md
+    ds.evaluation_type = 'custom_cafe'
+    actual_checker = File.read(check_file.dirname + md[1])
+    ds.checker.attach(io: StringIO.new(actual_checker),filename: md[1], content_type: 'application/octet-stream')
+    puts "Problem #{prob_name} has " + Rainbow("CUSTOM CMS checker").color(:skyblue)
   else
+    ds.evaluation_type = 'custom_cafe'
+    ds.checker.attach(io: StringIO.new(my_checker),filename: 'checker', content_type: 'application/octet-stream')
     puts "Problem #{prob_name} has " + Rainbow("CUSTOM checker").color(:skyblue)
   end
 
-  if (my_checker != @default_checker)
-  end
+  ds.save
 end
 
 
 def do_dir(prob_ev_dir)
-  # read checker
-  read_checker_from_ev(prob_ev_dir,nil)
-  return
 
   p = Problem.where(name: prob_ev_dir.basename.to_s).first
   return unless p
@@ -151,16 +160,18 @@ def do_dir(prob_ev_dir)
   #now p is the problem with the same name as the ev sub-dir
 
   # import all testcases in ev/{prob}/testcases/xxx into a new live dataset ds
-  ds = import_all_testcases(prov_ev_dir,p)
+  ds = import_all_testcase(prob_ev_dir,p)
 
-  r = parse_all_test_cfg(pn + 'test_cases/all_tests.cfg',ds)
+  r = parse_all_test_cfg(prob_ev_dir + 'test_cases/all_tests.cfg',ds)
   if (r[:group])
     puts "Problem #{p.name} (#{p.id}) has grouped testcase"
   end
 
-  #read manager
+  # read manager
   read_managers_from_ev(prob_ev_dir,ds)
 
+  # read checker
+  read_checker_from_ev(prob_ev_dir,ds)
 end
 
 # for each dir  in ev
@@ -168,5 +179,12 @@ def main
   Dir[BASE_EV_DIRECTORY].each do |ev_dir|
     prob_ev_dir = Pathname.new ev_dir
     do_dir(prob_ev_dir)
+  end
+end
+
+def tmp_test
+  Dir[BASE_EV_DIRECTORY].each do |ev_dir|
+    prob_ev_dir = Pathname.new ev_dir
+    read_checker_from_ev(prob_ev_dir,Dataset.new)
   end
 end

@@ -1,5 +1,5 @@
 = turbo_frame_tag dom_id(ds, :manager), data: {turbo: true} do
-  %h4.my-2 Managers
+  %h5.my-2 Managers
   - ds.managers.each do |mg|
     .row
       .col-md-6
@@ -9,4 +9,19 @@
         %span= link_to 'view', manager_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
         |
         %span= link_to 'delete', manager_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+        ]
+  - if ds.managers.count == 0
+    = '-- none --'
+  - if ds.checker.attached?
+    %h5.my-2 Checker
+    .row
+      .col-md-6
+        = ds.checker.filename
+      .col-md-6
+        [
+        %span= link_to 'view', checker_view_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post' }
+        |
+        %span= link_to 'download', checker_download_dataset_path(ds), method: 'post'
+        |
+        %span= link_to 'delete', checker_delete_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
         ]

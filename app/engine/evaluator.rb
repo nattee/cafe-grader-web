@@ -119,14 +119,9 @@ class Evaluator
         end
       end
 
-
-      # filename = @mybin_path + attachment.filename.to_s
-      # unless filename.exist?
-      #   File.open(filename,'w:ASCII-8BIT'){ |f| attachment.download { |x| f.write x} } 
-      #   judge_log "Downloaded executable #{filename}"
-      # end
       FileUtils.chmod('a+x',filename)
     end
+
   end
 
   def prepare_testcase_files
@@ -144,8 +139,10 @@ class Evaluator
           #download testcase
           #File.write(@input_file,tc.input.gsub(/\r$/, ''))
           #File.write(@ans_file,tc.sol.gsub(/\r$/, ''))
-          download_from_web(Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id),@input_file,download_type: 'input file')
-          download_from_web(Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id),@ans_file,download_type: 'answer file')
+          url_inp = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id)
+          url_ans = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id)
+          download_from_web(url_inp,@input_file,download_type: 'input file')
+          download_from_web(url_ans,@ans_file,download_type: 'answer file')
 
           #do the symlink
           #testcase codename inside prob_id/testcase_id
@@ -160,6 +157,13 @@ class Evaluator
           FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
 
           judge_log("Testcase #{tc.id} (#{tc.code_name}) download and prepared")
+        end
+
+        # download checker
+        if @working_dataset.checker.attached?
+          url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(@working_dataset.checker.id)
+          download_from_web(url,@prob_checker_file,download_type: 'checker')
+          @prob_checker_file.chmod(0755)
         end
 
         # if any lib, dl as well

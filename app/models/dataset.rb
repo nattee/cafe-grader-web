@@ -4,9 +4,11 @@ class Dataset < ApplicationRecord
   has_many :testcases, dependent: :destroy
   has_many :submissions
 
-  enum evaluation_type: {wdiff: 0,
-                         relative: 1,
-                         custom: 2}
+  enum evaluation_type: {default: 0, #diff ignore trailing space, ignore blank line
+                         exact: 1, #diff ignore nothing
+                         relative: 2, #token match float relate
+                         custom_cafe: 3,
+                         custom_cms: 4}
 
   enum score_type:        {sum: 0,      # summation of all testcase, default
                            group_min: 1,

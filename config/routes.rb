@@ -53,6 +53,9 @@ Rails.application.routes.draw do
     member do
       post 'manager/delete/:mg_id', action: 'manager_delete', as: 'manager_delete'
       post 'manager/view/:mg_id', action: 'manager_view', as: 'manager_view'
+      post 'checker_view'
+      post 'checker_download'
+      post 'checker_delete'
       post 'testcase/input/:tc_id', action: 'testcase_input', as: 'testcase_input'
       post 'testcase/sol/:tc_id', action: 'testcase_sol', as: 'testcase_sol'
       post 'testcase/delete/:tc_id', action: 'testcase_delete', as: 'testcase_delete'

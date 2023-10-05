@@ -24,6 +24,7 @@ module JudgeBase
   COLOR_EVALUATION_FORCE_EXIT = :orangered
   COLOR_GRADING_CORRECT = :seagreen
   COLOR_GRADING_WRONG = :crimson
+  COLOR_GRADING_PARTIAL = :mediumpurple
   COLOR_SCORE_RESULT = :orange
   COLOR_ERROR = :darkred
 
@@ -128,6 +129,8 @@ module JudgeBase
     #preparing path name
     @problem_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeProblemPath + sub.problem.id.to_s
     @prob_testcase_path = @problem_path + testcase.id.to_s
+    @prob_checker_path = @problem_path + 'checker'
+    @prob_checker_file = @prob_checker_path + testcase.dataset.checker.filename.to_s if testcase.dataset.checker.attached?
     @sub_testcase_path = @submission_path + testcase.get_name_for_dir
     @output_path = @sub_testcase_path + 'output'
     @output_file = @output_path + STDOUT_FILENAME
@@ -137,6 +140,7 @@ module JudgeBase
 
     #prepare folder
     @prob_testcase_path.mkpath
+    @prob_checker_path.mkpath
     @sub_testcase_path.mkpath
     @input_path.mkpath
     @output_path.mkpath

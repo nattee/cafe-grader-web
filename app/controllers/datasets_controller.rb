@@ -1,6 +1,7 @@
 class DatasetsController < ApplicationController
   before_action :set_dataset, only: %i[ show edit update destroy
                                         manager_delete manager_view
+                                        checker_view checker_download checker_delete
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge
                                       ]
@@ -62,17 +63,34 @@ class DatasetsController < ApplicationController
     render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: mg.filename, body_msg: mg.download}
   end
 
+  def checker_view
+    c = @dataset.checker
+    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: c.filename, body_msg: c.download}
+  end
+
+  def checker_download
+    type = @dataset.checker.content_type
+    filename = @dataset.checker.filename.to_s
+    send_data @dataset.checker.download, disposition: 'inline', type: type, filename: filename
+  end
+
+  def checker_delete
+    @dataset.checker.purge
+    @updated = "Checker is deleted"
+    render 'manager_delete'
+  end
+
   # as turbo
   def testcase_input
     tc = Testcase.find(params[:tc_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.input }
+    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.inp_file.download }
 
   end
 
   # as turbo
   def testcase_sol
     tc = Testcase.find(params[:tc_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.sol }
+    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.ans_file.download }
   end
 
   # as turbo

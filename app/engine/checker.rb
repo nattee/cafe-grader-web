@@ -5,6 +5,66 @@ class Checker
   include JudgeBase
   include Rails.application.routes.url_helpers
 
+  # A langauge specific sub-class may override this method
+  # it should return shell command that do the comparison
+  def check_command(evaluation_type,input_file,output_file, ans_file)
+    case evaluation_type
+    when 'default'
+      return "diff -q -b -B -Z #{output_file} #{ans_file}"
+    when 'exact'
+      return "diff -q #{output_file} #{ans_file}"
+    when 'relative'
+      prog = Rails.root.join 'app',' engine', 'std_checker', evaluation_type
+      return "#{prog} #{output_file} #{ans_file}"
+    when 'custom_cms'
+      return "#{prog} #{input_file} #{output_file} #{ans_file}"
+    when 'custom_cafe'
+      return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
+    end
+  end
+
+  def process_result_cms(out,err)
+    score = out.chomp.strip
+    err = nil if err.blank?
+    return report_check(score,err)
+  end
+
+  def process_result_cafe(out,err)
+    arr = out.split
+    score = arr[1].to_d/10
+    if arr[0].upcase == "CORRECT"
+      return report_check_correct(score)
+    elsif arr[0].upcase == "INCORRECT"
+      return report_check_wrong(score)
+    elsif arr[0].split(':')[0].upcase == 'COMMENT'
+      return report_check_partial(score,arr[0].split(':')[1])
+    end
+  end
+
+  def process_result(evaluation_type,out,err,status)
+    case evaluation_type
+    when 'default', 'exact', 'relative'
+      #these standard check return 0 when correct
+      if (status.exitstatus == 0)
+        return report_check_correct
+      else
+        return report_check_wrong
+      end
+    when 'custom_cms', 'custom_cafe'
+      if status.exitstatus == 0
+        if evaluation_type == 'custom_cms'
+          return process_result_cms(out,err)
+        else
+          return process_result_cafe(out,err)
+        end
+      else
+        return report_check_error('error in checker')
+      end
+    else
+      return report_check_error('unknown evaluation type')
+    end
+  end
+
 
   # check if required files, that are, output from submttion, answer from problem
   # and any other file is there
@@ -13,11 +73,26 @@ class Checker
     raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
   end
 
+  def result_text_with_color(result)
+    if result[:result] == :correct
+      color = COLOR_GRADING_CORRECT
+    elsif result[:result] == :wrong
+      color = COLOR_GRADING_WRONG
+    elsif result[:result] == :partial
+      color = COLOR_GRADING_PARTIAL
+    else
+      color = :red
+    end
+
+    Rainbow(result[:result].to_s).color(color)
+  end
+
   # main run function
   # run the submission against the testcase
   def process(sub,testcase)
     @sub = sub
     @testcase = testcase
+    @ds = @testcase.dataset
 
     # init isolate
     # setup_isolate(@box_id)
@@ -27,38 +102,58 @@ class Checker
     prepare_testcase_directory(@sub,@testcase)
     check_for_required_file
 
-    cmd = "diff -q -b #{@output_file} #{@ans_file}"
+    cmd = check_command(@ds.evaluation_type,@input_file,@output_file,@ans_file)
 
+    # call the compare command
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check cmd: " +cmd
     out,err,status = Open3.capture3(cmd)
 
-    if (status.exitstatus == 0)
-      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: #{Rainbow('correct').color(COLOR_GRADING_CORRECT)}"
-      return report_check_correct
-    else
-      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: #{Rainbow('wrong answer').color(COLOR_GRADING_WRONG)}"
-      return report_check_wrong
-    end
-
+    result = process_result(@ds.evaluation_type,out,err,status)
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_text_with_color(result)
+    return result;
   end
 
-  def report_check_correct(score = 1.to_d)
+  def report_check(score,comment)
+    x = {score: score, comment: comment}
+    if score == 1
+      x[:result] = :correct
+    elsif score == 0
+      x[:result] = :wrong
+    else
+      x[:result] = :partial
+    end
+    return x
+  end
+
+  def report_check_correct(score = 1.to_d, comment = nil)
     {
       result: :correct,
-      score: score
+      score: score,
+      comment: comment,
     }
   end
 
-  def report_check_wrong(score = 0.to_d)
+  def report_check_wrong(score = 0.to_d,comment = nil)
     {
       result: :wrong,
-      score: score
+      score: score,
+      comment: comment,
     }
   end
 
-  def report_check_partial(score)
+  def report_check_partial(score, comment = nil)
     {
       result: :partial,
-      score: score
+      score: score,
+      comment: comment,
+    }
+  end
+
+  def report_check_error(comment = 'checker error')
+    {
+      result: :grader_error,
+      score: nil,
+      comment: comment,
     }
   end
 

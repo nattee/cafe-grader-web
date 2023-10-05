@@ -26,7 +26,7 @@
           turbo_confirm: "Rejudge all #{ds.problem.submissions.count} submissions of #{ds.problem.name} using the dataset [#{ds.name}]?"}, class: 'btn btn-warning btn-sm'
   .row
     .col-md-6
-      %h4.my-2 Basic Info
+      %h5.my-2 Basic Info
       = simple_form_for ds, wrapper: :horizontal_form_half do |f|
         = f.input :name
         = f.input :time_limit
@@ -36,7 +36,7 @@
         = f.button :submit, class: 'btn-primary'
     .col-md-6
       = render partial: 'datasets/managers', locals: {ds: ds}
-  %h4.mt-4 Testcases
+  %h5.mt-4 Testcases
   %table.datatable.table-hover
     %thead
       %tr

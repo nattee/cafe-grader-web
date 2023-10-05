@@ -131,8 +131,8 @@
               %tr
                 %td.text-end= ev.num
                 %td.text-end= ev.group_name
-                %td.text-end= ev.time / 1000.0
-                %td.text-end= number_with_precision ev.memory / 1024.0, precision: 2
+                %td.text-end= (ev.time || 0) / 1000.0
+                %td.text-end= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
                 %td= ev.result_text
                 %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
                 %td.text-end= ev.weight
