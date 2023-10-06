@@ -3,6 +3,10 @@
 output_file = ARGV[1]
 ans_file = ARGV[2]
 
+if ARGV.count < 3 || File.exist?(output_file) == false || File.exist?(ans_file) == false
+  exit 2
+end
+
 EPSILON = 0.000001
 
 out_tokens = File.read(output_file).split
