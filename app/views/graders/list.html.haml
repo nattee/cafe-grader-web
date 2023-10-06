@@ -6,17 +6,6 @@
 %p
   = link_to 'Refresh', { :action => 'list' }, class: 'btn btn-info'
 
-
--#
-  .panel.panel-primary
-    .panel-heading
-      Grader control:
-    .panel-body
-      =link_to 'Start Graders in grading env', { action: 'start_grading'}, class: 'btn btn-secondary'
-      =link_to 'Start Graders in exam env', { action: 'start_exam'}, class: 'btn btn-secondary'
-      =link_to 'Stop all running Graders', { action: 'stop_all'}, class: 'btn btn-secondary'
-      =link_to 'Clear all data', { action: 'clear_all'}, class: 'btn btn-secondary'
-
 .row
   .col-md-6
     %h4.mt-3 Queue Status
