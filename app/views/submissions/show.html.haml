@@ -78,12 +78,16 @@
             %tt.grader-comment #{@submission.grader_comment}
         %tr
           %td.text-end.text-secondary
-            Runtime (s)
-          %td #{(@submission.max_runtime || 0)/1000.to_d}
+            Runtime
+          %td
+            %span= (@submission.max_runtime || 0)/1000.to_d
+            %span.text-body-tertiary s
         %tr
           %td.text-end.text-secondary
-            Memory (kb)
-          %td #{@submission.peak_memory}
+            Memory
+          %td
+            %span= @submission.peak_memory
+            %span.text-body-tertiary kb
         %tr
           %td.text-end.text-secondary
             Compiler result
@@ -121,8 +125,8 @@
             %tr
               %th.text-end ID
               %th.text-end Group
-              %th.text-end Time (s)
-              %th.text-end Memory (MB)
+              %th.text-end Time
+              %th.text-end Memory
               %th Result
               %th.text-end Score
               %th.text-end Weight
@@ -131,8 +135,12 @@
               %tr
                 %td.text-end= ev.num
                 %td.text-end= ev.group_name
-                %td.text-end= (ev.time || 0) / 1000.0
-                %td.text-end= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
+                %td.text-end
+                  %span= (ev.time || 0) / 1000.0
+                  %span.text-secondary s
+                %td.text-end
+                  %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
+                  %span.text-secondary MB
                 %td= ev.result_text
                 %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
                 %td.text-end= ev.weight

@@ -5,7 +5,8 @@
 #   3. read any manager and store in active storage
 #   4. read any checker
 
-BASE_EV_DIRECTORY = Rails.root.join '../judge/ev/*'
+BASE_EV_DIRECTORY_GLOB = Rails.root.join '../judge/ev/*'
+BASE_TASK_PDF_DIR = Rails.root.join 'data','tasks'
 #BASE_EV_DIRECTORY = '/home/dae/old-evaluator/judge/ev/*'
 
 def import_all_testcase(prob_ev_dir,problem)
@@ -155,17 +156,14 @@ def do_dir(prob_ev_dir)
   p = Problem.where(name: prob_ev_dir.basename.to_s).first
   return unless p
 
+  #now p is the problem with the same name as the ev sub-dir
   ds = p.live_dataset
 
-  #now p is the problem with the same name as the ev sub-dir
-
-  # import all testcases in ev/{prob}/testcases/xxx into a new live dataset ds
+  # import all testcases in ev/{prob}/test_cases/xxx into a new live dataset ds
   ds = import_all_testcase(prob_ev_dir,p)
 
   r = parse_all_test_cfg(prob_ev_dir + 'test_cases/all_tests.cfg',ds)
-  if (r[:group])
-    puts "Problem #{p.name} (#{p.id}) has grouped testcase"
-  end
+  puts "Problem #{p.name} (#{p.id}) has grouped testcase" if (r[:group])
 
   # read manager
   read_managers_from_ev(prob_ev_dir,ds)
@@ -174,17 +172,37 @@ def do_dir(prob_ev_dir)
   read_checker_from_ev(prob_ev_dir,ds)
 end
 
-# for each dir  in ev
 def main
+  # re-import testcases and checker and managers as new Dataset
   Dir[BASE_EV_DIRECTORY].each do |ev_dir|
     prob_ev_dir = Pathname.new ev_dir
     do_dir(prob_ev_dir)
   end
+
+  # import pdf
+  Problem.where.not(description_filename: nil).each do |p|
+    file = BASE_TASK_PDF_DIR + p.id.to_s + p.description_filename
+    if file.exist?
+      p.statement.attach(io: File.open(file), filename: p.description_filename)
+    end
+  end
+
+  # re-seed language
+  Language.seed
+
+  # clear grader process
+  GraderProcess.delete_all
+
+  puts "Recalculate old scores"
+  Submission.joins(:problem).where.not('problems.full_score': nil).update_all("submissions.points = submissions.points/problems.full_score * 100")
+  puts "DONE"
 end
 
 def tmp_test
   Dir[BASE_EV_DIRECTORY].each do |ev_dir|
     prob_ev_dir = Pathname.new ev_dir
-    read_checker_from_ev(prob_ev_dir,Dataset.new)
+    p = Problem.where(name: prob_ev_dir.basename.to_s).first
+    next unless p
+    read_checker_from_ev(prob_ev_dir,p.live_dataset)
   end
 end
