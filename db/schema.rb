@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
+ActiveRecord::Schema[7.0].define(version: 2023_10_07_041620) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -127,7 +127,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.integer "task_id"
-    t.string "task_type"
+    t.string "job_type"
     t.boolean "terminated"
     t.integer "worker_id"
     t.integer "box_id"
@@ -153,6 +153,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
   create_table "groups_users", charset: "latin1", force: :cascade do |t|
     t.integer "group_id", null: false
     t.integer "user_id", null: false
+    t.integer "role", default: 0
     t.index ["user_id", "group_id"], name: "index_groups_users_on_user_id_and_group_id"
   end
 
@@ -191,6 +192,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "cookie"
     t.index ["user_id"], name: "index_logins_on_user_id"
   end
 
@@ -216,13 +218,14 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
     t.boolean "output_only"
     t.string "description_filename"
     t.boolean "view_testcase"
-    t.integer "difficulty"
     t.text "description"
     t.boolean "markdown"
     t.bigint "live_dataset_id"
     t.string "submission_filename"
     t.integer "task_type", limit: 1, default: 0
     t.integer "compilation_type", limit: 1, default: 0
+    t.float "difficulty"
+    t.string "permitted_lang"
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
@@ -301,6 +304,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_09_10_132835) do
     t.string "ip_address"
     t.integer "tag", default: 0
     t.integer "status", limit: 1, default: 0
+    t.string "cookie"
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"

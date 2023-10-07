@@ -28,7 +28,7 @@
     %th.text-center
     %th.text-center
   - for problem in @problems
-    %tr{:class => "#{(problem.available) ? "bg-success bg-opacity-25" : "bg-opacity-25"}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
+    %tr{:class => "#{(problem.available) ? "table-success" : ""}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
       - @problem=problem
       %td= problem.name
       %td
