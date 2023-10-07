@@ -1,0 +1,16 @@
+%tr{id: dom_id(grader), is: 'turbo-frame'}
+  %td= grader.worker_id
+  %td= grader.box_id
+  %td
+    = turbo_frame_tag dom_id(grader,"grader_job_type") do
+      = job_type_text(grader.job_type)
+      = link_to '<span class="mi mi-bs md-18">edit</span>'.html_safe, edit_job_type_grader_process_path(grader), data: {turbo: "true", 'turbo-method': 'post'}
+  %td= "#{time_ago_in_words(grader.last_heartbeat, include_seconds: true) if grader.last_heartbeat} ago"
+  %td= grader.status
+  %td= grader.task_id
+  %td
+    - text = (grader.enabled? ? 'Disable' : 'Enable')
+    - btn_class = (grader.enabled? ? 'btn-secondary' : 'btn-primary')
+    - param_value = (grader.enabled? ? 0 : 1)
+    = button_to text , set_enabled_grader_process_path(grader,param_value), class: "btn #{btn_class} btn-sm", form: { data: { turbo: 'true' } }
+

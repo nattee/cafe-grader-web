@@ -218,19 +218,11 @@ Rails.application.routes.draw do
 
   #grader
   #get 'graders/list', to: 'graders#list', as: 'grader_list'
-  namespace :graders do
-    get 'task/:id/:type', action: 'task', as: 'task'
-    get 'view/:id/:type', action: 'view', as: 'view'
-    #get 'clear/:id', action: 'clear', as: 'clear'
-    #get 'start_grading'
-    #get 'start_exam'
-    #get 'clear_all'
-    #get 'stop_all'
-
-    #get 'stop'
-    #get 'clear_terminated'
-    get 'list'
-    post 'set_enabled/:id/:enabled', as: :set_enabled, action: :set_enabled
+  resources :grader_processes, controller: :graders, only: [:index, :update] do
+    member do
+      post 'edit_job_type'
+      post 'set_enabled/:enabled', as: :set_enabled, action: :set_enabled
+    end
   end
 
 

@@ -85,8 +85,10 @@ class ProblemImporter
           new_tc = Testcase.new(code_name: k, num: num, group: group,weight: 1,group_name: group_name)
           num +=1
         end
-        new_tc.input = File.read(@tc[k][:input]).gsub(/\r$/, '')
-        new_tc.sol = File.read(@tc[k][:sol]).gsub(/\r$/, '')
+        input = File.read(@tc[k][:input]).gsub(/\r$/, '')
+        ans = File.read(@tc[k][:sol]).gsub(/\r$/, '')
+        new_tc.inp_file.attach(io: StringIO.new(input), filename: 'input.txt', content_type: 'text/plain',  identify: false)
+        new_tc.ans_file.attach(io: StringIO.new(ans),   filename: 'answer.txt', content_type: 'text/plain',  identify: false)
         @dataset.testcases << new_tc
         @log << "  #{@tc[k][:input]} is the input"
         @log << "  #{@tc[k][:sol]} is the sol"

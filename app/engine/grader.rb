@@ -85,7 +85,7 @@ class Grader
   # -------- main job running function --------------
   #
   def check_and_run_job
-    @job = Job.take_oldest_waiting_job(@grader_process) if Job.has_waiting_job
+    @job = Job.take_oldest_waiting_job(@grader_process,@grader_process.job_type_array) if Job.has_waiting_job
 
     if (@job)
       @last_job_time = Time.zone.now

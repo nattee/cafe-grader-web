@@ -49,18 +49,20 @@ class Job < ApplicationRecord
     Job.create(parent_job_id: parent_job_id, job_type: :score, arg: submission.id, param: {dataset_id: dataset.id}.to_json )
   end
 
-  def self.has_waiting_job
-    Job.where(status: :wait).count > 0
+  def self.has_waiting_job(job_type = nil)
+    q = Job.where(status: :wait)
+    q = q.where(job_type: job_type) unless job_type.nil?
+    return q.count > 0
   end
 
-  # fetch jobs from the queue, only for given job_types, if given
-  def self.take_oldest_waiting_job(grader_process,job_types = [])
+  # fetch jobs from the queue, only for given job_type, if given
+  def self.take_oldest_waiting_job(grader_process,job_type = nil)
     job = nil
     Job.transaction do
       # pick non-locked oldest_waiting
       # https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-reads.html#innodb-locking-reads-nowait-skip-locked
       jobs = Job.lock("FOR UPDATE SKIP LOCKED").oldest_waiting
-      jobs = jobs.where(job_type: job_types) if job_types.count > 0
+      jobs = jobs.where(job_type: job_type) unless job_type.nil?
       job = jobs.first
 
       if job

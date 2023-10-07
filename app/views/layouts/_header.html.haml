@@ -43,7 +43,7 @@
                 %li= link_to 'Tags', tags_path, class: 'dropdown-item'+active_class_when(controller: :tags)
                 %li= link_to 'Users', user_admin_index_path, class: 'dropdown-item'+active_class_when(controller: :user_admin)
                 %li= link_to 'User Groups', groups_path, class: 'dropdown-item'+active_class_when(controller: :groups)
-                %li= link_to 'Graders', graders_list_path, class: 'dropdown-item'+active_class_when(controller: :graders)
+                %li= link_to 'Graders', grader_processes_path, class: 'dropdown-item'+active_class_when(controller: :graders)
                 %li= link_to 'Message ', console_messages_path, class: 'dropdown-item'+active_class_when(controller: :messages)
                 %li
                   %hr.dropdown-divider
@@ -62,7 +62,7 @@
                 %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
             =link_to "#{@backlog} backlogs!",
-              graders_list_path,
+              grader_processes_path,
               class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
             = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
               .input-group.mx-2

@@ -19,10 +19,10 @@ class ProblemsController < ApplicationController
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
     ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
     @problems = Problem.joins(:datasets)
-      .joins("INNER JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
+      .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
+      .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
       .includes(:tags).order(date_added: :desc).group('problems.id')
       .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
-      .joins("INNER JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
       .select("MIN(MS.ms_count) as ms_count")
       .with_attached_statement
     @multi_contest = GraderConfiguration.multicontests?
