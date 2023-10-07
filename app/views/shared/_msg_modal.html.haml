@@ -7,11 +7,11 @@
       .modal-content
         .modal-header
           %h4= header_msg
-          %button.btn-close{type: 'button', 'data-bs': {dismiss: :modal}, aria: {label: 'Close'}}
+          %button.btn-close{type: 'button', data: {bs: {dismiss: :modal}}, aria: {label: 'Close'}}
         .modal-body
           %pre= body_msg
         .modal-footer
-          %button.btn.btn-secondary{type: 'button', 'data-bs': {dismiss: 'modal'}} Close
+          %button.btn.btn-secondary{type: 'button', data: {bs: {dismiss: 'modal'}}} Close
 - if do_popup
   :javascript
     $('#msg_modal').modal('show')
