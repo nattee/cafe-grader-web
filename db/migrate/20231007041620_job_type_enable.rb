@@ -6,5 +6,6 @@ class JobTypeEnable < ActiveRecord::Migration[7.0]
     add_column :submissions, :cookie, :string
     add_column :logins, :cookie, :string
     rename_column :grader_processes, :task_type, :job_type
+    add_index :submissions, :tag
   end
 end
