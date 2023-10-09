@@ -1,6 +1,6 @@
 class JobTypeEnable < ActiveRecord::Migration[7.0]
   def change
-    add_column :problems, :difficulty, :float
+    #add_column :problems, :difficulty, :float
     add_column :problems, :permitted_lang, :string
     add_column :groups_users, :role, :integer, default: 0
     add_column :submissions, :cookie, :string

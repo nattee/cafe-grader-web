@@ -1,5 +1,10 @@
 %h1 Editing site
-= error_messages_for :site
+- if @site.errors.count > 0
+  .alert.alert-danger
+    %ul
+      - @site.errors.full_messages.each do |message|
+        %li= message
+
 = form_for(@site) do |f|
   .row
     .col-md-4
