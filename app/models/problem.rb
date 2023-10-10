@@ -130,6 +130,20 @@ class Problem < ApplicationRecord
     "[#{name}] #{full_name}"
   end
 
+  # ids_string is something like ['1','3','7']
+  # which correspond to the submitted value from  select2 multiple selection
+  def set_permitted_lang_from_ids_string(ids_string)
+    lang_names = ids_string.map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
+    self.permitted_lang = lang_names
+  end
+
+  # return ids array of permitted lang
+  def get_permitted_lang_as_ids
+    return Language.ids if self.permitted_lang.blank?
+    return Language.where(name: self.permitted_lang.split(' ').uniq).ids
+  end
+
+
 
   #this function return a content generated for "all_tests.cfg"
   #  from the legacy code (Aj. Pong's) 

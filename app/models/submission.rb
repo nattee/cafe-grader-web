@@ -5,13 +5,11 @@ class Submission < ApplicationRecord
 
 
   belongs_to :language
-  belongs_to :problem  #this should be changed to delegation
-  #delegate :problem, through: :dataset, allow_nil: true
+  belongs_to :problem
   belongs_to :user
 
   has_many :evaluations
 
-  before_validation :assign_problem
   before_validation :assign_language
   before_save :assign_latest_number_if_new_recond
 
@@ -137,23 +135,20 @@ class Submission < ApplicationRecord
     end
   end
 
-  def assign_problem
-    if self.problem_id!=-1
-      begin
-        self.problem = Problem.find(self.problem_id)
-      rescue ActiveRecord::RecordNotFound
-        self.problem = nil
-      end
-    else
-      self.problem = Submission.find_problem_in_source(self.source,
-                                                       self.source_filename)
-    end
-  end
 
   def assign_language
     if self.language == nil
+      # detect from filename
       self.language = Submission.find_language_in_source(self.source,
                                                          self.source_filename)
+
+    end
+
+    # if problem permit only one language, we always use that one
+    # even when the problem already have one
+    permitted_lang_ids = self.problem.get_permitted_lang_as_ids
+    if permitted_lang_ids.count == 1
+      self.language_id = permitted_lang_ids[0]
     end
   end
 

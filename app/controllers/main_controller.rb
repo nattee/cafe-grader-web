@@ -54,6 +54,10 @@ class MainController < ApplicationController
     @user = User.find(session[:user_id])
   end
 
+  # handle post of new submission either by
+  #   1. submit via a form in the main file
+  #   2. submit via "new" button
+  #   4. submit vis "edit" button
   def submit
     problem = Problem.where(id: params[:submission][:problem_id]).first
     unless problem
@@ -65,7 +69,8 @@ class MainController < ApplicationController
     @submission = Submission.new(user: @current_user,
                                  problem: problem,
                                  submitted_at: Time.zone.now,
-                                 ip_address: cookies.encrypted[:uuid])
+                                 cookie: cookies.encrypted[:uuid],
+                                 ip_address: request.remote_ip)
     if (params['file']) and (params['file']!='')
       @submission.source = File.open(params['file'].path,'r:UTF-8',&:read) 
       @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')

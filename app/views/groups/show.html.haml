@@ -26,6 +26,7 @@
     .card
       .card-header
         Users of this group
+
       .card-body
         %ul
           %li
@@ -44,7 +45,7 @@
               =submit_tag "Add",class: 'btn btn-primary'
 
 
-        %table.table.table-hover
+        %table.table.datatable.table-hover
           %thead
             %tr
               %th Login
@@ -77,7 +78,7 @@
               =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', style: 'width: 25em';
             .col-auto
               =submit_tag "Add",class: 'btn btn-primary'
-        %table.table.table-hover
+        %table.table.datatable.table-hover
           %thead
             %tr
               %th name
@@ -93,4 +94,7 @@
                 %td= problem.datasets.count
                 %td= link_to 'Remove', remove_problem_group_path(@group,problem), :method => :delete, :data => { :confirm => "Remove #{problem.full_name}?" }, class: 'btn btn-danger btn-sm'
 
-
+:javascript
+  $(document).on('import-map-loaded',function(e) {
+    $('.datatable').DataTable({destroy: true, paging: false})
+  });

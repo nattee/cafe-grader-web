@@ -82,9 +82,15 @@ class ProblemsController < ApplicationController
 
   def edit
     @description = @problem.description
+
+    # if permitted_lang not blank, it means the user has some intent to limit
+    # submittible language
+    @permitted_lang_ids = @problem.get_permitted_lang_as_ids unless @problem.permitted_lang.blank?
   end
 
   def update
+    permitted_lang_as_string = params[:problem][:permitted_lang].map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
+    @problem.permitted_lang = permitted_lang_as_string
     if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
         flash[:error] = 'Error: Uploaded file is not PDF'
         render :action => 'edit'
