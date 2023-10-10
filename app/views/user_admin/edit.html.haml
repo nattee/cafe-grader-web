@@ -1,9 +1,8 @@
-.container-fluid
-  .row
-    .col-md-6
-      %h1 Editing user
-  .row
-    .col-md-6
-      = simple_form_for @user, url: user_admin_path(@user) do |f|
-        = render partial: 'form', locals: {f: f}
+%h1 Editing user
+.row
+  .col-md-6
+    - content_for(:form_buttons) do
+      = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
+    = simple_form_for @user, url: user_admin_path(@user) do |f|
+      = render partial: 'form', locals: {f: f}
 

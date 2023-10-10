@@ -1,25 +1,19 @@
 = simple_form_for @announcement do |f|
   - if @announcement.errors.any?
-    .form-row
-      .col-sm-12
-        #error_explanation.alert.alert-dismissable.alert-danger
-          %button.close{type: "button", data: { dismiss: "alert"}, aria: {hidden: "true"}} ×
-          %h3= "เกิดปัญหาในการบันทึกข้อมูลเนื่องจาก"
-          %ul
-            - @announcement.errors.full_messages.each do |message|
-              %li= message
-  .form-row
-    .col-md-6.col-12
-      -# = f.input :lock_version, as: :hidden
-      = f.input :title
-      = f.input :notes, label: 'Notes (shown internally, used to organize announcements)'
-      = f.input :body, input_html: {style: 'height: 10rem'}
-      = f.input :author
-      = f.input :published
-      = f.input :frontpage, label: 'Display in the front page only?'
-      = f.input :on_nav_bar, label: 'Show on menu bar?'
-      = f.input :contest_only, label: 'Display in contest only?'
-      = f.submit class: 'btn btn-primary'
-      -if content_for?(:form_buttons)
-        = yield(:form_buttons)
-        / = link_to 'Back', announcements_path, class: 'btn btn-default'
+    #error_explanation.alert.alert-dismissable.alert-danger
+      %button.close{type: "button", data: { dismiss: "alert"}, aria: {hidden: "true"}} ×
+      %h3= "Error in saving"
+      %ul
+        - @announcement.errors.full_messages.each do |message|
+          %li= message
+  = f.input :title
+  = f.input :notes, label: 'Notes (shown internally, used to organize announcements)'
+  = f.input :body, input_html: {style: 'height: 10rem'}
+  = f.input :author
+  = f.input :published
+  = f.input :frontpage, label: 'Display in the front page only?'
+  = f.input :on_nav_bar, label: 'Show on menu bar?'
+  = f.input :contest_only, label: 'Display in contest only?'
+  = f.submit class: 'btn btn-primary'
+  - if content_for?(:form_buttons)
+    = yield(:form_buttons)

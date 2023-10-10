@@ -59,6 +59,7 @@ class SubmissionsController < ApplicationController
       sub = Submission.find_last_by_user_and_problem(@current_user.id,@problem.id)
       @source = @submission.source.to_s if @submission and @submission.source
     end
+    @lang_id = @current_user.default_language || Language.first.id
     render 'edit'
   end
 
@@ -66,7 +67,7 @@ class SubmissionsController < ApplicationController
   def edit
     @source = @submission.source.to_s
     @problem = @submission.problem
-    @lang_id = @submission.language.id
+    @lang_id = @submission.language_id || @current_user.default_language || Language.first.id
   end
 
 

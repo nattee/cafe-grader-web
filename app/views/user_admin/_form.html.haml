@@ -7,5 +7,5 @@
 = f.input :alias
 = f.input :remark
 = f.button :submit, class: 'btn btn-primary'
-= link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
-
+- if content_for?(:form_buttons)
+  = yield(:form_buttons)

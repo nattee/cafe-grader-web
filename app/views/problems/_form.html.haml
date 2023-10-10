@@ -7,6 +7,7 @@
           = form.input :name
           = form.input :full_name
           = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
+          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @permitted_lang_ids, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
           = form.input :date_added, input_html: {value: nil}, wrapper: :horizontal_form, as: :string
           = form.input :available, wrapper: :horizontal_boolean
           = form.input :test_allowed, wrapper: :horizontal_boolean

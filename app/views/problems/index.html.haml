@@ -1,9 +1,28 @@
 %h1 Problems
-%p
-  = link_to 'Import problems', {:action => 'import'}, class: 'btn btn-success btn-sm'
-  = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info btn-sm'
-  = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-secondary btn-sm'
-  = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-secondary btn-sm'
+.row
+  .col-md-5
+    = link_to 'Import problems', {:action => 'import'}, class: 'btn btn-success'
+    = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info'
+    = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-secondary'
+    = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-secondary'
+  .col-md-7
+    .alert.alert-warning
+      Setting
+      %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
+      is
+      %strong= "#{GraderConfiguration.use_problem_group?}."
+      - if GraderConfiguration.use_problem_group?
+        Normal users will see only
+        %strong enabled
+        problems in the groups that there are memebers of.
+        You can manage groups at
+        = link_to 'Manage/User Groups', groups_path
+      - else
+        Normal users will see
+        %strong every
+        problems that are
+        %strong enabled.
+
 %table#main_table.table.table-condense.table-hover
   %thead
     %tr

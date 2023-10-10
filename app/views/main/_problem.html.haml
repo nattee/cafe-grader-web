@@ -9,7 +9,7 @@
       - if @current_user and @current_user.admin?
         = link_to '(stat)', stat_problem_path(problem)
     %div
-      = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='mi mi-bs'>description</span>".html_safe, problem
+      = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, problem
   -# score column
   - score = @prob_submissions[problem.id][:max_score];
   - cc =  score == 100 ? 'bg-success' : 'bg-warning text-dark'
