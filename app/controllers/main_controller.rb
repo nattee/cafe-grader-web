@@ -3,9 +3,9 @@ class MainController < ApplicationController
   before_action :check_valid_login, :except => [:login]
   before_action :check_viewability, :except => [:index, :login]
 
-  append_before_action :confirm_and_update_start_time, 
-                       :except => [:index, 
-                                   :login, 
+  append_before_action :confirm_and_update_start_time,
+                       :except => [:index,
+                                   :login,
                                    :confirm_contest_start]
 
   # to prevent log in box to be shown when user logged out of the

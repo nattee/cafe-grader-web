@@ -17,7 +17,7 @@ class ApplicationController < ActionController::Base
 
   #report and redirect for unauthorized activities
   def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')
-    if @current_user
+    if @current_user && false == GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
       redirect_to list_main_path, alert: msg
     else
       redirect_to login_main_path, alert: msg
