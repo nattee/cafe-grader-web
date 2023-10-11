@@ -174,7 +174,7 @@ end
 
 def main
   # re-import testcases and checker and managers as new Dataset
-  Dir[BASE_EV_DIRECTORY].each do |ev_dir|
+  Dir[BASE_EV_DIRECTORY_GLOB].each do |ev_dir|
     prob_ev_dir = Pathname.new ev_dir
     do_dir(prob_ev_dir)
   end
@@ -199,7 +199,7 @@ def main
 end
 
 def tmp_test
-  Dir[BASE_EV_DIRECTORY].each do |ev_dir|
+  Dir[BASE_EV_DIRECTORY_GLOB].each do |ev_dir|
     prob_ev_dir = Pathname.new ev_dir
     p = Problem.where(name: prob_ev_dir.basename.to_s).first
     next unless p
