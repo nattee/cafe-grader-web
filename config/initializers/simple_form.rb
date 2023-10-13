@@ -4,7 +4,7 @@
 # components.
 # See https://github.com/heartcombo/simple_form#custom-components to know
 # more about custom components.
-# Dir[Rails.root.join('lib/components/**/*.rb')].each { |f| require f }
+Dir[Rails.root.join('lib/components/**/*.rb')].each { |f| require f }
 #
 # Use this setup block to configure all options available in SimpleForm.
 SimpleForm.setup do |config|
@@ -50,6 +50,7 @@ SimpleForm.setup do |config|
 
     # Calculates readonly automatically from readonly attributes
     b.optional :readonly
+
 
     ## Inputs
     # b.use :input, class: 'input', error_class: 'is-invalid', valid_class: 'is-valid'

@@ -28,6 +28,7 @@
     %tr
       %th Name
       %th Full name
+      %th Difficulty
       %th.text-end Dataset (testcases)
       %th.text-end Model Solution
       %th Tags
@@ -54,6 +55,7 @@
         %td
           = problem.full_name
           = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='glyphicon glyphicon-file'></span>".html_safe, problem
+        %td= render_star(problem.difficulty)
         %td.text-end= "#{problem.dataset_count} (#{problem.tc_count})"
         %td.text-end= "#{problem.ms_count}"
         %td

@@ -6,12 +6,13 @@
           %h4 Basic Information
           = form.input :name
           = form.input :full_name
-          = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
+          = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
           = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @permitted_lang_ids, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
-          = form.input :date_added, input_html: {value: nil}, wrapper: :horizontal_form, as: :string
+          = form.input :date_added, input_html: {value: nil}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
           = form.input :available, wrapper: :horizontal_boolean
-          = form.input :test_allowed, wrapper: :horizontal_boolean
-          = form.input :output_only, wrapper: :horizontal_boolean
+          = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
+          /= form.input :test_allowed, wrapper: :horizontal_boolean
+          /= form.input :output_only, wrapper: :horizontal_boolean
           = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
           %h4 Statements
           = form.input :statement, wrapper: :horizontal_file

@@ -141,7 +141,7 @@ class DatasetsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def dataset_params
       params.fetch(:dataset, {})
-      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type)
+      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename)
     end
 
 end

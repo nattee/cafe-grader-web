@@ -4,6 +4,7 @@
   %td
     %strong
       = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
+      %span{style: 'color: var(--bs-orange)'}= render_star(problem.difficulty)
     .text-muted
       = "#{problem.name}"
       - if @current_user and @current_user.admin?

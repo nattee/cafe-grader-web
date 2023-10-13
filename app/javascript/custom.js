@@ -77,6 +77,9 @@ $(function() {
     theme: "bootstrap-5",
   });
 
+  // init tooltips
+  $('[data-bs-toggle="tooltip"]').tooltip()
+
   //make select2 focus on search box
   //see https://stackoverflow.com/questions/25882999/set-focus-to-search-text-field-when-we-click-on-select-2-drop-down
   $(document).on('select2:open', (e) => {

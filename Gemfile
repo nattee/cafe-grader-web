@@ -76,7 +76,8 @@ gem 'momentjs-rails'
 #gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------
-gem 'simple_form', git: 'https://github.com/heartcombo/simple_form', ref: '31fe255'
+#gem 'simple_form', git: 'https://github.com/heartcombo/simple_form', ref: '31fe255'
+gem 'simple_form'
 
 #ace editor
 gem 'ace-rails-ap'
