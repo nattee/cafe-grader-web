@@ -7,6 +7,7 @@
         %th Remark
         - @problems.each do |p|
           %th.text-right= p.name.gsub('_',' ')
+          %th.text-right= p.name.gsub('_',' ') + ' (time)'
         %th.text-right Total
         %th.text-right Passed
     %tbody
@@ -21,6 +22,7 @@
             - this_prob_score = score['prob_'+p.name] || 0; sum += this_prob_score
             - pass += 1 if this_prob_score >= 100
             %td.text-end= number_with_precision(score['prob_'+p.name], precision: 0)
+            %td.text-end= score['time'+p.name].strftime('%Y/%m/%d %T') rescue nil
           - super_sum += sum
           - super_pass += pass
           %td.text-end= number_with_precision(sum, precision: 0)
@@ -32,6 +34,7 @@
         %td
         - @problems.each do |p|
           %td.text-end= number_with_delimiter(@result[:stat][p.name][:sum], precision: 0)
+          %td
         %td.text-end= number_with_delimiter(super_sum, precision: 0)
         %td.text-end= number_with_delimiter(super_pass, precision: 0)
   :javascript
