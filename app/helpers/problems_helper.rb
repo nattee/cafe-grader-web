@@ -6,6 +6,7 @@ module ProblemsHelper
   def render_star(count)
     count ||= 0
     icons = (['star'] * (count/2)) + ['star_half'] * (count%2)
-    return "<span class='mi mi-bs md-18'> #{icons.join('&ZeroWidthSpace;')}</span>".html_safe
+    html = icons.map{ |x| "<i class='mi mi-bs md-18'>#{x}</i>"}.join
+    return "<span style='display: inline-block;'>#{html}</span>".html_safe
   end
 end

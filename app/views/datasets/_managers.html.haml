@@ -3,7 +3,7 @@
   - ds.managers.each do |mg|
     .row
       .col-md-6
-        = mg.filename
+        %span.bg-success-subtle.rounded.p-1.font-monospace= mg.filename
       .col-md-6
         [
         %span= link_to 'view', manager_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
@@ -11,12 +11,15 @@
         %span= link_to 'delete', manager_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
         ]
   - if ds.managers.count == 0
-    = '-- none --'
-  - if ds.checker.attached?
+    %i -- none --
+  .my-2
+    - if local_assigns[:form]
+      = form.input :managers, label: 'Add manager', wrapper: :horizontal_file
+  - if ['custom_cafe','custom_cms'].include? ds.evaluation_type
     %h5.my-2 Checker
-    .row
+    .row.mb-2
       .col-md-6
-        = ds.checker.filename
+        %span.bg-warning-subtle.rounded.p-1.font-monospace= ds.checker.filename
       .col-md-6
         [
         %span= link_to 'view', checker_view_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post' }
@@ -25,3 +28,5 @@
         |
         %span= link_to 'delete', checker_delete_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
         ]
+    - if local_assigns[:form]
+      = form.input :checker, label: 'Set checker', wrapper: :horizontal_file

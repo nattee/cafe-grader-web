@@ -7,10 +7,11 @@
       %span{style: 'color: var(--bs-orange)'}= render_star(problem.difficulty)
     .text-muted
       = "#{problem.name}"
-      - if @current_user and @current_user.admin?
-        = link_to '(stat)', stat_problem_path(problem)
     %div
       = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, problem
+      - if @current_user and @current_user.admin?
+        |
+        = link_to '(stat)', stat_problem_path(problem)
   -# score column
   - score = @prob_submissions[problem.id][:max_score];
   - cc =  score == 100 ? 'bg-success' : 'bg-warning text-dark'

@@ -39,8 +39,11 @@ class DatasetsController < ApplicationController
   # PATCH/PUT /datasets/1 or /datasets/1.json
   def update
     respond_to do |format|
+      if params[:dataset][:managers]
+        @dataset.managers.attach params[:dataset][:managers]
+      end
       if @dataset.update(dataset_params)
-        @updated = "Updated at #{Time.zone.now}"
+        @updated = "Updated successfully #{helpers.time_ago_in_words Time.zone.now, include_seconds: true} ago"
         #format.html { redirect_to dataset_url(@dataset), notice: "Dataset was successfully updated." }
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
@@ -141,7 +144,7 @@ class DatasetsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def dataset_params
       params.fetch(:dataset, {})
-      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename)
+      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename, :checker)
     end
 
 end

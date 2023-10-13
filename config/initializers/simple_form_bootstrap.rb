@@ -174,6 +174,7 @@ SimpleForm.setup do |config|
     b.optional :pattern
     b.optional :min_max
     b.optional :readonly
+    b.use :tooltip
     b.use :label, class: 'col-sm-6 col-form-label'
     b.wrapper :grid_wrapper, class: 'col-sm-6' do |ba|
       ba.use :input, class: 'form-control', error_class: 'is-invalid'
