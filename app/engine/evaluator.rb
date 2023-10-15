@@ -103,22 +103,12 @@ class Evaluator
       filename = @mybin_path + attachment.filename.to_s
 
       #download from server
-      uri = URI(Rails.configuration.worker[:hosts][:web]+worker_get_compiled_submission_path(@sub,attachment.id))
-      hostname = uri.hostname
-      port = uri.port
-      req = Net::HTTP::Get.new(uri)
-      Net::HTTP.start(hostname,port) do |http|
-        resp = http.request(req)
-        if resp.kind_of?(Net::HTTPSuccess)
-          File.open(filename,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
-          judge_log "Download executable #{filename} from the server"
-        else
-          judge_log "Error downloading #{filename} from the server"
-          #raise the exception
-          resp.value
-        end
+      url = Rails.configuration.worker[:hosts][:web]+worker_get_compiled_submission_path(@sub,attachment.id)
+      begin
+        download_from_web(url,filename,download_type: 'executable',chmod_mode: 'a+x')
+      rescue Net::HTTPExceptions => he
+        raise GraderError.new("Error download compiled file \"#{he}\"",submission_id: @sub.id )
       end
-
       FileUtils.chmod('a+x',filename)
     end
 
@@ -141,8 +131,12 @@ class Evaluator
           #File.write(@ans_file,tc.sol.gsub(/\r$/, ''))
           url_inp = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id)
           url_ans = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id)
-          download_from_web(url_inp,@input_file,download_type: 'input file')
-          download_from_web(url_ans,@ans_file,download_type: 'answer file')
+          begin
+            download_from_web(url_inp,@input_file,download_type: 'input file')
+            download_from_web(url_ans,@ans_file,download_type: 'answer file')
+          rescue Net::HTTPExceptions => he
+            raise GraderError.new("Error download testcase files \"#{he}\"",submission_id: @sub.id )
+          end
 
           #do the symlink
           #testcase codename inside prob_id/testcase_id
@@ -162,7 +156,11 @@ class Evaluator
         # download checker
         if @working_dataset.checker.attached?
           url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(@working_dataset.checker.id)
-          download_from_web(url,@prob_checker_file,download_type: 'checker')
+          begin
+            download_from_web(url,@prob_checker_file,download_type: 'checker')
+          rescue Net::HTTPExceptions => he
+            raise GraderError.new("Error download checker file \"#{he}\"",submission_id: @sub.id )
+          end
           @prob_checker_file.chmod(0755)
         end
 

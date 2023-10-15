@@ -28,7 +28,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :problems, except: [:new] do
+  resources :problems, except: [:new, :show] do
     member do
       get 'toggle'
       get 'toggle_test'
@@ -209,8 +209,8 @@ Rails.application.routes.draw do
 
   namespace :worker do
     post 'compiled_submission/:id', action: :compiled_submission, as: :compiled_submission
-    get 'get_compiled_submission/:sub_id/:attach_id', action: :get_compiled_submission, as: :get_compiled_submission
-    get 'get_manager/:ds_id/:manager_id', action: :get_manager, as: :get_manager
+    post 'get_compiled_submission/:sub_id/:attach_id', action: :get_compiled_submission, as: :get_compiled_submission
+    post 'get_manager/:ds_id/:manager_id', action: :get_manager, as: :get_manager
     post 'get_attachment/:id', action: :get_attachment, as: :get_attachment
   end
 

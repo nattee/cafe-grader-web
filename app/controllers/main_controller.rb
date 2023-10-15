@@ -13,24 +13,12 @@ class MainController < ApplicationController
   prepend_before_action :reject_announcement_refresh_when_logged_out, 
                         :only => [:announcements]
 
-  before_action :authenticate_by_ip_address, :only => [:list]
-
   #reset login, clear session
   #front page
   def login
     #saved_notice = flash[:notice]
     #flash[:notice] = saved_notice
     @remote_ip = request.remote_ip
-
-    # EXPERIMENT:
-    # Hide login if in single user mode and the url does not
-    # explicitly specify /login
-    #
-    # logger.info "PATH: #{request.path}"
-    # if GraderConfiguration['system.single_user_mode'] and 
-    #     request.path!='/main/login'
-    #   @hidelogin = true
-    # end
 
     @announcements = Announcement.frontpage
     render :action => 'login', locals: {skip_header: true}

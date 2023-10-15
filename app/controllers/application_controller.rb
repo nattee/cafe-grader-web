@@ -15,8 +15,9 @@ class ApplicationController < ActionController::Base
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
-  #report and redirect for unauthorized activities
+  # report and redirect for unauthorized activities
   def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')
+    session[:user_id] = nil
     if @current_user && false == GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
       redirect_to list_main_path, alert: msg
     else
@@ -83,9 +84,10 @@ class ApplicationController < ActionController::Base
 
   #redirect to root (and also force logout)
   #if the user is not logged_in or the system is in "ADMIN ONLY" mode
+
   def check_valid_login
     #check if logged in
-    unless session[:user_id]
+    unless @current_user
       if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
         unauthorized_redirect('You need to login but you cannot log in at this time')
       else
@@ -95,11 +97,9 @@ class ApplicationController < ActionController::Base
     end
 
     # check if run in single user mode
-    if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-      if @current_user==nil || (!@current_user.admin?)
-        unauthorized_redirect('You cannot log in at this time')
-        return false
-      end
+    if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY] && !@current_user.admin?
+      unauthorized_redirect('You cannot log in at this time')
+      return false
     end
 
     # check if the user is enabled
@@ -116,7 +116,21 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    if GraderConfiguration.multicontests? 
+    # check unique visitor id
+    unless @current_user.admin? || GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY]
+      visitor_id = unique_visitor_id
+      if @current_user.last_ip && @current_user.last_ip != visitor_id
+        redirect_to login_main_path, alert: "You cannot login from two different places"
+        return false
+      end
+      unless user.last_ip
+        @current_user.last_ip = visitor_id
+        @current_user.save
+      end
+    end
+
+    # check multi contest
+    if GraderConfiguration.multicontests?
       return true if @current_user.admin?
       begin
         if @current_user.contest_stat(true).forced_logout
@@ -124,27 +138,6 @@ class ApplicationController < ActionController::Base
           redirect_to :controller => 'main', :action => 'index'
         end
       rescue
-      end
-    end
-    return true
-  end
-
-  #redirect to root (and also force logout)
-  #if the user use different ip from the previous connection
-  #  only applicable when MULTIPLE_IP_LOGIN options is false only
-  def authenticate_by_ip_address
-    #this assume that we have already authenticate normally
-    unless GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY]
-      visitor_id = unique_visitor_id
-      user = User.find(session[:user_id])
-      if (!user.admin? && user.last_ip && user.last_ip != visitor_id)
-        #flash[:notice] = "You cannot use the system from #{request.remote_ip}. Your last ip is #{user.last_ip}"
-        redirect_to login_main_path, alert: "You cannot login from two different places"
-        return false
-      end
-      unless user.last_ip
-        user.last_ip = visitor_id
-        user.save
       end
     end
     return true

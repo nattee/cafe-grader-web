@@ -113,7 +113,7 @@ class GraderConfiguration < ApplicationRecord
     mode = get(SYSTEM_MODE_CONF_KEY)
     return ((mode == 'contest') or (mode == 'indv-contest')) 
   end
-  
+
   def self.analysis_mode?
     return get(SYSTEM_MODE_CONF_KEY) == 'analysis'
   end
@@ -121,7 +121,7 @@ class GraderConfiguration < ApplicationRecord
   def self.use_problem_group?
     return get(SYSTEM_USE_PROBLEM_GROUP)
   end
-  
+
   def self.contest_time_limit
     contest_time_str = GraderConfiguration[CONTEST_TIME_LIMIT_KEY]
 

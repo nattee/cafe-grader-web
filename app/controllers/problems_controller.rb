@@ -29,9 +29,6 @@ class ProblemsController < ApplicationController
   end
 
 
-  def show
-  end
-
   # as turbo
   def add_dataset
     @dataset = @problem.datasets.create(name: @problem.get_next_dataset_name)

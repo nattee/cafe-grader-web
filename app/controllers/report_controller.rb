@@ -4,9 +4,7 @@ class ReportController < ApplicationController
 
   before_action :check_valid_login
 
-  before_action :admin_authorization, only: [:login_stat,:submission, :submission_query, 
-                                             :login, :login_detail_query, :login_summary_query,
-                                             :stuck, :cheat_report, :cheat_scrutinize, :show_max_score, :current_score]
+  before_action :admin_authorization, except: [:problem_hof]
 
   before_action(only: [:problem_hof]) { |c|
     return false unless check_valid_login
@@ -141,9 +139,6 @@ class ReportController < ApplicationController
       .select('users.login, users.full_name as user_full_name, users.id as user_id')
       .select('problems.full_name, problems.name, problems.id as problem_id')
       .select('languages.pretty_name')
-  end
-
-  def login
   end
 
   def problem_hof

@@ -76,15 +76,23 @@ module JudgeBase
   # and save to dest (which is a Pathname), raise exception on any error
   def download_from_web(url,dest,download_type: 'generic' ,chmod_mode: nil)
     uri = URI(url)
+
+    # alias var
     hostname = uri.hostname
     port = uri.port
-    req = Net::HTTP::Post.new(uri)
     basename = dest.basename
+
+    # req
+    req = Net::HTTP::Post.new(uri)
+    req['x-api-key'] = Rails.configuration.worker[:worker_passcode]
+
+    # do the request
     Net::HTTP.start(hostname,port) do |http|
       resp = http.request(req)
       if resp.kind_of?(Net::HTTPSuccess)
         File.open(dest.to_s,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
         FileUtils.chmod(chmod_mode,dest) unless chmod_mode.nil?
+        judge_log "Successful downloading of #{download_type} #{basename} from the server"
       else
         judge_log "Error downloading #{download_type} #{basename} from the server"
         #raise the exception

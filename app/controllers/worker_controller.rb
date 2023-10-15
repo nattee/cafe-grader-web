@@ -31,8 +31,11 @@ class WorkerController < ApplicationController
     # make sure that this is the worker that we allow
     # we don't use rails authenticity token here
     def worker_authenticity
-      #TODO: skeleton
-      return false
+      passcode = request.headers['x-api-key']
+      if passcode.nil? || passcode != Rails.configuration.worker[:worker_passcode]
+        render status: :unauthorized, plain: 'wrong passcode'
+        return false
+      end
     end
 
     def upload_compiled_params

@@ -140,21 +140,11 @@ class Compiler
       dest = @manager_path + basename
 
       #download from server
-      uri = URI(Rails.configuration.worker[:hosts][:web]+worker_get_manager_path(@working_dataset,mng.id))
-      hostname = uri.hostname
-      port = uri.port
-      req = Net::HTTP::Get.new(uri)
-      Net::HTTP.start(hostname,port) do |http|
-        resp = http.request(req)
-        if resp.kind_of?(Net::HTTPSuccess)
-          File.open(dest.to_s,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
-          FileUtils.chmod(0666,dest)
-          judge_log "Download manager #{basename} from the server success"
-        else
-          judge_log "Error downloading #{basename} from the server"
-          #raise the exception
-          resp.value
-        end
+      url = Rails.configuration.worker[:hosts][:web]+worker_get_manager_path(@working_dataset,mng.id)
+      begin
+        download_from_web(url,dest,download_type: 'manager')
+      rescue Net::HTTPExceptions => he
+        raise GraderError.new("Error download managers file \"#{he}\"",submission_id: @sub.id )
       end
     end
   end
@@ -166,7 +156,6 @@ class Compiler
 
     req = Net::HTTP::Post.new(uri) # => #<Net::HTTP::Post POST>
     files = []
-
 
     #load files
     Dir.glob(@compile_path + '*').each do |fn|

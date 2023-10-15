@@ -256,7 +256,7 @@ class User < ApplicationRecord
   #get a list of available problem
   def available_problems
     # first, we check if this is normal mode
-    if not GraderConfiguration.multicontests?
+    unless GraderConfiguration.multicontests?
 
       #if this is a normal mode
       #we show problem based on problem_group, if the config said so

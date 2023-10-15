@@ -5,16 +5,12 @@ class DatasetsController < ApplicationController
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge
                                       ]
-  before_action :admin_authorization, except: [:show]
+  before_action :admin_authorization
   before_action :check_valid_login
 
   # GET /datasets/new
   def new
     @dataset = Dataset.new
-  end
-
-  def show
-
   end
 
   # GET /datasets/1/edit
