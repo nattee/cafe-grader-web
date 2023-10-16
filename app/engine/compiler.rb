@@ -155,6 +155,7 @@ class Compiler
     port = uri.port
 
     req = Net::HTTP::Post.new(uri) # => #<Net::HTTP::Post POST>
+    req['x-api-key'] = Rails.configuration.worker[:worker_passcode]
     files = []
 
     #load files
