@@ -37,12 +37,6 @@ class ReportController < ApplicationController
                User.includes(:contests).includes(:contest_stat)
              end
 
-    #set up range from param
-    #records = Submission.joins(:user).joins(:problem).where(user: @users, problem: @problems).group('users.id,problems.id')
-    #  .select('users.id,users.login,users.full_name')
-    #  .select('problems.name')
-    #  .select('MAX(submissions.points) as max_score')
-
     max_records = Submission.where(user_id: @users.ids, problem_id: params[:problem_id].map {|x| x.to_i}).group('user_id,problem_id')
       .select('MAX(submissions.points) as max_score, user_id,problem_id')
     max_records = submission_in_range(max_records,params[:sub_range])
@@ -51,10 +45,12 @@ class ReportController < ApplicationController
                                'submissions.points = MAX_RECORD.max_score AND ' +
                                'submissions.user_id = MAX_RECORD.user_id AND ' +
                                'submissions.problem_id = MAX_RECORD.problem_id ').joins(:user).joins(:problem)
-      .select('users.id,users.login,users.full_name')
+      .select('users.id,users.login,users.full_name,users.remark')
       .select('problems.name')
       .select('max_score')
       .select('submitted_at')
+
+    @show_time = params['show-time'] == 'on'
 
     #calculate the score
     @result = calculate_max_score(records,@problems,@users)
@@ -68,9 +64,8 @@ class ReportController < ApplicationController
 
   def login_summary_query
     @users = Array.new
-    @since_time = parse_td_datetime(params[:since_datetime],Time.zone.now)
-    @until_time = parse_td_datetime(params[:until_datetime],DateTime.new(3000,1,1))
-
+    @since_time = Time.zone.parse( params[:since_datetime] ) || Time.zone.now rescue Time.zone.now
+    @until_time = Time.zone.parse( params[:until_datetime] ) || DateTime.new(3000,1,1) rescue DateTime.new(3000,1,1)
     record = User
       .left_outer_joins(:logins).group('users.id')
       .where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
@@ -83,24 +78,26 @@ class ReportController < ApplicationController
 
     record = record.pluck("users.id,users.login,users.full_name,count(logins.created_at),min(logins.created_at),max(logins.created_at)")
     record.each do |user|
-      x = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",
-                                      user[0],@since_time,@until_time)
-        .pluck(:ip_address).uniq
+      query = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",user[0],@since_time,@until_time)
+      ips =  query.pluck(:ip_address).uniq
+      cookie = query.pluck(:cookie).uniq
+
       @users << { id: user[0],
                    login: user[1],
                    full_name: user[2],
                    count: user[3],
                    min: user[4].in_time_zone,
                    max: user[5].in_time_zone,
-                   ip: x
+                   ip: ips,
+                   cookie: cookie
                  }
     end
   end
 
   def login_detail_query
     @logins = Array.new
-    @since_time = parse_td_datetime(params[:since_datetime],Time.zone.now)
-    @until_time = parse_td_datetime(params[:until_datetime],DateTime.new(3000,1,1))
+    @since_time = Time.zone.parse( params[:since_datetime] ) || Time.zone.now rescue Time.zone.now
+    @until_time = Time.zone.parse( params[:until_datetime] ) || DateTime.new(3000,1,1) rescue DateTime.new(3000,1,1)
 
     @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
     case params[:users]
@@ -457,7 +454,11 @@ ORDER BY submitted_at
 
   def calculate_max_score(records,problems,users)
     result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0 } } }
-    users.each { |u| result[:score][u.login]['id'] = u.id; result[:score][u.login]['full_name'] = u.full_name;}
+    users.each do |u|
+      result[:score][u.login]['id'] = u.id;
+      result[:score][u.login]['full_name'] = u.full_name;
+      result[:score][u.login]['remark'] = u.remark;
+    end
     records.each do |score|
       #result[:score][score.login]['id'] = score.id
       #result[:score][score.login]['full_name'] = score.full_name

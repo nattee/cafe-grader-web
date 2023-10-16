@@ -46,7 +46,7 @@ class LoginController < ApplicationController
     end
 
     #save login information
-    Login.create(user_id: user.id, ip_address: cookies.encrypted[:uuid])
+    Login.create(user_id: user.id, ip_address: request.remote_ip ,cookie: cookies.encrypted[:uuid])
 
     redirect_to :controller => 'main', :action => 'list'
   end

@@ -13,6 +13,8 @@
           = select_tag 'problem_id[]',
               options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
               { class: 'select2 form-control', multiple: "true" }
+      %input#show-time.form-check-input{type: 'checkbox', name: 'show-time'}
+      %label.form-check-label{for: 'show-time'} Show time column
     .col-lg-4
       = render partial: 'submission_range'
     .col-lg-4

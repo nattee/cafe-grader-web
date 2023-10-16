@@ -8,5 +8,6 @@ json.data do
     json.earliest user[:min].strftime('%Y-%m-%d %H:%M')
     json.latest user[:max].strftime('%Y-%m-%d %H:%M')
     json.ip_address user[:ip].join('<br/>')
+    json.cookie user[:cookie].join('<br/>')
   end
 end
