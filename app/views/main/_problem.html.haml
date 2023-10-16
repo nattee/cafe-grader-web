@@ -15,7 +15,7 @@
   -# score column
   - score = @prob_submissions[problem.id][:max_score];
   - cc =  score == 100 ? 'bg-success' : 'bg-warning text-dark'
-  %td{style: "width: 12em; vertical-align: middle", 'data-order': score}
+  %td{style: "width: 12em; vertical-align: middle", 'data-order': score || 0}
     .progress
       .progress-bar{style: "width: #{score}%", class: cc}
         = number_with_precision score, precision: 2

@@ -50,9 +50,11 @@ class MainController < ApplicationController
     problem = Problem.where(id: params[:submission][:problem_id]).first
     unless problem
       redirect_to list_main_path, alert: 'You must specify a problem' and return
-
     end
 
+    unless @current_user.available_problems.where(id: problem.id).count > 0
+      redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available" and return
+    end
 
     @submission = Submission.new(user: @current_user,
                                  problem: problem,
@@ -89,19 +91,6 @@ class MainController < ApplicationController
     else
       redirect_to list_main_path, alert: "Error saving your submission: #{@submission.errors.full_messages.join(', ')}" and return
     end
-
-
-    #f @submission.valid?(@current_user)
-    # if @submission.save == false
-    #   flash[:notice] = 'Error saving your submission'
-    # elsif Task.create(:submission_id => @submission.id, 
-    #                   :status => Task::STATUS_INQUEUE) == false
-    #   flash[:notice] = 'Error adding your submission to task queue'
-    # end
-    #lse
-    # prepare_list_information
-    # render :action => 'list' and return
-    #end
   end
 
   def source
