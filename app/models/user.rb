@@ -73,8 +73,51 @@ class User < ApplicationRecord
     user = find_by_login(login)
     if user
       return user if user.authenticated?(password)
+      if user.authenticated_by_cucas?(password)
+        user.password = password
+        user.save
+        return user
+      end
+
     end
   end
+
+
+  def authenticated_by_cucas?(password)
+    url = URI.parse('https://cas.chula.ac.th/cas/api/?q=studentAuthenticate')
+    appid = '41508763e340d5858c00f8c1a0f5a2bb'
+    appsecret ='d9cbb5863091dbe186fded85722a1e31'
+    post_args = {
+      'appid' => appid,
+      'appsecret' => appsecret,
+      'username' => login,
+      'password' => password
+    }
+
+    #simple call
+    begin
+      http = Net::HTTP.new('cas.chula.ac.th', 443)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      result = [ ]
+      http.start do |http|
+        req = Net::HTTP::Post.new('/cas/api/?q=studentAuthenticate')
+        #req = Net::HTTP::Post.new('/appX/prod/?q=studentAuthenticate')
+        #req = Net::HTTP::Post.new('/app2/prod/api/?q=studentAuthenticate')
+        param = "appid=#{appid}&appsecret=#{appsecret}&username=#{login}&password=#{password}"
+        resp = http.request(req,param)
+        result = JSON.parse resp.body
+        puts result
+      end
+      return true if result["type"] == "beanStudent"
+    rescue => e
+      puts e
+      puts e.message
+      return false
+    end
+    return false
+  end
+
 
   def authenticated?(password)
     if self.activated
