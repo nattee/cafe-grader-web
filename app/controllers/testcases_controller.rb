@@ -4,11 +4,11 @@ class TestcasesController < ApplicationController
   before_action :testcase_authorization
 
   def download_input
-    send_data @testcase.input, type: 'text/plain', filename: "#{@testcase.dataset.problem.name}.#{@testcase.num}.in"
+    send_data @testcase.inp_file.download, type: 'text/plain', filename: "#{@testcase.dataset.problem.name}.#{@testcase.num}.in"
   end
 
   def download_sol
-    send_data @testcase.sol, type: 'text/plain', filename: "#{@testcase.dataset.problem.name}.#{@testcase.num}.sol"
+    send_data @testcase.ans_file.download, type: 'text/plain', filename: "#{@testcase.dataset.problem.name}.#{@testcase.num}.sol"
   end
 
   # can only download the live dataset managers
