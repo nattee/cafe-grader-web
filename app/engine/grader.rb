@@ -262,7 +262,6 @@ class Grader
     puts "Recalculate old scores"
     Submission.joins(:problem).where.not('problems.full_score': nil).update_all("submissions.points = submissions.points/problems.full_score * 100")
     puts "DONE"
-
   end
 end
 

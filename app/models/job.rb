@@ -77,7 +77,7 @@ class Job < ApplicationRecord
   end
 
   def self.clean_old_job
-    Job.finished.where('updated_at < ?'.Time.zone.now - 1.day).delete_all
+    Job.finished.where('updated_at < ?', Time.zone.now - 1.day).delete_all
   end
 
 
