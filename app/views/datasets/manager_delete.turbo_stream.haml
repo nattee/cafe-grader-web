@@ -1,1 +1,1 @@
-= turbo_stream.replace dom_id(@dataset,:manager), partial: 'managers', locals: {ds: @dataset}
+= turbo_stream.replace :dataset_update, partial: 'datasets/form', locals: {ds: @dataset, updated: @updated}

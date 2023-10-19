@@ -1,14 +1,12 @@
-.card.border-info.mb-2
-  .card-header.text-bg-info.border-info
-    Select a Task
-  .card-body
-    .row
-      .col-6
-        = select_tag 'submission_problem_id',
-          options_for_select(problems.map {|p| ["#{p.name}] #{p.full_name}", send(target_url_method,p.id)]}, selected_problem ? send(target_url_method,selected_problem.id) : -1),
-          class: 'select2 form-control'
-      .col-6
-        %a.btn.btn-primary.go-button#problem_go{data: {source: '#submission_problem_id'}} Go
+.row.row-cols-lg-auto.g-3.align-items-center
+  .col-12
+    Select a task
+  .col-12
+    = select_tag 'submission_problem_id',
+      options_for_select(problems.map {|p| ["#{p.name}] #{p.full_name}", send(target_url_method,p.id)]}, selected_problem ? send(target_url_method,selected_problem.id) : -1),
+      class: 'select2 form-control'
+  .col-12
+    %a.btn.btn-primary.go-button#problem_go{data: {source: '#submission_problem_id'}} Go
 :javascript
   $(".go-button").on('click', function(event) {
     var link, url;

@@ -39,7 +39,7 @@ class DatasetsController < ApplicationController
         @dataset.managers.attach params[:dataset][:managers]
       end
       if @dataset.update(dataset_params)
-        @updated = "Updated successfully #{helpers.time_ago_in_words Time.zone.now, include_seconds: true} ago"
+        @updated = "Updated successfully on #{Time.zone.now}"
         #format.html { redirect_to dataset_url(@dataset), notice: "Dataset was successfully updated." }
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
