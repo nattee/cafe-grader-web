@@ -3,7 +3,11 @@
     font-family: "Consolas, Monaco, Droid Sans Mono,Mono, Monospace,Courier"
   }
 
-%h1 Problem stat: #{@problem.name}
+%h1
+  Problem Stat:
+  = @problem.full_name
+%h5.font-monospace
+  = @problem.name
 
 .row.mb-3
   .col-md-8

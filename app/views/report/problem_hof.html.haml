@@ -6,11 +6,10 @@
   Please select a problem.
 - else
   .my-3
-    %h2= @problem.full_name
-    .subtitle
-      %h6
-        = @problem.name
-        - if @current_user.has_role?('ta')
-          %a{href:stat_problem_path(@problem)} (stat)
+    %h1= @problem.full_name
+    %h5.font-monospace
+      = @problem.name
+      - if @current_user.has_role?('ta')
+        %a{href:stat_problem_path(@problem)} (stat)
   = render partial: 'task_hof'
 
