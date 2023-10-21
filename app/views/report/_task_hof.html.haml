@@ -116,24 +116,27 @@
                   %td
                     = link_to value[:runtime][:user], stat_user_path(value[:runtime][:user_id])
                     %br
-                    = "#{(value[:runtime][:value] * 1000).to_i} @"
-                    = link_to "#" + value[:runtime][:sub_id].to_s, submission_path( value[:runtime][:sub_id])
+                    = "#{(value[:runtime][:value]).to_i}"
+                    %span.text-secondary ms
+                    = link_to "(##{value[:runtime][:sub_id].to_s})", submission_path( value[:runtime][:sub_id])
                   %td
                     = link_to value[:memory][:user], stat_user_path( value[:memory][:user_id])
                     %br
-                    = "#{number_with_delimiter(value[:memory][:value])} @"
-                    = link_to "#" + value[:memory][:sub_id].to_s, submission_path(value[:memory][:sub_id])
+                    = "#{number_with_delimiter(value[:memory][:value])}"
+                    %span.text-secondary kb
+                    = link_to "(##{value[:memory][:sub_id].to_s})", submission_path(value[:memory][:sub_id])
                   %td
                     = link_to value[:length][:user], stat_user_path(value[:length][:user_id])
                     %br
-                    = "#{value[:length][:value]} @"
-                    = link_to "#" + value[:length][:sub_id].to_s, submission_path(value[:length][:sub_id])
+                    = "#{value[:length][:value]}"
+                    %span.text-secondary bytes
+                    = link_to "(##{value[:length][:sub_id].to_s})", submission_path(value[:length][:sub_id])
                   %td
                     - if value[:first][:user] != '(NULL)' #TODO: i know... this is wrong...
                       = link_to value[:first][:user], stat_user_path(value[:first][:user_id])
                       %br
-                      = "#{value[:first][:value]} @"
-                      = link_to "#" + value[:first][:sub_id].to_s, submission_path( value[:first][:sub_id])
+                      = "#{value[:first][:value]}"
+                      = link_to "(##{value[:first][:sub_id].to_s})", submission_path( value[:first][:sub_id])
 
 :javascript
   $(document).on('import-map-loaded',(e) => {
