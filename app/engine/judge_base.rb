@@ -27,6 +27,8 @@ module JudgeBase
   COLOR_GRADING_PARTIAL = :mediumpurple
   COLOR_SCORE_RESULT = :orange
   COLOR_ERROR = :darkred
+  COLOR_ISOLATE_CMD = :darkslategray
+  COLOR_CHECK_CMD = :indianred
 
 
 

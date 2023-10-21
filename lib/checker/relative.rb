@@ -24,7 +24,7 @@ def report_correct
   exit 0
 end
 
-report_wrong if out_tokens.lenth != ans_tokens.length
+report_wrong if out_tokens.length != ans_tokens.length
 
 out_tokens.length.times do |i|
   if is_float?(out_tokens[i]) && is_float?(ans_tokens[i])

@@ -14,8 +14,8 @@ class Checker
     when 'exact'
       return "diff -q #{output_file} #{ans_file}"
     when 'relative'
-      prog = Rails.root.join 'app',' engine', 'std_checker', evaluation_type
-      return "#{prog} #{output_file} #{ans_file}"
+      prog = Rails.root.join 'lib', 'checker', (evaluation_type + ".rb")
+      return "#{prog} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cms'
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
@@ -105,7 +105,7 @@ class Checker
     cmd = check_command(@ds.evaluation_type,@input_file,@output_file,@ans_file)
 
     # call the compare command
-    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check cmd: " +cmd
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check cmd: " + Rainbow(cmd).color(JudgeBase::COLOR_CHECK_CMD)
     out,err,status = Open3.capture3(cmd)
 
     result = process_result(@ds.evaluation_type,out,err,status)
