@@ -21,6 +21,7 @@ shared:
     javac: <%= `which javac`.strip %>
     java: <%= `which java`.strip %>
     digital: <%= Rails.root.join 'lib','language', 'digital','Digital.jar' %>
+    haskell: <%= `which ghc` %>
   isolate_path: <%= `which isolate`.strip %>
 
   #hosts

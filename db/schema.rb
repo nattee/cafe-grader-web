@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_10_07_041620) do
+ActiveRecord::Schema[7.0].define(version: 2023_10_19_151423) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -177,6 +177,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_07_041620) do
     t.datetime "finished"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "priority", default: 0
     t.index ["parent_job_id"], name: "index_jobs_on_parent_job_id"
   end
 
@@ -218,13 +219,13 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_07_041620) do
     t.boolean "output_only"
     t.string "description_filename"
     t.boolean "view_testcase"
+    t.integer "difficulty"
     t.text "description"
     t.boolean "markdown"
     t.bigint "live_dataset_id"
     t.string "submission_filename"
     t.integer "task_type", limit: 1, default: 0
     t.integer "compilation_type", limit: 1, default: 0
-    t.float "difficulty"
     t.string "permitted_lang"
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
@@ -308,6 +309,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_07_041620) do
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"
+    t.index ["tag"], name: "index_submissions_on_tag"
     t.index ["user_id", "problem_id", "number"], name: "index_submissions_on_user_id_and_problem_id_and_number", unique: true
   end
 

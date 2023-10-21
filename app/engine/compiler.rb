@@ -178,7 +178,7 @@ class Compiler
   def self.get_compiler(sub)
     #TODO: should return appropriate compiler class
     case sub.language.name
-    when 'cpp'
+    when 'cpp','c'
       return Compiler::Cpp
     when 'python'
       return Compiler::Python
@@ -188,6 +188,12 @@ class Compiler
       return Compiler::Java
     when 'digital'
       return Compiler::Digital
+    when 'haskell'
+      return Compiler::Haskell
+    when 'php'
+      return Compiler::Php
+    when 'pas'
+      return Compiler::Pascal
     when 'rust'
       return Compiler::Rust
     when 'go'

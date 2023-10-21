@@ -49,8 +49,12 @@ module JudgeBase
   # additional options for isolate for each language
   def isolate_options_by_lang(language_name)
     case language_name
+    when 'pas','php'
+      '-d /etc/alternatives'
     when 'java'
       '-p -d /etc/alternatives'
+    when 'haskell'
+      '-d /var/lib/ghc -d /tmp:rw'
     when 'digital'
       "-p -d /etc -d /tmp:rw -d /my_lib=#{Pathname.new(Rails.configuration.worker[:compiler][:digital]).dirname}"
     when 'rust'

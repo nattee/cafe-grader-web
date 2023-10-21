@@ -1,10 +1,3 @@
-
-/- if params[:id]
-/  %h1 Tasks Hall of Fame
-/  = link_to('[back to All-Time Hall of Fame]', action: 'problem_hof', id: nil  )
-/- else
-/  %h1 All-Time Hall of Fame
-
 .row.my-2
   .col-md-6
     = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_hof_report_path}
@@ -12,9 +5,11 @@
 - unless params[:id]
   Please select a problem.
 - else
-  %h1.mt-3
-    [#{Problem.find(params[:id]).name}] #{Problem.find(params[:id]).full_name}
-    - if @current_user.has_role?('ta')
-      %a{href:stat_problem_path(@problem)} (stat)
-  =render partial: 'task_hof'
+  .my-3
+    %h1= @problem.full_name
+    %h5.font-monospace
+      = @problem.name
+      - if @current_user.has_role?('ta')
+        %a{href:stat_problem_path(@problem)} (stat)
+  = render partial: 'task_hof'
 

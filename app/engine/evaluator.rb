@@ -127,8 +127,6 @@ class Evaluator
           prepare_testcase_directory(@sub,tc)
 
           #download testcase
-          #File.write(@input_file,tc.input.gsub(/\r$/, ''))
-          #File.write(@ans_file,tc.sol.gsub(/\r$/, ''))
           url_inp = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id)
           url_ans = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id)
           begin

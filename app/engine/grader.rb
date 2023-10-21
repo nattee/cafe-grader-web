@@ -46,7 +46,7 @@ class Grader
     #add next jobs
     if result[:compile_result] == :success
       if dataset.testcases.count > 0
-        Job.add_evaluation_jobs(sub,dataset,@job.id)
+        Job.add_evaluation_jobs(sub,dataset,@job.id,@job.priority)
       else
         #no testcase
         sub.update(status: :done,points: 0, grader_comment: 'No testcase',graded_at: Time.zone.now)
@@ -65,8 +65,9 @@ class Grader
     @job.report(result)
 
     #add scoring when all evaluation is done
-    if Job.all_evaluate_job_complete(job)
-      Job.add_scoring_job(sub,testcase.dataset)
+    if Job.all_evaluate_job_complete(@job)
+      #scoring job has higher priority
+      Job.add_scoring_job(sub,testcase.dataset,@job.parent_job_id,@job.priority + 1)
     end
   end
 
@@ -262,7 +263,6 @@ class Grader
     puts "Recalculate old scores"
     Submission.joins(:problem).where.not('problems.full_score': nil).update_all("submissions.points = submissions.points/problems.full_score * 100")
     puts "DONE"
-
   end
 end
 

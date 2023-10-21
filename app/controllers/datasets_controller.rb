@@ -39,7 +39,7 @@ class DatasetsController < ApplicationController
         @dataset.managers.attach params[:dataset][:managers]
       end
       if @dataset.update(dataset_params)
-        @updated = "Updated successfully #{helpers.time_ago_in_words Time.zone.now, include_seconds: true} ago"
+        @updated = "Updated successfully on #{Time.zone.now}"
         #format.html { redirect_to dataset_url(@dataset), notice: "Dataset was successfully updated." }
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
@@ -113,7 +113,8 @@ class DatasetsController < ApplicationController
 
   def rejudge
     @dataset.problem.submissions.each do |sub|
-      sub.add_judge_job(@dataset)
+      #mass rejudge, priority is very low
+      sub.add_judge_job(@dataset,-100)
     end
 
   end

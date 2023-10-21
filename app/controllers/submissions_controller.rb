@@ -83,7 +83,9 @@ class SubmissionsController < ApplicationController
   def rejudge
     #@task = @submission.task
     #@task.status_inqueue! if @task
-    @submission.add_judge_job
+
+    #add lower priority job
+    @submission.add_judge_job(@submission.problem.live_dataset,-10)
     respond_to do |format|
       format.js
     end
