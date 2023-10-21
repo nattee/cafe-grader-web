@@ -40,7 +40,7 @@ class Grader
     result = compiler.compile(sub,dataset)
 
     #report compile
-    judge_log "Job #{@job.to_text} completed with result #{result}"
+    judge_log "#{@job.to_text} completed with result #{result}"
     @job.report(result)
 
     #add next jobs
@@ -91,7 +91,7 @@ class Grader
     if (@job)
       @last_job_time = Time.zone.now
       begin
-        judge_log "Process job #{@job.to_text}"
+        judge_log "Processing #{@job.to_text}"
         @grader_process.update(task_id: @job.id, status: :working)
         if @job.jt_compile?
           process_job_compile
