@@ -83,8 +83,9 @@ class Job < ApplicationRecord
     Job.where(parent_job_id: job.parent_job_id,job_type: :evaluate).where.not(status: :success).count == 0
   end
 
-  def self.clean_old_job
-    Job.finished.where('updated_at < ?', Time.zone.now - 1.day).delete_all
+  # delete finished job older than x
+  def self.clean_old_job(x = 1.day)
+    Job.finished.where('updated_at < ?', Time.zone.now - x).delete_all
   end
 
 

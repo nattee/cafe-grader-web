@@ -241,28 +241,24 @@ class Grader
     watchdog;
   end
 
-  def self.migrate_new_grader
-    puts "Making dataset..."
-    Dataset.migrate_old_testcases
-    puts "dataset imported"
+  # should run via cron everyday
+  # it will cleanup anything older than *ago* minutes
+  def self.cleanup_web(ago_min = 60*24)
+    # clean old job
+    Job.clean_old_job(ago_min.minutes)
 
-    puts "Reading pdf files..."
-    Problem.migrate_pdf_to_activestorage
-    puts "PDF imported"
-
-    puts "Reading ev dir..."
-    Problem.migrate_subtask
-    puts "checked the subtask"
-    Problem.migrate_manager_from_ev
-    puts "read managers"
-
-    Language.seed
-
-    GraderProcess.delete_all
-
-    puts "Recalculate old scores"
-    Submission.joins(:problem).where.not('problems.full_score': nil).update_all("submissions.points = submissions.points/problems.full_score * 100")
-    puts "DONE"
+    # purge compiled file
+    Submission.where(status: 'done').where('graded_at < ?', Time.zone.now - ago_min.minutes).joins(:compiled_files_attachments).each do |s|
+      s.compiled_files.purge
+    end
   end
+
+  def self.cleanup_judge(ago_min = 60*24)
+    # delete old submission dir that is older than 12 hour
+    isolate_sub_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeSubmissionPath
+    cmd = "find #{isolate_sub_path} -maxdepth 1 -mmin +#{ago_min} -exec rm -rf {} \;"
+    spawn(cmd)
+  end
+
 end
 
