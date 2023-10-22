@@ -10,7 +10,7 @@ class Compiler::Java < Compiler
         @classname=md[1]
         judge_log "detect classname #{@classname}"
       end
-      new_source << line unless line =~ /\s*package\s*\w+\s*\;/
+      new_source << line unless line =~ /\s*package\s*[\w\.]+\s*\;/
     end
 
     if @classname
