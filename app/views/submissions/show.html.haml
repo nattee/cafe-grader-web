@@ -45,7 +45,7 @@
             - if @submission.problem!=nil
               = link_to "[#{@submission.problem.name}]", stat_problem_path(@submission.problem)
               = @submission.problem.full_name
-              = link_to_description_if_any "[download] <span class='glyphicon glyphicon-file'></span>".html_safe, @submission.problem
+              = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, @submission.problem
             - else
               = "(n/a)"
         %tr
@@ -59,12 +59,16 @@
         %tr
           %td.text-end.text-secondary
             Submitted
-          %td #{time_ago_in_words(@submission.submitted_at)} ago (at #{@submission.submitted_at.to_formatted_s(:long)})
+          %td 
+            #{time_ago_in_words(@submission.submitted_at)} ago 
+            %span.text-secondary (at #{@submission.submitted_at.to_formatted_s(:long)})
         %tr
           %td.text-end.text-secondary
             Graded
           - if @submission.graded_at
-            %td #{time_ago_in_words(@submission.graded_at)} ago (at #{@submission.graded_at.to_formatted_s(:long)})
+            %td
+              #{time_ago_in_words(@submission.graded_at)} ago
+              %span.text-secondary (at #{@submission.graded_at.to_formatted_s(:long)})
           - else
             %td -
         %tr

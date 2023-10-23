@@ -25,7 +25,7 @@ class Submission < ApplicationRecord
 
   def add_judge_job(dataset = problem.live_dataset,priority = 0)
     evaluations.delete_all
-    self.update(points: nil, grader_comment: nil,graded_at: nil)
+    self.update(status: 'submitted', points: nil, grader_comment: nil,graded_at: nil)
     Job.add_grade_submission_job(self,dataset,priority)
   end
 
