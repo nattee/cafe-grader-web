@@ -8,7 +8,7 @@ class Submission < ApplicationRecord
   belongs_to :problem
   belongs_to :user
 
-  has_many :evaluations
+  has_many :evaluations, :dependent => :destroy
 
   before_validation :assign_language
   before_save :assign_latest_number_if_new_recond

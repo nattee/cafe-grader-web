@@ -30,9 +30,6 @@ class Dataset < ApplicationRecord
     return id.to_s
   end
 
-  def process_import_options(options,log)
-  end
-
   def live?
     self.problem.live_dataset&.id == self.id
   end

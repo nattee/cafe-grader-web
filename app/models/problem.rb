@@ -20,9 +20,9 @@ class Problem < ApplicationRecord
   #testcase is all the testcases
   has_many :testcases, :dependent => :destroy
 
-  has_many :submissions
+  has_many :submissions, :dependent => :destroy
 
-  has_many :datasets
+  has_many :datasets, :dependent => :destroy
   belongs_to :live_dataset, class_name: 'Dataset'
 
   validates_presence_of :name
