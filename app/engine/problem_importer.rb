@@ -296,7 +296,7 @@ class ProblemImporter
 
     @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
 
-    #read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
+    read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
     read_statement if do_statement
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
