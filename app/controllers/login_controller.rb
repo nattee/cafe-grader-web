@@ -33,6 +33,7 @@ class LoginController < ApplicationController
     #process logging in
     session[:user_id] = user.id
     session[:admin] = user.admin?
+    session[:last_login] = Time.zone.now
 
     # clear forced logout flag for multicontests contest change
     if GraderConfiguration.multicontests?

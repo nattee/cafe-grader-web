@@ -20,12 +20,27 @@ class ConfigurationsController < ApplicationController
     User.clear_last_login
   end
 
+  def update
+    respond_to do |format|
+      if @config.update(configuration_params)
+        format.json { head :ok }
+        format.turbo_stream
+      end
+    end
+  end
+
   def toggle
     if @config.value == "true"
       @config.update(value: "false")
     else
       @config.update(value: "true")
     end
+
+    # hook
+    if @config.key == GraderConfiguration::SINGLE_USER_KEY && @config.value == 'true'
+      GraderConfiguration.update_min_last_login
+    end
+
     respond_to do |format|
       format.turbo_stream
     end

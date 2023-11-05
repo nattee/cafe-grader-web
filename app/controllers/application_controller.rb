@@ -86,6 +86,8 @@ class ApplicationController < ActionController::Base
   #if the user is not logged_in or the system is in "ADMIN ONLY" mode
 
   def check_valid_login
+
+
     #check if logged in
     unless @current_user
       if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
@@ -94,6 +96,15 @@ class ApplicationController < ActionController::Base
         unauthorized_redirect('You need to login')
       end
       return false
+    end
+
+    #check expired session for non-admin
+    if !@current_user.admin?
+      unless session[:last_login] &&
+          Time.new(session[:last_login]) >= GraderConfiguration.minimum_last_login_time
+        unauthorized_redirect('Your session is expired, please login again.')
+        return
+      end
     end
 
     # check if run in single user mode
