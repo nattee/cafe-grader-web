@@ -52,8 +52,13 @@ class MainController < ApplicationController
       redirect_to list_main_path, alert: 'You must specify a problem' and return
     end
 
-    unless @current_user.available_problems.where(id: problem.id).count > 0
+    unless @current_user.admin? || @current_user.available_problems.where(id: problem.id).count > 0
       redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available" and return
+    end
+
+    if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
+      @submission.errors.add(:base,"The contest is over.")
+      redirect_to list_main_path, notice: 'Error saving your submission' and return
     end
 
     @submission = Submission.new(user: @current_user,
@@ -78,12 +83,6 @@ class MainController < ApplicationController
       redirect_to list_main_path, alert: 'You must add a source code' and return
     end
 
-    if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
-      @submission.errors.add(:base,"The contest is over.")
-      #prepare_list_information
-      #render :action => 'list' and return
-      redirect_to list_main_path, notice: 'Error saving your submission' and return
-    end
 
     if @submission.valid? && @submission.save
       @submission.add_judge_job

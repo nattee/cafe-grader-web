@@ -31,6 +31,9 @@ class Checker
 
   def process_result_cafe(out,err)
     arr = out.split
+    if arr.count < 2
+      return report_check_error('(cafe-checker) output from checker is malformed')
+    end
     score = arr[1].to_d/10
     if arr[0].upcase == "CORRECT"
       return report_check_correct(score)

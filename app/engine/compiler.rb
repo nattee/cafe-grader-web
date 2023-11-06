@@ -110,13 +110,18 @@ class Compiler
       post_compile
 
       # the result should be at @bin_path
-      upload_compiled_files
+      begin
+        upload_compiled_files
+      rescue Net::HTTPExceptions => he
+        raise GraderError.new("Error upload compiled file to server \"#{he}\"",submission_id: @sub.id )
+      end
+
       sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message].truncate(65000))
-      judge_log rb_sub(@sub) + " compilation completed " + Rainbow('successfully').color(COLOR_COMPILE_SUCCESS)
+      judge_log rb_sub(@sub) + Rainbow(' compilation completed successfully').color(COLOR_COMPILE_SUCCESS)
       return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
-      judge_log rb_sub(@sub) + " compilation completed " + Rainbow('with error').color(COLOR_COMPILE_ERROR)
+      judge_log rb_sub(@sub) + Rainbow(' compilation completed with error').color(COLOR_COMPILE_ERROR)
       sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(65000),
                  points: 0, grader_comment: 'Compilation error',graded_at: Time.zone.now)
       return {status: :success, result_text: 'Compilation error', compile_result: :error}
@@ -126,13 +131,14 @@ class Compiler
   # Download (or save from db) source file and any manager files to their respective directory
   def prepare_files_for_compile
     #setup pathname
-    @source_file = @source_path + self.submission_filename;
+    @source_file = @source_path + self.get_submission_filename;
     @source_main_file = @manager_path + (@working_dataset.main_filename || '')
-    @isolate_source_file = @isolate_source_path + self.submission_filename;
+    @isolate_source_file = @isolate_source_path + self.get_submission_filename;
     @isolate_main_file = @isolate_source_manager_path + (@working_dataset.main_filename || '')
 
     #write student files
     File.write(@source_file.cleanpath,@sub.source)
+    judge_log "Save contestant file to #{@source_file.cleanpath}"
 
     #write any manager files
     @working_dataset.managers.each do |mng|
@@ -167,11 +173,26 @@ class Compiler
     # upload compiled files to server
     req.set_form files, 'multipart/form-data'
     res = Net::HTTP.start(hostname,port) do |http|
-      http.request(req)
+      resp = http.request(req)
+      if resp.kind_of?(Net::HTTPSuccess)
+        judge_log "Successful uploading of compiled files to the server"
+      else
+        judge_log "Error uploading compiled file to the server"
+        #raise the exception
+        resp.value
+      end
     end
   end
 
-  def submission_filename
+  # calculate the filename of the contestant submission to be saved to a source dir
+  # for problem having "with managers" type, the submission_filename MUST exists
+  def get_submission_filename
+    if @sub.problem.compilation_type == 'with_managers' && @sub.problem.submission_filename.blank?
+      raise GraderError.new("Manager Error: no submission filename",
+                            submission_id: @sub.id)
+
+    end
+
     @sub.problem.submission_filename || @sub.language.default_submission_filename
   end
 

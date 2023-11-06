@@ -23,7 +23,7 @@ module IsolateRunner
     output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] } #these are mounted read/write
     input.each { |k,v| dir_args << ['-d',"#{k}=#{v}"] }     #these are mounted readonly
 
-    limit_arg = "-t #{time_limit} -x #{wall_limit} #{cg ? '--cg-mem' : '-m'} #{mem_limit * 1024}"
+    limit_arg = "-t #{time_limit} -x #{wall_limit} -w #{wall_limit} #{cg ? '--cg-mem' : '-m'} #{mem_limit * 1024}"
     all_arg  = "#{limit_arg} #{dir_args.join ' '} #{isolate_args.join ' '}"
 
     cmd = "#{@isolate_cmd} #{'--cg' if cg} --run -b #{@box_id} #{"--meta=#{meta}" if meta} #{all_arg} -- #{prog}"

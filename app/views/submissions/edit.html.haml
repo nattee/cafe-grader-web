@@ -28,8 +28,8 @@
             .row.mb-2
               .col-md-4
                 = form.label "Description", class: 'col-form-label text-secondary'
-              .col-md-8
-                = link_to_description_if_any "[download] <span class='mi'>description</span>".html_safe, @problem
+              .col-md-8.col-form-label
+                = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, @problem
             .row.mb-2
               .col-md-4
                 = form.label :language_id, 'Language', class: 'col-form-label text-secondary'

@@ -99,18 +99,41 @@ class ProblemImporter
 
   end
 
-  def read_options
+  def load_options
     yaml,fn = get_content_of_first_match('config.yml')
     if (yaml)
       @options = YAML.safe_load(yaml,symbolize_names: true)
-
-      # process options for dataset
-      @dataset.process_import_options(@options,@log)
-
-
-      @problem.full_name = @options[:full_name] if @options.has_key? :fullname
-      @problem.submission_filename = @options[:submission_filename] if @options.has_key? :submission_filename
     end
+  end
+
+  def read_options
+    # process options for dataset
+    p_options = %i(full_name submission_filename task_type compilation_type permitted_lang)
+    p_options.each do |opt|
+      if @options.has_key? opt
+        @log << "problem.#{opt} is set to '#{@options[opt]}' by options file"
+        @problem.write_attribute(opt,@options[opt]) if @options.has_key? opt
+      end
+    end
+
+    d_options = %w(time_limit memory_limit score_type evaluation_type main_filename)
+    d_options.each do |opt|
+      if @options.has_key? opt
+        @log << "dataset.#{opt} is set to '#{@options[opt]}' by options file"
+        @problem.write_attribute(opt,@options[opt]) if @options.has_key? opt
+      end
+    end
+
+    #tags
+    if @options[:tags]
+      # calculate non-existing tags
+      non_exists = @options[:tags] - Tag.where(name: @options[:tags]).pluck(:name)
+      non_exists.each { |name| Tag.create(name: name) }
+
+      @problem.tags = Tag.where(name: @options[:tags])
+      @log << "set tags to [#{@options[:tags].join(', ')}]"
+    end
+
   end
 
   def read_statement
@@ -149,15 +172,15 @@ class ProblemImporter
 
       # add new file
       @dataset.managers.attach(io: File.open(fn),filename: Pathname.new(fn).basename)
-      @dataset.main_filename = Pathname.new(fn).basename
-      @problem.compilation_type = 'with_managers'
-      @problem.submission_filename = 'student.h'
+      @dataset.main_filename = Pathname.new(fn).basename   #may be overwritten in read_options
+      @problem.compilation_type = 'with_managers'          #may be overwritten in read_options
+      @problem.submission_filename = 'student.h'           #may be overwritten in read_options
       @problem.save
       @dataset.save
     end
 
-    # any .h
-    managers = @options[:managers] || '*.h'
+    # any .h or manager
+    managers = @options[:managers_pattern] || '*.h'
     pattern = build_glob(managers,path: @options[:managers_dir] || '')
     managers_fn = {}
     Dir.glob(pattern).each do |fn|
@@ -178,9 +201,12 @@ class ProblemImporter
     @dataset.save
   end
 
+  # take any checker_pattern file as a checker
   def read_checker
     #glob checker
-    checker,fn = get_content_of_first_match('checker.*')
+    checker_path = @options[:checker_dir] || ''
+    checker_pattern = @options[:checker] || 'checker'
+    checker,fn = get_content_of_first_match(checker_pattern, path: checker_path)
     if (checker)
       @log << "Found a custom checker file [#{fn}]"
       @got << fn
@@ -241,8 +267,12 @@ class ProblemImporter
     do_cpp_extras: true
   )
 
-    # init problem and dataset
+    # read any options
     @base_dir = dir
+    load_options
+    name = @options[:name] unless name
+
+    # init problem and dataset
     @problem = Problem.find_or_create_by(name: name)
     @problem.date_added = Time.zone.now unless @problem.date_added
     @problem.full_name = full_name
@@ -266,12 +296,11 @@ class ProblemImporter
 
     @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
 
-
     read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
-    read_options
     read_statement if do_statement
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
+    read_options #options is put to last, it will override any defaults
     @problem.save
     @dataset.save
     @log << "Done successfully"

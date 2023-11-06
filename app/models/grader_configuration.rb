@@ -13,6 +13,7 @@ class GraderConfiguration < ApplicationRecord
   VIEW_TESTCASE = 'right.view_testcase'
   SINGLE_USER_KEY = 'system.single_user_mode'
   SYSTEM_USE_PROBLEM_GROUP = 'system.use_problem_group'
+  SYSTEM_MINIMUM_LAST_LOGIN_TIME = 'system.min_last_login_time'
 
   cattr_accessor :config_cache
   cattr_accessor :task_grading_info_cache
@@ -44,6 +45,17 @@ class GraderConfiguration < ApplicationRecord
 
   def self.[](key)
     self.get(key)
+  end
+
+  def self.minimum_last_login_time
+    time_text = self.get(SYSTEM_MINIMUM_LAST_LOGIN_TIME)
+    return Time.new(time_text) if time_text
+    return Date.new(1,1,1)
+  end
+
+  def self.update_min_last_login
+    conf = GraderConfiguration.find_or_create_by(key: SYSTEM_MINIMUM_LAST_LOGIN_TIME)
+    conf.update(value: Time.zone.now,value_type: 'string')
   end
 
   #

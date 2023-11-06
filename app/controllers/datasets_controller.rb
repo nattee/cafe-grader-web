@@ -38,6 +38,11 @@ class DatasetsController < ApplicationController
       if params[:dataset][:managers]
         @dataset.managers.attach params[:dataset][:managers]
       end
+      if params[:dataset][:checker]
+        # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
+        # when it is updated
+        WorkerDataset.where(dataset_id: @dataset).delete_all
+      end
       if @dataset.update(dataset_params)
         @updated = "Updated successfully on #{Time.zone.now}"
         #format.html { redirect_to dataset_url(@dataset), notice: "Dataset was successfully updated." }

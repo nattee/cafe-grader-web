@@ -20,9 +20,9 @@ class Problem < ApplicationRecord
   #testcase is all the testcases
   has_many :testcases, :dependent => :destroy
 
-  has_many :submissions
+  has_many :submissions, :dependent => :destroy
 
-  has_many :datasets
+  has_many :datasets, :dependent => :destroy
   belongs_to :live_dataset, class_name: 'Dataset'
 
   validates_presence_of :name
@@ -143,8 +143,6 @@ class Problem < ApplicationRecord
     return Language.where(name: self.permitted_lang.split(' ').uniq).ids
   end
 
-
-
   #this function return a content generated for "all_tests.cfg"
   #  from the legacy code (Aj. Pong's) 
   #  This is definitely not complete but it works in general cases
@@ -189,171 +187,6 @@ class Problem < ApplicationRecord
     else
       'submission'
     end
-  end
-
-
-  #
-  # ---- these feature are used in migrating to grader 2023
-  #
-
-  def self.migrate_pdf_to_activestorage
-    Problem.where.not(description_filename: nil).each do |p|
-      file = Rails.root.join('data','tasks',p.id.to_s,p.description_filename)
-      if file.exist?
-        p.statement.attach(io: File.open(file), filename: p.description_filename)
-        puts "Add #{file} to #{p.name}"
-      end
-    end
-  end
-
-  # check the old /judge/ev folder for test_cases/all_tests.cfg
-  # change the live dataset of the problem of that ev folder
-  # with the memory limit and time limit
-  #
-  # Additionally, see if this one has grouped subtask
-  # if so, change the scoring of the live-dataset of to :GroupMin
-  def self.migrate_subtask
-    dir = Rails.root.join '../judge/ev/*'
-    Dir[dir].each do |ev_dir|
-      pn = Pathname.new ev_dir
-      p = Problem.where(name: pn.basename.to_s).first
-      next unless p
-
-      #now p is the problem with the same name as the ev sub-dir
-
-      r = parse_all_test_cfg(pn + 'test_cases/all_tests.cfg',p)
-      p.live_dataset.update(memory_limit: r[:mem_limit], time_limit: r[:time_limit])
-      if (r[:group])
-        p.live_dataset.st_group_min!
-
-        #show debug info
-        puts "Found problem #{p.name} (#{p.id}) with grouped testcase"
-      end
-    end
-  end
-
-  def read_managers_from_ev(ev_dir = Rails.root.join('../judge/ev/',self.name) )
-    pi = ProblemImporter.new
-    pi.import_dataset_from_dir(ev_dir,self.name, full_name: self.full_name, dataset: self.live_dataset, do_testcase: false, do_statement: false)
-    pp pi.log if pi.got.count > 0
-  end
-
-  # check whether the testcases in the live dataset match the one in the ev
-  def check_testcases_from_ev(detail = false, ev_dir = Rails.root.join('../judge/ev/',self.name) )
-    live_dataset.testcases.order(:num).each do |tc|
-      input = tc.input.gsub /\r$/, ''
-      sol = tc.sol.gsub /\r$/, ''
-
-      if input.blank?
-        puts "#{name} #{tc.num} db input blank"
-      end
-      if sol.blank?
-        puts "#{name} #{tc.num} db sol blank"
-      end
-
-      file_input = File.read(ev_dir + 'test_cases' + tc.num.to_s + "input-#{tc.num}.txt").gsub /\r$/, ''
-      file_sol   = File.read(ev_dir + 'test_cases' + tc.num.to_s + "answer-#{tc.num}.txt").gsub /\r$/, ''
-
-      input_ok = input == file_input
-      sol_ok   = sol == file_sol
-      unless (input_ok && sol_ok)
-        puts "unmatch at #{id} #{name} #{tc.num}"
-        if (detail)
-          puts "-- db input --\n#{input.truncate(500)}"
-          puts "-- file input --\n#{file_input.truncate(500)}"
-          puts "-- db sol --\n#{sol.truncate(500)}"
-          puts "-- file sol --\n#{file_sol.truncate(500)}"
-          puts "copy file to db (NO/yes)? "
-          ans = gets.chomp
-          if ans == "yes"
-            puts "copying..."
-            tc.update(input: file_input, sol: file_sol)
-            puts "done..."
-          end
-          break
-        end
-      end
-
-    end
-  end
-
-  def self.check_all_testcases_from_ev
-    dir = Rails.root.join '../judge/ev/*'
-    Dir[dir].each do |ev_dir|
-      pn = Pathname.new ev_dir
-      p = Problem.where(name: pn.basename.to_s).first
-      next unless p
-
-      p.check_testcases_from_ev
-    end
-    return nil
-  end
-
-  def self.migrate_manager_from_ev
-    dir = Rails.root.join '../judge/ev/*'
-    Dir[dir].each do |ev_dir|
-      pn = Pathname.new ev_dir
-      p = Problem.where(name: pn.basename.to_s).first
-      next unless p
-
-      p.read_managers_from_ev(ev_dir)
-    end
-    return nil
-  end
-
-  def self.parse_all_test_cfg(filename,problem)
-    on_run = false
-    run = nil
-    tests = nil
-    scores = nil
-    result = {}
-    File.foreach(filename).each do |line|
-      #time limit
-      md = /time_limit_each\s+(\d+\.?\d*)/.match line
-      result[:time_limit] = md[1].to_f if md
-
-      # mem limit
-      md = /mem_limit_each\s+(\d+\.?\d*)/.match line
-      result[:mem_limit] = md[1].to_f if md
-
-      # score_each
-      md = /score_each\s+(\d+\.?\d*)/.match line
-      result[:score_each] = md[1].to_f if md
-
-      #run detect
-      md = /run\s+(\d+)\s+do/.match line
-      if (md && !on_run)
-        run = md[1].to_i
-        on_run = true
-        tests = nil
-        scores = nil
-      end
-
-      #test on run
-      md = /tests\s+([\d,\s]*)/.match line
-      if (md && on_run)
-        tests = md[1].split(',').map { |x| x.to_i}
-      end
-
-      #score on run
-      md = /scores\s+([\d,\s]*)/.match line
-      if (md && on_run)
-        scores = md[1].split(',').map { |x| x.to_i}
-      end
-
-      md = /end/.match line
-      if (md && on_run)
-        result[:group] = true if tests && tests.count > 1
-        on_run = false
-        result[run] = {tests: tests,scores: scores, errors: []}
-        result[run][:errors] << "no test" unless tests
-        result[run][:errors] << "no scores" unless scores
-        tests.each do |num|
-          problem.live_dataset.testcases.where(num: num).update(group: run,weight: scores[0], group_name: run)
-        end
-      end
-    end
-    return result
   end
 
 end
