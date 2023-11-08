@@ -23,10 +23,20 @@
                 - if @problem.statement.attached?
                   %a{href: get_statement_problem_path(@problem)} [Download current Statement]
                 - else
-                  no statement attached to this problem
+                  This problem has no statement
           = form.input :description, as: :text
           = form.input :markdown, wrapper: :horizontal_boolean
           = form.input :url
+          %h4 Attachment
+          = form.input :attachment, wrapper: :horizontal_file
+          .row
+            .col-md-3
+            .col-md-9
+              %p
+                - if @problem.attachment.attached?
+                  %a{href: get_attachment_problem_path(@problem)} [Download attachment]
+                - else
+                  This problem has no attachment
           = form.button :submit, class: 'btn btn-primary mx-2'
           = link_to 'Back', problems_path, class: 'btn btn-outline-secondary mx-2'
           = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary mx-2'

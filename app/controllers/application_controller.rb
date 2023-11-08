@@ -134,7 +134,7 @@ class ApplicationController < ActionController::Base
         redirect_to login_main_path, alert: "You cannot login from two different places"
         return false
       end
-      unless user.last_ip
+      unless @current_user.last_ip
         @current_user.last_ip = visitor_id
         @current_user.save
       end

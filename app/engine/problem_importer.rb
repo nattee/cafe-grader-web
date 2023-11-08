@@ -252,7 +252,7 @@ class ProblemImporter
   # if not, it will override the given dataset "without deleting anything of that dataset" 
   #    a testcase with the same codename will be replaced
   def import_dataset_from_dir(dir, name,
-    full_name: ,          #required keyword
+    full_name: name,      #required keyword
     dataset: nil,         # if nil, we will create a new dataset
     delete_existing: false,
     input_pattern: '*.in',
@@ -308,6 +308,7 @@ class ProblemImporter
     return @log
   end
 
+
   def unzip_to_dir(file,name,dir)
     Pathname.new(dir).mkpath
     pn  = Pathname.new(dir)+name
@@ -326,6 +327,17 @@ class ProblemImporter
     else
       @errors << err
       return nil
+    end
+  end
+
+  def self.import_problem(base_dir, skip_existing: true)
+    pi = ProblemImporter.new
+    Dir["#{base_dir}/*"].each do |fn|
+      name = Pathname.new(fn).basename
+      p = Problem.where(name: name).first;
+      if !skip_existing || p.nil?
+        pi = import_dataset_from_dir(fn,name)
+      end
     end
   end
 
