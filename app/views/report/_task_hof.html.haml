@@ -49,7 +49,7 @@
   .col-md-4
     .card
       .card-body
-        %h2.card-title Model submission
+        %h2.card-title Model Submission
         %table.table.table-hover
           %thead
             %tr
@@ -71,43 +71,55 @@
             %thead
               %tr
                 %th Language
-                %th Best runtime (ms)
-                %th Best memory (kbytes)
+                %th Best Runtime (ms)
+                %th Best Memory (kB)
                 %th Shortest Code (bytes)
-                %th First solver
+                %th First Solver
             %tbody
               %tr.bg-warning
                 %td
                   Overall
                 %td
-                  by #{link_to @best[:runtime][:user], stat_user_path(@best[:runtime][:user_id])} 
+                  = link_to @best[:runtime][:user], stat_user_path(@best[:runtime][:user_id])
                   %br
-                  using <span class="text-success">#{@best[:runtime][:lang]}</span> 
+                  using
+                  %span.text-success #{@best[:runtime][:lang]} 
                   %br
-                  with <span class="text-success">#{@best[:runtime][:value] * 1000} milliseconds</span> 
-                  %br= link_to "#" + @best[:runtime][:sub_id].to_s, submission_path(@best[:runtime][:sub_id]) 
+                  with
+                  %span.text-success #{(@best[:runtime][:value]).to_i} ms
+                  %br
+                  = link_to "##{@best[:runtime][:sub_id].to_s}", submission_path(@best[:runtime][:sub_id])
                 %td
-                  by #{link_to @best[:memory][:user], stat_user_path(@best[:memory][:user_id])} 
+                  = link_to @best[:memory][:user], stat_user_path(@best[:memory][:user_id])
                   %br
-                  using <span class="text-success">#{@best[:memory][:lang]}</span> 
+                  using
+                  %span.text-success #{@best[:memory][:lang]} 
                   %br
-                  with <span class="text-success">#{number_with_delimiter(@best[:memory][:value])} kbytes </span> 
-                  %br= link_to "#" + @best[:memory][:sub_id].to_s, submission_path(@best[:memory][:sub_id])
+                  with
+                  %span.text-success #{number_with_delimiter((@best[:memory][:value]).to_i)} kB
+                  %br
+                  = link_to "##{@best[:memory][:sub_id].to_s}", submission_path(@best[:memory][:sub_id])
                 %td
                   by #{link_to @best[:length][:user], stat_user_path(@best[:length][:user_id])} 
                   %br
-                  using <span class="text-success">#{@best[:length][:lang]}</span> 
+                  using
+                  %span.text-success #{@best[:length][:lang]} 
                   %br
-                  with  <span class="text-success">#{@best[:length][:value]} bytes</span> 
-                  %br= link_to "#" + @best[:length][:sub_id].to_s, submission_path(@best[:length][:sub_id])
+                  with
+                  %span.text-success #{number_with_delimiter((@best[:length][:value]).to_i)} bytes
+                  %br
+                  = link_to "##{@best[:length][:sub_id].to_s}", submission_path(@best[:length][:sub_id])
                 %td
                   - if @best[:first][:user] != '(NULL)'
                     #{link_to @best[:first][:user], stat_user_path(@best[:first][:user_id])} is the first solver 
                     %br
-                    using <span class="text-success">#{@best[:first][:lang]}</span> 
+                    using
+                    %span.text-success #{@best[:first][:lang]} 
                     %br
-                    on <span class="text-success">#{@best[:first][:value]}</span> 
-                    %br= link_to "#" + @best[:first][:sub_id].to_s, submission_path( @best[:first][:sub_id])
+                    on 
+                    %span.text-success #{@best[:first][:value]}
+                    %br
+                    = link_to "##{@best[:first][:sub_id].to_s}", submission_path(@best[:first][:sub_id])
                   - else
                     no first solver
               - @by_lang.each do |lang,value|
@@ -123,14 +135,14 @@
                     = link_to value[:memory][:user], stat_user_path( value[:memory][:user_id])
                     %br
                     = "#{number_with_delimiter(value[:memory][:value])}"
-                    %span.text-secondary kb
+                    %span.text-secondary kB
                     = link_to "(##{value[:memory][:sub_id].to_s})", submission_path(value[:memory][:sub_id])
                   %td
                     = link_to value[:length][:user], stat_user_path(value[:length][:user_id])
                     %br
                     = "#{value[:length][:value]}"
                     %span.text-secondary bytes
-                    = link_to "(##{value[:length][:sub_id].to_s})", submission_path(value[:length][:sub_id])
+                    = link_to "##{value[:length][:sub_id].to_s}", submission_path(value[:length][:sub_id])
                   %td
                     - if value[:first][:user] != '(NULL)' #TODO: i know... this is wrong...
                       = link_to value[:first][:user], stat_user_path(value[:first][:user_id])
