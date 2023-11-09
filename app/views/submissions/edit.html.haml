@@ -24,12 +24,26 @@
               .col-md-4
                 = form.label "Task", class: 'col-form-label text-secondary'
               .col-md-8
-                = form.label nil, "#{@problem.long_name}", class: 'col-form-label fw-bold'
+                = form.label nil, "#{@problem.full_name}", class: 'mb-0 pb-0 col-form-label fw-bold'
+                %br
+                = form.label nil, "#{@problem.name}", class: 'my-0 py-0 col-form-label text-muted'
+                %br
+                %span= @problem.live_dataset.time_limit
+                %span.text-muted (s)
+                |
+                %span= @problem.live_dataset.memory_limit
+                %span.text-muted (MB)
             .row.mb-2
               .col-md-4
                 = form.label "Description", class: 'col-form-label text-secondary'
               .col-md-8.col-form-label
                 = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, @problem
+            - if @problem.attachment.attached?
+              .row.mb-2
+                .col-md-4
+                  = form.label "Attachment", class: 'col-form-label text-secondary'
+                .col-md-8.col-form-label
+                  = link_to "[File <span class='mi mi-bs'>archive</span>]".html_safe, get_attachment_problem_path(@problem)
             .row.mb-2
               .col-md-4
                 = form.label :language_id, 'Language', class: 'col-form-label text-secondary'

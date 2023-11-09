@@ -35,6 +35,7 @@ Rails.application.routes.draw do
       get 'toggle_view_testcase'
       get 'stat'
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
+      get 'get_attachment(/:filename)', as: 'get_attachment', action: 'get_attachment'
       post 'add_dataset'
       post 'import_testcases'
     end

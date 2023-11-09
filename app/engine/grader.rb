@@ -256,7 +256,8 @@ class Grader
   def self.cleanup_judge(ago_min = 60*24)
     # delete old submission dir that is older than 12 hour
     isolate_sub_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeSubmissionPath
-    cmd = "find #{isolate_sub_path} -maxdepth 1 -mmin +#{ago_min} -exec rm -rf {} \;"
+    cmd = "find #{isolate_sub_path} -maxdepth 1 -mmin +#{ago_min} -exec rm -rf {} \\;"
+    puts "executing #{cmd}"
     spawn(cmd)
   end
 
