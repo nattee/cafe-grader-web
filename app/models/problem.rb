@@ -37,7 +37,7 @@ class Problem < ApplicationRecord
   # attachment here are the public one,
   # if the user has the right to submit, the user can see the attachments (and statement)
   has_one_attached :statement
-  has_many_attached :attachments  #this is public files seen by contestant
+  has_one_attached :attachment  #this is public files seen by contestant
 
   def set_default_value
 

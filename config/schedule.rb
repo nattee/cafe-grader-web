@@ -22,3 +22,8 @@
 every 1.minute do
   runner "Grader.watchdog"
 end
+
+every 1.day do
+  runner "Grader.cleanup_web"
+  runner "Grader.cleanup_judge"
+end

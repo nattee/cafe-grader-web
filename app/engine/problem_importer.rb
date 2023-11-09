@@ -156,6 +156,15 @@ class ProblemImporter
     end
   end
 
+  def read_attachment
+    # pdf
+    file,fn = get_content_of_first_match('*',path: 'attachment')
+    if file
+      @problem.statement.attach(io: StringIO.new(file),filename: fn.basename)
+      @log << "Found an attachment [#{fn}]"
+      @got << fn
+    end
+  end
 
   def read_cpp_extras
     # main
@@ -214,7 +223,7 @@ class ProblemImporter
     end
   end
 
-  def get_content_of_first_match(glob_pattern, recursive: true,path: '')
+  def get_content_of_first_match(glob_pattern, recursive: true, path: '')
     pattern = build_glob(glob_pattern,recursive: recursive, path: path)
     files = Dir.glob(pattern)
     if files.count > 0
@@ -252,7 +261,7 @@ class ProblemImporter
   # if not, it will override the given dataset "without deleting anything of that dataset" 
   #    a testcase with the same codename will be replaced
   def import_dataset_from_dir(dir, name,
-    full_name: ,          #required keyword
+    full_name: name,      #required keyword
     dataset: nil,         # if nil, we will create a new dataset
     delete_existing: false,
     input_pattern: '*.in',
@@ -264,7 +273,8 @@ class ProblemImporter
     do_testcase: true,
     do_statement: true,
     do_checker: true,
-    do_cpp_extras: true
+    do_cpp_extras: true,
+    do_attachment: true
   )
 
     # read any options
@@ -275,6 +285,7 @@ class ProblemImporter
     # init problem and dataset
     @problem = Problem.find_or_create_by(name: name)
     @problem.date_added = Time.zone.now unless @problem.date_added
+    @problem.available = false if @problem.available.nil?
     @problem.full_name = full_name
     @problem.set_default_value unless @problem.id
     if dataset && dataset.problem == @problem
@@ -298,6 +309,7 @@ class ProblemImporter
 
     read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
     read_statement if do_statement
+    read_attachment if do_attachment
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
     read_options #options is put to last, it will override any defaults
@@ -307,6 +319,7 @@ class ProblemImporter
 
     return @log
   end
+
 
   def unzip_to_dir(file,name,dir)
     Pathname.new(dir).mkpath
@@ -326,6 +339,18 @@ class ProblemImporter
     else
       @errors << err
       return nil
+    end
+  end
+
+  def self.import_all_from_dir(base_dir, skip_existing: true)
+    pi = ProblemImporter.new
+    Dir["#{base_dir}/*"].each do |fn|
+      puts "found #{fn}"
+      name = Pathname.new(fn).basename.to_s
+      p = Problem.where(name: name).first;
+      if !skip_existing || p.nil?
+        puts pi.import_dataset_from_dir(fn,name).join("\n")
+      end
     end
   end
 

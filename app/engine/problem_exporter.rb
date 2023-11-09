@@ -24,6 +24,16 @@ class ProblemExporter
     end
   end
 
+  def export_attachment
+    return unless @problem.attachment.attached?
+    @attachment_filename = @main_dir + 'attachment' + @problem.attachment.filename.to_s
+    @attachment_filename.dirname.mkpath
+
+    File.open(@attachment_filename,'w:ASCII-8BIT') do |f|
+      @problem.attachment.download { |chunk| f.write(chunk) }
+    end
+  end
+
   def export_testcases
     @testcase_dir = @main_dir + 'testcases'
     @testcase_dir.mkpath
@@ -98,11 +108,9 @@ class ProblemExporter
     @main_dir = Pathname.new(base_dir) + problem.name
 
     export_pdf
-
+    export_attachment
     export_testcases
-
     export_managers_checker
-
     export_options
   end
 
@@ -112,6 +120,7 @@ class ProblemExporter
       pi.export_problem_to_dir(p,base_dir)
       puts "dump #{p.name} to #{base_dir}"
     end
-
   end
+
+
 end

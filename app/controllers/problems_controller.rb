@@ -2,14 +2,14 @@ class ProblemsController < ApplicationController
 
   include ActiveStorage::SetCurrent
 
-  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement,
+  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :get_attachment,
                                      :toggle, :toggle_test, :toggle_view_testcase, :stat,
                                      :add_dataset,:import_testcases, :view_live_testcases
                                     ]
 
-  before_action :admin_authorization, except: [:stat, :get_statement]
-  before_action :check_valid_login, only: [:stat, :get_statement]
-  before_action :can_view_problem, only: [:get_statement]
+  before_action :admin_authorization, except: [:stat, :get_statement, :get_attachment]
+  before_action :check_valid_login, only: [:stat, :get_statement, :get_attachment]
+  before_action :can_view_problem, only: [:get_statement, :get_attachment]
   before_action only: [:stat] do
     authorization_by_roles(['admin','ta'])
   end
@@ -41,15 +41,16 @@ class ProblemsController < ApplicationController
 
   #get statement download link
   def get_statement
-    unless @current_user.can_view_problem? @problem
-      redirect_to list_main_path, alert: 'You are not authorized to access this file'
-      return
-    end
-
     filename = @problem.statement.filename.to_s
     data = @problem.statement.download
-
     send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
+  end
+
+  #get attachment
+  def get_attachment
+    filename = @problem.attachment.filename.to_s
+    data = @problem.attachment.download
+    send_data data, disposition: 'inline', filename: filename
   end
 
   def create
@@ -361,8 +362,8 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :difficulty,
-                                      :test_allowed, :output_only, :url, :description, :statement, :description, tag_ids:[])
+                                      :difficulty,:attachment, :statement,
+                                      :test_allowed, :output_only, :url, :description, :description, tag_ids:[])
     end
 
     def description_params
@@ -370,7 +371,7 @@ class ProblemsController < ApplicationController
     end
 
     def can_view_problem
-      unauthorized_redirect unless @current_user.can_view_problem?(@problem)
+      unauthorized_redirect('You are not authorized to access this problem') unless @current_user.can_view_problem?(@problem)
     end
 
 end
