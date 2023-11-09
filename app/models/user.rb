@@ -78,7 +78,6 @@ class User < ApplicationRecord
         user.save
         return user
       end
-
     end
   end
 
