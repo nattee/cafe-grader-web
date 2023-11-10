@@ -27,9 +27,20 @@
             - elsif !@current_user.contest_started?
               %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
             - else
-              %div.btn.btn-primary#countdown asdf
+              %div.btn.btn-dark#countdown -
               :javascript
-                $("#countdown").countdown({until: "+#{@current_user.contest_time_left.to_i}s", layout: 'Time left: {hnn}:{mnn}:{snn}'}); 
+                contest_end = moment().add(#{@current_user.contest_time_left.to_i},'seconds')
+                function update_remaining_time() {
+                  x = contest_end - moment()
+                  if (x >= 0) {
+                    remain = moment.utc(contest_end - moment()).format('HH:mm:ss') +' remain'
+                  } else {
+                    remain = 'contest is over'
+                  }
+                  $("#countdown").html(remain)
+                }
+                update_remaining_time()
+                setInterval(update_remaining_time,500)
           / admin section
           - if (@current_user!=nil) and (session[:admin])
             / management
