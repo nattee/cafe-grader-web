@@ -32,10 +32,10 @@
           %li
             If you want to add several users to a group, it may be easier to just re-import those users in 
             = link_to 'New list of users', new_list_user_admin_index_path
-            page. You can also use 
+            page. You can also use
             = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
             page.
-        =form_tag add_user_group_path(@group), class: 'form-inline' do
+        =form_tag add_user_group_path(@group), class: 'form-inline', data: {turbo: true} do
           .row
             .col-auto
               =label_tag :user_id, "User", class: 'col-form-label'
@@ -43,23 +43,7 @@
               =select_tag :user_id, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', style: 'width: 25em';
             .col-auto
               =submit_tag "Add",class: 'btn btn-primary'
-
-
-        %table.table.datatable.table-hover
-          %thead
-            %tr
-              %th Login
-              %th Full name
-              %th Remark
-              %th= link_to 'Remove All', remove_all_user_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL USERS from group?" }, class: 'btn btn-danger btn-sm'
-
-          %tbody
-            - @group.users.each do |user|
-              %tr
-                %td= user.login
-                %td= user.full_name
-                %td= user.remark
-                %td= link_to 'Remove', remove_user_group_path(@group,user), :method => :delete, :data => { :confirm => "Remove #{user.full_name}?" }, class: 'btn btn-danger btn-sm'
+        = render partial: 'group_users'
   .col-md-6
     .card
       .card-header
@@ -70,7 +54,7 @@
             If you want to add several problem to a group, it may be easier to bulk manage them in the
             = link_to 'Bulk Manage Problems', manage_problems_path
             page
-        =form_tag add_problem_group_path(@group) do
+        =form_tag add_problem_group_path(@group), data: {turbo: true} do
           .row
             .col-auto
               =label_tag :problem_id, "Problem",class: 'col-form-label'
@@ -78,23 +62,20 @@
               =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', style: 'width: 25em';
             .col-auto
               =submit_tag "Add",class: 'btn btn-primary'
-        %table.table.datatable.table-hover
-          %thead
-            %tr
-              %th name
-              %th Full name
-              %th #Dataset
-              %th= link_to 'Remove All', remove_all_problem_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL PROBLEMS from group?" }, class: 'btn btn-danger btn-sm'
-
-          %tbody
-            - @group.problems.each do |problem|
-              %tr
-                %td= problem.name
-                %td= problem.full_name
-                %td= problem.datasets.count
-                %td= link_to 'Remove', remove_problem_group_path(@group,problem), :method => :delete, :data => { :confirm => "Remove #{problem.full_name}?" }, class: 'btn btn-danger btn-sm'
+        = render partial: 'group_problems'
 
 :javascript
+  function reload_table() {
+    $('#user_table').DataTable({
+      destroy: true,
+      paging: false,
+      order: [[4,'desc'],[0,'asc']],
+    })
+    $('#problem_table').DataTable({
+      destroy: true,
+      paging: false,
+    })
+  }
   $(document).on('import-map-loaded',function(e) {
-    $('.datatable').DataTable({destroy: true, paging: false})
+    reload_table();
   });

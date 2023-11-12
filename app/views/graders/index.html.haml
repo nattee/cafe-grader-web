@@ -34,9 +34,10 @@
           %th Job
           %th Action
       %tbody
-        - @graders.each do |grader|
-          = render partial: 'grader', locals: {grader: grader}
-        -#= render partial: 'grader', collection: @graders
+        -#
+          - @graders.each do |grader|
+            = render partial: 'grader', locals: {grader: grader}
+        = render partial: 'grader', collection: @graders
 
   .col-md-6
     %h2 Last 20 submissions
