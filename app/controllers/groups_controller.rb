@@ -72,13 +72,15 @@ class GroupsController < ApplicationController
   end
 
   def add_user
-    user = User.find(params[:user_id])
+    user = User.find(params[:user_id]) rescue nil
+    render plain: nil, status: :ok and return unless user
     begin
       @group.users << user
       #redirect_to group_path(@group), flash: { success: "User #{user.login} was add to the group #{@group.name}"}
       render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
     rescue => e
-      redirect_to group_path(@group), alert: e.message
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'User already exists', body_msg: e.message}
+      #redirect_to group_path(@group), alert: e.message
     end
   end
 
@@ -90,13 +92,15 @@ class GroupsController < ApplicationController
   end
 
   def add_problem
-    problem = Problem.find(params[:problem_id])
+    problem = Problem.find(params[:problem_id]) rescue nil
+    render plain: nil, status: :ok and return unless problem
     begin
       @group.problems << problem
       #redirect_to group_path(@group), flash: {success: "Problem #{problem.name} was add to the group #{@group.name}" }
       render turbo_stream: turbo_stream.replace(:problem_table_frame, partial: 'group_problems')
     rescue => e
-      redirect_to group_path(@group), alert: e.message
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Problem already exists', body_msg: e.message}
+      #redirect_to group_path(@group), alert: e.message
     end
   end
 
