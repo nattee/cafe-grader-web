@@ -46,10 +46,6 @@ class TestcasesController < ApplicationController
 
     def testcase_authorization
       #admin always has privileged
-      return true if @current_user.admin?
-
-      unauthorized_redirect unless GraderConfiguration["right.view_testcase"]
-      unauthorized_redirect unless @current_user.can_view_problem?(@problem)
-
+      unauthorized_redirect unless @current_user.can_view_testcase?(@problem)
     end
 end
