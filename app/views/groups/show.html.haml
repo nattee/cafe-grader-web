@@ -40,7 +40,7 @@
             .col-auto
               =label_tag :user_id, "User", class: 'col-form-label'
             .col-auto
-              =select_tag :user_id, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', style: 'width: 25em';
+              =select_tag :user_id, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 25em';
             .col-auto
               =submit_tag "Add",class: 'btn btn-primary'
         = render partial: 'group_users'
@@ -59,10 +59,12 @@
             .col-auto
               =label_tag :problem_id, "Problem",class: 'col-form-label'
             .col-auto
-              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', style: 'width: 25em';
+              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 25em';
             .col-auto
               =submit_tag "Add",class: 'btn btn-primary'
         = render partial: 'group_problems'
+
+= render 'shared/msg_modal'
 
 :javascript
   function reload_table() {
