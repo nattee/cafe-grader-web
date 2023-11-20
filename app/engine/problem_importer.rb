@@ -160,7 +160,7 @@ class ProblemImporter
     # pdf
     file,fn = get_content_of_first_match('*',path: 'attachment')
     if file
-      @problem.statement.attach(io: StringIO.new(file),filename: fn.basename)
+      @problem.attachment.attach(io: StringIO.new(file),filename: fn.basename)
       @log << "Found an attachment [#{fn}]"
       @got << fn
     end
