@@ -1,20 +1,12 @@
 %tr
-  %td.text-end= @numbering
+  %td.text-end{'data-order': @numbering}
+    %div= @numbering
+    - if @current_user and @current_user.admin?
+      %div= link_to 'stat', stat_problem_path(problem)
+      %div= link_to 'edit', edit_problem_path(problem)
   - @numbering+=1
   %td
-    %strong
-      = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
-      %span{style: 'color: var(--bs-orange)'}= render_star(problem.difficulty)
-    .text-muted
-      = "#{problem.name}"
-    %div
-      = link_to_description_if_any "[Read <span class='mi mi-bs md-18'>description</span>]".html_safe, problem
-      - if problem.attachment.attached?
-        |
-        = link_to "[Files <span class='mi mi-bs md-18'>archive</span>]".html_safe, get_attachment_problem_path(problem)
-      - if @current_user and @current_user.admin?
-        |
-        = link_to '(stat)', stat_problem_path(problem)
+    = render partial: 'problems/problem_name', locals: {problem: problem}
   -# score column
   - score = @prob_submissions[problem.id][:max_score];
   - cc =  score == 100 ? 'bg-success' : 'bg-warning text-dark'

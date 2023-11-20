@@ -119,7 +119,7 @@ class DatasetsController < ApplicationController
   def rejudge
     @dataset.problem.submissions.each do |sub|
       #mass rejudge, priority is very low
-      sub.add_judge_job(@dataset,-100)
+      sub.add_judge_job(@dataset,-50)
     end
 
   end

@@ -68,6 +68,7 @@ Rails.application.routes.draw do
 
   resources :groups do
     member do
+      post 'set_user_role/:user_id/:role', to: 'groups#set_user_role', as: 'set_user_role'
       post 'add_user', to: 'groups#add_user', as: 'add_user'
       delete 'remove_user/:user_id', to: 'groups#remove_user', as: 'remove_user'
       delete 'remove_all_user', to: 'groups#remove_all_user', as: 'remove_all_user'

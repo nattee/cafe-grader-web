@@ -337,6 +337,11 @@ class User < ApplicationRecord
     return available_problems.include? problem
   end
 
+  def can_view_testcase?(problem)
+    return true if admin?
+    return can_view_problem?(problem) && GraderConfiguration["right.view_testcase"]
+  end
+
   def self.clear_last_login
     User.update_all(last_ip: nil)
   end
