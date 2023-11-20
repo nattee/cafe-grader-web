@@ -40,14 +40,13 @@
               = '-- REDACTED --'
         %tr
           %td.text-end.text-secondary
-            Task
+            Problem
           %td
-            - if @submission.problem!=nil
-              = link_to "[#{@submission.problem.name}]", stat_problem_path(@submission.problem)
-              = @submission.problem.full_name
-              = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, @submission.problem
-            - else
-              = "(n/a)"
+            = render partial: 'problems/problem_name', locals: {problem: @submission.problem} if @submission.problem
+            - if @current_user.admin?
+              = link_to 'Edit', edit_problem_path(@submission.problem)
+              |
+              = link_to 'Stat', stat_problem_path(@submission.problem)
         %tr
           %td.text-end.text-secondary
             Tries

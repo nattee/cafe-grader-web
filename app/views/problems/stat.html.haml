@@ -19,19 +19,7 @@
           .col-sm-6.text-end.text-secondary
             Name
           .col-sm-6
-            %strong
-              = "#{@problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
-              %span{style: 'color: var(--bs-orange)'}= render_star(@problem.difficulty)
-            .text-muted
-              = "#{@problem.name}"
-            %div
-              = link_to_description_if_any "Read <span class='mi mi-bs md-18'>description</span>".html_safe, @problem, cxlass: 'badge text-bg-primary'
-              - if @problem.attachment.attached?
-                |
-                = link_to "Files <span class='mi mi-bs md-18'>archive</span>".html_safe, get_attachment_problem_path(@problem)
-            -#
-              = @problem.full_name
-              = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='glyphicon glyphicon-file'></span>".html_safe, @problem
+            = render partial: 'problem_name', locals: {problem: @problem}
         .row.my-2
           .col-sm-6.text-end.text-secondary
             Subs
@@ -45,7 +33,9 @@
         .row.my-2
           .col-sm-6.text-end.text-secondary
           .col-sm-6
-            = link_to 'Edit', edit_problem_path(@problem), class: 'btn btn-outline-primary'
+            = link_to 'Edit', edit_problem_path(@problem)
+            |
+            = link_to 'Stat', stat_problem_path(@problem)
 
 %h2 Submissions
 - if @submissions and @submissions.count > 0
