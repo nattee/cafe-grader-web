@@ -277,9 +277,15 @@ class ProblemImporter
     do_attachment: true
   )
 
+
     # read any options
     @base_dir = dir
-    load_options
+    begin
+      load_options
+    rescue => e
+      puts "Parsing 'config.yml' failed: #{e}"
+      return false
+    end
     name = @options[:name] unless name
 
     # init problem and dataset

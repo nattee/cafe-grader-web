@@ -64,8 +64,8 @@ class ProblemExporter
       @checker_dir.mkpath
       @checker_filename = @checker_dir + 'checker'
       File.open(@checker_filename,'w:ASCII-8BIT') { |f| @ds.checker.download { |chunk| f.write chunk } }
-      @options[:checker] = @checker_filename.basename
-      @options[:checker_dir] = @checker_filename.dirname
+      @options[:checker] = @checker_filename.basename.to_s
+      @options[:checker_dir] = @checker_filename.dirname.to_s
     end
   end
 
