@@ -69,6 +69,17 @@ class ProblemExporter
     end
   end
 
+  def export_solutions
+    @sol_dir = @main_dir + 'model_solutions'
+    @sol_dir.mkpath
+    @problem.submissions.where(tag: :model).each do |sub|
+      sub_dir = @sol_dir + sub.id.to_s
+      sub_dir.mkpath
+      fn = sub_dir + sub.source_filename
+      File.write(fn,sub.source)
+    end
+  end
+
   def export_options
     #problem value
     p_options = %i(name full_name submission_filename task_type compilation_type permitted_lang)
@@ -112,6 +123,7 @@ class ProblemExporter
     export_testcases
     export_managers_checker
     export_options
+    export_solutions
   end
 
   def self.dump_problems(probs = Problem.available, base_dir = Rails.root.join('../judge/dump') )

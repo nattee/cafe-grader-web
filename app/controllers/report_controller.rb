@@ -138,6 +138,12 @@ class ReportController < ApplicationController
       .select('languages.pretty_name')
   end
 
+  def progress
+  end
+
+  def progress_query
+  end
+
   def problem_hof
     # gen problem list
     @user = User.find(session[:user_id])

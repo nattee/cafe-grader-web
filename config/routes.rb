@@ -169,11 +169,18 @@ Rails.application.routes.draw do
   #---- BEWARE ---- singular resource maps to plural controller by default, we can override by provide controller name directly
   #report
   resource :report, only: [], controller: 'report' do
-    get 'login'
-    get 'multiple_login'
-    get 'problem_hof(/:id)', action: 'problem_hof', as: 'problem_hof'
     get 'max_score'
     post 'show_max_score'
+    get 'login'
+    get 'login_stat'
+    post 'login_stat'
+    post 'login_summary_query'
+    post 'login_detail_query'
+    get 'multiple_login'
+    get 'problem_hof(/:id)', action: 'problem_hof', as: 'problem_hof'
+    get 'progress'
+
+
     get 'stuck'
     get 'cheat_report'
     post 'cheat_report'
@@ -181,11 +188,6 @@ Rails.application.routes.draw do
     post 'cheat_scrutinize'
     get 'submission'
     post 'submission_query'
-    get 'login_stat'
-    post 'login_stat'
-    get 'login'
-    post 'login_summary_query'
-    post 'login_detail_query'
   end
   #get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
   #get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'
