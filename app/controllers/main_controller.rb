@@ -67,7 +67,7 @@ class MainController < ApplicationController
                                  cookie: cookies.encrypted[:uuid],
                                  ip_address: request.remote_ip)
     if (params['file']) and (params['file']!='')
-      @submission.source = File.open(params['file'].path,'r:UTF-8',&:read) 
+      @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
       @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
       @submission.source_filename = params['file'].original_filename
     end

@@ -64,8 +64,19 @@ class ProblemExporter
       @checker_dir.mkpath
       @checker_filename = @checker_dir + 'checker'
       File.open(@checker_filename,'w:ASCII-8BIT') { |f| @ds.checker.download { |chunk| f.write chunk } }
-      @options[:checker] = @checker_filename.basename
-      @options[:checker_dir] = @checker_filename.dirname
+      @options[:checker] = @checker_filename.basename.to_s
+      @options[:checker_dir] = @checker_filename.dirname.to_s
+    end
+  end
+
+  def export_solutions
+    @sol_dir = @main_dir + 'model_solutions'
+    @sol_dir.mkpath
+    @problem.submissions.where(tag: :model).each do |sub|
+      sub_dir = @sol_dir + sub.id.to_s
+      sub_dir.mkpath
+      fn = sub_dir + "#{sub.language.name}_#{sub.source_filename}"
+      File.write(fn,sub.source)
     end
   end
 
@@ -88,6 +99,7 @@ class ProblemExporter
     #managers, checker
     @options[:managers_dir] = 'managers'
     @options[:checker_dir] = 'checker'
+    @options[:solutions_dir] = 'model_solutions'
 
     # tags
     @options[:tags] = @problem.tags.pluck :name if @problem.tags.count > 0
@@ -112,6 +124,7 @@ class ProblemExporter
     export_testcases
     export_managers_checker
     export_options
+    export_solutions
   end
 
   def self.dump_problems(probs = Problem.available, base_dir = Rails.root.join('../judge/dump') )

@@ -1,6 +1,6 @@
-%h1 Best Score
+%h1 Score Progress
 
-= form_with url: show_max_score_report_path, data: {turbo: true} do |f|
+= form_with url: progress_query_report_path, data: {turbo: true} do |f|
   .row
     .col-lg-4
       .card.border-primary.mb-2
@@ -14,7 +14,6 @@
               options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
               { class: 'select2 form-control', multiple: "true" }
       %input#show-time.form-check-input{type: 'checkbox', name: 'show-time'}
-      %label.form-check-label{for: 'show-time'} Show time column
     .col-lg-4
       = render partial: 'submission_range'
     .col-lg-4
@@ -27,5 +26,5 @@
         %canvas#chart
 
 .mt-3
-  = turbo_frame_tag "max_score_result", data: {turbo: "true"}
+  = turbo_frame_tag "score_progress_result", data: {turbo: "true"}
 

@@ -73,7 +73,7 @@
             = problem.contests.collect { |c| c.name }.join(', ')
         %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-sm btn-block'
         %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-sm btn-block'
-        %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, :confirm => 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
+        %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 
 :javascript
   function init_table() {
