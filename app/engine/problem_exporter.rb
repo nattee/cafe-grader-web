@@ -75,7 +75,7 @@ class ProblemExporter
     @problem.submissions.where(tag: :model).each do |sub|
       sub_dir = @sol_dir + sub.id.to_s
       sub_dir.mkpath
-      fn = sub_dir + sub.source_filename
+      fn = sub_dir + "#{sub.language.name}_#{sub.source_filename}"
       File.write(fn,sub.source)
     end
   end
@@ -99,6 +99,7 @@ class ProblemExporter
     #managers, checker
     @options[:managers_dir] = 'managers'
     @options[:checker_dir] = 'checker'
+    @options[:solutions_dir] = 'model_solutions'
 
     # tags
     @options[:tags] = @problem.tags.pluck :name if @problem.tags.count > 0

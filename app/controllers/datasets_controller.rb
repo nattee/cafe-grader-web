@@ -44,8 +44,7 @@ class DatasetsController < ApplicationController
         WorkerDataset.where(dataset_id: @dataset).delete_all
       end
       if @dataset.update(dataset_params)
-        @updated = "Updated successfully on #{Time.zone.now}"
-        #format.html { redirect_to dataset_url(@dataset), notice: "Dataset was successfully updated." }
+        flash.now[:notice] = "Updated successfully on #{Time.zone.now}"
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
       else
@@ -58,8 +57,8 @@ class DatasetsController < ApplicationController
 
   def manager_delete
     mg = @dataset.managers.find(params[:mg_id])
-    @updated = "#{mg.filename} is deleted"
     mg.purge
+    flash.now[:notice] = "Manager file [#{mg.filename}] is deleted"
   end
 
   def manager_view
@@ -80,7 +79,7 @@ class DatasetsController < ApplicationController
 
   def checker_delete
     @dataset.checker.purge
-    @updated = "Checker is deleted"
+    flash.now[:notice] = "Checker is deleted"
     render 'manager_delete'
   end
 
@@ -101,7 +100,8 @@ class DatasetsController < ApplicationController
   def testcase_delete
     tc = Testcase.find(params[:tc_id])
     tc.destroy
-    @updated = "Testcase ##{tc.num} is deleted"
+
+    flash.now[:notice] = "Testcase ##{tc.num} is deleted"
     render :update
   end
 
@@ -111,8 +111,8 @@ class DatasetsController < ApplicationController
   end
 
   def set_as_live
-    @updated = "Dataset #{@dataset.name} is live"
     @dataset.problem.update(live_dataset: @dataset)
+    flash.now[:notice] = "Dataset #{@dataset.name} is live"
     render :update
   end
 
@@ -127,13 +127,23 @@ class DatasetsController < ApplicationController
   # DELETE /datasets/1 or /datasets/1.json
   def destroy
     p = @dataset.problem
-    @dataset.destroy
-    @dataset = p.datasets.first
+    if p.datasets.count == 1
+      # can't delete last dataset
+      flash.now[:alert] = 'Cannot delete the last dataset'
+    elsif @dataset == p.live_dataset
+      # can't delete the live dataset
+      flash.now[:alert] = 'Cannot delete live dataset'
+    else
+      @dataset.destroy
+      @dataset = p.datasets.first
+      flash.now[:notice] = 'Dataset is deleted'
+    end
+
 
     respond_to do |format|
       format.html { redirect_to datasets_url, notice: "Dataset was successfully destroyed." }
       format.json { head :no_content }
-      format.turbo_stream { render :update}
+      format.turbo_stream { render :update }
     end
   end
 

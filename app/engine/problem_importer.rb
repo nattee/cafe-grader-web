@@ -254,6 +254,34 @@ class ProblemImporter
     return result
   end
 
+  def read_solutions
+    # any .h or manager
+    solutions = @options[:solutions_dir] || 'model_solutions'
+    pattern = build_glob('*',recursive: true, path: @options[:solutions_dir] || '')
+    managers_fn = {}
+    Dir.glob(pattern).each do |fn|
+
+      pn = Pathname.new(fn)
+      next if pn.directory?
+
+      @log << "Found a model solution file [#{fn}]"
+      lang_name = pn.basename.to_s.split('_')
+      source_name = pn.basename.to_s[(lang_name.length)...]
+
+      language = Language.where(name: lang_name).first
+      sub =  Submission.new(user: User.first,
+                            problem: @problem,
+                            submitted_at: Time.zone.now,
+                            language: language,
+                            source_filename: source_name)
+      sub.source = File.open(fn,'r:UTF-8',&:read)
+      sub.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
+
+      sub.save
+      sub.add_judge_job
+    end
+  end
+
   # import dataset in the dir into a problem,
   # might also set it as a live dataset
   # If the problem with the same name exist, this will add another dataset
@@ -274,12 +302,19 @@ class ProblemImporter
     do_statement: true,
     do_checker: true,
     do_cpp_extras: true,
-    do_attachment: true
+    do_attachment: true,
+    do_solutions: true
   )
 
+    @log = []
+    @base_dir = dir
+    unless Pathname.new(dir).exist?
+      @log << "ERROR: cannot find path #{dir}"
+      puts @log
+      return @log
+    end
 
     # read any options
-    @base_dir = dir
     begin
       load_options
     rescue => e
@@ -319,6 +354,7 @@ class ProblemImporter
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
     read_options #options is put to last, it will override any defaults
+    read_solutions if do_solutions
     @problem.save
     @dataset.save
     @log << "Done successfully"
