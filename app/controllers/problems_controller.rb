@@ -283,7 +283,8 @@ class ProblemsController < ApplicationController
                                 dataset: @dataset,
                                 do_statement: false,
                                 do_checker: false,
-                                do_cpp_extras: false
+                                do_cpp_extras: false,
+                                do_solutions: false
                               )
     @updated = 'Testcases has been imported'
     @log = pi.log
