@@ -256,8 +256,8 @@ class ProblemImporter
 
   def read_solutions
     # any .h or manager
-    solutions = @options[:solutions_dir] || 'model_solutions'
-    pattern = build_glob('*',recursive: true, path: @options[:solutions_dir] || '')
+    solutions_dir = @options[:solutions_dir] || 'model_solutions'
+    pattern = build_glob('*',recursive: true, path: solutions_dir)
     managers_fn = {}
     Dir.glob(pattern).each do |fn|
 
@@ -277,8 +277,9 @@ class ProblemImporter
       sub.source = File.open(fn,'r:UTF-8',&:read)
       sub.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
 
-      sub.save
-      sub.add_judge_job
+      if sub.save
+        sub.add_judge_job
+      end
     end
   end
 
