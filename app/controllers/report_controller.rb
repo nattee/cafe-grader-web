@@ -20,13 +20,17 @@ class ReportController < ApplicationController
     #process parameters
     #problems
     @problems = []
-    if params[:problem_id]
-      params[:problem_id].each do |id|
-        next unless id.strip != ""
-        pid = Problem.find_by_id(id.to_i)
-        @problems << pid if pid
-      end
+    prob_use = params[:probs][:use] rescue ''
+    if prob_use == 'prob_ids'
+      @problems = Problem.where(id: params[:problem_id])
+    elsif prob_use == 'prob_groups'
+      ids = Group.where(id: params[:prob_group_id]).joins(:problems).pluck(:problem_id).uniq
+      @problems = Problem.where(id: ids)
+    elsif prob_use == 'prob_tags'
+      ids = Tag.where(id: params[:prob_tag_id]).joins(:problems).pluck(:problem_id).uniq
+      @problems = Problem.where(id: ids)
     end
+
 
     #users
     @users = if params[:users] == "group" then 
