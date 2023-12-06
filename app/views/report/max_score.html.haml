@@ -21,7 +21,7 @@
           .row
             .col-1
               .form-check
-                = radio_button_tag :'probs[use]', :prob_groups, true, class: 'form-check-input'
+                = radio_button_tag :'probs[use]', :prob_groups, false, class: 'form-check-input'
             .col-11
               = label_tag :probs_use_prob_groups, "Problems in these groups"
               = select_tag 'prob_group_id[]',
@@ -30,7 +30,7 @@
           .row
             .col-1
               .form-check
-                = radio_button_tag :'probs[use]', :prob_tags, true, class: 'form-check-input'
+                = radio_button_tag :'probs[use]', :prob_tags, false, class: 'form-check-input'
             .col-11
               = label_tag :probs_use_prob_tags, "Problems with these tags"
               = select_tag 'prob_tag_id[]',

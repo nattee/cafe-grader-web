@@ -41,7 +41,7 @@ class ReportController < ApplicationController
                User.includes(:contests).includes(:contest_stat)
              end
 
-    max_records = Submission.where(user_id: @users.ids, problem_id: params[:problem_id].map {|x| x.to_i}).group('user_id,problem_id')
+    max_records = Submission.where(user_id: @users.ids, problem_id: @problems.ids).group('user_id,problem_id')
       .select('MAX(submissions.points) as max_score, user_id,problem_id')
     max_records = submission_in_range(max_records,params[:sub_range])
 
