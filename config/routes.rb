@@ -63,6 +63,7 @@ Rails.application.routes.draw do
       post 'set_as_live'
       post 'view'
       post 'rejudge'
+      post 'set_weight'
     end
   end
 

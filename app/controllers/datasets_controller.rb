@@ -3,7 +3,7 @@ class DatasetsController < ApplicationController
                                         manager_delete manager_view
                                         checker_view checker_download checker_delete
                                         testcase_input testcase_sol testcase_delete
-                                        view set_as_live rejudge
+                                        view set_as_live rejudge set_weight
                                       ]
   before_action :admin_authorization
   before_action :check_valid_login
@@ -102,6 +102,17 @@ class DatasetsController < ApplicationController
     tc.destroy
 
     flash.now[:notice] = "Testcase ##{tc.num} is deleted"
+    render :update
+  end
+
+  def set_weight
+    begin
+      wp = JSON.parse(params[:weight_param])
+      flash.now[:notice] = "Testcases' weights are updated"
+      @dataset.set_weight(wp)
+    rescue JSON::ParserError => e
+      flash.now[:alert] = 'weight params is malformed'
+    end
     render :update
   end
 

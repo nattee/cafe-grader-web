@@ -6,6 +6,8 @@ class Testcase < ApplicationRecord
   has_one_attached :inp_file
   has_one_attached :ans_file
 
+  scope :display_order, ->  { order(:group, :num) }
+
   def get_name_for_dir
     return code_name unless code_name.blank?
     return num.to_s
