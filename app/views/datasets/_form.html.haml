@@ -34,7 +34,7 @@
       .col-md-6
         %h5.my-2 Basic Info
         = f.input :name
-        = f.input :time_limit, label: "Time limit (s)", tooltip: 'Can input with decimal, e.g., 1.2'
+        = f.input :time_limit, label: "Time limit (s)", tooltip: 'Decimal is ok, e.g., 1.2'
         = f.input :memory_limit, label: "Memory Limit (MB)"
         = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], wrapper: :horizontal_select_half
         = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, wrapper: :horizontal_select_half
@@ -43,6 +43,16 @@
       .col-md-6
         = render partial: 'datasets/managers', locals: {ds: ds, form: f}
   %h5.mt-4 Testcases
+  = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
+    .col-12
+      .form-check
+        Weight param
+        %span.mi.mi-bs.md-18.text-body-tertiary{ data: {bs: {toggle: "tooltip", placement:"top", 
+          title:'Input as array of weights or array of pair [weight, count]'}} } help_center
+    .col-12
+      = text_field_tag :weight_param, nil, class: 'form-control', placeholder: '[[10,4], [5,6]]'
+    .col-12
+      = f.submit 'Set', class: 'btn btn-primary'
   %table.datatable.table-hover
     %thead
       %tr
@@ -55,7 +65,7 @@
     %tbody
       - last_group = nil
       - odd = true
-      - ds.testcases.each.with_index do |tc,idx|
+      - ds.testcases.display_order.each.with_index do |tc,idx|
         - if tc.group != last_group
           - odd = !odd
           - last_group = tc.group
@@ -78,7 +88,9 @@
             |
             %span= link_to 'delete', testcase_delete_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
             ]
+
   :javascript
+
     if (typeof importmapScriptsLoaded !== 'undefined') {
       $('.datatable').DataTable({destroy: true, searching: false, paging: false})
     }
