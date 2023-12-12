@@ -34,4 +34,22 @@ class Dataset < ApplicationRecord
     self.problem.live_dataset&.id == self.id
   end
 
+  def set_weight(weight_param)
+    tc_ids = testcases.display_order.ids
+    idx = 0
+    weight_param.each do |wp|
+      count = 1;
+      if wp.is_a? Array
+        count = wp[1].to_i
+        w = wp[0].to_i;
+      else
+        w = wp.to_i;
+      end
+      # take next count ids
+      ids = tc_ids[idx...(idx+count)]
+      idx += count
+      Testcase.where(id: ids).update(weight: w)
+    end
+  end
+
 end
