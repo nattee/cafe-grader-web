@@ -46,11 +46,15 @@
   = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
     .col-12
       .form-check
-        Weight param
-        %span.mi.mi-bs.md-18.text-body-tertiary{ data: {bs: {toggle: "tooltip", placement:"top", 
-          title:'Input as array of weights or array of pair [weight, count]'}} } help_center
+        Testcase config
+        -#
+          %span.mi.mi-bs.md-18.text-body-tertiary{ data: {bs: {toggle: "tooltip", placement:"top", 
+            title:'Input as array of weights or array of pair [weight, count]'}} } help_center
+        %a{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank'} 
+          %span.mi.mi-bs.md-18 help_center
+
     .col-12
-      = text_field_tag :weight_param, nil, class: 'form-control', placeholder: '[[10,4], [5,6]]'
+      = text_field_tag :weight_param, nil, class: 'form-control'
     .col-12
       = f.submit 'Set', class: 'btn btn-primary'
   %table.datatable.table-hover

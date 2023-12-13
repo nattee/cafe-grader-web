@@ -30,21 +30,28 @@
             .col-md-auto
               = f.radio_button :enable, "no", class: 'form-check-input'
               = f.label :enable_no, "no"
-          .row.mb-3.align-items-center
-            .col-md-auto
-              .form-check
-                = f.label :add_group, 'Add selected problems to user group'
-                = f.check_box :add_group, class: 'form-check-input'
-            .col-md-auto
-              = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', data: {width: "400px"}
         .col-md-6
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
-                = f.label :add_tags, 'Add the following tags to the selected problems'
+                = f.label :add_group, 'Add to groups'
+                = f.check_box :add_group, class: 'form-check-input'
+            .col-md-auto
+              = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select groups'}
+          .row.mb-3.align-items-center
+            .col-md-auto
+              .form-check
+                = f.label :add_tags, 'Add tags'
                 = f.check_box :add_tags, class: 'form-check-input'
             .col-md-auto
               = f.select "tag_ids", options_from_collection_for_select( Tag.all, 'id','name'), {},class: 'select2', multiple: true, data: {placeholder: 'Select tags by clicking', width: "400px"}
+          .row.mb-3.align-items-center
+            .col-md-auto
+              .form-check
+                = f.label :set_languages, 'Set permitted languages'
+                = f.check_box :set_languages, class: 'form-check-input'
+            .col-md-auto
+              = f.select "lang_ids", options_from_collection_for_select( Language.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select languages'}
           - if GraderConfiguration.multicontests?
             .row.mb-3.align-items-center
               .col-md-auto
@@ -63,6 +70,7 @@
         %th= check_box_tag 'select_all'
         %th Name
         %th Full name
+        %th Permitted Languages
         %th Tags
         %th Available
         %th Date added
@@ -77,6 +85,9 @@
           %td= check_box_tag "prob-#{problem.id}-#{num}"
           %td= problem.name
           %td= problem.full_name
+          %td
+            - (problem.permitted_lang || '').split(' ').each do |l_name|
+              %span.badge.text-bg-secondary= l_name
           %td
             - problem.tags.each do |t|
               %span.badge.text-bg-secondary= t.name

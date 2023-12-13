@@ -4,7 +4,7 @@ module MainHelper
     if !problem.url.blank?
       return link_to name, problem.url, **options
     elsif problem.statement.attached?
-      return link_to name, get_statement_problem_path(problem, problem.statement&.filename), target: '_blank', data: {turbo: false}, **options
+      return link_to name, get_statement_problem_path(problem, problem.name + ".pdf"), target: '_blank', data: {turbo: false}, **options
     else
       return ''
     end

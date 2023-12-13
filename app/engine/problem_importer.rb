@@ -34,7 +34,6 @@ class ProblemImporter
     Dir["#{@base_dir}/**/#{sol_pattern}"].each do |fn|
       sol_fn = Pathname.new(@base_dir) + fn
       regex = Regexp.new sol_pattern.gsub('*','(.+)')
-      #codename = sol_fn.basename(sol_pattern[(sol_pattern.index('*')+1)..]).to_s # default codename to the * part of the sol_pattern
 
       #try to match the codename with the regex
       mc = sol_fn.basename.to_s.match regex
@@ -58,14 +57,18 @@ class ProblemImporter
 
     # we sort the filename by their natural sort order
     natural_order_sorted = @tc.keys.sort_by{ |s| s.split(/[^\d]+/).map{ |e| Integer(e,10) rescue e}}
-    natural_order_sorted.each do |k|
-      if @tc[k].count >= 2
+    natural_order_sorted.each do |codename|
+      if @tc[codename].count >= 2
         # we found both the input and sol
         # the codename is the key of the hash
 
+        # default weight
+        weight = 1
+
+
         #parse group_name and build group number
         group_name = group_hash.count + 1
-        mg = @tc[k][:input].basename.to_s.match group_name_regex
+        mg = @tc[codename][:input].basename.to_s.match group_name_regex
         group_name = mg[1] if mg # if match, we will use the captured pattern
 
         if group_hash.has_key? group_name
@@ -75,23 +78,32 @@ class ProblemImporter
           group_hash[group_name] = group
         end
 
+        #overwrite with options if exists
+        if @options[OptionConst::YAML_KEY[:testcases]].has_key?(codename.to_sym)
+          weight = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:weight]
+          group = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group]
+          group_name = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group_name]
+        end
+
         #create new testcase
-        new_tc = @dataset.testcases.where(code_name: k).first
+        new_tc = @dataset.testcases.where(code_name: codename).first
         if new_tc
-          @log << "replace existing testcase with codename #{k} (num and group are #{new_tc.num} #{new_tc.group})"
-          new_tc.weight = 1
+          @log << "replace existing testcase with codename #{codename} (num,weight,group,group_name are #{[num,weight,group,group_name].join ','})"
+          new_tc.weight = weight
+          new_tc.group = group
+          new_tc.group_name = group_name
         else
-          @log << "add a testcase #{num} with codename #{k} and group #{group}"
-          new_tc = Testcase.new(code_name: k, num: num, group: group,weight: 1,group_name: group_name)
+          @log << "add a testcase #{num} with codename #{codename} (num,weight,group,group_name are #{[num,weight,group,group_name].join ','})"
+          new_tc = Testcase.new(code_name: codename, num: num, group: group,weight: weight,group_name: group_name)
           num +=1
         end
-        input = File.read(@tc[k][:input]).gsub(/\r$/, '')
-        ans = File.read(@tc[k][:sol]).gsub(/\r$/, '')
+        input = File.read(@tc[codename][:input]).gsub(/\r$/, '')
+        ans = File.read(@tc[codename][:sol]).gsub(/\r$/, '')
         new_tc.inp_file.attach(io: StringIO.new(input), filename: 'input.txt', content_type: 'text/plain',  identify: false)
         new_tc.ans_file.attach(io: StringIO.new(ans),   filename: 'answer.txt', content_type: 'text/plain',  identify: false)
         @dataset.testcases << new_tc
-        @log << "  #{@tc[k][:input]} is the input"
-        @log << "  #{@tc[k][:sol]} is the sol"
+        @log << "  #{@tc[codename][:input]} is the input"
+        @log << "  #{@tc[codename][:sol]} is the sol"
       end
     end
 
@@ -116,22 +128,22 @@ class ProblemImporter
       end
     end
 
-    d_options = %w(time_limit memory_limit score_type evaluation_type main_filename)
+    d_options = %i(time_limit memory_limit score_type evaluation_type main_filename)
     d_options.each do |opt|
       if @options.has_key? opt
         @log << "dataset.#{opt} is set to '#{@options[opt]}' by options file"
-        @problem.write_attribute(opt,@options[opt]) if @options.has_key? opt
+        @dataset.write_attribute(opt,@options[opt]) if @options.has_key? opt
       end
     end
 
     #tags
-    if @options[:tags]
+    if @options[OptionConst::YAML_KEY[:tags]]
       # calculate non-existing tags
-      non_exists = @options[:tags] - Tag.where(name: @options[:tags]).pluck(:name)
+      non_exists = @options[OptionConst::YAML_KEY[:tags]] - Tag.where(name: @options[OptionConst::YAML_KEY[:tags]]).pluck(:name)
       non_exists.each { |name| Tag.create(name: name) }
 
-      @problem.tags = Tag.where(name: @options[:tags])
-      @log << "set tags to [#{@options[:tags].join(', ')}]"
+      @problem.tags = Tag.where(name: @options[OptionConst::YAML_KEY[:tags]])
+      @log << "set tags to [#{@options[OptionConst::YAML_KEY[:tags]].join(', ')}]"
     end
 
   end
@@ -170,7 +182,7 @@ class ProblemImporter
     # main
     main_filename = ['main.cpp','main_grader.cpp','grader.cpp']
     main_filename = @options[:main] if @options.has_key?(:main)
-    path = @options[:managers_dir] || ''
+    path = @options[OptionConst::YAML_KEY[:dir][:managers]] || ''
     main,fn = get_content_of_first_match(main_filename,path: path)
     if (main)
       @log << "Found the main file [#{fn}]"
@@ -189,8 +201,8 @@ class ProblemImporter
     end
 
     # any .h or manager
-    managers = @options[:managers_pattern] || '*.h'
-    pattern = build_glob(managers,path: @options[:managers_dir] || '')
+    managers = @options[OptionConst::YAML_KEY[:managers_pattern]] || '*.h'
+    pattern = build_glob(managers,path: @options[OptionConst::YAML_KEY[:dir][:managers]] || '')
     managers_fn = {}
     Dir.glob(pattern).each do |fn|
       @log << "Found an additional manager file [#{fn}]"
@@ -213,8 +225,8 @@ class ProblemImporter
   # take any checker_pattern file as a checker
   def read_checker
     #glob checker
-    checker_path = @options[:checker_dir] || ''
-    checker_pattern = @options[:checker] || 'checker'
+    checker_path = @options[OptionConst::YAML_KEY[:dir][:checker]] || ''
+    checker_pattern = @options[OptionConst::YAML_KEY[:checker]] || OptionConst::DEFAULT[:file][:checker]
     checker,fn = get_content_of_first_match(checker_pattern, path: checker_path)
     if (checker)
       @log << "Found a custom checker file [#{fn}]"
@@ -232,7 +244,7 @@ class ProblemImporter
         return
       end
 
-      full_path = Pathname.new(@base_dir) + files[0]
+      full_path = Pathname.new(files[0])
       return File.read(full_path.cleanpath),full_path.cleanpath
     end
 
@@ -256,7 +268,7 @@ class ProblemImporter
 
   def read_solutions
     # any .h or manager
-    solutions_dir = @options[:solutions_dir] || 'model_solutions'
+    solutions_dir = @options[OptionConst::YAML_KEY[:dir][:model_sols]] || OptionConst::DEFAULT[:dir][:model_sols]
     pattern = build_glob('*',recursive: true, path: solutions_dir)
     managers_fn = {}
     Dir.glob(pattern).each do |fn|
