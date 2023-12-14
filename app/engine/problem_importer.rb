@@ -170,7 +170,8 @@ class ProblemImporter
 
   def read_attachment
     # pdf
-    file,fn = get_content_of_first_match('*',path: 'attachment')
+    path = @options[OptionConst::YAML_KEY[:dir][:attachment]] || OptionConst::DEFAULT[:dir][:attachment]
+    file,fn = get_content_of_first_match('*',path: path)
     if file
       @problem.attachment.attach(io: StringIO.new(file),filename: fn.basename)
       @log << "Found an attachment [#{fn}]"
