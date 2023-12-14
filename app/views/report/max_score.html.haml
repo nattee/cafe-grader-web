@@ -9,7 +9,7 @@
         .card-body
           %p
             Select problem(s) that we wish to know the score.
-          .row
+          .row.mb-2
             .col-1
               .form-check
                 = radio_button_tag :'probs[use]', :prob_ids, true, class: 'form-check-input'
@@ -18,7 +18,7 @@
               = select_tag 'problem_id[]',
                   options_for_select(Problem.all.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]},params[:problem_id]),
                   { class: 'select2 form-control', multiple: "true" }
-          .row
+          .row.mb-2
             .col-1
               .form-check
                 = radio_button_tag :'probs[use]', :prob_groups, false, class: 'form-check-input'
@@ -27,7 +27,7 @@
               = select_tag 'prob_group_id[]',
                   options_for_select(Group.all.collect {|g| [g.name, g.id]},params[:prob_group_id]),
                   { class: 'select2 form-control', multiple: "true" }
-          .row
+          .row.mb-2
             .col-1
               .form-check
                 = radio_button_tag :'probs[use]', :prob_tags, false, class: 'form-check-input'

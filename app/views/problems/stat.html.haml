@@ -20,6 +20,10 @@
             Name
           .col-sm-6
             = render partial: 'problem_name', locals: {problem: @problem}
+            - if @current_user.admin?
+              = link_to 'Edit', edit_problem_path(@problem)
+              |
+              = link_to 'Stat', stat_problem_path(@problem)
         .row.my-2
           .col-sm-6.text-end.text-secondary
             Subs
@@ -30,12 +34,6 @@
             Solved/Attempted User
           .col-sm-6
             #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
-        .row.my-2
-          .col-sm-6.text-end.text-secondary
-          .col-sm-6
-            = link_to 'Edit', edit_problem_path(@problem)
-            |
-            = link_to 'Stat', stat_problem_path(@problem)
 
 %h2 Submissions
 - if @submissions and @submissions.count > 0

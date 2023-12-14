@@ -9,10 +9,10 @@ class Problem < ApplicationRecord
   has_and_belongs_to_many :contests, :uniq => true
 
   #has_and_belongs_to_many :groups
-  has_many :groups_problems, class_name: 'GroupProblem'
+  has_many :groups_problems, class_name: 'GroupProblem', dependent: :destroy
   has_many :groups, :through => :groups_problems
 
-  has_many :problems_tags, class_name: 'ProblemTag'
+  has_many :problems_tags, class_name: 'ProblemTag', dependent: :destroy
   has_many :tags, through: :problems_tags
 
   has_many :test_pairs, :dependent => :delete_all
@@ -133,7 +133,7 @@ class Problem < ApplicationRecord
   # ids_string is something like ['1','3','7']
   # which correspond to the submitted value from  select2 multiple selection
   def set_permitted_lang_from_ids_string(ids_string)
-    lang_names = ids_string.map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
+    lang_names = ids_string.reject(&:empty?).map { |x| Language.find(x.to_i).name }.join(' ')
     self.permitted_lang = lang_names
   end
 

@@ -41,7 +41,7 @@ class ProblemsController < ApplicationController
 
   #get statement download link
   def get_statement
-    filename = @problem.statement.filename.to_s
+    filename = @problem.name
     data = @problem.statement.download
     send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
   end
@@ -170,9 +170,16 @@ class ProblemsController < ApplicationController
   end
 
   def do_manage
-    change_date_added if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
-    add_to_contest if params.has_key? 'add_to_contest'
-    set_available(params[:enable] == 'yes') if params[:change_enable] == '1'
+    problems = get_problems_from_params
+
+    change_date_added(problems) if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
+    add_to_contest(problems) if params.has_key? 'add_to_contest'
+    problems.update_all(available: params[:enable] == 'yes') if params[:change_enable] == '1'
+    problems.each { |p| p.tag_ids += params[:tag_ids] } if params[:add_tags] == '1'
+
+    problems.update_all(permitted_lang: Language.where(id: params[:lang_ids]).pluck(:name).join(' ')) if params[:set_languages] == '1'
+
+    #add to groups
     if params[:add_group] == '1'
       group = Group.find(params[:group_id])
       ok = []
@@ -189,9 +196,6 @@ class ProblemsController < ApplicationController
       flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
     end
 
-    if params[:add_tags] == '1'
-      get_problems_from_params.each { |p| p.tag_ids += params[:tag_ids] }
-    end
 
     redirect_to :action => 'manage'
   end
@@ -314,17 +318,14 @@ class ProblemsController < ApplicationController
     end
   end
 
-  def change_date_added
-    problems = get_problems_from_params
+
+  # for bulk manage
+  def change_date_added(problems)
     date = Date.parse(params[:date_added])
-    problems.each do |p|
-      p.date_added = date
-      p.save
-    end
+    problems.update_all(date_added: date)
   end
 
-  def add_to_contest
-    problems = get_problems_from_params
+  def add_to_contest(problems)
     contest = Contest.find(params[:contest][:id])
     if contest!=nil and contest.enabled
       problems.each do |p|
@@ -333,23 +334,21 @@ class ProblemsController < ApplicationController
     end
   end
 
-  def set_available(avail)
-    problems = get_problems_from_params
-    problems.each do |p|
-      p.available = avail
-      p.save
-    end
+
+  def set_permitted_lang(lang_ids)
+
   end
 
   def get_problems_from_params
-    problems = []
+    ids = []
     params.keys.each do |k|
       if k.index('prob-')==0
-        name, id, order = k.split('-')
-        problems << Problem.find(id)
+        #name, id, order = k.split('-')
+        #problems << Problem.find(id)
+        ids << k.split('-')[1]
       end
     end
-    problems
+    return Problem.where(id: ids)
   end
 
   def get_problems_stat

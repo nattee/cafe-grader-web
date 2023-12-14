@@ -52,4 +52,31 @@ class Dataset < ApplicationRecord
     end
   end
 
+  # set testcases parameters *field* by array
+  def set_by_array(field, array)
+    tc_ids = testcases.display_order.ids
+    idx = 0
+    array.each do |config|
+      count = 1;
+      if config.is_a? Array
+        count = config[1].to_i
+        value = config[0];
+      else
+        value = config;
+      end
+      # take next count ids
+      ids = tc_ids[idx...(idx+count)]
+      idx += count
+      hash = {}
+      hash[field] = value
+      Testcase.where(id: ids).update(hash)
+    end
+  end
+
+  def set_by_hash(options)
+    set_by_array(:weight,options[:weight]) if options.has_key? :weight
+    set_by_array(:group,options[:group]) if options.has_key? :group
+    set_by_array(:group_name,options[:group_name]) if options.has_key? :group_name
+  end
+
 end

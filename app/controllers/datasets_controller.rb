@@ -107,9 +107,13 @@ class DatasetsController < ApplicationController
 
   def set_weight
     begin
-      wp = JSON.parse(params[:weight_param])
-      flash.now[:notice] = "Testcases' weights are updated"
-      @dataset.set_weight(wp)
+      config = JSON.parse(params[:weight_param])
+      if config.is_a? Array
+        @dataset.set_by_array(:weight,config)
+      else
+        @dataset.set_by_hash(config.symbolize_keys)
+      end
+      flash.now[:notice] = "Testcases' parameters are updated"
     rescue JSON::ParserError => e
       flash.now[:alert] = 'weight params is malformed'
     end
