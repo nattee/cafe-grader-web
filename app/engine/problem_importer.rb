@@ -79,7 +79,7 @@ class ProblemImporter
         end
 
         #overwrite with options if exists
-        if @options[OptionConst::YAML_KEY[:testcases]].has_key?(codename.to_sym)
+        if @options.has_key?(OptionConst::YAML_KEY[:testcases]) && @options[OptionConst::YAML_KEY[:testcases]].has_key?(codename.to_sym)
           weight = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:weight]
           group = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group]
           group_name = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group_name]
