@@ -26,7 +26,7 @@ class ProblemExporter
 
   def export_attachment
     return unless @problem.attachment.attached?
-    @attachment_filename = @main_dir + OptionConst::DEFAULT[:dir][:attachments] + @problem.attachment.filename.to_s
+    @attachment_filename = @main_dir + OptionConst::DEFAULT[:dir][:attachment] + @problem.attachment.filename.to_s
     @attachment_filename.dirname.mkpath
 
     File.open(@attachment_filename,'w:ASCII-8BIT') do |f|

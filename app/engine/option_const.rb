@@ -3,7 +3,7 @@ module OptionConst
   DEFAULT = {
     dir: {
       testcases: 'testcases',
-      attachments: 'attachments',
+      attachment: 'attachment',
       checker: 'checker',
       managers: 'managers',
       model_sols: 'model_solutions',
@@ -20,7 +20,7 @@ module OptionConst
   YAML_KEY = {
     dir: {
       testcases: :testcases_dir,
-      attachments: :attachments_dir,
+      attachment: :attachment_dir,
       checker: :checker_dir,
       managers: :managers_dir,
       model_sols: :solutions_dir,
