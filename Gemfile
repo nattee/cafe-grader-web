@@ -34,7 +34,7 @@ gem 'sqlite3'
 #gem 'sass-rails'
 gem 'sassc-rails'
 gem 'coffee-rails'
-gem 'material_icons'
+# gem 'material_icons'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   # gem 'therubyracer', :platforms => :ruby

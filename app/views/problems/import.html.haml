@@ -28,7 +28,53 @@
           = f.input :sol_pattern, input_html: { value: '*.sol' }
           = f.input :replace, label: 'replace all existing datasets of this problem', as: :boolean, wrapper: :horizontal_boolean
       = f.button :submit, class: 'btn-primary'
-  .col-md-8
+  .col-md-4
+    .card.bg-warning-subtle.mt-2
+      .card-body
+        .card-title
+          %h4
+            .mi.mi-bs.fill help
+            Usage
+        A Zip file can be uploaded to create a new problem with the given name. 
+        If a problem with the same name already exists,
+        the imported data will be saved as a new dataset of that problem.
+
+        %h5.my-2 Zip File Format
+        %ul
+          %li
+            The zip file should have multiple testcases where each testcase 
+            are pair of files with the same filename but different extension
+            where
+            %span.rounded.bg-light.p-1.font-monospace .in
+            is for input and
+            %span.rounded.bg-light.p-1.font-monospace .sol
+            is for output.
+
+          %li
+            Any
+            %span.rounded.bg-light.p-1.font-monospace .pdf
+            file will be used as a statement of the problem.
+          %li
+            Example: A zip file that contains
+            %span.rounded.bg-light.p-1.font-monospace 1.in
+            ,
+            %span.rounded.bg-light.p-1.font-monospace 1.sol
+            ,
+            %span.rounded.bg-light.p-1.font-monospace 2.in
+            and
+            %span.rounded.bg-light.p-1.font-monospace 2.sol
+            will have a new dataset consisting of two testcases: one with the input and output of 
+            %span.rounded.bg-light.p-1.font-monospace 1.in
+            and
+            %span.rounded.bg-light.p-1.font-monospace 1.sol
+            and another one with
+            %span.rounded.bg-light.p-1.font-monospace 2.in
+            and
+            %span.rounded.bg-light.p-1.font-monospace 2.sol
+          %li
+            Zip file may contain many more files, see
+            %a{href: '#'} the wiki
+            for more detail.
 
 
 - if @log
