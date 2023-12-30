@@ -1,3 +1,11 @@
+# There are multiple "prepare_xxx" method which set up directory and fill it with necessary file
+# either by downloading or write them directly from the database
+#
+# prepare_submission_directory(sub)           This setups various Pathnames for that specific submission
+# prepare_dataset_directory(dataset)          This setups various Pathnames for the problem's dataset
+# prepare_worker_dataset(dataset, type)       This actually downloads managers/testcases/checker for the problem's dataset
+#                                             It also call prepare_dataset_directory FIRST
+# prepare_testcase_directory(sub,testcase)    This setups various Pathname for specific testcase
 module JudgeBase
   INPUT_FILENAME = 'input.txt'
   STDOUT_FILENAME = 'stdout.txt'
@@ -29,6 +37,7 @@ module JudgeBase
   COLOR_ERROR = :darkred
   COLOR_ISOLATE_CMD = :darkslategray
   COLOR_CHECK_CMD = :indianred
+
 
 
 
@@ -80,30 +89,34 @@ module JudgeBase
 
   # download (via worker controller) files from the web server at url
   # and save to dest (which is a Pathname), raise exception on any error
-  def download_from_web(url,dest,download_type: 'generic' ,chmod_mode: nil)
-    uri = URI(url)
+  def download_from_web(url,dest,download_type: 'generic' ,chmod_mode: nil, sub_id: nil)
+    begin
+      uri = URI(url)
 
-    # alias var
-    hostname = uri.hostname
-    port = uri.port
-    basename = dest.basename
+      # alias var
+      hostname = uri.hostname
+      port = uri.port
+      basename = dest.basename
 
-    # req
-    req = Net::HTTP::Post.new(uri)
-    req['x-api-key'] = Rails.configuration.worker[:worker_passcode]
+      # req
+      req = Net::HTTP::Post.new(uri)
+      req['x-api-key'] = Rails.configuration.worker[:worker_passcode]
 
-    # do the request
-    Net::HTTP.start(hostname,port) do |http|
-      resp = http.request(req)
-      if resp.kind_of?(Net::HTTPSuccess)
-        File.open(dest.to_s,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
-        FileUtils.chmod(chmod_mode,dest) unless chmod_mode.nil?
-        judge_log "Successful downloading of #{download_type} #{basename} from the server"
-      else
-        judge_log "Error downloading #{download_type} #{basename} from the server"
-        #raise the exception
-        resp.value
+      # do the request
+      Net::HTTP.start(hostname,port) do |http|
+        resp = http.request(req)
+        if resp.kind_of?(Net::HTTPSuccess)
+          File.open(dest.to_s,'w:ASCII-8BIT'){ |f| f.write(resp.body) }
+          FileUtils.chmod(chmod_mode,dest) unless chmod_mode.nil?
+          judge_log "Successful downloading of #{download_type} #{basename} from the server"
+        else
+          judge_log "Error downloading #{download_type} #{basename} from the server"
+          #raise the exception
+          resp.value
+        end
       end
+    rescue Net::HTTPExceptions => he
+      raise GraderError.new("Error download #{download_type} \"#{he}\"",submission_id: sub_id )
     end
   end
 
@@ -138,28 +151,162 @@ module JudgeBase
     @isolate_stdout_file = @isolate_output_path + STDOUT_FILENAME
   end
 
+  # set up directory and path/filename of the dataset 
+  # (including path for testcases/managers/checker/initializers)
+  def prepare_dataset_directory(dataset)
+    #preparing path name variable
+    #base path
+    @problem_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeProblemPath + dataset.problem.id.to_s
+
+    #checker path
+    @prob_checker_path = @problem_path + 'checker'
+    @prob_checker_file = @prob_checker_path + dataset.checker.filename.to_s if dataset.checker.attached?
+
+
+    # manager path
+    @manager_path = @problem_path + Grader::JUDGE_MANAGER_PATH
+
+    #init path and file
+    @prob_init_path = @problem_path + 'initializers'
+    @prob_init_file = @prob_init_path + dataset.initializer_filename if dataset.initializer_filename
+
+    #prepare folder
+    @prob_checker_path.mkpath
+    @manager_path.mkpath
+  end
+
+
+  # download and set up dataset on this worker
+  # including run of initialization script
+  def download_dataset(dataset, type)
+    prepare_dataset_directory(dataset)
+
+    # download checker
+    if type == :managers
+      if dataset.checker.attached?
+        url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(dataset.checker.id)
+        download_from_web(url,@prob_checker_file,download_type: 'checker',chmod_mode: 0755)
+      end
+
+      # download any managers
+      dataset.managers.each do |mng|
+        basename = mng.filename.base + mng.filename.extension_with_delimiter
+        dest = @manager_path + basename
+        url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(mng.id)
+        download_from_web(url,dest,download_type: 'manager')
+      end
+
+      # download any initializers
+      dataset.initializers.each do |init|
+        basename = init.filename.base + init.filename.extension_with_delimiter
+        dest = @prob_init_path + basename
+        url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(init.id)
+        download_from_web(url,dest,download_type: 'initializer')
+      end
+    end
+
+    #download any testcases
+    if type == :testcases
+      dataset.testcases.each do |tc|
+        prepare_testcase_directory(nil,tc) #prepare only problem testcase path, not sub's testcase path
+
+        #download testcase
+        url_inp = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id)
+        url_ans = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id)
+        download_from_web(url_inp,@input_file,download_type: 'input file')
+        download_from_web(url_ans,@ans_file,download_type: 'answer file')
+
+        #do the symlink
+        #testcase codename inside prob_id/testcase_id
+        FileUtils.touch(@prob_testcase_path + tc.get_name_for_dir)
+
+        #dataset_id/testcase_codename (symlink to prob_id/testcase_id)
+        ds_dir = @problem_path + ('dsid_'+tc.dataset.id.to_s)
+        ds_dir.mkpath
+        ds_ts_codename_dir = ds_dir + tc.get_name_for_dir
+        ds_codename_dir = @problem_path + ('dsname_'+tc.dataset.get_name_for_dir)
+        FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
+        FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
+
+        judge_log("Testcase #{tc.id} (#{tc.code_name}) downloaded")
+      end
+    end
+  end
+
+  # *type* is either
+  #   :all where everything is downloaded and initialized
+  #   :managers_only where only managers, initializers  and checker are downloaded (this is for compile job and score job only)
+  def prepare_worker_dataset(dataset, type)
+    prepare_dataset_directory(dataset)
+
+    # we always prepare manager
+    WorkerDataset.transaction do
+      wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: dataset.id)
+      if wp.managers_status == 'created'
+        # no one is working on this worker problem, I will download
+        wp.update(managers_status: :downloading)
+
+        download_dataset(dataset, :managers)
+
+        wp.update(managers_status: :ready)
+      elsif wp.managers_status == 'ready'
+        judge_log("Found downloaded managers on this worker")
+      else
+        # status should be ready, if it stuck at :downloading, the program will stuck
+      end
+    end
+
+    # we only download testcase and initialize it only when type is :all
+    if type == :all
+      WorkerDataset.transaction do
+        wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: dataset.id)
+        if wp.testcases_status == 'created'
+          # no one is working on this worker problem, I will download
+          wp.update(testcases_status: :downloading)
+
+          download_dataset(dataset, :testcases)
+
+          #run the initializer
+          unless dataset.initializer_filename.blank?
+            run_initializer
+            judge_log("Testcase initialized on this worker")
+          end
+
+          wp.update(testcases_status: :ready)
+        elsif wp.testcases_status == 'ready'
+          judge_log("Found downloaded dataset on this worker")
+        else
+          # status should be ready, if it stuck at :downloading, the program will stuck
+        end
+      end
+    end
+  end
+
+  def run_initializer
+
+  end
+
   # set up directory and path/filename of the testcase directory
   def prepare_testcase_directory(sub,testcase)
-    #preparing path name
-    @problem_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeProblemPath + sub.problem.id.to_s
+    #preparing pathname for problem directory
     @prob_testcase_path = @problem_path + testcase.id.to_s
-    @prob_checker_path = @problem_path + 'checker'
-    @prob_checker_file = @prob_checker_path + testcase.dataset.checker.filename.to_s if testcase.dataset.checker.attached?
-    @sub_testcase_path = @submission_path + testcase.get_name_for_dir
-    @output_path = @sub_testcase_path + 'output'
-    @output_file = @output_path + STDOUT_FILENAME
     @input_path = @prob_testcase_path + 'input' #we need additional dir because we will mount this dir to the isolate
     @input_file = @input_path + INPUT_FILENAME
     @ans_file = @prob_testcase_path + AnsFilename
 
-    #prepare folder
     @prob_testcase_path.mkpath
-    @prob_checker_path.mkpath
-    @sub_testcase_path.mkpath
     @input_path.mkpath
-    @output_path.mkpath
 
-    @output_path.chmod(0777)
+    #preparing pathname for submission directory
+    if sub
+      @sub_testcase_path = @submission_path + testcase.get_name_for_dir
+      @output_path = @sub_testcase_path + 'output'
+      @output_file = @output_path + STDOUT_FILENAME
+
+      @sub_testcase_path.mkpath
+      @output_path.mkpath
+      @output_path.chmod(0777)
+    end
   end
 
   def build_result_hash

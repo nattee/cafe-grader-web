@@ -22,6 +22,9 @@ gem 'bootsnap', require: false
 gem 'mysql2'
 #for testing
 gem 'sqlite3'
+
+#for grader
+gem 'pg'
 #gem 'rails-controller-testing'
 #for dumping database into yaml
 #gem 'yaml_db'

@@ -140,19 +140,8 @@ class Compiler
     File.write(@source_file.cleanpath,@sub.source)
     judge_log "Save contestant file to #{@source_file.cleanpath}"
 
-    #write any manager files
-    @working_dataset.managers.each do |mng|
-      basename = mng.filename.base + mng.filename.extension_with_delimiter
-      dest = @manager_path + basename
-
-      #download from server
-      url = Rails.configuration.worker[:hosts][:web]+worker_get_manager_path(@working_dataset,mng.id)
-      begin
-        download_from_web(url,dest,download_type: 'manager')
-      rescue Net::HTTPExceptions => he
-        raise GraderError.new("Error download managers file \"#{he}\"",submission_id: @sub.id )
-      end
-    end
+    #prepare the manager files
+    prepare_worker_dataset(@working_dataset,:managers_only)
   end
 
   def upload_compiled_files

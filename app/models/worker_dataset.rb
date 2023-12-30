@@ -3,7 +3,8 @@ class WorkerDataset < ApplicationRecord
   #should belong to worker but we don't have the hosts table yet
   #belongs_to :worker
 
-  enum status: {created: 0, downloading_testcase: 1, ready: 3}
+  enum testcases_status: {created: 0, downloading: 1, ready: 3}, _prefix: :ts
+  enum managers_status: {created: 0, downloading: 1, ready: 3}, _prefix: :ms
 
 
 end

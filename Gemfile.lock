@@ -142,8 +142,6 @@ GEM
     mail (2.7.1)
       mini_mime (>= 0.1.1)
     marcel (1.0.2)
-    material_icons (4.0.0)
-      railties (>= 3.2)
     matrix (0.4.2)
     method_source (1.0.0)
     mini_mime (1.1.2)
@@ -177,6 +175,7 @@ GEM
       racc (~> 1.4)
     nokogiri (1.15.4-x86_64-linux)
       racc (~> 1.4)
+    pg (1.5.4)
     popper_js (2.11.8)
     public_suffix (5.0.0)
     puma (5.6.5)
@@ -305,10 +304,10 @@ DEPENDENCIES
   jquery-rails
   listen (>= 3.0.5, < 3.2)
   mail
-  material_icons
   minitest-reporters
   momentjs-rails
   mysql2
+  pg
   puma
   rails (~> 7.0)
   rainbow

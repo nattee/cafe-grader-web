@@ -102,6 +102,7 @@ class Checker
 
     #prepare files location variable
     prepare_submission_directory(@sub)
+    prepare_dataset_directory(@ds)
     prepare_testcase_directory(@sub,@testcase)
     check_for_required_file
 
