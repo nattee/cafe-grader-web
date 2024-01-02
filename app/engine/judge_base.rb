@@ -70,7 +70,7 @@ module JudgeBase
     when 'go'
       '-p -d /gocache:tmp --env=GOCACHE=/gocache'
     when 'postgres'
-      '-p'
+      '-p --share-net'
     else
       ''
     end

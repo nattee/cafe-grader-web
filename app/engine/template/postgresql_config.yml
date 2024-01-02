@@ -4,8 +4,10 @@
 # by our own convention, we should use only one database
 # the parameter to connect to the database is as follows
 database_name: grader_pg
-database_user: grader_pg
-database_password: grader_pg
+init_database_user: grader_pg
+init_database_password: grader_pg
+run_database_user: grader_ro
+run_database_password: grader_ro
 # Each problem can have multiple tables
 # However, since there are multiple testcases where
 # each testcase should have the same table name.
