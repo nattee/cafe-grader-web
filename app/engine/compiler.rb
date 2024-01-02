@@ -130,6 +130,9 @@ class Compiler
 
   # Download (or save from db) source file and any manager files to their respective directory
   def prepare_files_for_compile
+    #prepare the manager files
+    prepare_worker_dataset(@working_dataset,:managers_only)
+
     #setup pathname
     @source_file = @source_path + self.get_submission_filename;
     @source_main_file = @manager_path + (@working_dataset.main_filename || '')
@@ -139,9 +142,6 @@ class Compiler
     #write student files
     File.write(@source_file.cleanpath,@sub.source)
     judge_log "Save contestant file to #{@source_file.cleanpath}"
-
-    #prepare the manager files
-    prepare_worker_dataset(@working_dataset,:managers_only)
   end
 
   def upload_compiled_files
@@ -210,6 +210,8 @@ class Compiler
       return Compiler::Rust
     when 'go'
       return Compiler::Go
+    when 'postgres'
+      return Compiler::Postgres
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)

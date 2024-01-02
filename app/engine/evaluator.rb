@@ -29,7 +29,7 @@ class Evaluator
 
     #prepare params for running sandbox
     executable = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
-    cmd = [executable]
+    cmd = [executable,testcase.id]
     cmd_string = cmd.join ' '
 
     #run the evaluation in the isolated environment

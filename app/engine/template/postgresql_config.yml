@@ -18,6 +18,8 @@ database_password: grader_pg
 #   %t   will be replaced by testcase.id
 table_name_translation:
 - student
+- company
+
 
 
 

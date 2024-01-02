@@ -1,6 +1,6 @@
 class DatasetsController < ApplicationController
   before_action :set_dataset, only: %i[ show edit update destroy
-                                        manager_delete manager_view
+                                        file_delete file_view
                                         checker_view checker_download checker_delete
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
@@ -35,10 +35,9 @@ class DatasetsController < ApplicationController
   # PATCH/PUT /datasets/1 or /datasets/1.json
   def update
     respond_to do |format|
-      if params[:dataset][:managers]
-        @dataset.managers.attach params[:dataset][:managers]
-      end
-      if params[:dataset][:checker]
+      @dataset.managers.attach params[:dataset][:managers] if params[:dataset][:managers]
+      @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset][:initializers]
+      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers]
         # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
         # when it is updated
         WorkerDataset.where(dataset_id: @dataset).delete_all
@@ -55,15 +54,15 @@ class DatasetsController < ApplicationController
     end
   end
 
-  def manager_delete
-    mg = @dataset.managers.find(params[:mg_id])
-    mg.purge
-    flash.now[:notice] = "Manager file [#{mg.filename}] is deleted"
+  def file_delete
+    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    att.purge
+    flash.now[:notice] = "#{att.name.capitalize} file [#{att.filename}] is deleted"
   end
 
-  def manager_view
-    mg = @dataset.managers.find(params[:mg_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: mg.filename, body_msg: mg.download}
+  def file_view
+    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}
   end
 
   def checker_view
@@ -171,7 +170,8 @@ class DatasetsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def dataset_params
       params.fetch(:dataset, {})
-      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename, :checker)
+      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename, 
+                                      :checker, :initializer_filename)
     end
 
 end

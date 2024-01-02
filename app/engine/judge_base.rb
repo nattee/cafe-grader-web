@@ -38,9 +38,6 @@ module JudgeBase
   COLOR_ISOLATE_CMD = :darkslategray
   COLOR_CHECK_CMD = :indianred
 
-
-
-
   def initialize(worker_id,box_id)
     @worker_id = worker_id
     @box_id = box_id
@@ -72,6 +69,8 @@ module JudgeBase
       '-p -d /etc/alternatives'
     when 'go'
       '-p -d /gocache:tmp --env=GOCACHE=/gocache'
+    when 'postgres'
+      '-p'
     else
       ''
     end
@@ -169,10 +168,15 @@ module JudgeBase
     #init path and file
     @prob_init_path = @problem_path + 'initializers'
     @prob_init_file = @prob_init_path + dataset.initializer_filename if dataset.initializer_filename
+    @prob_init_work_path =  @problem_path + 'init_workspace'
+    #TODO: fix this hardcode
+    @prob_config_file = @prob_init_path + 'postgresql_config.yml'
 
     #prepare folder
     @prob_checker_path.mkpath
     @manager_path.mkpath
+    @prob_init_path.mkpath
+    @prob_init_work_path.mkpath
   end
 
 
@@ -201,7 +205,7 @@ module JudgeBase
         basename = init.filename.base + init.filename.extension_with_delimiter
         dest = @prob_init_path + basename
         url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(init.id)
-        download_from_web(url,dest,download_type: 'initializer')
+        download_from_web(url,dest,download_type: 'initializer',chmod_mode: 'a+x')
       end
     end
 
@@ -268,7 +272,7 @@ module JudgeBase
 
           #run the initializer
           unless dataset.initializer_filename.blank?
-            run_initializer
+            run_initializer(dataset)
             judge_log("Testcase initialized on this worker")
           end
 
@@ -282,8 +286,23 @@ module JudgeBase
     end
   end
 
-  def run_initializer
+  def run_initializer(dataset)
+    # build all testcases files into a json
+    tc_hash = {testcases: Hash.new{ |h,k| h[k] = {}} }
+    dataset.testcases.each do |tc|
+      prepare_testcase_directory(nil,tc)
+      tc_hash[:testcases][tc.id][:inp_file] = @input_file
+      tc_hash[:testcases][tc.id][:ans_file] = @ans_file
+    end
 
+    init_cmd = [@prob_init_file.to_s,
+                tc_hash.to_json.dump,
+                @prob_config_file.to_s.dump,
+                @prob_init_work_path.to_s.dump,
+               ]
+    puts "init file = #{@prob_init_file}"
+    puts "init command = #{init_cmd.join ' '}"
+    system(init_cmd.join ' ')
   end
 
   # set up directory and path/filename of the testcase directory
