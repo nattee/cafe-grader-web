@@ -1,8 +1,25 @@
 class Compiler::Postgres < Compiler
+  def pre_compile
+    sql = File.read(@source_file)
+    sql = "\\set ON_ERROR_STOP\nEXPLAIN " + sql;
+    @explain_file = @source_path + "explain.sql"
+    File.write(@explain_file,sql)
+
+  end
+
   def build_compile_command(source,bin)
     # this basically is no-op, which always pass
+
+    # parse the options
+    config = YAML.load_file(@prob_config_file,symbolize_names: true)
+    dbname = config[:database_name]
+    user = config[:run_database_user]
+    password = config[:run_database_password]
     cmd = [
-      "/usr/bin/echo "
+      "/usr/bin/psql",
+      "postgres://#{user}:#{password}@127.0.0.1/#{dbname}",
+      "-f",
+      @isolate_source_path + "explain.sql"
     ]
     return cmd.join ' '
   end

@@ -7,7 +7,7 @@ module OptionConst
       checker: 'checker',
       managers: 'managers',
       model_sols: 'model_solutions',
-      initializes: 'initializers',
+      initializers: 'initializers',
     },
     file: {
       checker: 'checker',
@@ -25,7 +25,7 @@ module OptionConst
       checker: :checker_dir,
       managers: :managers_dir,
       model_sols: :solutions_dir,
-      initializes: :initializers_dir,
+      initializers: :initializers_dir,
     },
     ds_name: :ds_name,
     tags: :tags,

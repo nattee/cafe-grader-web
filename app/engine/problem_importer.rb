@@ -239,9 +239,11 @@ class ProblemImporter
   def read_initializers
     # any initializers
     initializers = @options[OptionConst::YAML_KEY[:initializers_pattern]] || '*'
-    pattern = build_glob(initializers,path: @options[OptionConst::YAML_KEY[:dir][:initializers]] || OptionConst::DEFAULT[:dir][:initializers])
+    path = @options[OptionConst::YAML_KEY[:dir][:initializers]] || OptionConst::DEFAULT[:dir][:initializers]
+    pattern = build_glob(initializers,path: path)
     initializers_fn = {}
     Dir.glob(pattern).each do |fn|
+      puts "doing #{fn} path = #{path}"
       @log << "Found an additional initializers file [#{fn}]"
       @got << fn
       basename = Pathname.new(fn).basename
@@ -380,7 +382,8 @@ class ProblemImporter
     @dataset.save
     unless @problem.save
       @errors += @problem.errors.full_messages
-      return
+      puts @errors
+      return nil
     end
 
     @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
