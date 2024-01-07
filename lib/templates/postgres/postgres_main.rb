@@ -12,6 +12,6 @@ table_name_translation.each { |from| sql.gsub!(from,from+'_'+testcase_id.to_s) }
 
 cmd = '/usr/bin/psql postgres://user:pass@127.0.0.1/dbname'
 
-out,err,status = Open3.capture(cmd, stdin_data: sql)
+out,err,status = Open3.capture3(cmd, stdin_data: sql)
 puts out
 
