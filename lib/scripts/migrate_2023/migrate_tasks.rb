@@ -192,6 +192,7 @@ def main
     file = BASE_TASK_PDF_DIR + p.id.to_s + p.description_filename
     if file.exist?
       p.statement.attach(io: File.open(file), filename: p.description_filename)
+      puts "found pdf for #{p.name} at #{file.basename}"
     end
   end
 

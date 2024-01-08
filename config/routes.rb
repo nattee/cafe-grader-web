@@ -45,7 +45,7 @@ Rails.application.routes.draw do
       get 'import'
       get 'manage'
       get 'quick_create'
-      post 'do_manage'
+      post 'manage', action: 'do_manage'
       post 'do_import'
     end
   end
