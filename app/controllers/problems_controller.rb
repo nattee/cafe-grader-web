@@ -181,7 +181,7 @@ class ProblemsController < ApplicationController
 
     #add to groups
     if params[:add_group] == '1'
-      group = Group.find(params[:group_id])
+      group = Group.where(id: params[:group_id])
       ok = []
       failed = []
       get_problems_from_params.each do |p|
