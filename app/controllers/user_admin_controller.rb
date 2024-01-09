@@ -467,6 +467,6 @@ class UserAdminController < ApplicationController
 
   private
     def user_params
-      params.require(:user).permit(:login,:password,:password_confirmation,:email, :alias, :full_name,:remark)
+      params.require(:user).permit(:login,:password,:password_confirmation,:email, :alias, :full_name,:remark, group_ids:[])
     end
 end

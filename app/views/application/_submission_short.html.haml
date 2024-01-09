@@ -16,7 +16,7 @@
     .row
       //.col-lg-3.text-secondary= t 'main.graded_at'
       .col-lg-1
-        %span.mi.mi-bs calendar_clock
+        %span.mi.mi-bs.text-secondary calendar_clock
       .col-lg-10
         %span= time_ago_in_words(submission.graded_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.graded_at)})
@@ -24,7 +24,7 @@
       .row
         //.col-lg-3.text-secondary=t 'main.score'
         .col-lg-1
-          %span.mi.mi-bs speed
+          %span.mi.mi-bs.text-secondary speed
         .col-lg-9
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points
