@@ -9,6 +9,10 @@ class Compiler::Postgres < Compiler
 
   def build_compile_command(source,bin)
     # this basically is no-op, which always pass
+    cmd = [
+      "/usr/bin/echo "
+    ]
+    return cmd.join ' '
 
     # parse the options
     config = YAML.load_file(@prob_config_file,symbolize_names: true)

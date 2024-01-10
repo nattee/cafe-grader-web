@@ -131,7 +131,8 @@ class Compiler
   # Download (or save from db) source file and any manager files to their respective directory
   def prepare_files_for_compile
     #prepare the manager files
-    prepare_worker_dataset(@working_dataset,:managers_only)
+    #prepare_worker_dataset(@working_dataset,:managers_only)
+    prepare_worker_dataset(@working_dataset,:all)
 
     #setup pathname
     @source_file = @source_path + self.get_submission_filename;
