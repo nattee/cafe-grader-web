@@ -54,7 +54,7 @@ class UserAdminController < ApplicationController
 
 
     #add to group
-    if params[:add_to_group]
+    if params[:add_to_group] == '1'
       group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(ok_user)
     end
 
