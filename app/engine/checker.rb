@@ -61,7 +61,8 @@ class Checker
           return process_result_cafe(out,err)
         end
       else
-        return report_check_error('error in checker')
+        comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
+        return report_check_error(comment)
       end
     else
       return report_check_error('unknown evaluation type')
@@ -87,7 +88,9 @@ class Checker
       color = :red
     end
 
-    Rainbow(result[:result].to_s).color(color)
+    res = Rainbow(result[:result].to_s).color(color)
+    res += " comment: #{result[:comment]}" unless result[:comment].blank?
+    return res
   end
 
   # main run function
