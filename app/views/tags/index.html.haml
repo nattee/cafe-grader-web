@@ -14,7 +14,11 @@
   %tbody
     - @tags.each do |tag|
       %tr
-        %td= tag.name
+        %td
+          - if tag.color.blank?
+            .badge.text-bg-secondary= tag.name
+          - else
+            .badge{style: "background-color: #{tag.color}"}= tag.name
         %td= tag.description
         %td= tag.public
         %td= link_to 'Edit', edit_tag_path(tag), class: 'btn btn-info'

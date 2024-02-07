@@ -2,7 +2,18 @@
 
 %p= link_to '[Back to problem list]', problems_path
 
-= form_with url: do_manage_problems_path, class: 'align-items-center' do |f|
+- if @result && @result.count > 0
+  .alert.alert-info
+    %ul.mb-0
+      - @result.each do |r|
+        %li= r
+- if @error && @error.count > 0
+  .alert.alert-danger
+    %ul.mb-0
+      - @error.each do |r|
+        %li= r
+
+= form_with url: manage_problems_path, class: 'align-items-center' do |f|
   .card.border-primary.mb-2
     .card-header.text-bg-primary.border-primary
       Action

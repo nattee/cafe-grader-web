@@ -236,6 +236,31 @@ class ProblemImporter
     end
   end
 
+  def read_initializers
+    # any initializers
+    initializers = @options[OptionConst::YAML_KEY[:initializers_pattern]] || '*'
+    path = @options[OptionConst::YAML_KEY[:dir][:initializers]] || OptionConst::DEFAULT[:dir][:initializers]
+    pattern = build_glob(initializers,path: path)
+    initializers_fn = {}
+    Dir.glob(pattern).each do |fn|
+      puts "doing #{fn} path = #{path}"
+      @log << "Found an additional initializers file [#{fn}]"
+      @got << fn
+      basename = Pathname.new(fn).basename
+      if initializers_fn.has_key? basename
+        @log << "  ERROR: multiple initializers of the same name #{basename}"
+      else
+        initializers_fn[basename] = true
+        # delete existing
+        @dataset.initializers.each { |f| f.purge if f.filename == basename }
+        @dataset.reload
+
+        @dataset.initializers.attach(io: File.open(fn),filename: basename)
+      end
+    end
+    @dataset.save
+  end
+
   def get_content_of_first_match(glob_pattern, recursive: true, path: '')
     pattern = build_glob(glob_pattern,recursive: recursive, path: path)
     files = Dir.glob(pattern)
@@ -268,7 +293,6 @@ class ProblemImporter
   end
 
   def read_solutions
-    # any .h or manager
     solutions_dir = @options[OptionConst::YAML_KEY[:dir][:model_sols]] || OptionConst::DEFAULT[:dir][:model_sols]
     pattern = build_glob('*',recursive: true, path: solutions_dir)
     managers_fn = {}
@@ -317,7 +341,8 @@ class ProblemImporter
     do_checker: true,
     do_cpp_extras: true,
     do_attachment: true,
-    do_solutions: true
+    do_solutions: true,
+    do_initializers: true
   )
 
     @log = []
@@ -357,7 +382,8 @@ class ProblemImporter
     @dataset.save
     unless @problem.save
       @errors += @problem.errors.full_messages
-      return
+      puts @errors
+      return nil
     end
 
     @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
@@ -367,6 +393,7 @@ class ProblemImporter
     read_attachment if do_attachment
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
+    read_initializers if do_initializers
     read_options #options is put to last, it will override any defaults
     read_solutions if do_solutions
     @problem.save

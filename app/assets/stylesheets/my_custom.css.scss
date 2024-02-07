@@ -11,6 +11,37 @@
   top: -3px;
 }
 
+.mi {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;  /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+.mi.md-18 {
+  font-size: 18px;
+}
+
+.mi.md-24 {
+  font-size: 24px;
+}
+
+.mi.md-48 {
+  font-size: 48px;
+}
+
+.mi.fill {
+  font-variation-settings: 'FILL' 1
+
+}
+
 //for use google material icon with Tempus Dominus
 .mi-td-time:after { content: 'schedule'; }
 .mi-td-date:after { content: 'date_range'; }

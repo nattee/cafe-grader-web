@@ -4,6 +4,9 @@
 #   2. parse all_tests.cfg for problem info
 #   3. read any manager and store in active storage
 #   4. read any checker
+# if we migrate from pre-2023 but on some machine, we might need to drop some table first
+#
+# drop table active_storage_attachments, active_storage_variant_records, active_storage_blobs, jobs, datasets, evaluations, worker_datasets;
 
 BASE_EV_DIRECTORY_GLOB = Rails.root.join '../judge/ev/*'
 BASE_TASK_PDF_DIR = Rails.root.join 'data','tasks'
@@ -98,7 +101,9 @@ def read_managers_from_ev(prob_ev_dir,ds)
                              full_name: ds.problem.full_name,
                              dataset: ds,
                              do_testcase: false,
-                             do_statement: false)
+                             do_statement: false,
+                             do_checker: false,
+                            )
   pp pi.log if pi.got.count > 0
 end
 
@@ -154,7 +159,10 @@ end
 def do_dir(prob_ev_dir)
 
   p = Problem.where(name: prob_ev_dir.basename.to_s).first
-  return unless p
+  unless p
+    puts "cannot find Problem with name #{prob_ev_dir.basename.to_s}"
+    return
+  end
 
   #now p is the problem with the same name as the ev sub-dir
   ds = p.live_dataset
@@ -184,6 +192,7 @@ def main
     file = BASE_TASK_PDF_DIR + p.id.to_s + p.description_filename
     if file.exist?
       p.statement.attach(io: File.open(file), filename: p.description_filename)
+      puts "found pdf for #{p.name} at #{file.basename}"
     end
   end
 
@@ -193,8 +202,8 @@ def main
   # clear grader process
   GraderProcess.delete_all
 
-  puts "Recalculate old scores"
-  Submission.joins(:problem).where.not('problems.full_score': nil).update_all("submissions.points = submissions.points/problems.full_score * 100")
+  #puts "Recalculate old scores"
+  Submission.joins(:problem).where('problems.full_score > 1').update_all("submissions.points = submissions.points/problems.full_score * 100")
   puts "DONE"
 end
 
@@ -206,3 +215,6 @@ def tmp_test
     read_checker_from_ev(prob_ev_dir,p.live_dataset)
   end
 end
+
+# This runs the main migration
+main

@@ -72,25 +72,27 @@
                 %li= link_to 'Score Report', max_score_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :max_score)
                 %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
-            =link_to "#{@backlog} backlogs!",
-              grader_processes_path,
-              class: 'navbar-btn btn btn-default btn-warning m-md-0 m-2', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
-            = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
-              .input-group.mx-2
-                %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}
-                %button#view_sub.btn.btn-secondary{type: :button, onclick: "go_to_sub();"} View
+            .d-flex
+              =link_to "#{@backlog} backlogs!",
+                grader_processes_path,
+                class: 'navbar-btn btn btn-default btn-warning', data: {toggle: 'tooltip'},title: 'Number of ungraded submission'
+              = form_with id: :view_sub_form, url: list_main_path, method: :get do |f|
+                .input-group.mx-2
+                  %input#view_sub_num.form-control{style: "width: 7rem", type: :text, placeholder: 'Submission #'}
+                  %button#view_sub.btn.btn-secondary{type: :button, onclick: "go_to_sub();"} View
 
           / announcement
           - @nav_announcement.each do |ann|
             %p.navbar-text
               = ann.body.html_safe
         %ul.navbar-nav
-          %li.nav-item
-            %a.nav-link{href: help_main_path}
-              %span.mi.mi-bs.md-18 help
-          %li.nav-item
-            %a.nav-link{href: messages_path}
-              %span.mi.mi-bs.md-18 chat
+          -#
+            %li.nav-item
+              %a.nav-link{href: help_main_path}
+                %span.mi.mi-bs.md-18 help
+            %li.nav-item
+              %a.nav-link{href: messages_path}
+                %span.mi.mi-bs.md-18 chat
           - if GraderConfiguration['system.user_setting_enabled']
             %li.nav-item
               %a.nav-link{href: profile_users_path}

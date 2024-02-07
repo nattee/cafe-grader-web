@@ -170,34 +170,53 @@ class ProblemsController < ApplicationController
   end
 
   def do_manage
+
+    @result = []
+    @error = []
     problems = get_problems_from_params
 
     change_date_added(problems) if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
     add_to_contest(problems) if params.has_key? 'add_to_contest'
-    problems.update_all(available: params[:enable] == 'yes') if params[:change_enable] == '1'
-    problems.each { |p| p.tag_ids += params[:tag_ids] } if params[:add_tags] == '1'
+    if params[:change_enable] == '1'
+      problems.update_all(available: params[:enable] == 'yes')
+      @result << "Enabled are set to #{params[:enable]}"
+    end
+    if params[:add_tags] == '1'
+      problems.each { |p| p.tag_ids += params[:tag_ids] } 
+      tag_names = Tag.where(id:params[:tag_ids]).pluck(:name).join(', ')
+      @result << "Following tags are added  #{tag_names}"
+    end
 
-    problems.update_all(permitted_lang: Language.where(id: params[:lang_ids]).pluck(:name).join(' ')) if params[:set_languages] == '1'
+    if params[:set_languages] == '1'
+      permitted_lang = Language.where(id: params[:lang_ids]).pluck(:name)
+      problems.update_all(permitted_lang: permitted_lang.join(' '))
+      @result << "Permitted languages are changed to #{permitted_lang.join ', '}"
+    end
 
     #add to groups
     if params[:add_group] == '1'
-      group = Group.find(params[:group_id])
-      ok = []
-      failed = []
-      get_problems_from_params.each do |p|
-        begin
-          group.problems << p
-          ok << p.full_name
-        rescue => e
-          failed << p.full_name
+      Group.where(id: params[:group_id]).each do |group|
+        ok = []
+        failed = []
+        problems.each do |p|
+          begin
+            group.problems << p
+            ok << p.full_name
+          rescue => e
+            failed << p.full_name
+          end
         end
+        @result << "Problems are added to group #{group.name}" if ok.count > 0
+        @error << "The following problem are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
       end
-      flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
-      flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
+      #flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
+      #flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
     end
 
 
-    redirect_to :action => 'manage'
+    #redirect_to :action => 'manage'
+    @problems = Problem.order(date_added: :desc).includes(:tags)
+    render :manage
   end
 
   def import
@@ -323,6 +342,7 @@ class ProblemsController < ApplicationController
   def change_date_added(problems)
     date = Date.parse(params[:date_added])
     problems.update_all(date_added: date)
+    @result << "Date changed to #{date}"
   end
 
   def add_to_contest(problems)
@@ -332,12 +352,9 @@ class ProblemsController < ApplicationController
         p.contests << contest
       end
     end
+    @result << "Problem added to contest #{contest.title}"
   end
 
-
-  def set_permitted_lang(lang_ids)
-
-  end
 
   def get_problems_from_params
     ids = []
@@ -363,7 +380,7 @@ class ProblemsController < ApplicationController
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
                                       :difficulty,:attachment, :statement,
-                                      :test_allowed, :output_only, :url, :description, :description, tag_ids:[])
+                                      :test_allowed, :output_only, :url, :description, :description, tag_ids:[], group_ids:[])
     end
 
     def description_params

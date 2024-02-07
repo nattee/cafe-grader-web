@@ -56,6 +56,6 @@ class TagsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def tag_params
-      params.require(:tag).permit(:name, :description, :public)
+      params.require(:tag).permit(:name, :description, :public, :color)
     end
 end

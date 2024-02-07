@@ -3,6 +3,7 @@
 = f.input :full_name, label: 'Full name'
 = f.input :password
 = f.input :password_confirmation
+= f.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
 = f.input :email
 = f.input :alias
 = f.input :remark

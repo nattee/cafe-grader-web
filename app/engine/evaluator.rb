@@ -1,5 +1,10 @@
 require 'net/http'
 
+# This class runs the submission against a given testcases
+# It also runs the checker on the output produced by the submission
+# There are two mains method *execute* which runs the sub and *evaluate*
+# which compare the output
+
 class Evaluator
   include IsolateRunner
   include JudgeBase
@@ -17,13 +22,14 @@ class Evaluator
 
     #prepare data files
     prepare_submission_directory(@sub)
-    prepare_testcase_files
-    prepare_testcase_directory(@sub, @testcase) # !!! MUST BE CALLED AFTER prepare_testcase_files
+    prepare_dataset_directory(@working_dataset)
+    prepare_worker_dataset(@working_dataset,:all)
+    prepare_testcase_directory(@sub, @testcase)
     prepare_executable
 
     #prepare params for running sandbox
     executable = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
-    cmd = [executable]
+    cmd = [executable,testcase.id]
     cmd_string = cmd.join ' '
 
     #run the evaluation in the isolated environment
@@ -111,68 +117,6 @@ class Evaluator
       end
       FileUtils.chmod('a+x',filename)
     end
-
-  end
-
-  def prepare_testcase_files
-    # lock problem for this worker
-    WorkerDataset.transaction do
-      wp = WorkerDataset.lock("FOR UPDATE").find_or_create_by(worker_id: @worker_id, dataset_id: @working_dataset.id)
-      if wp.status == 'created'
-        # no one is working on this worker problem, I will download
-        wp.update(status: :downloading_testcase)
-
-        #download all testcase
-        @working_dataset.testcases.each do |tc|
-          prepare_testcase_directory(@sub,tc)
-
-          #download testcase
-          url_inp = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.inp_file.id)
-          url_ans = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(tc.ans_file.id)
-          begin
-            download_from_web(url_inp,@input_file,download_type: 'input file')
-            download_from_web(url_ans,@ans_file,download_type: 'answer file')
-          rescue Net::HTTPExceptions => he
-            raise GraderError.new("Error download testcase files \"#{he}\"",submission_id: @sub.id )
-          end
-
-          #do the symlink
-          #testcase codename inside prob_id/testcase_id
-          FileUtils.touch(@prob_testcase_path + tc.get_name_for_dir)
-
-          #dataset_id/testcase_codename (symlink to prob_id/testcase_id)
-          ds_dir = @problem_path + ('dsid_'+tc.dataset.id.to_s)
-          ds_dir.mkpath
-          ds_ts_codename_dir = ds_dir + tc.get_name_for_dir
-          ds_codename_dir = @problem_path + ('dsname_'+tc.dataset.get_name_for_dir)
-          FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
-          FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
-
-          judge_log("Testcase #{tc.id} (#{tc.code_name}) download and prepared")
-        end
-
-        # download checker
-        if @working_dataset.checker.attached?
-          url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(@working_dataset.checker.id)
-          begin
-            download_from_web(url,@prob_checker_file,download_type: 'checker')
-          rescue Net::HTTPExceptions => he
-            raise GraderError.new("Error download checker file \"#{he}\"",submission_id: @sub.id )
-          end
-          @prob_checker_file.chmod(0755)
-        end
-
-        # if any lib, dl as well
-
-        # tell other that we are ready
-        wp.update(status: :ready)
-      elsif wp.status == 'ready'
-        judge_log("Found downloaded testcase")
-      else
-        # status should be ready, if it stuck at :downloading, the program will stuck
-      end
-    end
-    return default_success_result
 
   end
 

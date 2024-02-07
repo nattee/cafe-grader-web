@@ -6,9 +6,9 @@
         %span.bg-success-subtle.rounded.p-1.font-monospace= mg.filename
       .col-md-6
         [
-        %span= link_to 'view', manager_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
+        %span= link_to 'view', file_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
         |
-        %span= link_to 'delete', manager_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+        %span= link_to 'delete', file_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
         ]
   - if ds.managers.count == 0
     %i -- none --
@@ -34,3 +34,19 @@
         NO CHECKER!!
     - if local_assigns[:form]
       = form.input :checker, label: 'Set checker', wrapper: :horizontal_file
+  %h5.my-2 Initializers
+  - ds.initializers.each do |init|
+    .row
+      .col-md-6
+        %span.bg-info-subtle.rounded.p-1.font-monospace= init.filename
+      .col-md-6
+        [
+        %span= link_to 'view', file_view_dataset_path(ds,init), data: {turbo: true, turbo_method: :post}
+        |
+        %span= link_to 'delete', file_delete_dataset_path(ds,init), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+        ]
+  - if ds.initializers.count == 0
+    %i -- none --
+  .my-2
+    - if local_assigns[:form]
+      = form.input :initializers, label: 'Add initializers', wrapper: :horizontal_file

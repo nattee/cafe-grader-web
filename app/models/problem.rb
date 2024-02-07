@@ -26,7 +26,7 @@ class Problem < ApplicationRecord
   belongs_to :live_dataset, class_name: 'Dataset'
 
   validates_presence_of :name
-  validates_format_of :name, :with => /\A\w+\z/
+  #validates_format_of :name, :with => /\A\w+\z/
   validates_presence_of :full_name
 
   scope :available, -> { where(available: true) }

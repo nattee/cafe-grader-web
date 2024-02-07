@@ -15,7 +15,8 @@ class Dataset < ApplicationRecord
                           }, _prefix: :st
 
   has_one_attached :checker
-  has_many_attached :managers       # additional files for compile process
+  has_many_attached :managers       # additional files for compile process (these files are VISIBLE to the user's submission)
+  has_many_attached :initializers   # additional files for initialization of testcases
 
   def set_default
     self.compilation_type ||= 'self_contained'
@@ -77,6 +78,10 @@ class Dataset < ApplicationRecord
     set_by_array(:weight,options[:weight]) if options.has_key? :weight
     set_by_array(:group,options[:group]) if options.has_key? :group
     set_by_array(:group_name,options[:group_name]) if options.has_key? :group_name
+  end
+
+  def invalidate_worker
+    WorkerDataset.where(dataset_id: @dataset).delete_all
   end
 
 end

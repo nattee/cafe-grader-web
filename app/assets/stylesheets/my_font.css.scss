@@ -126,3 +126,23 @@
   font-style: italic;
   src: font-url('ubuntu_mono/UbuntuMono-BoldItalic.ttf') format('truetype'),
 }
+
+
+// material symbol
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  src: font-url('material_symbols/MaterialSymbolsOutlined.woff2') format('woff');
+}
+
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  src: font-url('material_symbols/MaterialSymbolsRounded.woff2') format('woff');
+}
+
+@font-face {
+  font-family: 'Material Symbols Sharp';
+  font-style: normal;
+  src: font-url('material_symbols/MaterialSymbolsSharp.woff2') format('woff');
+}

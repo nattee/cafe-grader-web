@@ -22,6 +22,9 @@ gem 'bootsnap', require: false
 gem 'mysql2'
 #for testing
 gem 'sqlite3'
+
+#for grader
+gem 'pg'
 #gem 'rails-controller-testing'
 #for dumping database into yaml
 #gem 'yaml_db'
@@ -34,7 +37,7 @@ gem 'sqlite3'
 #gem 'sass-rails'
 gem 'sassc-rails'
 gem 'coffee-rails'
-gem 'material_icons'
+# gem 'material_icons'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   # gem 'therubyracer', :platforms => :ruby

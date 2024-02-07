@@ -1,20 +1,25 @@
 %h1 Submissions detail
 
 .row
-  .col-lg-4
+  .col-lg-4.mt-2
     = render partial: 'shared/problem_select'
-  .col-lg-4
+  .col-lg-4.mt-2
     = render partial: 'submission_range'
-  .col-lg-4
+  .col-lg-4.mt-2
     = render partial: 'shared/user_select'
 
-.row.mt-3
+.row
   .col-lg-4
-    .alert.alert-info
-      %ul
-        %li Display a maximum of 100,000 entries to save computation power
-        %li You have to click refresh when changing the filter above
-        %li From date is required, blank from date is convert to today
+    .card.bg-warning-subtle.mt-2
+      .card-body
+        .card-title
+          %h4
+            .mi.mi-bs.fill help
+            Usage
+        %ul
+          %li Display a maximum of 100,000 entries to save computation power
+          %li You have to click refresh when changing the filter above
+          %li From date is required, blank from date is convert to today
   .col-lg-8
     %canvas#chart
 

@@ -45,15 +45,15 @@ Rails.application.routes.draw do
       get 'import'
       get 'manage'
       get 'quick_create'
-      post 'do_manage'
+      post 'manage', action: 'do_manage'
       post 'do_import'
     end
   end
 
   resources :datasets, only: [:update, :destroy] do
     member do
-      post 'manager/delete/:mg_id', action: 'manager_delete', as: 'manager_delete'
-      post 'manager/view/:mg_id', action: 'manager_view', as: 'manager_view'
+      post 'file/delete/:att_id', action: 'file_delete', as: 'file_delete'
+      post 'file/view/:att_id', action: 'file_view', as: 'file_view'
       post 'checker_view'
       post 'checker_download'
       post 'checker_delete'

@@ -130,6 +130,10 @@ class Compiler
 
   # Download (or save from db) source file and any manager files to their respective directory
   def prepare_files_for_compile
+    #prepare the manager files
+    #prepare_worker_dataset(@working_dataset,:managers_only)
+    prepare_worker_dataset(@working_dataset,:all)
+
     #setup pathname
     @source_file = @source_path + self.get_submission_filename;
     @source_main_file = @manager_path + (@working_dataset.main_filename || '')
@@ -139,20 +143,6 @@ class Compiler
     #write student files
     File.write(@source_file.cleanpath,@sub.source)
     judge_log "Save contestant file to #{@source_file.cleanpath}"
-
-    #write any manager files
-    @working_dataset.managers.each do |mng|
-      basename = mng.filename.base + mng.filename.extension_with_delimiter
-      dest = @manager_path + basename
-
-      #download from server
-      url = Rails.configuration.worker[:hosts][:web]+worker_get_manager_path(@working_dataset,mng.id)
-      begin
-        download_from_web(url,dest,download_type: 'manager')
-      rescue Net::HTTPExceptions => he
-        raise GraderError.new("Error download managers file \"#{he}\"",submission_id: @sub.id )
-      end
-    end
   end
 
   def upload_compiled_files
@@ -221,6 +211,8 @@ class Compiler
       return Compiler::Rust
     when 'go'
       return Compiler::Go
+    when 'postgres'
+      return Compiler::Postgres
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_10_19_151423) do
+ActiveRecord::Schema[7.0].define(version: 2023_12_28_144804) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -87,6 +87,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_19_151423) do
     t.string "main_filename"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "initializer_filename"
     t.index ["problem_id"], name: "index_datasets_on_problem_id"
   end
 
@@ -319,6 +320,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_19_151423) do
     t.boolean "public"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
+    t.string "color"
   end
 
   create_table "tasks", id: :integer, charset: "utf8mb3", force: :cascade do |t|
@@ -400,15 +402,17 @@ ActiveRecord::Schema[7.0].define(version: 2023_10_19_151423) do
     t.string "remark"
     t.string "last_ip"
     t.integer "default_language"
+    t.datetime "last_heartbeat"
     t.index ["login"], name: "index_users_on_login", unique: true
   end
 
   create_table "worker_datasets", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "worker_id"
     t.bigint "dataset_id"
-    t.integer "status", limit: 1, default: 0
+    t.integer "testcases_status", limit: 1, default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "managers_status", limit: 1, default: 0
     t.index ["dataset_id"], name: "index_worker_datasets_on_dataset_id"
     t.index ["worker_id"], name: "index_worker_datasets_on_worker_id"
   end
