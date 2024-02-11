@@ -50,9 +50,9 @@ class Compiler::Postgres < Compiler
     testcase_id = ARGV[0]
 
     #do the table name translation
-    table_name_translation.each { |from| sql.gsub!(from,from+'_'+testcase_id.to_s) }
+    table_name_translation.each { |from| sql.gsub!(/\#{from}/i,from+'_'+testcase_id.to_s) }
 
-    cmd = '/usr/bin/psql postgres://#{config[:run_database_user]}:#{config[:run_database_password]}@127.0.0.1/#{config[:database_name]}'
+    cmd = '/usr/bin/psql postgres://#{config[:run_database_user]}:#{config[:run_database_password]}@127.0.0.1/#{config[:database_name]} --csv'
 
     out,err,status = Open3.capture3(cmd, stdin_data: sql)
     puts out
