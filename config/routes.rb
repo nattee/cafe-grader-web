@@ -38,6 +38,8 @@ Rails.application.routes.draw do
       get 'get_attachment(/:filename)', as: 'get_attachment', action: 'get_attachment'
       post 'add_dataset'
       post 'import_testcases'
+      delete 'attachment', action: 'delete_attachment'
+      delete 'statement', action: 'delete_statement'
     end
     collection do
       get 'turn_all_off'

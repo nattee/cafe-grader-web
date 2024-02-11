@@ -12,8 +12,6 @@
           = form.input :date_added, input_html: {value: nil}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
           = form.input :available, wrapper: :horizontal_boolean
           = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
-          /= form.input :test_allowed, wrapper: :horizontal_boolean
-          /= form.input :output_only, wrapper: :horizontal_boolean
           = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
           %h4 Statements
           = form.input :statement, wrapper: :horizontal_file
@@ -23,6 +21,8 @@
               %p
                 - if @problem.statement.attached?
                   %a{href: get_statement_problem_path(@problem)} [Download current Statement]
+                  |
+                  = link_to '[delete]', statement_problem_path(@problem), method: :delete, data: {confirm: 'Are you sure?'}
                 - else
                   This problem has no statement
           = form.input :description, as: :text
@@ -36,6 +36,8 @@
               %p
                 - if @problem.attachment.attached?
                   %a{href: get_attachment_problem_path(@problem)} [Download attachment]
+                  |
+                  = link_to '[delete]', attachment_problem_path(@problem), method: :delete, data: {confirm: 'Are you sure?'}
                 - else
                   This problem has no attachment
           = form.button :submit, class: 'btn btn-primary mx-2'

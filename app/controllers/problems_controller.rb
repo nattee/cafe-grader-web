@@ -3,6 +3,7 @@ class ProblemsController < ApplicationController
   include ActiveStorage::SetCurrent
 
   before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :get_attachment,
+                                     :delete_statement, :delete_attachment,
                                      :toggle, :toggle_test, :toggle_view_testcase, :stat,
                                      :add_dataset,:import_testcases, :view_live_testcases
                                     ]
@@ -46,11 +47,23 @@ class ProblemsController < ApplicationController
     send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
   end
 
+  #delete attachment
+  def delete_statement
+    @problem.statement.purge
+    redirect_to edit_problem_path(@problem), notice: 'The statement has been deleted'
+  end
+
   #get attachment
   def get_attachment
     filename = @problem.attachment.filename.to_s
     data = @problem.attachment.download
     send_data data, disposition: 'inline', filename: filename
+  end
+
+  #delete attachment
+  def delete_attachment
+    @problem.attachment.purge
+    redirect_to edit_problem_path(@problem), notice: 'The attachment has been deleted'
   end
 
   def create
