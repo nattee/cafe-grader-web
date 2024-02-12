@@ -33,6 +33,7 @@ module OptionConst
     managers_pattern: :managers_pattern,
     testcases: :testcases,
     testcases_pattern: :testcases_pattern,
+    initializer: :initializer,
   }
 
 
