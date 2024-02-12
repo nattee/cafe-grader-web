@@ -258,6 +258,12 @@ class ProblemImporter
         @dataset.initializers.attach(io: File.open(fn),filename: basename)
       end
     end
+
+    #set the main initializer
+    initializer_filename = @options[OptionConst::YAML_KEY[:initializer]]
+    if initializer_filename
+      @dataset.initializer_filename = initializer_filename
+    end
     @dataset.save
   end
 
