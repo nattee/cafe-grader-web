@@ -39,7 +39,7 @@
         = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], wrapper: :horizontal_select_half
         = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, wrapper: :horizontal_select_half
         = f.input :main_filename, collection: ds.managers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select_half
-        = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select_half
+        = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: true, wrapper: :horizontal_select_half
         = f.button :submit, class: 'btn-primary'
       .col-md-6
         = render partial: 'datasets/managers', locals: {ds: ds, form: f}
