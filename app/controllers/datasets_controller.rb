@@ -36,8 +36,9 @@ class DatasetsController < ApplicationController
   def update
     respond_to do |format|
       @dataset.managers.attach params[:dataset][:managers] if params[:dataset][:managers]
+      @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset][:data_files]
       @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset][:initializers]
-      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers]
+      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files]
         # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
         # when it is updated
         WorkerDataset.where(dataset_id: @dataset).delete_all

@@ -17,6 +17,7 @@ class Dataset < ApplicationRecord
   has_one_attached :checker
   has_many_attached :managers       # additional files for compile process (these files are VISIBLE to the user's submission)
   has_many_attached :initializers   # additional files for initialization of testcases
+  has_many_attached :data_files     # additional files when running
 
   def set_default
     self.compilation_type ||= 'self_contained'

@@ -21,6 +21,7 @@ module JudgeBase
   ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
   ISOLATE_INPUT_PATH = 'input'
   ISOLATE_OUTPUT_PATH = 'output'
+  ISOLATE_DATA_PATH = 'data'
 
   #color for Rainbow
   COLOR_SUB = :skyblue
@@ -148,6 +149,7 @@ module JudgeBase
     @isolate_input_file = @isolate_input_path + INPUT_FILENAME
     @isolate_output_path = Pathname.new('/'+ISOLATE_OUTPUT_PATH)
     @isolate_stdout_file = @isolate_output_path + STDOUT_FILENAME
+    @isolate_data_path = Pathname.new('/'+ISOLATE_DATA_PATH)
   end
 
   # set up directory and path/filename of the dataset 
@@ -161,6 +163,8 @@ module JudgeBase
     @prob_checker_path = @problem_path + 'checker'
     @prob_checker_file = @prob_checker_path + dataset.checker.filename.to_s if dataset.checker.attached?
 
+    #data path
+    @prob_data_path = @problem_path + 'data'
 
     # manager path
     @manager_path = @problem_path + Grader::JUDGE_MANAGER_PATH
@@ -177,6 +181,7 @@ module JudgeBase
     @manager_path.mkpath
     @prob_init_path.mkpath
     @prob_init_work_path.mkpath
+    @prob_data_path.mkpath
   end
 
 
@@ -206,6 +211,14 @@ module JudgeBase
         dest = @prob_init_path + basename
         url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(init.id)
         download_from_web(url,dest,download_type: 'initializer',chmod_mode: 'a+x')
+      end
+
+      # download any data
+      dataset.data_files.each do |data_file|
+        basename = data_file.filename.base + data_file.filename.extension_with_delimiter
+        dest = @prob_data_path + basename
+        url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(data_file.id)
+        download_from_web(url,dest,download_type: 'data_file')
       end
     end
 
