@@ -158,25 +158,27 @@ module JudgeBase
     #preparing path name variable
     #base path
     @problem_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeProblemPath + dataset.problem.id.to_s
+    @ds_path = @problem_path + ('dsid_'+dataset.id.to_s)
 
     #checker path
-    @prob_checker_path = @problem_path + 'checker'
+    @prob_checker_path = @ds_path + 'checker'
     @prob_checker_file = @prob_checker_path + dataset.checker.filename.to_s if dataset.checker.attached?
 
     #data path
-    @prob_data_path = @problem_path + 'data'
+    @prob_data_path = @ds_path + 'data'
 
     # manager path
-    @manager_path = @problem_path + Grader::JUDGE_MANAGER_PATH
+    @manager_path = @ds_path + Grader::JUDGE_MANAGER_PATH
 
     #init path and file
-    @prob_init_path = @problem_path + 'initializers'
+    @prob_init_path = @ds_path + 'initializers'
     @prob_init_file = @prob_init_path + dataset.initializer_filename if dataset.initializer_filename
-    @prob_init_work_path =  @problem_path + 'init_workspace'
+    @prob_init_work_path =  @ds_path + 'init_workspace'
     #TODO: fix this hardcode
     @prob_config_file = @prob_init_path + 'postgresql_config.yml'
 
     #prepare folder
+    @ds_path.mkpath
     @prob_checker_path.mkpath
     @manager_path.mkpath
     @prob_init_path.mkpath
@@ -238,12 +240,10 @@ module JudgeBase
         FileUtils.touch(@prob_testcase_path + tc.get_name_for_dir)
 
         #dataset_id/testcase_codename (symlink to prob_id/testcase_id)
-        ds_dir = @problem_path + ('dsid_'+tc.dataset.id.to_s)
-        ds_dir.mkpath
-        ds_ts_codename_dir = ds_dir + tc.get_name_for_dir
+        ds_ts_codename_dir = @ds_path + tc.get_name_for_dir
         ds_codename_dir = @problem_path + ('dsname_'+tc.dataset.get_name_for_dir)
         FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
-        FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
+        FileUtils.symlink(@ds_path, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
 
         judge_log("Testcase #{tc.id} (#{tc.code_name}) downloaded")
       end
@@ -309,7 +309,7 @@ module JudgeBase
     end
 
     init_cmd = [@prob_init_file.to_s,
-                tc_hash.to_json.dump,
+                tc_hash.to_json.dump,              # dump is to escape the quote
                 @prob_config_file.to_s.dump,
                 @prob_init_work_path.to_s.dump,
                ]
