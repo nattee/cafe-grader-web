@@ -134,6 +134,10 @@ class GraderConfiguration < ApplicationRecord
     return get(SYSTEM_USE_PROBLEM_GROUP)
   end
 
+  def self.single_user_mode?
+    return get(SINGLE_USER_KEY)
+  end
+
   def self.contest_time_limit
     contest_time_str = GraderConfiguration[CONTEST_TIME_LIMIT_KEY]
 

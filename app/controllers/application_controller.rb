@@ -10,18 +10,17 @@ class ApplicationController < ActionController::Base
   before_action :unique_visitor_id
   before_action :active_controller_action
 
-  SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
   # report and redirect for unauthorized activities
-  def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')
-    session[:user_id] = nil
-    if @current_user && false == GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-      redirect_to list_main_path, alert: msg
-    else
+  def unauthorized_redirect(logout: false, msg: 'You are not authorized to view the page you requested')
+    if logout || @current_user.nil?
+      session[:user_id] = nil
       redirect_to login_main_path, alert: msg
+    else
+      redirect_to list_main_path, alert: msg
     end
   end
 
@@ -90,10 +89,10 @@ class ApplicationController < ActionController::Base
 
     #check if logged in
     unless @current_user
-      if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-        unauthorized_redirect('You need to login but you cannot log in at this time')
+      if GraderConfiguration.single_user_mode?
+        unauthorized_redirect(msg: 'You need to log in but the system does not permit usage at this time', logout: true)
       else
-        unauthorized_redirect('You need to login')
+        unauthorized_redirect(msg: 'You need to log in', logout: true)
       end
       return false
     end
@@ -102,27 +101,27 @@ class ApplicationController < ActionController::Base
     if !@current_user.admin?
       unless session[:last_login] &&
           Time.new(session[:last_login]) >= GraderConfiguration.minimum_last_login_time
-        unauthorized_redirect('Your session is expired, please login again.')
+        unauthorized_redirect(msg: 'Your session is expired, please login again.', logout: true)
         return
       end
     end
 
     # check if run in single user mode
-    if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY] && !@current_user.admin?
-      unauthorized_redirect('You cannot log in at this time')
+    if GraderConfiguration.single_user_mode?  && !@current_user.admin?
+      unauthorized_redirect(msg: 'The system does not permit usage at is time', logout: true)
       return false
     end
 
     # check if the user is enabled
     unless @current_user.enabled? || @current_user.admin?
-      unauthorized_redirect 'Your account is disabled'
+      unauthorized_redirect msg: 'Your account is disabled', logout: true
       return false
     end
 
     # check if user ip is allowed
     unless @current_user.admin? || GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       unless is_request_ip_allowed?
-        unauthorized_redirect 'Your IP is not allowed to login at this time.'
+        unauthorized_redirect 'Your IP is not allowed to log in at this time.', logout: true
         return false
       end
     end
