@@ -7,7 +7,15 @@ Rails.application.routes.draw do
   #logins
   match 'login/login',  to: 'login#login', via: [:get,:post]
 
-  resources :contests
+  resources :contests do
+    member do
+      post 'add_user'
+      post 'add_user_from_group'
+      post 'add_user_from_contest'
+      delete 'remove_user'
+      delete 'remove_all_users'
+    end
+  end
   resources :sites
   resources :test
 

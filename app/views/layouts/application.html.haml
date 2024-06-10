@@ -19,7 +19,7 @@
     = render 'layouts/header'
 
   /= content_tag(:p,flash[:notice],class: 'alert alert-success') if flash[:notice]!=nil
-  #main-content.container-fluid
+  #main-content{class: (@container_fluid.nil? || @container_fluid) ? 'container-fluid' : 'container' }
     - flash.each do |msg_type, message|
       .alert.alert-dismissible.my-2.fade.show{class: bootstrap_class_for(msg_type)}
         = message

@@ -1,4 +1,8 @@
 class ContestsController < ApplicationController
+  before_action :set_contest, only: [:show, :edit, :update, :destroy,
+                                     :add_user, :add_user_from_group, :add_user_from_contest, :remove_user,:remove_all_users,
+                                     :add_problem, :add_problem_from_group, :add_problem_from_contest, :remove_problem,:remove_all_problems,
+                                    ]
 
   before_action :admin_authorization
 
@@ -16,7 +20,6 @@ class ContestsController < ApplicationController
   # GET /contests/1
   # GET /contests/1.xml
   def show
-    @contest = Contest.find(params[:id])
 
     respond_to do |format|
       format.html # show.html.erb
@@ -37,7 +40,6 @@ class ContestsController < ApplicationController
 
   # GET /contests/1/edit
   def edit
-    @contest = Contest.find(params[:id])
   end
 
   # POST /contests
@@ -60,7 +62,6 @@ class ContestsController < ApplicationController
   # PUT /contests/1
   # PUT /contests/1.xml
   def update
-    @contest = Contest.find(params[:id])
 
     respond_to do |format|
       if @contest.update(contests_params)
@@ -74,10 +75,22 @@ class ContestsController < ApplicationController
     end
   end
 
+
+  def add_user
+    user = User.find(params[:user_id]) rescue nil
+    render plain: nil, status: :ok and return unless user
+    begin
+      @contest.users << user
+      render turbo_stream: turbo_stream.replace(:contest_user_table_frame, partial: 'contest_users')
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'User already exists', body_msg: e.message}
+      #redirect_to group_path(@group), alert: e.message
+    end
+  end
+
   # DELETE /contests/1
   # DELETE /contests/1.xml
   def destroy
-    @contest = Contest.find(params[:id])
     @contest.destroy
 
     respond_to do |format|
@@ -87,6 +100,11 @@ class ContestsController < ApplicationController
   end
 
   private
+
+    def set_contest
+      @contest = Contest.find(params[:id])
+
+    end
 
     def contests_params
       params.require(:contest).permit(:title,:enabled,:name)
