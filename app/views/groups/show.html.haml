@@ -1,5 +1,5 @@
 %h1 Editing Group members and problems
-.row
+.row.my-4
   .col-md-4
     .card
       .card-body
@@ -18,10 +18,7 @@
             = link_to 'Back', groups_path, class: 'btn btn-outline-secondary mx-2'
   .col-md-8
     = render partial: 'group_help'
-
-.row.mb-3
-  .col-md-12
-.row
+.row.my-4
   .col-md-6
     .card
       .card-header
@@ -30,7 +27,7 @@
       .card-body
         %ul
           %li
-            If you want to add several users to a group, it may be easier to just re-import those users in 
+            If you want to add several users to a group, it may be easier to just re-import the users in
             = link_to 'New list of users', new_list_user_admin_index_path
             page. You can also use
             = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
@@ -68,11 +65,42 @@
 
 :javascript
   function reload_table() {
+
+    // user tables
+    user_role_column = 2
     $('#user_table').DataTable({
+      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6]} ],
       destroy: true,
       paging: false,
-      order: [[4,'desc'],[0,'asc']],
+      orderFixed: [2,'desc'],
+      order: [[0,'asc']],
+      drawCallback: function (settings) {
+        var api = this.api();
+        var rows = api.rows({ page: 'current' }).nodes();
+        var last = null;
+        api.column(user_role_column, { page: 'current' })
+          .data()
+          .each(function (group, i) {
+              if (last !== group) {
+
+                // set text for group row
+                if (group == 'editor') {
+                  role_group_text = '<tr class="table-success"><td colspan="6"> Editors (Can edit any problems) </td></tr>'
+                } else if (group == 'viewer') {
+                  role_group_text = '<tr class="table-warning"><td colspan="6"> Viewers (Can view submissions of any users) </td></tr>'
+                } else {
+                  role_group_text = '<tr class="table-info"><td colspan="6"> Users (Can only use available problems) </td></tr>'
+                }
+
+                //prepend group row
+                $(rows).eq(i).before(role_group_text);
+                last = group;
+              }
+          });
+      },
     })
+
+    // problem table
     $('#problem_table').DataTable({
       destroy: true,
       paging: false,
