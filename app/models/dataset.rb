@@ -19,6 +19,8 @@ class Dataset < ApplicationRecord
   has_many_attached :initializers   # additional files for initialization of testcases
   has_many_attached :data_files     # additional files when running
 
+  before_save :update_main_filename
+
   def set_default
     self.compilation_type ||= 'self_contained'
     self.evaluation_type ||= 'wdiff'
@@ -26,6 +28,8 @@ class Dataset < ApplicationRecord
     self.time_limit ||= 1
     self.memory_limit ||= 512
   end
+
+
 
   def get_name_for_dir
     return name unless name.blank?
@@ -84,5 +88,27 @@ class Dataset < ApplicationRecord
   def invalidate_worker
     WorkerDataset.where(dataset_id: @dataset).delete_all
   end
+
+  # set main_filename if null and should be set
+  # also set to null of current value is invalid
+  # this DOES not save, as it is set as called back on before_save
+  # return true if change were made (which means that the record should be save)
+  def update_main_filename
+    if managers.attached?
+      manager_filenames = self.managers.map{ |x| x.filename.to_s }
+      unless manager_filenames.include? main_filename
+        self.main_filename = manager_filenames[0]
+        return true
+      end
+    else
+      unless self.main_filename.nil?
+        self.main_filename = nil
+        return true
+      end
+    end
+    return false
+  end
+
+  protected
 
 end

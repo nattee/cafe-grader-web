@@ -35,14 +35,17 @@ class DatasetsController < ApplicationController
   # PATCH/PUT /datasets/1 or /datasets/1.json
   def update
     respond_to do |format|
+      # file attachment
       @dataset.managers.attach params[:dataset][:managers] if params[:dataset][:managers]
       @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset][:data_files]
       @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset][:initializers]
+
+      # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
+      # when it is updated
       if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files]
-        # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
-        # when it is updated
         WorkerDataset.where(dataset_id: @dataset).delete_all
       end
+
       if @dataset.update(dataset_params)
         flash.now[:notice] = "Updated successfully on #{Time.zone.now}"
         format.json { render :show, status: :ok, location: @dataset }
@@ -58,6 +61,10 @@ class DatasetsController < ApplicationController
   def file_delete
     att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
     att.purge
+
+    @dataset.reload
+    @dataset.save if @dataset.update_main_filename
+
     flash.now[:notice] = "#{att.name.capitalize} file [#{att.filename}] is deleted"
   end
 
