@@ -46,7 +46,7 @@ class DatasetsController < ApplicationController
       end
 
       if @dataset.update(dataset_params)
-        flash.now[:notice] = "Updated successfully on #{Time.zone.now}"
+        @toast = {title: 'Dataset', body: 'Dataset is updated.'}
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
       else
@@ -64,9 +64,8 @@ class DatasetsController < ApplicationController
     @dataset.reload
     @dataset.save if @dataset.update_main_filename
 
-    @toast_body = "#{att.name.capitalize} file [#{att.filename}] is deleted"
-    @toast_subtitle = Time.zone.now.to_s
-    @toast_header = 'File deleted'
+    @toast = {title: 'File deleted',
+              body: "#{att.name.capitalize} file [#{att.filename}] is deleted."}
   end
 
   def file_view
@@ -99,7 +98,8 @@ class DatasetsController < ApplicationController
     tc = Testcase.find(params[:tc_id])
     tc.destroy
 
-    flash.now[:notice] = "Testcase ##{tc.num} is deleted"
+    @toast = {title: 'Testcase changed',
+              body: "Testcase ##{tc.num} is deleted."}
     render :update
   end
 
@@ -108,12 +108,14 @@ class DatasetsController < ApplicationController
       config = JSON.parse(params[:weight_param])
       if config.is_a? Array
         @dataset.set_by_array(:weight,config)
-      else
+      elsif config.is_a? Hash
         @dataset.set_by_hash(config.symbolize_keys)
+      else
+        raise JSON::ParserError
       end
-      flash.now[:notice] = "Testcases' parameters are updated"
+      @toast = {body: "Testcases' parameters are updated.",title: 'Testcase updated'}
     rescue JSON::ParserError => e
-      flash.now[:alert] = 'weight params is malformed'
+      @toast = {body: "Weight parameter is malformed.",title: 'Testcase updated', type: 'alert'}
     end
     render :update
   end
@@ -125,7 +127,8 @@ class DatasetsController < ApplicationController
 
   def set_as_live
     @dataset.problem.update(live_dataset: @dataset)
-    flash.now[:notice] = "Dataset #{@dataset.name} is live"
+    @toast = {title: 'Dataset changed',
+              body: "Dataset [#{@dataset.name}] is now live."}
     render :update
   end
 
@@ -142,14 +145,18 @@ class DatasetsController < ApplicationController
     p = @dataset.problem
     if p.datasets.count == 1
       # can't delete last dataset
-      flash.now[:alert] = 'Cannot delete the last dataset'
+      @toast = {title: 'Delete error',type: 'alert',
+                body: "Cannot delete the last remaining dataset."}
     elsif @dataset == p.live_dataset
       # can't delete the live dataset
-      flash.now[:alert] = 'Cannot delete live dataset'
+      @toast = {title: 'Delete error',type: 'alert',
+                body: "Cannot delete the live dataset."}
     else
       @dataset.destroy
+      @toast = {title: 'Dataset changed',type: 'warning',
+                body: "Dataset  [#{@dataset.name}] is deleted."}
+      # render new dataset
       @dataset = p.datasets.first
-      flash.now[:notice] = 'Dataset is deleted'
     end
 
 

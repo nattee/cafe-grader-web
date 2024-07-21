@@ -1,13 +1,17 @@
-- header_msg = local_assigns.fetch(:header_msg, 'Message')
-- body_msg = local_assigns.fetch(:body_msg, 'Body placeholder')
-- header_subtitle = local_assigns.fetch(:header_subtitle,'')
+- toast_params = {body: 'Body placeholder',type: 'notice', title: nil, subtitle: Time.zone.now}
+- toast_params.merge!( local_assigns.fetch(:toast, {}))
+- toast_header_class = case toast_params[:type]
+  - when 'notice' then 'bg-info-subtle'
+  - when 'alert' then 'bg-danger-subtle'
+  - when 'warning' then 'bg-warning-subtle'
+  - else ''
 .toast{"aria-atomic": true, "aria-live": :assertive, role: :alert}
-  .toast-header.bg-info-subtle
-    %strong.me-auto= header_msg
-    %small= header_subtitle
+  .toast-header{class: toast_header_class}
+    %strong.me-auto= toast_params[:title]
+    %small= toast_params[:subtitle]
     %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "toast", :type => "button"}
   .toast-body
-    = body_msg
+    = toast_params[:body]
 :javascript
   // select unhide toast
   toast_elements = document.querySelectorAll('.toast:not(.hide)')
