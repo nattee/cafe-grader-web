@@ -31,7 +31,7 @@
           ]
     - else
       .alert.alert-danger
-        NO CHECKER!!
+        Evaluation type of "#{ds.evaluation_type}" requires a custom checker but none is added to this dataset.
     - if local_assigns[:form]
       = form.input :checker, label: 'Set checker', wrapper: :horizontal_file
   %h5.my-2 Initializers
