@@ -71,7 +71,9 @@ window.default_td_date_options = {
 
 
 //global initialization
-$(function() {
+$(document).on('import-map-loaded',function(e) {
+  console.log('asdf')
+  console.log($)
   var e;
   $(".select2").select2({
     theme: "bootstrap-5",

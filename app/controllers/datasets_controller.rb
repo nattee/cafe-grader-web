@@ -1,7 +1,6 @@
 class DatasetsController < ApplicationController
   before_action :set_dataset, only: %i[ show edit update destroy
-                                        file_delete file_view
-                                        checker_view checker_download checker_delete
+                                        file_delete file_view file_download
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
                                       ]
@@ -65,7 +64,9 @@ class DatasetsController < ApplicationController
     @dataset.reload
     @dataset.save if @dataset.update_main_filename
 
-    flash.now[:notice] = "#{att.name.capitalize} file [#{att.filename}] is deleted"
+    @toast_body = "#{att.name.capitalize} file [#{att.filename}] is deleted"
+    @toast_subtitle = Time.zone.now.to_s
+    @toast_header = 'File deleted'
   end
 
   def file_view
@@ -73,21 +74,11 @@ class DatasetsController < ApplicationController
     render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}
   end
 
-  def checker_view
-    c = @dataset.checker
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: c.filename, body_msg: c.download}
-  end
-
-  def checker_download
-    type = @dataset.checker.content_type
-    filename = @dataset.checker.filename.to_s
-    send_data @dataset.checker.download, disposition: 'inline', type: type, filename: filename
-  end
-
-  def checker_delete
-    @dataset.checker.purge
-    flash.now[:notice] = "Checker is deleted"
-    render 'manager_delete'
+  def file_download
+    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    type = att.content_type
+    filename = att.filename.to_s
+    send_data att.download, disposition: 'inline', type: type, filename: filename
   end
 
   # as turbo

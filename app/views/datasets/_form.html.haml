@@ -36,8 +36,8 @@
         = f.input :name
         = f.input :time_limit, label: "Time limit (s)", tooltip: 'Decimal is ok, e.g., 1.2'
         = f.input :memory_limit, label: "Memory Limit (MB)"
-        = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], wrapper: :horizontal_select_half
-        = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, wrapper: :horizontal_select_half
+        = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], include_blank: false, wrapper: :horizontal_select_half
+        = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, include_blank: false, wrapper: :horizontal_select_half
         = f.input :main_filename, collection: ds.managers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select_half
         = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: true, wrapper: :horizontal_select_half
         = f.button :submit, class: 'btn-primary'
@@ -98,9 +98,12 @@
 
     if (typeof importmapScriptsLoaded !== 'undefined') {
       $('.datatable').DataTable({destroy: true, searching: false, paging: false})
+      $('[data-bs-toggle="tooltip"]').tooltip()
     }
 
     //trigger turbo  action
     function ds_change() {
       $('#ds_select_form')[0].requestSubmit();
     }
+
+
