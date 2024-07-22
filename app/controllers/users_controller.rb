@@ -4,9 +4,9 @@ class UsersController < ApplicationController
 
   include MailHelperMethods
 
-  before_action :check_valid_login, :except => [:new, 
-                                           :register, 
-                                           :confirm, 
+  before_action :check_valid_login, :except => [:new,
+                                           :register,
+                                           :confirm,
                                            :forget,
                                            :retrieve_password]
 

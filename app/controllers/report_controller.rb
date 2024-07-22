@@ -3,8 +3,11 @@ require 'csv'
 class ReportController < ApplicationController
 
   before_action :check_valid_login
+  before_action(except: [:problem_hof]) {
+    group_role_authorization(['reporter','editor'])
+  }
 
-  before_action :admin_authorization, except: [:problem_hof]
+  #before_action :admin_authorization, except: [:problem_hof]
 
   before_action(only: [:problem_hof]) { |c|
     return false unless check_valid_login

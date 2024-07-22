@@ -27,10 +27,10 @@
               = button_to 'To User',
                 set_user_role_group_path(@group,user, 'user'),
                 form: {data: { turbo: 'true'} }, class: "btn m-1 btn-outline-info btn-sm"
-          - if role != 'viewer'
+          - if role != 'reporter'
             %td
-              = button_to 'To Viewer',
-                set_user_role_group_path(@group,user, 'viewer'),
+              = button_to 'To Reporter',
+                set_user_role_group_path(@group,user, 'reporter'),
                 form: {data: { turbo: 'true'} }, class: "btn m-1 btn-outline-warning btn-sm"
           - if role != 'editor'
             %td

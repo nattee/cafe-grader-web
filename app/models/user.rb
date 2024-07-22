@@ -94,7 +94,7 @@ class User < ApplicationRecord
   end
 
   def has_role?(role)
-    self.roles.where(name: [role,'admin']).count > 0
+    self.roles.where(name: [role,'admin']).any?
   end
 
   def email_for_editing
@@ -286,6 +286,34 @@ class User < ApplicationRecord
   def available_problems_in_group
     pids = self.groups.where(enabled: true).joins(:problems).select('distinct problem_id').pluck :problem_id
     return Problem.where(id: pids).where(available: true).order('date_added DESC').order('name')
+  end
+
+  def editable_problems_in_group
+    pids = enabled_problems_in_groups_with_role(['editor'])
+    return Problem.where(id: pids).where(available: true)
+  end
+
+  def reportable_problems_in_group
+    pids = enabled_problems_in_groups_with_role(['reporter','editor'])
+    return Problem.where(id: pids).where(available: true)
+  end
+
+  def enabled_problems_ids_in_groups_with_role(roles = ['reporter','editor'])
+    if GraderConfiguration.use_problem_group?
+      self.groups_users.where(role: roles).
+        joins(group: :problems).where(group: {enabled: true})
+        .distinct(:problem_id)
+        .pluck :problem_id
+    else
+      return []
+    end
+  end
+
+  def enabled_groups_with_roles(roles)
+    ids = groups_users.joins(:group)
+      .where(role: roles,group: {enabled: true})
+      .pluck(:group_id)
+    return Group.where(id: ids)
   end
 
   #check if the user has the right to view that problem

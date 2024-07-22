@@ -61,6 +61,15 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  # redirect when user does not have specific roles in any group
+  # allowed_roles should be 'xxx' or ['xxx','yyy']
+  def group_role_authorization(allowed_roles)
+    return false unless check_valid_login
+    return true if @current_user.admin?
+    return true if @current_user.enabled_groups_with_roles(allowed_roles).any?
+    unauthorized_redirect
+  end
+
   def authorization_by_roles(allowed_roles)
     return false unless check_valid_login
     return true if @current_user.admin?
