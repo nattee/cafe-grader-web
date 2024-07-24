@@ -16,6 +16,13 @@ class ReportController < ApplicationController
   }
 
   def max_score
+    @problems = @current_user.problems_for_action(:report)
+
+    if @current_user.admin?
+      @groups = Group.all
+    else
+      @groups = Group.joins(:groups_users).where(groups_users: {user: @current_user, role: ['editor','reporter']})
+    end
   end
 
   # post max_score
@@ -25,18 +32,17 @@ class ReportController < ApplicationController
     @problems = []
     prob_use = params[:probs][:use] rescue ''
     if prob_use == 'prob_ids'
-      @problems = Problem.where(id: params[:problem_id])
+      @problems = @current_user.problems_for_action(:report).where(id: params[:problem_id])
     elsif prob_use == 'prob_groups'
-      ids = Group.where(id: params[:prob_group_id]).joins(:problems).pluck(:problem_id).uniq
+      ids = @current_user.problems_for_action(:report).where(id: Group.where(id: params[:prob_group_id]).joins(:problems).pluck(:problem_id).uniq)
       @problems = Problem.where(id: ids)
     elsif prob_use == 'prob_tags'
-      ids = Tag.where(id: params[:prob_tag_id]).joins(:problems).pluck(:problem_id).uniq
+      ids =  @current_user.problems_for_action(:report).where(id: Tag.where(id: params[:prob_tag_id]).joins(:problems).pluck(:problem_id).uniq)
       @problems = Problem.where(id: ids)
     end
 
-
     #users
-    @users = if params[:users] == "group" then 
+    @users = if params[:users] == "group" then
                Group.find(params[:group_id]).users.all
              elsif params[:users] == 'enabled'
                User.includes(:contests).includes(:contest_stat).where(enabled: true)

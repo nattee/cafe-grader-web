@@ -31,6 +31,26 @@ class Problem < ApplicationRecord
 
   scope :available, -> { where(available: true) }
 
+  # return ids of problems that is enabled and is in a group
+  # that is both enabled and has the user in the group
+  # this does not check whether the user is enabled
+  scope :submitable_by_user, ->(user_id) {
+    joins(groups: :groups_users)
+      .where(available: true)
+      .where('groups.enabled': true)
+      .where('groups_users.user_id': user_id)
+  }
+
+  scope :reportable_by_user, ->(user_id) {
+    submitable_by_user(user_id)
+      .where('groups_users.role': ['editor','reporter'])
+  }
+
+  scope :editable_by_user, ->(user_id) {
+    submitable_by_user(user_id)
+      .where('groups_users.role': ['editor'])
+  }
+
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
 
@@ -38,14 +58,6 @@ class Problem < ApplicationRecord
   # if the user has the right to submit, the user can see the attachments (and statement)
   has_one_attached :statement
   has_one_attached :attachment  #this is public files seen by contestant
-
-  # return ids of problems that is enabled and submittable by the given user
-  # this does not check whether the user is enabled
-  def self.submittable_by_user(user_id)
-    Problem.joins(groups: :groups_users)
-      .where(available: true)
-      .where('groups_users.user_id': user_id)
-  end
 
   def set_default_value
 

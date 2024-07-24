@@ -65,9 +65,37 @@ class User < ApplicationRecord
   before_save :assign_default_site
   before_save :assign_default_contest
 
-  # this is for will_paginate
-  cattr_reader :per_page
-  @@per_page = 50
+  # ---- problem for the users for specific action ------
+  # -- this includes logic of User.role where admin always has right ---
+  # -- this also includes logics of mode of the grader
+  # -- this also consider whether the user is enabled ---
+  # action is either :submit, :report, :edit
+  def problems_for_action(action)
+    return Problem.all if admin?
+    return [] unless enabled?
+
+    if GraderConfiguration.multicontests?
+      # legacy mode, have not been implemented yet
+    elsif GraderConfiguration.contest_mode?
+    else
+      # normal mode
+      if GraderConfiguration.use_problem_group?
+        if action.to_sym == :edit
+          return Problem.editable_by_user(self.id)
+        elsif action.to_sym == :report
+          return Problem.reportable_by_user(self.id)
+        else #submit?
+          return Problem.submitable_by_user(self.id)
+        end
+      else
+        if action.to_sym == :submit
+          return Problem.available_problems
+        else
+          return []
+        end
+      end
+    end
+  end
 
   def self.authenticate(login, password)
     user = find_by_login(login)
