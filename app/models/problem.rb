@@ -31,24 +31,22 @@ class Problem < ApplicationRecord
 
   scope :available, -> { where(available: true) }
 
-  # return ids of problems that is enabled and is in a group
-  # that is both enabled and has the user in the group
+  # return ids of problems that is enabled and is in an enabled group that has the given user
   # this does not check whether the user is enabled
-  scope :submitable_by_user, ->(user_id) {
+  scope :submittable_by_user, ->(user_id) {
     joins(groups: :groups_users)
       .where(available: true)
       .where('groups.enabled': true)
       .where('groups_users.user_id': user_id)
+      .distinct(:problem_id)
   }
 
   scope :reportable_by_user, ->(user_id) {
-    submitable_by_user(user_id)
-      .where('groups_users.role': ['editor','reporter'])
+    submittable_by_user(user_id).where('groups_users.role': ['editor','reporter'])
   }
 
   scope :editable_by_user, ->(user_id) {
-    submitable_by_user(user_id)
-      .where('groups_users.role': ['editor'])
+    submittable_by_user(user_id).where('groups_users.role': ['editor'])
   }
 
   DEFAULT_TIME_LIMIT = 1

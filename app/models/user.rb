@@ -84,8 +84,10 @@ class User < ApplicationRecord
           return Problem.editable_by_user(self.id)
         elsif action.to_sym == :report
           return Problem.reportable_by_user(self.id)
-        else #submit?
-          return Problem.submitable_by_user(self.id)
+        elsif action.to_sym == :submit
+          return Problem.submittable_by_user(self.id)
+        else
+          raise ArgumentError.new('action must be one of :edit, :report, :submit')
         end
       else
         if action.to_sym == :submit
