@@ -39,6 +39,14 @@ class Problem < ApplicationRecord
   has_one_attached :statement
   has_one_attached :attachment  #this is public files seen by contestant
 
+  # return ids of problems that is enabled and submittable by the given user
+  # this does not check whether the user is enabled
+  def self.submittable_by_user(user_id)
+    Problem.joins(groups: :groups_users)
+      .where(available: true)
+      .where('groups_users.user_id': user_id)
+  end
+
   def set_default_value
 
   end
