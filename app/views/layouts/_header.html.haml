@@ -42,10 +42,10 @@
                 update_remaining_time()
                 setInterval(update_remaining_time,500)
           / admin section
-          - if (@current_user!=nil) and (session[:admin])
+          - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor']).any?)
             / management
             %li.nav-item.dropdown.mx-2
-              %a.nav-link.dropdown-toggle.active-with-children{href: '#', 
+              %a.nav-link.dropdown-toggle.active-with-children{href: '#',
                 data: {'bs': {toggle:'dropdown'}}, aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Manage
               %ul.dropdown-menu

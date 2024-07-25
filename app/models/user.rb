@@ -99,6 +99,13 @@ class User < ApplicationRecord
     end
   end
 
+  def editable_groups
+    return Group.all if admin?
+    return [] unless enabled?
+
+    return Group.editable_by_user(self.id)
+  end
+
   def self.authenticate(login, password)
     user = find_by_login(login)
     if user

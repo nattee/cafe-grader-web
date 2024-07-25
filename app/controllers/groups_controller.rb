@@ -8,7 +8,7 @@ class GroupsController < ApplicationController
 
   # GET /groups
   def index
-    @groups = Group.all
+    @groups = @current_user.editable_groups
   end
 
   # GET /groups/1
@@ -123,7 +123,7 @@ class GroupsController < ApplicationController
     # admin always has the right
     def group_editor_authorization
       return true if @current_user.admin?
-      return true if @current_user.groups_users.where(group: @group).first.role == 'editor'
+      return true if @current_user.editable_groups.where(id: @group)
       unauthorized_redirect("You cannot manage group #{group.name}.");
     end
 

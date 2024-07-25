@@ -5,6 +5,10 @@ class Group < ApplicationRecord
   has_many :groups_users, class_name: 'GroupUser'
   has_many :users, :through => :groups_users
 
+  scope :editable_by_user, -> (user_id) {
+    joins(:groups_users).where(groups_users: { user_id: user_id, role: 'editor' })
+  }
+
   #has_and_belongs_to_many :problems
   #has_and_belongs_to_many :users
 
