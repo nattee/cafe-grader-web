@@ -34,6 +34,7 @@ class Compiler::Java < Compiler
     return cmd.join ' '
   end
 
+  # build a script that runs the java file
   def post_compile
     bin_text = "#!/bin/sh\njava -cp #{@isolate_bin_path} #{@classname}"
     File.write(@exec_file,bin_text)

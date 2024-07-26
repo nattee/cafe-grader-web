@@ -14,6 +14,8 @@ class Compiler
 
   # Each langauge specific sub-class MUST implement this method
   # it should return shell command that do the compilation
+  #   [isolate_source] is a full pathname to the source file (in isolate env.) to be compiled
+  #   [isolate_bin] is a full pathname to the source file (in isolate env.) to store the compiled file
   def build_compile_command(isolate_source, isolate_bin)
   end
 
@@ -28,7 +30,8 @@ class Compiler
   # normal use case is for scripting language
   # where compilation is actually linting and
   # post compile is to modify the source by adding shebang
-  # or add a script
+  # or add any other script
+  #   @exec_file is the compiled file
   def post_compile
   end
 
@@ -72,9 +75,7 @@ class Compiler
     compile_stderr_file = @compile_result_path + Grader::COMPILE_RESULT_STDERR_FILENAME
 
     # isolate filename for source to be compiled (considering self_contain? or task's main file)
-    isolate_source_file = @sub.problem.self_contained? ?
-      @isolate_source_file :
-      @isolate_main_file
+    isolate_source_file = @sub.problem.with_managers? ?  @isolate_main_file : @isolate_source_file
 
     # isolate pathname for executable after compiled
     isolate_bin_file = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
@@ -177,7 +178,7 @@ class Compiler
   # calculate the filename of the contestant submission to be saved to a source dir
   # for problem having "with managers" type, the submission_filename MUST exists
   def get_submission_filename
-    if @sub.problem.compilation_type == 'with_managers' && @sub.problem.submission_filename.blank?
+    if @sub.problem.with_managers? && @sub.problem.submission_filename.blank?
       raise GraderError.new("Manager Error: no submission filename",
                             submission_id: @sub.id)
 

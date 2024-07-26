@@ -48,7 +48,7 @@ module JudgeBase
 
   def isolate_need_cg_by_lang(language_name)
     case language_name
-    when 'java', 'digital', 'go'
+    when 'java', 'digital', 'go', 'python'
       true
     else
       false
