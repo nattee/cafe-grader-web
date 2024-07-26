@@ -58,8 +58,10 @@ module JudgeBase
   # additional options for isolate for each language
   def isolate_options_by_lang(language_name)
     case language_name
-    when 'pas','php', 'python'
+    when 'pas','php'
       '-d /etc/alternatives'
+    when 'python'
+      '-p -d /venv'
     when 'java'
       '-p -d /etc/alternatives'
     when 'haskell'

@@ -392,7 +392,7 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :difficulty,:attachment, :statement,
+                                      :submission_filename, :difficulty,:attachment, :statement,
                                       :test_allowed, :output_only, :url, :description, :description, tag_ids:[], group_ids:[])
     end
 

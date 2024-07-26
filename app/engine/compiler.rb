@@ -100,6 +100,9 @@ class Compiler
     File.write(compile_stdout_file,out)
     File.write(compile_stderr_file,err)
 
+    #chmod the compile result
+    run_isolate("/usr/bin/chmod -R 0777 #{@isolate_bin_path}", output: output)
+
     #clean up isolate
     cleanup_isolate
 
