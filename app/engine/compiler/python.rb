@@ -2,13 +2,13 @@ class Compiler::Python < Compiler
   def build_compile_command(isolate_source,isolate_bin)
     cmd = [
       "#{Rails.configuration.worker[:compiler][:python]}",
-      "-c \"import py_compile; py_compile.compile('#{isolate_source}','#{isolate_bin}')\"",
+      "-c \"import py_compile; py_compile.compile('#{isolate_source}','#{isolate_bin}c')\"",
     ]
     return cmd.join ' '
   end
 
   def check_compile_result(out,err,status,meta)
-    if File.exist?("#{@exec_file}")
+    if File.exist?("#{@exec_file}c")
       #compiler finished successfully
       return {success: true, compiler_message: out}
     else
@@ -33,7 +33,10 @@ class Compiler::Python < Compiler
         "#{Rails.configuration.worker[:compiler][:python]} #{@isolate_bin_path + @working_dataset.main_filename}"
       File.write(@exec_file,bin_text)
     else
-      #in self_contained mode, we just rans the compiled file
+      #build script with shebang
+      source_text = File.read(@source_file)
+      bin_text = "#!#{Rails.configuration.worker[:compiler][:python]}\n"+source_text
+      File.write(@exec_file,bin_text)
     end
   end
 

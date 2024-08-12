@@ -61,7 +61,7 @@ module JudgeBase
     when 'pas','php'
       '-d /etc/alternatives'
     when 'python'
-      '-p -d /venv'
+      '-p -d /venv -E HOME -d /etc/alternatives'
     when 'java'
       '-p -d /etc/alternatives'
     when 'haskell'
@@ -345,12 +345,12 @@ module JudgeBase
 
   def build_result_hash
     {status: nil,
-     result_text: nil
+     result_description: nil
     }
   end
 
   def default_success_result(msg = nil)
-    {status: :success, result_text: msg}
+    {status: :success, result_description: msg}
   end
 
   def judge_log(msg,severity = Logger::INFO)

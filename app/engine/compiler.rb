@@ -122,13 +122,13 @@ class Compiler
 
       sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message].truncate(65000))
       judge_log rb_sub(@sub) + Rainbow(' compilation completed successfully').color(COLOR_COMPILE_SUCCESS)
-      return {status: :success, result_text: 'Compiled successfully', compile_result: :success}
+      return {status: :success, result_description: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
       judge_log rb_sub(@sub) + Rainbow(' compilation completed with error').color(COLOR_COMPILE_ERROR)
       sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(65000),
                  points: 0, grader_comment: 'Compilation error',graded_at: Time.zone.now)
-      return {status: :success, result_text: 'Compilation error', compile_result: :error}
+      return {status: :success, result_description: 'Compilation error', compile_result: :error}
     end
   end
 
@@ -187,7 +187,11 @@ class Compiler
 
     end
 
-    @sub.problem.submission_filename || @sub.language.default_submission_filename
+    if @sub.problem.submission_filename.blank?
+      @sub.language.default_submission_filename
+    else
+      @sub.problem.submission_filename
+    end
   end
 
   def self.get_compiler(sub)

@@ -93,11 +93,11 @@ class Evaluator
       checker = Checker.get_checker(@sub).new(@worker_id, @box_id)
       check_result = checker.process(@sub,@testcase)
       e.update( time: meta['time'] * 1000,memory: meta['max-rss'],
-                result: check_result[:result], score: check_result[:score])
+                result: check_result[:result], score: check_result[:score],
+                result_text: (check_result[:comment] || '').truncate(250))
     end
 
     #save final result
-    e.set_result_text_from_result
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"
     return result;
   end

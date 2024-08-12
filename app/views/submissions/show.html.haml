@@ -150,7 +150,11 @@
                 %td.text-end
                   %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
                   %span.text-secondary MB
-                %td= ev.result_text
+                %td
+                  = ev.result_as_word
+                  - unless ev.result_text.blank?
+                    %div.text-secondary
+                      = ev.result_text
                 %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
                 %td.text-end= ev.weight
 
