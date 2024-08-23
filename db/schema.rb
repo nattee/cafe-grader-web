@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_06_09_073050) do
+ActiveRecord::Schema[7.0].define(version: 2024_08_23_153937) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -62,14 +62,24 @@ ActiveRecord::Schema[7.0].define(version: 2024_06_09_073050) do
     t.datetime "stop"
   end
 
-  create_table "contests_problems", id: false, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
-    t.integer "contest_id"
-    t.integer "problem_id"
+  create_table "contests_problems", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.bigint "contest_id"
+    t.bigint "problem_id"
+    t.integer "numbering"
+    t.index ["contest_id"], name: "index_contests_problems_on_contest_id"
+    t.index ["problem_id"], name: "index_contests_problems_on_problem_id"
   end
 
-  create_table "contests_users", id: false, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
-    t.integer "contest_id"
-    t.integer "user_id"
+  create_table "contests_users", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.bigint "contest_id"
+    t.bigint "user_id"
+    t.decimal "current_score", precision: 10
+    t.datetime "last_heartbeat"
+    t.integer "start_offset_second", default: 0
+    t.integer "extra_time_second", default: 0
+    t.string "remark"
+    t.index ["contest_id"], name: "index_contests_users_on_contest_id"
+    t.index ["user_id"], name: "index_contests_users_on_user_id"
   end
 
   create_table "countries", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
