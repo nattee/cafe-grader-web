@@ -3,7 +3,7 @@ class Problem < ApplicationRecord
   #how the submission should be compiled
   enum compilation_type:  {self_contained: 0,
                            with_managers: 1}
-  enum task_type: { batch: 0}
+  enum task_type: { batch: 0 }
   #belongs_to :description
 
   has_and_belongs_to_many :contests, :uniq => true
@@ -102,7 +102,6 @@ class Problem < ApplicationRecord
     org_problem = old_problem || Problem.new
     import_params, problem = Problem.extract_params_and_check(params,
                                                               org_problem)
-
     if !problem.errors.empty?
       return problem, 'Error importing'
     end

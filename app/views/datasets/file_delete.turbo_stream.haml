@@ -1,1 +1,2 @@
 = turbo_stream.replace :dataset_update, partial: 'datasets/form', locals: {ds: @dataset, updated: @updated}
+= turbo_stream.append 'toast-area', partial: 'shared/toast', locals: {toast: @toast}

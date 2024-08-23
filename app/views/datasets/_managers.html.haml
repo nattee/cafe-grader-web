@@ -23,15 +23,15 @@
           %span.bg-warning-subtle.rounded.p-1.font-monospace= ds.checker.filename
         .col-md-6
           [
-          %span= link_to 'view', checker_view_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post' }
+          %span= link_to 'view', file_view_dataset_path(ds,ds.checker.attachment), data: {turbo: true, 'turbo-method': 'post' }
           |
-          %span= link_to 'download', checker_download_dataset_path(ds), method: 'post'
+          %span= link_to 'download', file_download_dataset_path(ds,ds.checker.attachment), method: 'post'
           |
-          %span= link_to 'delete', checker_delete_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+          %span= link_to 'delete', file_delete_dataset_path(ds,ds.checker.attachment), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
           ]
     - else
       .alert.alert-danger
-        NO CHECKER!!
+        Evaluation type of "#{ds.evaluation_type}" requires a custom checker but none is added to this dataset.
     - if local_assigns[:form]
       = form.input :checker, label: 'Set checker', wrapper: :horizontal_file
   %h5.my-2 Initializers

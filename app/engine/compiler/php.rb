@@ -1,5 +1,6 @@
 class Compiler::Php < Compiler
   def build_compile_command(source,bin)
+    # -l for php is linting
     cmd = [
       "#{Rails.configuration.worker[:compiler][:php]}",
       "-l",

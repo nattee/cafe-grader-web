@@ -33,7 +33,7 @@ class SubmissionsController < ApplicationController
     SubmissionViewLog.create(user_id: session[:user_id],submission_id: @submission.id) unless user.admin?
 
     @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
-      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text)
+      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text, :result)
 
 
   end

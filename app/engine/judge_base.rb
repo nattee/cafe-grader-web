@@ -48,7 +48,7 @@ module JudgeBase
 
   def isolate_need_cg_by_lang(language_name)
     case language_name
-    when 'java', 'digital', 'go'
+    when 'java', 'digital', 'go', 'python'
       true
     else
       false
@@ -58,8 +58,10 @@ module JudgeBase
   # additional options for isolate for each language
   def isolate_options_by_lang(language_name)
     case language_name
-    when 'pas','php', 'python'
+    when 'pas','php'
       '-d /etc/alternatives'
+    when 'python'
+      '-p -d /venv -E HOME -d /etc/alternatives'
     when 'java'
       '-p -d /etc/alternatives'
     when 'haskell'
@@ -343,12 +345,12 @@ module JudgeBase
 
   def build_result_hash
     {status: nil,
-     result_text: nil
+     result_description: nil
     }
   end
 
   def default_success_result(msg = nil)
-    {status: :success, result_text: msg}
+    {status: :success, result_description: msg}
   end
 
   def judge_log(msg,severity = Logger::INFO)

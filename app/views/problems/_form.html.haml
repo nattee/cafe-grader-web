@@ -13,6 +13,7 @@
           = form.input :available, wrapper: :horizontal_boolean
           = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
           = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
+          = form.input :submission_filename
           %h4 Statements
           = form.input :statement, wrapper: :horizontal_file
           .row

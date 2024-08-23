@@ -64,9 +64,7 @@ Rails.application.routes.draw do
     member do
       post 'file/delete/:att_id', action: 'file_delete', as: 'file_delete'
       post 'file/view/:att_id', action: 'file_view', as: 'file_view'
-      post 'checker_view'
-      post 'checker_download'
-      post 'checker_delete'
+      post 'file/download/:att_id', action: 'file_download', as: 'file_download'
       post 'testcase/input/:tc_id', action: 'testcase_input', as: 'testcase_input'
       post 'testcase/sol/:tc_id', action: 'testcase_sol', as: 'testcase_sol'
       post 'testcase/delete/:tc_id', action: 'testcase_delete', as: 'testcase_delete'

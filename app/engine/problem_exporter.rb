@@ -133,9 +133,7 @@ class ProblemExporter
     export_attachment
     export_testcases
     export_managers_checker
-    puts "1112"
     export_options
-    puts "133"
     export_solutions
   end
 
@@ -145,7 +143,7 @@ class ProblemExporter
     probs.each do |p|
       pi = ProblemExporter.new
       pi.export_problem_to_dir(p,base_dir)
-      puts "dump #{p.name} to #{base_dir}"
+      puts "dump '#{p.name}' to #{base_dir}"
     end
   end
 

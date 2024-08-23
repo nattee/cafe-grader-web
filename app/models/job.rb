@@ -9,7 +9,7 @@ class Job < ApplicationRecord
   belongs_to :grader_process, optional: true
 
   def report(result)
-    update(status: result[:status],result: result[:result_text])
+    update(status: result[:status],result: result[:result_description])
   end
 
   def to_text

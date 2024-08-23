@@ -30,7 +30,7 @@ class Checker
   end
 
   def process_result_cafe(out,err)
-    arr = out.split
+    arr = out.split("\n")
     if arr.count < 2
       return report_check_error('(cafe-checker) output from checker is malformed')
     end
@@ -40,7 +40,8 @@ class Checker
     elsif arr[0].upcase == "INCORRECT"
       return report_check_wrong(score)
     elsif arr[0].split(':')[0].upcase == 'COMMENT'
-      return report_check_partial(score,arr[0].split(':')[1])
+      comment = arr[0][8...]
+      return report_check_partial(score,comment)
     end
   end
 
@@ -77,7 +78,7 @@ class Checker
     raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
   end
 
-  def result_text_with_color(result)
+  def result_status_with_color(result)
     if result[:result] == :correct
       color = COLOR_GRADING_CORRECT
     elsif result[:result] == :wrong
@@ -116,7 +117,7 @@ class Checker
     out,err,status = Open3.capture3(cmd)
 
     result = process_result(@ds.evaluation_type,out,err,status)
-    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_text_with_color(result)
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_status_with_color(result)
     return result;
   end
 
