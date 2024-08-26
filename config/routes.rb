@@ -15,7 +15,11 @@ Rails.application.routes.draw do
       delete 'remove_user'
       delete 'remove_all_users'
     end
+    collection do
+      post 'set_system_mode'
+    end
   end
+
   resources :sites
   resources :test
 

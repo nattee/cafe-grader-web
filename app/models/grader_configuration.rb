@@ -104,7 +104,7 @@ class GraderConfiguration < ApplicationRecord
     end
     return GraderConfiguration.task_grading_info_cache
   end
-  
+
   def self.standard_mode?
     return get(SYSTEM_MODE_CONF_KEY) == 'standard'
   end

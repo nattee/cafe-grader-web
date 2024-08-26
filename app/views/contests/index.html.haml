@@ -1,24 +1,52 @@
-%h1 Listing contests
-.infobox
-  %b Go back to:
-  [#{link_to 'contest management', :controller => 'contest_management', :action => 'index'}]
-%p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
-%table.table.table-striped
-  %tr
-    %th Name
-    %th Title
-    %th Enabled
-    %th
-    %th
-    %th
+.row.mb-3
+  .col-md-4
+    .card.shadow-sm.mb-3
+      .card-body
+        %h3 System Mode
+        .row
+          .col
+            .alert.text-center{class: "alert-#{mode_to_class}"}
+              The system is in
+              %strong
+                = mode_to_text
+                Mode
+        .row
+          .col-auto.col-form-label
+            Change mode to
+          .col-auto.p-1
+            = button_to "Normal", set_system_mode_contests_path, params: {mode: 'standard'}, class: 'btn btn-sm btn-outline-success'
+          .col-auto.p-1
+            = button_to "Contest", set_system_mode_contests_path, params: {mode: 'contest'}, class: 'btn btn-sm btn-outline-warning'
+          .col-auto.p-1
+            = button_to "Individual Contest", set_system_mode_contests_path, params: {mode: 'indv-contest'}, class: 'btn btn-sm btn-outline-warning'
+          .col-auto.p-1
+            = button_to "Analysis", set_system_mode_contests_path, params: {mode: 'analysis'}, class: 'btn btn-sm btn-outline-info'
+  .col-md-8
+    = render partial: 'contest_help'
 
-  - @contests.each do |contest|
-    - @contest = contest
-    %tr
-      %td= @contest.name
-      %td= @contest.title
-      %td= @contest.enabled
-      %td= link_to 'Show', contest
-      %td= link_to 'Edit', edit_contest_path(contest)
-      %td= link_to 'Destroy', contest, :confirm => 'Are you sure?', :method => :delete
-%br/
+.card.shadow-sm
+  .card-body
+    %h3 Contests
+    .infobox
+      %b Go back to:
+      [#{link_to 'contest management', :controller => 'contest_management', :action => 'index'}]
+    %p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
+    %table.table.table-striped
+      %tr
+        %th Name
+        %th Title
+        %th Enabled
+        %th
+        %th
+        %th
+
+      - @contests.each do |contest|
+        - @contest = contest
+        %tr
+          %td= @contest.name
+          %td= @contest.title
+          %td= @contest.enabled
+          %td= link_to 'Show', contest
+          %td= link_to 'Edit', edit_contest_path(contest)
+          %td= link_to 'Destroy', contest, :confirm => 'Are you sure?', :method => :delete
+    %br/
