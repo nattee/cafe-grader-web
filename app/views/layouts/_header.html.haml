@@ -62,7 +62,7 @@
                 %li
                   %hr.dropdown-divider
                 %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites)
-                %li= link_to 'Contests', contest_management_index_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
+                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
                 -#
           / report
           - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor','reporter']).any?)
