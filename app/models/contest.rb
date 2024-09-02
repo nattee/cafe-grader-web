@@ -37,4 +37,29 @@ class Contest < ApplicationRecord
 
   end
 
+  def add_problems(new_problems)
+    return {title: 'Contest problems are NOT changed', body: 'No new problems given.'} if new_problems.count == 0
+
+    # remove already existing problems
+    to_be_added = new_problems.where.not(id: self.problems)
+    num_actual_add = to_be_added.count
+    num_request_add = new_problems.count
+
+
+    self.problems << to_be_added
+    if num_actual_add == 0
+      return {title: 'Contest problems are NOT changed', body: 'All problems given are already in the contest.'}
+    elsif num_actual_add == num_request_add
+      return {title: 'Contest problems changed', body: "All given #{pluralize num_actual_add, 'problem'} were added to the contest."}
+    else
+      return {title: 'Contest problems changed',
+              body: %Q"
+                From given #{pluralize num_request_add,'problem'},
+                #{pluralize num_actual_add, 'problem'} were added to the contest
+                while the other #{pluralize (num_request_add - num_actual_add), 'problem'} are already in the contest.
+              "}
+    end
+
+  end
+
 end

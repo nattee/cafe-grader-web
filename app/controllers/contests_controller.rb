@@ -80,8 +80,8 @@ class ContestsController < ApplicationController
     users = nil
     if params.has_key? :user_id
       users = User.where(id: params[:user_id])
-    elsif params.has_key? :group_id
-      users = User.where(id: Group.joins(:users).where('groups.id': params[:group_id]).pluck('users.id') )
+    elsif params.has_key? :user_group_id
+      users = User.where(id: Group.joins(:users).where('groups.id': params[:user_group_id]).pluck('users.id') )
     end
     if users.nil?
       @toast = {title: 'Contest user are NOT update',body: 'No user given'}
@@ -96,6 +96,26 @@ class ContestsController < ApplicationController
     render 'user_change'
   end
 
+  def add_problem
+    problems = nil
+    if params.has_key? :problem_id
+      problems = Problem.where(id: params[:problem_id])
+    elsif params.has_key? :problem_group_id
+      problems = Problem.where(id: Group.joins(:problems).where('groups.id': params[:problem_group_id]).pluck('problems.id') )
+    end
+    if problems.nil?
+      @toast = {title: 'Contest problem are NOT update',body: 'No problem given'}
+    else
+      begin
+        @toast = @contest.add_problems(problems)
+        @clear_form = true
+      rescue => e
+        @toast = {title: 'Errors', body: e.message}
+      end
+    end
+    render 'problem_change'
+  end
+
   def remove_all_users
     @contest.users.delete_all
     render 'user_change'
@@ -104,6 +124,20 @@ class ContestsController < ApplicationController
   def remove_user
     @contest.users.delete(params[:user_id])
     render 'user_change'
+  end
+
+  def remove_all_problems
+    @contest.problems.delete_all
+    render 'problem_change'
+  end
+
+  def remove_problem
+    @contest.problems.delete(params[:problem_id])
+    render 'problem_change'
+  end
+
+  def user_check_in
+
   end
 
 

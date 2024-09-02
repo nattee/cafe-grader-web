@@ -10,13 +10,15 @@ Rails.application.routes.draw do
   resources :contests do
     member do
       post 'add_user'
-      post 'add_user_from_group'
-      post 'add_user_from_contest'
+      post 'add_problem'
       delete 'remove_user/:user_id', as: 'remove_user', to: 'contests#remove_user'
       delete 'remove_all_users'
+      delete 'remove_problem/:problem_id', as: 'remove_problem', to: 'contests#remove_problem'
+      delete 'remove_all_problems'
     end
     collection do
       post 'set_system_mode'
+      post 'user_check_in'
     end
   end
 
