@@ -27,9 +27,6 @@
 .card.shadow-sm
   .card-body
     %h3 Contests
-    .infobox
-      %b Go back to:
-      [#{link_to 'contest management', :controller => 'contest_management', :action => 'index'}]
     %p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
     %table.table.table-striped
       %tr

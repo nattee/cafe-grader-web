@@ -12,7 +12,7 @@ Rails.application.routes.draw do
       post 'add_user'
       post 'add_user_from_group'
       post 'add_user_from_contest'
-      delete 'remove_user'
+      delete 'remove_user/:user_id', as: 'remove_user', to: 'contests#remove_user'
       delete 'remove_all_users'
     end
     collection do

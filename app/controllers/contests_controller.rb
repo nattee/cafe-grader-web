@@ -1,7 +1,7 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy,
-                                     :add_user, :add_user_from_group, :add_user_from_contest, :remove_user,:remove_all_users,
-                                     :add_problem, :add_problem_from_group, :add_problem_from_contest, :remove_problem,:remove_all_problems,
+                                     :add_user, :remove_user,:remove_all_users,
+                                     :add_problem, :remove_problem,:remove_all_problems,
                                     ]
 
   before_action :admin_authorization
@@ -77,16 +77,35 @@ class ContestsController < ApplicationController
 
 
   def add_user
-    user = User.find(params[:user_id]) rescue nil
-    render plain: nil, status: :ok and return unless user
-    begin
-      @contest.users << user
-      render turbo_stream: turbo_stream.replace(:contest_user_table_frame, partial: 'contest_users')
-    rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'User already exists', body_msg: e.message}
-      #redirect_to group_path(@group), alert: e.message
+    users = nil
+    if params.has_key? :user_id
+      users = User.where(id: params[:user_id])
+    elsif params.has_key? :group_id
+      users = User.where(id: Group.joins(:users).where('groups.id': params[:group_id]).pluck('users.id') )
     end
+    if users.nil?
+      @toast = {title: 'Contest user are NOT update',body: 'No user given'}
+    else
+      begin
+        @toast = @contest.add_users(users)
+        @clear_form = true
+      rescue => e
+        @toast = {title: 'Errors', body: e.message}
+      end
+    end
+    render 'user_change'
   end
+
+  def remove_all_users
+    @contest.users.delete_all
+    render 'user_change'
+  end
+
+  def remove_user
+    @contest.users.delete(params[:user_id])
+    render 'user_change'
+  end
+
 
   # DELETE /contests/1
   # DELETE /contests/1.xml

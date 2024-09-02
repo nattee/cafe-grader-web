@@ -5,13 +5,13 @@
         %th Login
         %th Full name
         %th Remark
-        %th= link_to 'Remove All', remove_all_users_contest_path(@contest), method: :delete, :data => { :confirm => "Remove ALL USERS from group?" }, class: 'btn btn-danger btn-sm'
+        %th= button_to 'Remove All', remove_all_users_contest_path(@contest), method: :delete, data:{ confirm: "Remove ALL USERS from group?", turbo: true, 'turbo-method': 'delete' }, class: 'btn btn-danger btn-sm'
     %tbody
       - @contest.users.each do |user|
         %tr
           %td= user.login
           %td= user.full_name
           %td= user.remark
-          %td= button_to 'Remove', remove_user_contest_path(@contest,user), method: :delete, form: {data: { confirm: "Remove #{user.full_name}?", turbo: 'true', 'turbo-method': 'delete'}}, class: 'btn btn-danger btn-sm'
+          %td= button_to 'Remove', remove_user_contest_path(@contest,user), method: :delete, data: { confirm: "Remove #{user.full_name}?", turbo: true, 'turbo-method': 'delete'}, class: 'btn btn-danger btn-sm'
   :javascript
-    //reload_table();
+    reload_table();
