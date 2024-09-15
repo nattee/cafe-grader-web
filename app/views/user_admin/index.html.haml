@@ -83,7 +83,7 @@
 = link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success '}
 
 :javascript
-  $(document).on('import-map-loaded',(e) => {
+  $(function() {
     $('.datatable').DataTable({
       'pageLength': 50
     });

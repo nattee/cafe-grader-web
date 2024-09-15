@@ -70,7 +70,7 @@
 
 = render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: 'placeholder'}
 :javascript
-  $(document).on('import-map-loaded',(e) => {
+  $(function() {
     $("#main_table").DataTable({
       columnDefs: [
         { targets: [3,4], sortable: false },

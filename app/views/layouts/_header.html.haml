@@ -103,7 +103,7 @@
               %span.mi.mi-bs.md-18 exit_to_app
               = @current_user.full_name
 :javascript
-  $(document).on('import-map-loaded',(e) => {
+  $(function() {
     $('.active-with-children').each( (index,obj) => { 
       if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
         $(obj).addClass('active')

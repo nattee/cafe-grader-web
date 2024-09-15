@@ -61,14 +61,13 @@ window.TempusDominus = tempusDominus.TempusDominus
 
 
 //my own customization
-import 'custom'
+//import 'custom'
 
 //import turbo but disable it by default
 import { Turbo } from "@hotwired/turbo-rails"
 Turbo.session.drive = false
 
-//trigger import map ready
-console.log('application.js ready')
-window.importmapScriptsLoaded = true
-const import_map_loaded = new CustomEvent('import-map-loaded', { });
-document.dispatchEvent(import_map_loaded);
+//trigger import map ready (no longer used)
+//window.importmapScriptsLoaded = true
+//const import_map_loaded = new CustomEvent('import-map-loaded', { });
+//document.dispatchEvent(import_map_loaded);

@@ -61,7 +61,7 @@
             %div.mb-3
             = render partial: "ds_import", locals: {problem: @problem}
 :javascript
-  $(document).on('import-map-loaded',function(e) {
+  $(document).ready(function(e) {
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})
     td_options = structuredClone(default_td_date_options)
     td_options['localization']['format'] = 'dd/MM/yyyy'

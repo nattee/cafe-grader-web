@@ -8,6 +8,7 @@
   = javascript_include_tag :my_app
   -# = javascript_import_module_tag('prepend_jquery')
   = javascript_importmap_tags
+  = javascript_import_module_tag "custom"
   = content_for :header
   = yield :head
   %meta{name: :viewport, content: "width=device-width, initial-scale=1"}
