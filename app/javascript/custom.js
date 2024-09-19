@@ -40,7 +40,7 @@ window.default_td_options = {
   },
   localization: {
     locale: 'en-uk',
-    format: 'dd/MMM/yyyy hh:mm',
+    format: 'dd/MMM/yyyy HH:mm',
   }
 }
 

@@ -62,15 +62,16 @@ ActiveRecord::Schema[7.0].define(version: 2024_08_23_153937) do
     t.datetime "stop"
   end
 
-  create_table "contests_problems", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+  create_table "contests_problems", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "contest_id"
     t.bigint "problem_id"
     t.integer "numbering"
+    t.float "weight", default: 1.0
     t.index ["contest_id"], name: "index_contests_problems_on_contest_id"
     t.index ["problem_id"], name: "index_contests_problems_on_problem_id"
   end
 
-  create_table "contests_users", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+  create_table "contests_users", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "contest_id"
     t.bigint "user_id"
     t.decimal "current_score", precision: 10

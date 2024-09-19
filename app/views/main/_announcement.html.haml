@@ -8,6 +8,9 @@
     = "(updated #{time_ago_in_words(announcement.updated_at)} ago on #{announcement.updated_at})"
   .card-text
     = markdown(announcement.body)
+  - if announcement.file.attached?
+    %h5.mt-2 Files
+    = link_to announcement.file.filename, url_for(announcement.file)
 
 
 -#

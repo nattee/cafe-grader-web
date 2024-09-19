@@ -1,16 +1,19 @@
 class StartNewContest < ActiveRecord::Migration[7.0]
   def change
-    drop_table :contests_users
-    drop_table :contests_problems
+    drop_table :contests_users do |t|
+    end
+    drop_table :contests_problems do |t|
+    end
 
-    create_table :contests_problems, id: false, primary: [:contest_id, :problem_id],
+    create_table :contests_problems,
       options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci" do |t|
         t.belongs_to :contest
         t.belongs_to :problem
         t.integer :numbering
+        t.float :weight, default: 1
     end
 
-    create_table :contests_users, id: false, primary: [:contest_id, :user_id],
+    create_table :contests_users,
       options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci" do |t|
         t.belongs_to :contest
         t.belongs_to :user
