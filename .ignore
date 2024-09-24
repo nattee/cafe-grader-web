@@ -1,0 +1,4 @@
+#ignore file for fd (nvim-treesitter)
+/tmp
+/.hg
+/storage
