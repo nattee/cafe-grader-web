@@ -42,3 +42,5 @@
 /storage/*
 
 /config/master.key
+
+/.hg

@@ -10,6 +10,7 @@ import "controllers"
 
 //datatable
 //import 'datatables-bundle'
+/*
 import "pdfmake"
 import "pdfmake-vfs"
 import "jszip"
@@ -42,6 +43,9 @@ import "datatables-select"
 import "datatables-staterestore"
 import "datatables-staterestore-bs5"
 /* */
+import "datatables-new"
+import "vfs-fonts-new"
+import "pdfmake-new"
 
 import "select2"
 import "chart"

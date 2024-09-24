@@ -48,6 +48,11 @@ pin "datatables-select", to: "datatables/Select-1.4.0/js/dataTables.select.js"
 pin "datatables-staterestore", to: "datatables/StateRestore-1.1.1/js/dataTables.stateRestore.js"
 pin "datatables-staterestore-bs5", to: "datatables/StateRestore-1.1.1/js/stateRestore.bootstrap5.js"
 
+
+pin "datatables-new", to: "datatables/datatables.min.dae.js"
+pin "vfs-fonts-new", to: "datatables/vfs_fonts.js"
+pin "pdfmake-new", to: 'datatables/pdfmake.min.js'
+
 #select2
 pin "select2", to: "select2.min.js"
 
