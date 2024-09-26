@@ -7,6 +7,11 @@ class Compiler
   include Rails.application.routes.url_helpers
 
 
+  # Each language-specific sub-class MAY implement this method
+  # this is used to check pre-condition of compilation
+  # if implemented, the overridden function must call super()
+  # -- this is rarely used --
+  # -- see postgres for example --
   def validate
     raise GraderError.new("Sub ##{@sub.id} cannot find dataset ",
                           submission_id: @sub.id) unless @working_dataset
