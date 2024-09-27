@@ -31,4 +31,12 @@ export default class extends Controller {
     command.value = event.target.dataset.value
   }
 
+  test(event) {
+    fetch("/groups/10/show_users_query", {
+      method: "POST",
+    }).then(r => r.text())
+      .then(html => console.log(html))
+
+  }
+
 }

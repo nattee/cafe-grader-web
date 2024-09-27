@@ -87,6 +87,7 @@ Rails.application.routes.draw do
       post 'add_user', to: 'groups#add_user', as: 'add_user'
       post 'add_user_by_group'
       post 'do_all_users'
+      post 'show_users_query'
       delete 'remove_user/:user_id', to: 'groups#remove_user', as: 'remove_user'
       delete 'remove_all_user', to: 'groups#remove_all_user', as: 'remove_all_user'
       post 'add_problem', to: 'groups#add_problem', as: 'add_problem'

@@ -101,18 +101,25 @@
     // user tables
     user_role_column = 2
     $('#user_table').DataTable({
-      /*
+      processing: true,
+      ajax: {
+        url: "#{show_users_query_group_path(@group)}",
+        type: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        },
+      },
+      rowId: 'id',
       columns: [ 
         {data: 'login'},
         {data: 'full_name'},
         {data: 'role'},
         {data: 'remark'},
         {data: 'user_id'},
-        {data: 'user_id'},
-        {data: 'user_id'},
-        {data: 'user_id'},
+        {data: null},
+        {data: null},
+        {data: null},
       ],
-      */
       columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6,7]} ],
       destroy: true,
       paging: false,

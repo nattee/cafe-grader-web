@@ -1,5 +1,6 @@
 class GroupsController < ApplicationController
   before_action :set_group, only: [:show, :edit, :update, :destroy,
+                                   :show_users_query, :show_problems_query,
                                    :add_user, :remove_user,:remove_all_user,
                                    :add_problem, :remove_problem,:remove_all_problem,
                                    :toggle, :set_user_role, :toggle_user_enable, :do_all_users
@@ -14,6 +15,10 @@ class GroupsController < ApplicationController
 
   # GET /groups/1
   def show
+  end
+
+  def show_users_query
+    render json: {data: @group.groups_users.joins(:user).select(:id,:user_id,:role,:enabled, :full_name, :login, :remark)}
   end
 
   # GET /groups/new
