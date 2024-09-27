@@ -2,8 +2,9 @@ class GroupsController < ApplicationController
   before_action :set_group, only: [:show, :edit, :update, :destroy,
                                    :add_user, :remove_user,:remove_all_user,
                                    :add_problem, :remove_problem,:remove_all_problem,
-                                   :toggle, :set_user_role,
+                                   :toggle, :set_user_role, :toggle_user_enable, :do_all_users
                                   ]
+  before_action :set_user, only: [:add_user, :remove_user, :set_user_role, :toggle_user_enable]
   before_action :group_editor_authorization
 
   # GET /groups
@@ -45,8 +46,7 @@ class GroupsController < ApplicationController
   end
 
   def set_user_role
-    user = User.find(params[:user_id])
-    GroupUser.where(user: user, group: @group).update(role: params[:role])
+    GroupUser.where(user: @user, group: @group).update(role: params[:role])
     render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
   end
 
@@ -61,6 +61,20 @@ class GroupsController < ApplicationController
     @group.save
   end
 
+  # --- users & problems ---
+  def do_all_users
+    if params[:command] == 'enable'
+      GroupUser.where(group: @group).update_all(enabled: true)
+    elsif params[:command] == 'disable'
+      GroupUser.where(group: @group).update_all(enabled: false)
+    elsif params[:command] == 'remove'
+      @group.users.clear
+    else
+      return
+    end
+    render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
+  end
+
   def remove_all_user
     @group.users.clear
     redirect_to group_path(@group), alert: 'All users removed'
@@ -72,16 +86,21 @@ class GroupsController < ApplicationController
   end
 
   def add_user
-    user = User.find(params[:user_id]) rescue nil
-    render plain: nil, status: :ok and return unless user
+    render plain: nil, status: :ok and return unless @user
     begin
-      @group.users << user
+      @group.users << @user
       #redirect_to group_path(@group), flash: { success: "User #{user.login} was add to the group #{@group.name}"}
       render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
     rescue => e
       render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'User already exists', body_msg: e.message}
       #redirect_to group_path(@group), alert: e.message
     end
+  end
+
+  def toggle_user_enable
+    gu = @group.groups_users.where(user: @user).first
+    gu.update(enabled: !gu.enabled?)
+    render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
   end
 
   def remove_user
@@ -117,6 +136,10 @@ class GroupsController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_group
       @group = Group.find(params[:id])
+    end
+
+    def set_user
+      @user = User.find(params[:user_id]) rescue nil
     end
 
     # check if the user can manage group

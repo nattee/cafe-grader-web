@@ -85,12 +85,15 @@ Rails.application.routes.draw do
     member do
       post 'set_user_role/:user_id/:role', to: 'groups#set_user_role', as: 'set_user_role'
       post 'add_user', to: 'groups#add_user', as: 'add_user'
+      post 'add_user_by_group'
+      post 'do_all_users'
       delete 'remove_user/:user_id', to: 'groups#remove_user', as: 'remove_user'
       delete 'remove_all_user', to: 'groups#remove_all_user', as: 'remove_all_user'
       post 'add_problem', to: 'groups#add_problem', as: 'add_problem'
       delete 'remove_problem/:problem_id', to: 'groups#remove_problem', as: 'remove_problem'
       delete 'remove_all_problem', to: 'groups#remove_all_problem', as: 'remove_all_problem'
       get 'toggle'
+      post 'toggle_user_enable'
     end
     collection do
 

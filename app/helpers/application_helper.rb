@@ -144,6 +144,14 @@ module ApplicationHelper
     end
   end
 
+  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4)
+    label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
+    value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
+    x = <<~HTML
+      <div class="col-#{width} mb-3"><div class="fw-bold">#{label}</div>#{value}</div>
+    HTML
+    return x.html_safe
+  end
 
   def user_title_bar(user)
     header = ''

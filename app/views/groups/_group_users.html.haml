@@ -7,6 +7,7 @@
         %th Role
         %th Remark
         %th= link_to 'Remove All', remove_all_user_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL USERS from group?" }, class: 'btn btn-danger btn-sm'
+        %th Enabled
         %th Set role
         %th
     %tbody
@@ -22,6 +23,10 @@
             = button_to 'Remove',
               remove_user_group_path(@group,user), method: :delete, 
               form: {data: { confirm: "Remove #{user.full_name}?", turbo: 'true', 'turbo-method': 'delete'}}, class: 'm-1 btn btn-danger btn-sm'
+          %td
+            .form-check.form-switch
+              %input.form-check-input{type: :checkbox, checked: gu.enabled?, data: {user_id: gu.user.id},
+                'data-action':"click->group#toggle_user_enable"}
           - if role != 'user'
             %td
               = button_to 'To User',
