@@ -6,10 +6,9 @@
         %th Full name
         %th Role
         %th Remark
-        %th= link_to 'Remove All', remove_all_user_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL USERS from group?" }, class: 'btn btn-danger btn-sm'
         %th Enabled
+        %th Remove
         %th Set role
-        %th
     %tbody
       -#
         - @group.groups_users.joins(:user).includes(:user).each do |gu|
@@ -43,5 +42,3 @@
                 = button_to 'To Editor',
                   set_user_role_group_path(@group,user, 'editor'),
                   form: {data: { turbo: 'true'} }, class: "btn m-1 btn-outline-success  btn-sm"
-  :javascript
-    reload_table();

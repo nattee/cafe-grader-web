@@ -1,11 +1,11 @@
 class GroupsController < ApplicationController
   before_action :set_group, only: [:show, :edit, :update, :destroy,
                                    :show_users_query, :show_problems_query,
-                                   :add_user, :remove_user,:remove_all_user,
-                                   :add_problem, :remove_problem,:remove_all_problem,
-                                   :toggle, :set_user_role, :toggle_user_enable, :do_all_users
+                                   :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
+                                   :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
                                   ]
-  before_action :set_user, only: [:add_user, :remove_user, :set_user_role, :toggle_user_enable]
+  before_action :set_user, only: [:do_user]
+  before_action :set_problem, only: [:do_problem]
   before_action :group_editor_authorization
 
   # GET /groups
@@ -21,6 +21,10 @@ class GroupsController < ApplicationController
     render json: {data: @group.groups_users.joins(:user).select(:id,:user_id,:role,:enabled, :full_name, :login, :remark)}
   end
 
+  def show_problems_query
+    render json: {data: @group.groups_problems.joins(:problem).select(:id,:problem_id,:enabled, :name, :full_name, :date_added)}
+  end
+
   # GET /groups/new
   def new
     @group = Group.new
@@ -33,7 +37,6 @@ class GroupsController < ApplicationController
   # POST /groups
   def create
     @group = Group.new(group_params)
-
     if @group.save
       redirect_to @group, notice: 'Group was successfully created.'
     else
@@ -66,6 +69,7 @@ class GroupsController < ApplicationController
     @group.save
   end
 
+
   # --- users & problems ---
   def do_all_users
     if params[:command] == 'enable'
@@ -77,65 +81,102 @@ class GroupsController < ApplicationController
     else
       return
     end
-    render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
   end
 
-  def remove_all_user
-    @group.users.clear
-    redirect_to group_path(@group), alert: 'All users removed'
+  def do_user
+    case params[:command]
+    when 'remove'
+      @group.users.delete(@user)
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login} was removed."}
+    when 'toggle'
+      gu = @group.groups_users.where(user: @user).first
+      gu.update(enabled: !gu.enabled?)
+      @toast = {title: "Group #{@group.name}", body: 'User was updated.'}
+    when 'make_editor'
+      GroupUser.where(user: @user, group: @group).update(role: 'editor')
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to editor."}
+    when 'make_reporter'
+      GroupUser.where(user: @user, group: @group).update(role: 'reporter')
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to reporter."}
+    when 'make_user'
+      GroupUser.where(user: @user, group: @group).update(role: 'user')
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to user."}
+    else
+    end
+    render 'turbo_toast'
   end
 
-  def remove_all_problem
-    @group.problems.clear
-    redirect_to group_path(@group), alert: 'All problems removed'
+  def do_all_problems
+    if params[:command] == 'enable'
+      GroupProblem.where(group: @group).update_all(enabled: true)
+    elsif params[:command] == 'disable'
+      GroupProblem.where(group: @group).update_all(enabled: false)
+    elsif params[:command] == 'remove'
+      @group.problems.clear
+    else
+      return
+    end
+    render 'turbo_toast'
+  end
+
+  def do_problem
+    case params[:command]
+    when 'remove'
+      @group.problems.delete(@problem)
+      @toast = {title: "Group #{@group.name}", body: "Problem #{@problem.name} was removed."}
+    when 'toggle'
+      gp = @group.groups_problems.where(problem: @problem).first
+      gp.update(enabled: !gp.enabled?)
+      @toast = {title: "Group #{@group.name}", body: "The problem #{@problem.name} was updated."}
+    else
+    end
+    render 'turbo_toast'
   end
 
   def add_user
-    render plain: nil, status: :ok and return unless @user
     begin
-      @group.users << @user
-      #redirect_to group_path(@group), flash: { success: "User #{user.login} was add to the group #{@group.name}"}
-      render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
+      users = User.find(params[:user_ids]) #this find multiple users
+      @group.users << users
+      @toast = {title: "Group #{@group.name}", body: "#{users.count} users were added."}
+      render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'User already exists', body_msg: e.message}
-      #redirect_to group_path(@group), alert: e.message
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
   end
 
-  def toggle_user_enable
-    gu = @group.groups_users.where(user: @user).first
-    gu.update(enabled: !gu.enabled?)
-    render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
-  end
-
-  def remove_user
-    user = User.find(params[:user_id])
-    @group.users.delete(user)
-    #redirect_to group_path(@group), flash: {success: "User #{user.login} was removed from the group #{@group.name}"}
-    render turbo_stream: turbo_stream.replace(:user_table_frame, partial: 'group_users')
+  def add_user_by_group
+    begin
+      user_ids = GroupUser.where(group_id: params[:user_group_ids]).where.not(user_id: @group.users.ids).pluck :user_id
+      @group.users << User.where(id: user_ids)
+      @toast = {title: "Group #{@group.name}", body: "#{user_ids.count} users were added."}
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+    end
   end
 
   def add_problem
-    problem = Problem.find(params[:problem_id]) rescue nil
-    render plain: nil, status: :ok and return unless problem
+    #find return arrays of objecs
     begin
-      @group.problems << problem
-      #redirect_to group_path(@group), flash: {success: "Problem #{problem.name} was add to the group #{@group.name}" }
-      render turbo_stream: turbo_stream.replace(:problem_table_frame, partial: 'group_problems')
+      problems = Problem.find(params[:problem_ids]) #this find multiple problems
+      @group.problems << problems
+      @toast = {title: "Group #{@group.name}", body: "#{problems.count} problem(s) were added."}
+      render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Problem already exists', body_msg: e.message}
-      #redirect_to group_path(@group), alert: e.message
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
 
-
-  def remove_problem
-    problem = Problem.find(params[:problem_id])
-    @group.problems.delete(problem)
-    #redirect_to group_path(@group), flash: {success: "Problem #{problem.name} was removed from the group #{@group.name}" }
-    render turbo_stream: turbo_stream.replace(:problem_table_frame, partial: 'group_problems')
+  def add_problem_by_group
+    begin
+      problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @group.problems.ids).pluck :problem_id
+      @group.problems << Problem.where(id: problem_ids)
+      @toast = {title: "Group #{@group.name}", body: "#{problem_ids.count} problems were added."}
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+    end
   end
-
 
   private
     # Use callbacks to share common setup or constraints between actions.
@@ -145,6 +186,10 @@ class GroupsController < ApplicationController
 
     def set_user
       @user = User.find(params[:user_id]) rescue nil
+    end
+
+    def set_problem
+      @problem = Problem.find(params[:problem_id]) rescue nil
     end
 
     # check if the user can manage group

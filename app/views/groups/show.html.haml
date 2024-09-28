@@ -5,10 +5,6 @@
       .card-body
         %h4 Group details
         .row.mb-3
-          -#
-            .col-md-12
-              %b Name:
-              = @group.name
           = key_pair(obj: @group, field: :name)
           = key_pair(obj: @group, field: :description)
         .row.mb-3
@@ -29,37 +25,48 @@
             %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-group-problem'}}}
               Problems
         .tab-content
+          -# ==========================================
+          -# ---------- users pane ------------------
+          -# ==========================================
           #tab-group-user.tab-pane.fade.show.active
             .row
               .col-md-6
-                =form_tag add_user_group_path(@group), class: 'form-inline', data: {turbo: true} do
+                =form_tag add_user_group_path(@group), class: 'form-inline', 
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterUsersAdd'} do
                   .row.mb-2
                     .col-3
-                      =label_tag :user_id, "Add these users", class: 'col-form-label'
+                      =label_tag :user_ids, "Add these users", class: 'col-form-label'
                     .col-7
-                      =select_tag :user_id, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :user_ids, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-2
                       =submit_tag "Add", class: 'btn btn-primary'
-                =form_tag add_user_by_group_group_path(@group), class: 'form-inline', data: {turbo: true} do
+                =form_tag add_user_by_group_group_path(@group), class: 'form-inline',
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterUsersAdd'} do
                   .row.mb-2
                     .col-3
-                      =label_tag :group_ids, "Add all from groups", class: 'col-form-label'
+                      =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
                     .col-7
-                      =select_tag :group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :user_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-2
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary'
-                =form_with url: do_all_users_group_path(@group), data: {turbo: true} do |f|
+                =form_with url: do_all_users_group_path(@group),
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterUserAction'} do |f|
                   .row.mb-2
                     .col-3
                     .col-9
-                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->group#set_command', value: 'enable'}
-                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->group#set_command', value: 'disable'}
-                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->group#set_command', value: 'remove'}
-                  = f.hidden_field :command, value: 1, 'data-group-target': 'command'
+                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->group#setUsersCommand', value: 'enable'}
+                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->group#setUsersCommand', value: 'disable'}
+                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->group#setUsersCommand', value: 'remove'}
+                  = f.hidden_field :command, value: 1, 'data-group-target': 'usersCommand'
+                -# hidden user action form
+                = form_with url: do_user_group_path, html: {'data-group-target': 'userForm',
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterUserAction'}} do |f|
+                  = f.hidden_field :user_id, 'data-group-target': 'userFormUserID'
+                  = f.hidden_field :command, 'data-group-target': 'userFormCommand'
 
               .col-md-6
-                -# help
-                .alert.alert-warning.shadow-md-2
+                -# help for GroupUser
+                .alert.alert-warning.shadow-sm
                   %ul
                     %li
                       If you want to add several users to a group, it may be easier to just re-import the users in
@@ -70,32 +77,74 @@
                     %li
                       Only enabled problems are shown to the enabled users of the group.
             = render partial: 'group_users'
+          -# ==========================================
+          -# ---------- problem pane ------------------
+          -# ==========================================
           #tab-group-problem.tab-pane.fade
-            %ul
-              %li
-                If you want to add several problem to a group, it may be easier to bulk manage them in the
-                = link_to 'Bulk Manage Problems', manage_problems_path
-                page.
-              %li
-                Only enabled problems are shown to the enabled users of the group.
-              
-            =form_tag add_problem_group_path(@group), data: {turbo: true} do
-              .row
-                .col-auto
-                  =label_tag :problem_id, "Problem",class: 'col-form-label'
-                .col-auto
-                  =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 25em';
-                .col-auto
-                  =submit_tag "Add",class: 'btn btn-primary', 'data-group-target': 'asdf'
-            = render partial: 'group_problems'
-  = form_with url: toggle_user_enable_group_path, 
-    html: {'data-group-target': 'userForm', 'data-turbo': true} do |f|
-    = f.hidden_field :user_id, 'data-group-target': 'userFormUserID'
+            .row
+              .col-md-6
+                =form_tag add_problem_group_path(@group), 
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterProblemsAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :problem_ids, "Problem",class: 'col-form-label'
+                    .col-7
+                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-auto
+                      =submit_tag "Add",class: 'btn btn-primary', 'data-group-target': 'asdf'
+                =form_tag add_problem_by_group_group_path(@group), class: 'form-inline',
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterProblemsAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
+                    .col-7
+                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                -# form for all problems action
+                =form_with url: do_all_problems_group_path(@group), 
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterProblemAction'} do |f|
+                  .row.mb-2
+                    .col-3
+                    .col-9
+                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->group#setProblemsCommand', value: 'enable'}
+                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->group#setProblemsCommand', value: 'disable'}
+                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->group#setProblemsCommand', value: 'remove'}
+                  = f.hidden_field :command, value: 1, 'data-group-target': 'problemsCommand'
+                -# hidden problem action form
+                = form_with url: do_problem_group_path, html: {'data-group-target': 'problemForm',
+                  data: {turbo: true, action: 'turbo:submit-end->group#afterProblemAction'}} do |f|
+                  = f.hidden_field :problem_id, 'data-group-target': 'problemFormProblemID'
+                  = f.hidden_field :command, 'data-group-target': 'problemFormCommand'
+              .col-md-6
+                .alert.alert-warning.shadow-sm
+                  %ul
+                    %li
+                      If you want to add several problem to a group, it may be easier to bulk manage them in the
+                      = link_to 'Bulk Manage Problems', manage_problems_path
+                      page.
+                    %li
+                      Only enabled problems are shown to the enabled users of the group.
+            .row
+              .col-12
+                = render partial: 'group_problems'
 
 = render 'shared/msg_modal'
 
 
 :javascript
+  function role_action_button(data,type,row,meta) {
+    result = ''
+    if (row['role'] != 'editor') 
+      result += dt_button_renderer('Make editor',{className: 'btn-outline-success', action: 'group#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
+    if (row['role'] != 'reporter') 
+      result += dt_button_renderer('Make reporter',{className: 'btn-outline-warning', action: 'group#postUserAction', command: 'make_reporter'})(row['user_id'],type,row,meta)
+    if (row['role'] != 'user') 
+      result += dt_button_renderer('Make user',{className: 'btn-outline-info', action: 'group#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
+    return result
+
+  }
+
   function reload_table() {
 
     // user tables
@@ -115,15 +164,14 @@
         {data: 'full_name'},
         {data: 'role'},
         {data: 'remark'},
-        {data: 'user_id'},
-        {data: null},
-        {data: null},
-        {data: null},
+        {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'group#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'user_id', render: dt_button_renderer('Remove', {className: 'btn-danger btn-sm', action: 'group#postUserAction', command: 'remove'})},
+        {data: 'user_id', render: role_action_button},
       ],
-      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6,7]} ],
+      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6]} ],
       destroy: true,
       paging: false,
-      orderFixed: [2,'desc'],
+      orderFixed: [2,'asc'],
       order: [[0,'asc']],
       drawCallback: function (settings) {
         var api = this.api();
@@ -148,6 +196,9 @@
                 last = group;
               }
           });
+        //since columns size changed, we call adjust
+        //but not .draw() !!! else, infinite recursion
+        api.columns.adjust()
       },
     })
 
@@ -155,6 +206,27 @@
     $('#problem_table').DataTable({
       destroy: true,
       paging: false,
+      processing: true,
+      ajax: {
+        url: "#{show_problems_query_group_path(@group)}",
+        type: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        },
+      },
+      rowId: 'id',
+      columns: [ 
+        {data: 'name'},
+        {data: 'full_name'},
+        {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'problem_id', render: dt_button_renderer('Remove', {className: 'btn-danger btn-sm', action: 'group#postProblemAction', command: 'remove'})},
+      ],
+      columnDefs: [{orderable: false, targets: [2,3]} ],
+      order: [[0,'asc']],
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
     })
   }
 

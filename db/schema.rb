@@ -157,7 +157,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_26_085522) do
     t.boolean "enabled", default: true
   end
 
-  create_table "groups_problems", id: false, charset: "latin1", force: :cascade do |t|
+  create_table "groups_problems", charset: "latin1", force: :cascade do |t|
     t.integer "problem_id", null: false
     t.integer "group_id", null: false
     t.boolean "enabled", default: true
