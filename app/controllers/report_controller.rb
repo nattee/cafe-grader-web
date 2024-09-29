@@ -27,19 +27,19 @@ class ReportController < ApplicationController
 
   # post max_score
   def show_max_score
-    #process parameters
+    #parameter processing
+
     #problems
-    @problems = []
+    @problems = @current_user.problems_for_action(:report) # start with reportable problems of this user
     prob_use = params[:probs][:use] rescue ''
     if prob_use == 'prob_ids'
-      @problems = @current_user.problems_for_action(:report).where(id: params[:problem_id])
+      @problems = @problems.where(id: params[:problem_id])
     elsif prob_use == 'prob_groups'
-      ids = @current_user.problems_for_action(:report).where(id: Group.where(id: params[:prob_group_id]).joins(:problems).pluck(:problem_id).uniq)
-      @problems = Problem.where(id: ids)
+      @problems = @problems.where(id: Group.where(id: params[:prob_group_id]).joins(:problems).pluck(:problem_id).uniq)
     elsif prob_use == 'prob_tags'
-      ids =  @current_user.problems_for_action(:report).where(id: Tag.where(id: params[:prob_tag_id]).joins(:problems).pluck(:problem_id).uniq)
-      @problems = Problem.where(id: ids)
+      @problems = @problems.where(id: Tag.where(id: params[:prob_tag_id]).joins(:problems).pluck(:problem_id).uniq)
     end
+    @problems = @problems.order(:date_added)
 
     #users
     @users = if params[:users] == "group" then
@@ -50,8 +50,9 @@ class ReportController < ApplicationController
                User.includes(:contests).includes(:contest_stat)
              end
 
+    # calculate submission with max score
     max_records = Submission.where(user_id: @users.ids, problem_id: @problems.ids).group('user_id,problem_id')
-      .select('MAX(submissions.points) as max_score, user_id,problem_id')
+      .select('MAX(submissions.points) as max_score, user_id, problem_id')
     max_records = submission_in_range(max_records,params[:sub_range])
 
     records = submission_in_range(Submission.all,params[:sub_range]).joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
@@ -445,11 +446,6 @@ ORDER BY submitted_at
     
     p = [@st,@since_time,@until_time] + @sid + [@since_time,@until_time] + @sid
     @logs = Submission.joins(:problem).find_by_sql(p)
-
-
-
-
-
   end
 
   protected
@@ -463,16 +459,23 @@ ORDER BY submitted_at
       query = query.where('submissions.id <= ?',range_params[:to_id]) if until_id > 0
     else
       #use sub time
-      since_time = Time.zone.parse( range_params[:from_time] ) || Time.zone.now rescue Time.zone.now
-      until_time = Time.zone.parse( range_params[:to_time] ) || Time.zone.now rescue Time.zone.now
+      since_time = Time.zone.parse( range_params[:from_time] ) || Time.zone.now.beginning_of_day rescue Time.zone.now.beginning_of_day
+      until_time = Time.zone.parse( range_params[:to_time] ) || Time.zone.now.end_of_day rescue Time.zone.now.end_of_day
       datetime_range= since_time..until_time
       query = query.where(submitted_at: datetime_range)
     end
     return query
   end
 
+  # return  a hash {score: xx, stat: yy}
+  # xx is {
+  #   #{user.login}: {
+  #     id:, full_name:, remark:,
+  #     prob_#{prob.name}:, time_#{prob.name}
+  #     ...
+  # }
   def calculate_max_score(records,problems,users)
-    result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0 } } }
+    result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
     users.each do |u|
       result[:score][u.login]['id'] = u.id;
       result[:score][u.login]['full_name'] = u.full_name;
@@ -487,13 +490,16 @@ ORDER BY submitted_at
       end
     end
 
-    # aggregation
+    # calculate stats (min, max, zero, partial)
     result[:score].each do |k,v|
+      sum = 0
       v.each do |k2,v2|
         if k2[0..4] == 'prob_'
           #v2 is the score
           prob_name = k2[5...]
+          result[:stat][prob_name][:score] << v2
           result[:stat][prob_name][:sum] += v2 || 0
+          sum += v2 || 0;
           if v2 == 0
             result[:stat][prob_name][:zero] += 1
           elsif v2 == 100
@@ -503,6 +509,7 @@ ORDER BY submitted_at
           end
         end
       end
+      v[:user_sum] = sum
     end
 
     # summary graph result

@@ -67,12 +67,14 @@ class User < ApplicationRecord
 
   # ---- problem for the users for specific action ------
   # -- this includes logic of User.role where admin always has right ---
-  # -- this also includes logics of mode of the grader
+  # -- this also includes logics of mode of the grader (normal, contest, analysis)
   # -- this also consider whether the user is enabled ---
-  # action is either :submit, :report, :edit
+  # valid action is either :submit, :report, :edit
   def problems_for_action(action)
     return Problem.all if admin?
     return [] unless enabled?
+
+    action = action.to_sym
 
     if GraderConfiguration.multicontests?
       # legacy mode, have not been implemented yet
@@ -80,17 +82,17 @@ class User < ApplicationRecord
     else
       # normal mode
       if GraderConfiguration.use_problem_group?
-        if action.to_sym == :edit
+        if action == :edit
           return Problem.editable_by_user(self.id)
-        elsif action.to_sym == :report
+        elsif action == :report
           return Problem.reportable_by_user(self.id)
-        elsif action.to_sym == :submit
+        elsif action == :submit
           return Problem.submittable_by_user(self.id)
         else
           raise ArgumentError.new('action must be one of :edit, :report, :submit')
         end
       else
-        if action.to_sym == :submit
+        if action == :submit
           return Problem.available_problems
         else
           return []

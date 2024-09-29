@@ -47,9 +47,12 @@
   .row
     .col-lg-1
       = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
-    .col-lg-11
-      %div
+    .col-lg-5
+      %div{style: 'height: 350px'}
         %canvas#chart
+    .col-lg-5
+      %div{style: 'height: 350px'}
+        %canvas#chart_2
 
 .mt-3
   = turbo_frame_tag "max_score_result", data: {turbo: "true"}
