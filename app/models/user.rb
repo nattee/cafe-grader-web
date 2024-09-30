@@ -101,11 +101,34 @@ class User < ApplicationRecord
     end
   end
 
-  def editable_groups
+  # ---- groups for the users for specific action ------
+  # * This includes logic of User.role where admin always has right to any group
+  # * This also includes logics of mode of the grader (normal, contest, analysis)
+  # * This also consider whether the user is enabled ---
+  # * This DOES NOT respect group_mode, it always performed as the group mode is enabled
+  #
+  # valid action is either :submit, :report, :edit
+  def groups_for_action(action)
     return Group.all if admin?
     return [] unless enabled?
 
-    return Group.editable_by_user(self.id)
+    action = action.to_sym
+
+    if GraderConfiguration.multicontests?
+      # legacy mode, have not been implemented yet
+    elsif GraderConfiguration.contest_mode?
+    else
+      # normal mode
+      if action == :edit
+        return Problem.editable_by_user(self.id)
+      elsif action == :report
+        return Problem.reportable_by_user(self.id)
+      elsif action == :submit
+        return Problem.submittable_by_user(self.id)
+      else
+        raise ArgumentError.new('action must be one of :edit, :report, :submit')
+      end
+    end
   end
 
   def self.authenticate(login, password)
@@ -348,6 +371,7 @@ class User < ApplicationRecord
     end
   end
 
+  # return enabled groups that the user has given roles
   def enabled_groups_with_roles(roles)
     ids = groups_users.joins(:group)
       .where(role: roles,group: {enabled: true})

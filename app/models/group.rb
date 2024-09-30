@@ -9,6 +9,14 @@ class Group < ApplicationRecord
     joins(:groups_users).where(groups_users: { user_id: user_id, role: 'editor' })
   }
 
+  scope :reportable_by_user, -> (user_id) {
+    joins(:groups_users).where(groups_users: { user_id: user_id, role: ['editor','reporter'] })
+  }
+
+  scope :submittable_by_user, -> (user_id) {
+    joins(:groups_users).where(groups_users: { user_id: user_id })
+  }
+
   #has_and_belongs_to_many :problems
   #has_and_belongs_to_many :users
 

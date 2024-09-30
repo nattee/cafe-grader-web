@@ -7,6 +7,9 @@ class ReportController < ApplicationController
     group_role_authorization(['reporter','editor'])
   }
 
+  before_action :selected_problems, only: [ :show_max_score, :submission_query ]
+  before_action :selected_users, only: [ :show_max_score, :submission_query ]
+
   #before_action :admin_authorization, except: [:problem_hof]
 
   before_action(only: [:problem_hof]) { |c|
@@ -17,39 +20,11 @@ class ReportController < ApplicationController
 
   def max_score
     @problems = @current_user.problems_for_action(:report)
-
-    if @current_user.admin?
-      @groups = Group.all
-    else
-      @groups = Group.joins(:groups_users).where(groups_users: {user: @current_user, role: ['editor','reporter']})
-    end
+    @groups = @current_user.groups_for_action(:report)
   end
 
   # post max_score
   def show_max_score
-    #parameter processing
-
-    #problems
-    @problems = @current_user.problems_for_action(:report) # start with reportable problems of this user
-    prob_use = params[:probs][:use] rescue ''
-    if prob_use == 'prob_ids'
-      @problems = @problems.where(id: params[:problem_id])
-    elsif prob_use == 'prob_groups'
-      @problems = @problems.where(id: Group.where(id: params[:prob_group_id]).joins(:problems).pluck(:problem_id).uniq)
-    elsif prob_use == 'prob_tags'
-      @problems = @problems.where(id: Tag.where(id: params[:prob_tag_id]).joins(:problems).pluck(:problem_id).uniq)
-    end
-    @problems = @problems.order(:date_added)
-
-    #users
-    @users = if params[:users] == "group" then
-               Group.find(params[:group_id]).users.all
-             elsif params[:users] == 'enabled'
-               User.includes(:contests).includes(:contest_stat).where(enabled: true)
-             else
-               User.includes(:contests).includes(:contest_stat)
-             end
-
     # calculate submission with max score
     max_records = Submission.where(user_id: @users.ids, problem_id: @problems.ids).group('user_id,problem_id')
       .select('MAX(submissions.points) as max_score, user_id, problem_id')
@@ -123,27 +98,24 @@ class ReportController < ApplicationController
   end
 
   def submission
+    @problems = @current_user.problems_for_action(:report)
+    @groups = @current_user.groups_for_action(:report)
   end
 
   def submission_query
     @submissions = Submission
-      .joins(:problem).joins(:language).joins(user: :groups).group('submissions.id')
+      .joins(:problem).joins(:language).joins(:user)
       #.includes(:problem).includes(:user).includes(:language)
     @submissions = submission_in_range(@submissions,params[:sub_range])
 
-    case params[:users]
-    when 'enabled'
-      @submissions = @submissions.where(users: {enabled: true})
-    when 'group'
-      @submissions = @submissions.where(users: {groups: {id: params[:groups]}}) if params[:groups]
+    # filter users
+    unless @users = User.all
+      @submissions = @submissions.where(user: @users)
     end
 
-    case params[:problems]
-    when 'enabled'
-      @submissions = @submissions.where(problems: {available: true})
-    when 'selected'
-      @submissions = @submissions.where(problem_id: params[:problem_id])
-    end
+    # filter submissions
+    @submissions = @submissions.where(problem: @problems)
+
 
     @submissions.limit(100_000)
     @submissions = @submissions.select('submissions.id,points,ip_address,submitted_at,grader_comment')
@@ -450,6 +422,9 @@ ORDER BY submitted_at
 
   protected
 
+  # receive an ActiveRecord::AAssociation *query* of submissions
+  # and add more where clause limiting the submission to be in the
+  # rnage specified only
   def submission_in_range(query,range_params)
     if range_params[:use] ==  'sub_id'
       #use sub id
@@ -465,6 +440,35 @@ ORDER BY submitted_at
       query = query.where(submitted_at: datetime_range)
     end
     return query
+  end
+
+  # build @problems that matches the given params
+  def selected_problems
+    #problems
+    @problems = @current_user.problems_for_action(:report) # start with reportable problems of this user
+    prob_use = params[:probs][:use] rescue ''
+    if prob_use == 'ids'
+      @problems = @problems.where(id: params[:probs][:ids])
+    elsif prob_use == 'groups'
+      ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
+      @problems = @problems.where(id: ids)
+    elsif prob_use == 'tags'
+      ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
+      @problems = @problems.where(id: ids)
+    else
+      @problems = Problem.where('id > 0 and id < 0')
+    end
+    @problems = @problems.order(:date_added)
+  end
+
+  def selected_users
+    @users = if params[:users][:use] == "group" then
+               User.where(id: Group.where(id: params[:users][:group_ids]).joins(:users).pluck(:user_id) )
+             elsif params[:users][:use] == 'enabled'
+               User.where(enabled: true)
+             else
+               User.all
+             end
   end
 
   # return  a hash {score: xx, stat: yy}
@@ -523,35 +527,5 @@ ORDER BY submitted_at
     return result
   end
 
-  def gen_csv_from_scorearray(scorearray,problem)
-    CSV.generate do |csv|
-      #add header
-      header = ['User','Name', 'Activated?', 'Logged in', 'Contest']
-      problem.each { |p| header << p.name }
-      header += ['Total','Passed']
-      csv << header
-      #add data
-      scorearray.each do |sc|
-        total = num_passed = 0
-        row = Array.new
-        sc.each_index do |i|
-          if i == 0
-            row << sc[i].login
-            row << sc[i].full_name
-            row << sc[i].activated
-            row << (sc[i].try(:contest_stat).try(:started_at)!=nil ? 'yes' : 'no')
-            row << sc[i].contests.collect {|c| c.name}.join(', ')
-          else
-            row << sc[i][0]
-            total += sc[i][0]
-            num_passed += 1 if sc[i][1]
-          end
-        end
-        row << total 
-        row << num_passed
-        csv << row
-      end
-    end
-  end
 
 end

@@ -434,36 +434,6 @@ class UserAdminController < ApplicationController
     return [@contest, @users]
   end
 
-  def gen_csv_from_scorearray(scorearray,problem)
-    CSV.generate do |csv|
-      #add header
-      header = ['User','Name', 'Activated?', 'Logged in', 'Contest']
-      problem.each { |p| header << p.name }
-      header += ['Total','Passed']
-      csv << header
-      #add data
-      scorearray.each do |sc|
-        total = num_passed = 0
-        row = Array.new
-        sc.each_index do |i|
-          if i == 0
-            row << sc[i].login
-            row << sc[i].full_name
-            row << sc[i].activated
-            row << (sc[i].try(:contest_stat).try(:started_at).nil? ? 'no' : 'yes')
-            row << sc[i].contests.collect {|c| c.name}.join(', ')
-          else
-            row << sc[i][0]
-            total += sc[i][0]
-            num_passed += 1 if sc[i][1]
-          end
-        end
-        row << total 
-        row << num_passed
-        csv << row
-      end
-    end
-  end
 
   private
     def user_params

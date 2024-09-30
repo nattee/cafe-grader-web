@@ -10,7 +10,7 @@ class GroupsController < ApplicationController
 
   # GET /groups
   def index
-    @groups = @current_user.editable_groups
+    @groups = @current_user.groups_for_action(:edit)
   end
 
   # GET /groups/1
@@ -196,7 +196,7 @@ class GroupsController < ApplicationController
     # admin always has the right
     def group_editor_authorization
       return true if @current_user.admin?
-      return true if @current_user.editable_groups.where(id: @group)
+      return true if @current_user.groups_for_action(:edit).where(id: @group).any?
       unauthorized_redirect("You cannot manage group #{group.name}.");
     end
 

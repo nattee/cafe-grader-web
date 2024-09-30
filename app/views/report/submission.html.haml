@@ -1,12 +1,13 @@
 %h1 Submissions detail
 
-.row
-  .col-lg-4.mt-2
-    = render partial: 'shared/problem_select'
-  .col-lg-4.mt-2
-    = render partial: 'submission_range'
-  .col-lg-4.mt-2
-    = render partial: 'shared/user_select'
+= form_with url: '#', id: 'filter_form' do |f|
+  .row
+    .col-lg-4.mt-2
+      = render partial: 'problem_select', locals: {all: true}
+    .col-lg-4.mt-2
+      = render partial: 'submission_range'
+    .col-lg-4.mt-2
+      = render partial: 'user_select'
 
 .row
   .col-lg-4
@@ -17,9 +18,8 @@
             .mi.mi-bs.fill help
             Usage
         %ul
-          %li Display a maximum of 100,000 entries to save computation power
-          %li You have to click refresh when changing the filter above
-          %li From date is required, blank from date is convert to today
+          %li Select parameters and then click "Refresh"
+          %li Won't show more than 100,000 entries
   .col-lg-8
     %canvas#chart
 
@@ -44,12 +44,15 @@
     return `<a href="${problem_path.replace("-1234",row['problem_id'])}">[${row['name']}]</a> ${row['full_name']}`;
   }
   function date_time_renderer( data, type, row) {
-    return moment(data).format('YYYY-MM-DD hh:mm:ss')
+    return moment(data).format('YYYY-MM-DD HH:mm:ss')
   }
 
   $(function() {
     submission_table = $('#table').DataTable({
-      dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+      //dom: "<'row'<'col-sm-3'B><'col-sm-3'l><'col-sm-6'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+      layout: {
+        topStart: 'buttons'
+      },
       autoWidth: true,
       pageLength: 50,
       processing: true,
@@ -61,7 +64,7 @@
             submission_table.ajax.reload( () => { submission_table.columns.adjust().draw() } )
           }
         },
-        'copy','pdfHtml5'
+        'copy',
         {
           extend: 'excel',
           title: 'Submission detail'
@@ -81,14 +84,25 @@
         url: '#{submission_query_report_path}',
         type: 'POST',
         data: (d) =>  {
-          d.since_datetime = $('#since_datetime').val()
-          d.until_datetime = $('#until_datetime').val()
-          d.users = $("input[name='users']:checked").val()
-          d.groups = $("#group_id").val()
-          d.problems = $("input[name='problems']:checked").val()
-          d.problem_id = $("#problem_id").val()
+
+          //d.since_datetime = $('#since_datetime').val()
+          //d.until_datetime = $('#until_datetime').val()
           $('input[name^="sub_range"]').each( function(a,b) {d[b.name]  = b.value }  )
+          $('input[name^="users"]').each( function(a,b) {d[b.name]  = b.value }  )
+          d['probs[use]'] = $('input[name="probs[use]"]:checked').val()
+          d['users[use]'] = $('input[name="users[use]"]:checked').val()
           d['sub_range[use]'] = $('input[name="sub_range[use]"]:checked').val()
+
+          //select2, we do only when it is initialized
+          if ($('#probs_ids_').hasClass("select2-hidden-accessible"))
+            d['probs[ids]']= $('#probs_ids_').select2('data').map( e=>e.id)
+          if ($('#probs_group_ids_').hasClass("select2-hidden-accessible"))
+            d['probs[tag_ids]']= $('#probs_group_ids_').select2('data').map( e=>e.id)
+          if ($('#probs_tag_ids_').hasClass("select2-hidden-accessible"))
+            d['probs[group_ids]']= $('#probs_tag_ids_').select2('data').map( e=>e.id)
+          if ($('select[name="users[group_ids]"]').hasClass("select2-hidden-accessible"))
+            d['users[group_ids]']= $('select[name="users[group_ids]"]').select2('data').map( e=>e.id )
+          
         },
         dataType: 'json',
         beforeSend: (request) => {
