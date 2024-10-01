@@ -122,6 +122,10 @@ class ReportController < ApplicationController
       .select('users.login, users.full_name as user_full_name, users.id as user_id')
       .select('problems.full_name, problems.name, problems.id as problem_id')
       .select('languages.pretty_name')
+
+    # build day sum
+
+    # render json:  {data: @submissions,sub_count_by_date: {a:1}}
   end
 
   def progress

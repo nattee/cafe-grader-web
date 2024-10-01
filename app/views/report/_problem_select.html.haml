@@ -37,3 +37,15 @@
         = select_tag 'probs[tag_ids][]',
             options_for_select(Tag.all.collect {|t| [t.name, t.id]},params[:prob_tag_id]),
             { class: 'select2 form-control', multiple: "true" }
+:javascript
+  // save the problem selection input into d
+  // (to be used by DataTable Ajax data source)
+  function build_problem_params(d) {
+    d['probs[use]'] = $('input[name="probs[use]"]:checked').val()
+    if ($('#probs_ids_').hasClass("select2-hidden-accessible"))
+      d['probs[ids]']= $('#probs_ids_').select2('data').map( e=>e.id)
+    if ($('#probs_group_ids_').hasClass("select2-hidden-accessible"))
+      d['probs[group_ids]']= $('#probs_group_ids_').select2('data').map( e=>e.id)
+    if ($('#probs_tag_ids_').hasClass("select2-hidden-accessible"))
+      d['probs[tag_ids]']= $('#probs_tag_ids_').select2('data').map( e=>e.id)
+  }
