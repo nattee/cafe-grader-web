@@ -15,3 +15,11 @@
           = label_tag :users_use_group, 'Only users from this group'
       .col-12
         = select_tag "users[group_ids]", options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]), class: 'select2', style: 'width: 20em';
+:javascript
+  // save the problem selection input into d
+  // (to be used by DataTable Ajax data source)
+  function build_user_params(d) {
+    d['users[use]'] = $('input[name="users[use]"]:checked').val()
+    if ($('select[name="users[group_ids]"]').hasClass("select2-hidden-accessible"))
+      d['users[group_ids]']= $('select[name="users[group_ids]"]').select2('data').map( e=>e.id )
+  }
