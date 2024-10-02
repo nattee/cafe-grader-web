@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_09_26_085522) do
+ActiveRecord::Schema[7.0].define(version: 2024_08_23_153937) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -157,10 +157,9 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_26_085522) do
     t.boolean "enabled", default: true
   end
 
-  create_table "groups_problems", charset: "latin1", force: :cascade do |t|
+  create_table "groups_problems", id: false, charset: "latin1", force: :cascade do |t|
     t.integer "problem_id", null: false
     t.integer "group_id", null: false
-    t.boolean "enabled", default: true
     t.index ["group_id", "problem_id"], name: "index_groups_problems_on_group_id_and_problem_id"
   end
 
@@ -168,7 +167,6 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_26_085522) do
     t.integer "group_id", null: false
     t.integer "user_id", null: false
     t.integer "role", default: 0
-    t.boolean "enabled", default: true
     t.index ["user_id", "group_id"], name: "index_groups_users_on_user_id_and_group_id"
   end
 

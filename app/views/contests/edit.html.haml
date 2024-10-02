@@ -16,56 +16,121 @@
           What is a contest?
         asdf asdf
         asdf
-.row.my-3.gx-3
-  .col-md-6
-    .card.shadow-sm
+.row.my-4{'data-controller': 'contest'}
+  .col-sm-12
+    .card
       .card-body
-        %h3.card-title Users
-        %h6.mb-2.card-subtitle.text-body-secondary List of users in this group
-        .card-text.mb-2
-          Use following actions to add users to this contest.
-        =form_tag add_user_contest_path(@contest), class: 'mb-3 form-inline', data: {turbo: true} do
-          .row
-            .col-2
-              =label_tag :user_id, "User", class: 'col-form-label'
-            .col-6
-              =select_tag :user_id, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2 form-control', multiple: true
-            .col-4
-              =submit_tag "Add",class: 'btn btn-primary'
-        =form_tag add_user_contest_path(@contest), class: 'mb-3 form-inline', data: {turbo: true} do
-          .row
-            .col-2
-              =label_tag :user_group_id, "Group", class: 'col-form-label'
-            .col-6
-              =select_tag :user_group_id, options_from_collection_for_select(Group.all,'id','name'), class: 'select2 form-control', multiple: true
-            .col-4
-              =submit_tag "Add from group",class: 'btn btn-primary'
-        = render partial: 'contest_users'
+        %ul.nav.nav-tabs.mb-3
+          %li.nav-item
+            %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'}}}
+              Users
+          %li.nav-item
+            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}}}
+              Problems
+        .tab-content
+          -# ==========================================
+          -# ---------- users pane ------------------
+          -# ==========================================
+          #tab-contest-user.tab-pane.fade.show.active
+            .row
+              .col-md-6
+                =form_tag add_user_contest_path(@contest), class: 'form-inline', 
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :user_ids, "Add these users", class: 'col-form-label'
+                    .col-7
+                      =select_tag :user_ids, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", class: 'btn btn-primary'
+                =form_tag add_user_by_group_contest_path(@contest), class: 'form-inline',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
+                    .col-7
+                      =select_tag :user_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                =form_with url: do_all_users_contest_path(@contest),
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'} do |f|
+                  .row.mb-2
+                    .col-3
+                    .col-9
+                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->contest#setUsersCommand', value: 'enable'}
+                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->contest#setUsersCommand', value: 'disable'}
+                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->contest#setUsersCommand', value: 'remove'}
+                  = f.hidden_field :command, value: 1, 'data-contest-target': 'usersCommand'
+                -# hidden user action form
+                = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}} do |f|
+                  = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
+                  = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
 
-  .col-md-6
-    .card.shadow-sm
-      .card-body
-        %h3.card-title Problems
-        %h6.mb-2.card-subtitle.text-body-secondary List of problems in this contest
-        .card-text.mb-2
-          Use following actions to add problems to this contest.
-        =form_tag add_problem_contest_path(@contest), class: 'mb-3 form-inline', data: {turbo: true} do
-          .row
-            .col-2
-              =label_tag :problem_id, "Problem", class: 'col-form-label'
-            .col-6
-              =select_tag :problem_id, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2 form-control', multiple: true
-            .col-4
-              =submit_tag "Add",class: 'btn btn-primary'
-        =form_tag add_problem_contest_path(@contest), class: 'mb-3 form-inline', data: {turbo: true} do
-          .row
-            .col-2
-              =label_tag :problem_group_id, "Group", class: 'col-form-label'
-            .col-6
-              =select_tag :problem_group_id, options_from_collection_for_select(Group.all,'id','name'), class: 'select2 form-control', multiple: true
-            .col-4
-              =submit_tag "Add from groups",class: 'btn btn-primary'
-        = render partial: 'contest_problems'
+              .col-md-6
+            .row
+              .col-12
+                %table#user_table.table.datatable.table-hover
+                  %thead
+                    %tr
+                      %th Login
+                      %th Full name
+                      %th Role
+                      %th Remark
+                      %th Enabled
+                      %th Remove
+                      %th Set role
+                  %tbody
+          -# ==========================================
+          -# ---------- problem pane ------------------
+          -# ==========================================
+          #tab-contest-problem.tab-pane.fade
+            .row
+              .col-md-6
+                =form_tag add_problem_contest_path(@contest), 
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :problem_ids, "Problem",class: 'col-form-label'
+                    .col-7
+                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-auto
+                      =submit_tag "Add",class: 'btn btn-primary', 'data-contest-target': 'asdf'
+                =form_tag add_problem_by_group_contest_path(@contest), class: 'form-inline',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
+                    .col-7
+                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                -# form for all problems action
+                =form_with url: do_all_problems_contest_path(@contest), 
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'} do |f|
+                  .row.mb-2
+                    .col-3
+                    .col-9
+                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->contest#setProblemsCommand', value: 'enable'}
+                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->contest#setProblemsCommand', value: 'disable'}
+                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->contest#setProblemsCommand', value: 'remove'}
+                  = f.hidden_field :command, value: 1, 'data-contest-target': 'problemsCommand'
+                -# hidden problem action form
+                = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'}} do |f|
+                  = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
+                  = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
+              .col-md-6
+            .row
+              .col-12
+                %table#problem_table.table.datatable.table-hover
+                  %thead
+                    %tr
+                      %th Name
+                      %th Full name
+                      %th Enabled
+                      %th Remark
+                  %tbody
 
 %div{'data-controller': 'hello'}
 

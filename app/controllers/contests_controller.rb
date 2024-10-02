@@ -1,7 +1,8 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy,
-                                     :add_user, :remove_user,:remove_all_users,
-                                     :add_problem, :remove_problem,:remove_all_problems,
+                                     :show_users_query, :show_problems_query,
+                                     :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
+                                     :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
                                     ]
 
   before_action :admin_authorization
@@ -75,65 +76,112 @@ class ContestsController < ApplicationController
     end
   end
 
+  # --- users & problems ---
+  def do_all_users
+    if params[:command] == 'enable'
+      GroupUser.where(group: @group).update_all(enabled: true)
+    elsif params[:command] == 'disable'
+      GroupUser.where(group: @group).update_all(enabled: false)
+    elsif params[:command] == 'remove'
+      @group.users.clear
+    else
+      return
+    end
+  end
+
+  def do_user
+    case params[:command]
+    when 'remove'
+      @group.users.delete(@user)
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login} was removed."}
+    when 'toggle'
+      gu = @group.groups_users.where(user: @user).first
+      gu.update(enabled: !gu.enabled?)
+      @toast = {title: "Group #{@group.name}", body: 'User was updated.'}
+    when 'make_editor'
+      GroupUser.where(user: @user, group: @group).update(role: 'editor')
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to editor."}
+    when 'make_reporter'
+      GroupUser.where(user: @user, group: @group).update(role: 'reporter')
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to reporter."}
+    when 'make_user'
+      GroupUser.where(user: @user, group: @group).update(role: 'user')
+      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to user."}
+    else
+    end
+    render 'turbo_toast'
+  end
+
+  def do_all_problems
+    if params[:command] == 'enable'
+      GroupProblem.where(group: @group).update_all(enabled: true)
+    elsif params[:command] == 'disable'
+      GroupProblem.where(group: @group).update_all(enabled: false)
+    elsif params[:command] == 'remove'
+      @group.problems.clear
+    else
+      return
+    end
+    render 'turbo_toast'
+  end
+
+  def do_problem
+    case params[:command]
+    when 'remove'
+      @group.problems.delete(@problem)
+      @toast = {title: "Group #{@group.name}", body: "Problem #{@problem.name} was removed."}
+    when 'toggle'
+      gp = @group.groups_problems.where(problem: @problem).first
+      gp.update(enabled: !gp.enabled?)
+      @toast = {title: "Group #{@group.name}", body: "The problem #{@problem.name} was updated."}
+    else
+    end
+    render 'turbo_toast'
+  end
 
   def add_user
-    users = nil
-    if params.has_key? :user_id
-      users = User.where(id: params[:user_id])
-    elsif params.has_key? :user_group_id
-      users = User.where(id: Group.joins(:users).where('groups.id': params[:user_group_id]).pluck('users.id') )
+    begin
+      users = User.find(params[:user_ids]) #this find multiple users
+      @group.users << users
+      @toast = {title: "Group #{@group.name}", body: "#{users.count} users were added."}
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
-    if users.nil?
-      @toast = {title: 'Contest user are NOT update',body: 'No user given'}
-    else
-      begin
-        @toast = @contest.add_users(users)
-        @clear_form = true
-      rescue => e
-        @toast = {title: 'Errors', body: e.message}
-      end
+  end
+
+  def add_user_by_group
+    begin
+      user_ids = GroupUser.where(group_id: params[:user_group_ids]).where.not(user_id: @group.users.ids).pluck :user_id
+      @group.users << User.where(id: user_ids)
+      @toast = {title: "Group #{@group.name}", body: "#{user_ids.count} users were added."}
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
-    render 'user_change'
   end
 
   def add_problem
-    problems = nil
-    if params.has_key? :problem_id
-      problems = Problem.where(id: params[:problem_id])
-    elsif params.has_key? :problem_group_id
-      problems = Problem.where(id: Group.joins(:problems).where('groups.id': params[:problem_group_id]).pluck('problems.id') )
+    #find return arrays of objecs
+    begin
+      problems = Problem.find(params[:problem_ids]) #this find multiple problems
+      @group.problems << problems
+      @toast = {title: "Group #{@group.name}", body: "#{problems.count} problem(s) were added."}
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
-    if problems.nil?
-      @toast = {title: 'Contest problem are NOT update',body: 'No problem given'}
-    else
-      begin
-        @toast = @contest.add_problems(problems)
-        @clear_form = true
-      rescue => e
-        @toast = {title: 'Errors', body: e.message}
-      end
+  end
+
+  def add_problem_by_group
+    begin
+      problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @group.problems.ids).pluck :problem_id
+      @group.problems << Problem.where(id: problem_ids)
+      @toast = {title: "Group #{@group.name}", body: "#{problem_ids.count} problems were added."}
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
-    render 'problem_change'
-  end
-
-  def remove_all_users
-    @contest.users.delete_all
-    render 'user_change'
-  end
-
-  def remove_user
-    @contest.users.delete(params[:user_id])
-    render 'user_change'
-  end
-
-  def remove_all_problems
-    @contest.problems.delete_all
-    render 'problem_change'
-  end
-
-  def remove_problem
-    @contest.problems.delete(params[:problem_id])
-    render 'problem_change'
   end
 
   def user_check_in

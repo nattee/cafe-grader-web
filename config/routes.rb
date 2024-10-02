@@ -9,12 +9,22 @@ Rails.application.routes.draw do
 
   resources :contests do
     member do
+      # contest
+      get 'toggle'
+
+      # groups_users
+      post 'show_users_query'
       post 'add_user'
+      post 'add_user_by_group'
+      post 'do_all_users'
+      post 'do_user'
+
+      # groups_problems
+      post 'show_problems_query'
       post 'add_problem'
-      delete 'remove_user/:user_id', as: 'remove_user', to: 'contests#remove_user'
-      delete 'remove_all_users'
-      delete 'remove_problem/:problem_id', as: 'remove_problem', to: 'contests#remove_problem'
-      delete 'remove_all_problems'
+      post 'add_problem_by_group'
+      post 'do_all_problems'
+      post 'do_problem'
     end
     collection do
       post 'set_system_mode'
