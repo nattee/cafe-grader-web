@@ -28,6 +28,9 @@
         = message
         %button.btn-close{type: 'button', 'data-bs-dismiss': :alert}
     = yield
+  
+  -# for msg modal, we have a turbo_frame, ready to be shown via turbo
+  = turbo_frame_tag :msg_modal_main, data: {turbo: true}
 
   -# for toast
   = turbo_frame_tag :toast_main, data: {turbo: true} do

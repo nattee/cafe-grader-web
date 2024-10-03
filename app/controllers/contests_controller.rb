@@ -4,6 +4,8 @@ class ContestsController < ApplicationController
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
                                      :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
                                     ]
+  before_action :set_user, only: [:do_user]
+  before_action :set_problem, only: [:do_problem]
 
   before_action :admin_authorization
 
@@ -77,48 +79,51 @@ class ContestsController < ApplicationController
   end
 
   # --- users & problems ---
+  def show_users_query
+    render json: {data: @contest.contests_users.joins(:user)
+      .select('contests_users.id',:user_id,:enabled, :full_name, :login, :remark, :seat)}
+  end
+
+  def show_problems_query
+    render json: {data: @contest.contests_problems.joins(:problem)
+      .select('contests_problems.id',:problem_id,:enabled, :name, :full_name, :number)}
+  end
+
   def do_all_users
     if params[:command] == 'enable'
-      GroupUser.where(group: @group).update_all(enabled: true)
+      ContestUser.where(contest: @contest).update_all(enabled: true)
     elsif params[:command] == 'disable'
-      GroupUser.where(group: @group).update_all(enabled: false)
+      ContestUser.where(contest: @contest).update_all(enabled: false)
     elsif params[:command] == 'remove'
-      @group.users.clear
+      @contest.users.clear
     else
       return
     end
   end
 
   def do_user
+    @toast = {title: "Contest #{@contest.name}"}
     case params[:command]
     when 'remove'
-      @group.users.delete(@user)
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login} was removed."}
+      @contest.users.delete(@user)
+      @toast[:body] = "#{@user.login} was removed."
     when 'toggle'
-      gu = @group.groups_users.where(user: @user).first
+      gu = @contest.contests_users.where(user: @user).first
       gu.update(enabled: !gu.enabled?)
-      @toast = {title: "Group #{@group.name}", body: 'User was updated.'}
-    when 'make_editor'
-      GroupUser.where(user: @user, group: @group).update(role: 'editor')
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to editor."}
-    when 'make_reporter'
-      GroupUser.where(user: @user, group: @group).update(role: 'reporter')
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to reporter."}
-    when 'make_user'
-      GroupUser.where(user: @user, group: @group).update(role: 'user')
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to user."}
+      @toast[:body] = 'User was updated.'
     else
+      @toast[:body] = "Unknown command"
     end
     render 'turbo_toast'
   end
 
   def do_all_problems
     if params[:command] == 'enable'
-      GroupProblem.where(group: @group).update_all(enabled: true)
+      ContestProblem.where(contest: @contest).update_all(enabled: true)
     elsif params[:command] == 'disable'
-      GroupProblem.where(group: @group).update_all(enabled: false)
+      ContestProblem.where(contest: @contest).update_all(enabled: false)
     elsif params[:command] == 'remove'
-      @group.problems.clear
+      @contest.problems.clear
     else
       return
     end
@@ -126,15 +131,17 @@ class ContestsController < ApplicationController
   end
 
   def do_problem
+    @toast = {title: "Contest #{@contest.name}"}
     case params[:command]
     when 'remove'
-      @group.problems.delete(@problem)
-      @toast = {title: "Group #{@group.name}", body: "Problem #{@problem.name} was removed."}
+      @contest.problems.delete(@problem)
+      @toast[:body] = "Problem #{@problem.name} was removed."
     when 'toggle'
-      gp = @group.groups_problems.where(problem: @problem).first
+      gp = @contest.contests_problems.where(problem: @problem).first
       gp.update(enabled: !gp.enabled?)
-      @toast = {title: "Group #{@group.name}", body: "The problem #{@problem.name} was updated."}
+      @toast[:body] = "The problem #{@problem.name} was updated."
     else
+      @toast[:body] = "Unknown command"
     end
     render 'turbo_toast'
   end
@@ -142,22 +149,19 @@ class ContestsController < ApplicationController
   def add_user
     begin
       users = User.find(params[:user_ids]) #this find multiple users
-      @group.users << users
-      @toast = {title: "Group #{@group.name}", body: "#{users.count} users were added."}
+      @toast = @contest.add_users users
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
   end
 
   def add_user_by_group
     begin
-      user_ids = GroupUser.where(group_id: params[:user_group_ids]).where.not(user_id: @group.users.ids).pluck :user_id
-      @group.users << User.where(id: user_ids)
-      @toast = {title: "Group #{@group.name}", body: "#{user_ids.count} users were added."}
+      @toast = @contest.add_users User.where(id: user_ids)
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
   end
 
@@ -165,22 +169,20 @@ class ContestsController < ApplicationController
     #find return arrays of objecs
     begin
       problems = Problem.find(params[:problem_ids]) #this find multiple problems
-      @group.problems << problems
-      @toast = {title: "Group #{@group.name}", body: "#{problems.count} problem(s) were added."}
+      @toast = @contest.add_problems_and_assign_number(problems)
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
 
   def add_problem_by_group
     begin
-      problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @group.problems.ids).pluck :problem_id
-      @group.problems << Problem.where(id: problem_ids)
-      @toast = {title: "Group #{@group.name}", body: "#{problem_ids.count} problems were added."}
+      problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @contest.problems.ids).pluck :problem_id
+      @toast = @contest.add_problems_and_assign_number(Problem.where(id: problem_ids))
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
 
@@ -213,7 +215,14 @@ class ContestsController < ApplicationController
 
     def set_contest
       @contest = Contest.find(params[:id])
+    end
 
+    def set_user
+      @user = User.find(params[:user_id]) rescue nil
+    end
+
+    def set_problem
+      @problem = Problem.find(params[:problem_id]) rescue nil
     end
 
     def contests_params

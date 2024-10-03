@@ -140,7 +140,7 @@ class GroupsController < ApplicationController
       @toast = {title: "Group #{@group.name}", body: "#{users.count} users were added."}
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
   end
 
@@ -151,7 +151,7 @@ class GroupsController < ApplicationController
       @toast = {title: "Group #{@group.name}", body: "#{user_ids.count} users were added."}
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
   end
 
@@ -163,7 +163,7 @@ class GroupsController < ApplicationController
       @toast = {title: "Group #{@group.name}", body: "#{problems.count} problem(s) were added."}
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
 
@@ -174,7 +174,7 @@ class GroupsController < ApplicationController
       @toast = {title: "Group #{@group.name}", body: "#{problem_ids.count} problems were added."}
       render 'turbo_toast'
     rescue => e
-      render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
 

@@ -68,7 +68,6 @@
     = "Announcement.refreshUrl = '#{url_for :controller => 'main', :action => 'announcements'}';".html_safe
     Announcement.registerRefreshEventTimer();
 
-= render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: 'placeholder'}
 :javascript
   $(function() {
     $("#main_table").DataTable({

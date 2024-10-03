@@ -20,7 +20,6 @@ class Contest < ApplicationRecord
     num_actual_add = to_be_added.count
     num_request_add = new_users.count
 
-
     self.users << to_be_added
     if num_actual_add == 0
       return {title: 'Contest users are NOT changed', body: 'All users given are already in the contest.'}
@@ -37,16 +36,20 @@ class Contest < ApplicationRecord
 
   end
 
-  def add_problems(new_problems)
-    return {title: 'Contest problems are NOT changed', body: 'No new problems given.'} if new_problems.count == 0
+  def add_problems_and_assign_number(new_problems)
+    return {title: 'Contest problems are NOT changed', body: 'No new problem given.'} if new_problems.count == 0
 
     # remove already existing problems
     to_be_added = new_problems.where.not(id: self.problems)
     num_actual_add = to_be_added.count
     num_request_add = new_problems.count
 
+    latest_num = self.contests_problems.maximum(:number) || 1
+    to_be_added.ids.each do |new_prob_id|
+      latest_num += 1
+      contests_problems.create(problem_id: new_problem_id,number: latest_num)
+    end
 
-    self.problems << to_be_added
     if num_actual_add == 0
       return {title: 'Contest problems are NOT changed', body: 'All problems given are already in the contest.'}
     elsif num_actual_add == num_request_add

@@ -63,7 +63,6 @@
                   data: {turbo: true, action: 'turbo:submit-end->group#afterUserAction'}} do |f|
                   = f.hidden_field :user_id, 'data-group-target': 'userFormUserID'
                   = f.hidden_field :command, 'data-group-target': 'userFormCommand'
-
               .col-md-6
                 -# help for GroupUser
                 .alert.alert-warning.shadow-sm
@@ -130,7 +129,6 @@
               .col-12
                 = render partial: 'group_problems'
 
-= render 'shared/msg_modal'
 
 
 :javascript

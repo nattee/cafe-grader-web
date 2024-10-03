@@ -158,4 +158,4 @@
                 %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
                 %td.text-end= ev.weight
 
-= render partial: 'shared/msg_modal', locals: {header_msg: 'Compiler messaage', body_msg: @submission.compiler_message}
+= render partial: 'msg_modal', locals: {header_msg: 'Compiler message', body_msg: @submission.compiler_message}
