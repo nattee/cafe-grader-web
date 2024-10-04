@@ -144,13 +144,26 @@ module ApplicationHelper
     end
   end
 
-  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4)
+  # render a key pair as two lines (label & value)
+  # input can be either label & value or object & field
+  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil)
     label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
     value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
-    x = <<~HTML
+
+    # convert value
+    if as&.to_sym == :yes_no
+      if value&.downcase == 'true'
+        value = "<span class='mi mi-bs text-success'>check_circle</span> Yes"
+      else
+        value = "<span class='mi mi-bs text-danger'>cancel</span> No"
+      end
+    end
+
+    #render
+    content = <<~HTML
       <div class="col-#{width} mb-3"><div class="fw-bold">#{label}</div>#{value}</div>
     HTML
-    return x.html_safe
+    return content.html_safe
   end
 
   def user_title_bar(user)

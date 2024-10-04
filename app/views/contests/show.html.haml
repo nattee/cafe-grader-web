@@ -2,13 +2,15 @@
   .col-md-6
     .card.shadow-sm
       .card-body
-        %h1 Edit contest
-        = simple_form_for @contest, wrapper: :horizontal_form do |f|
-          = f.error_notification
-          = f.input :name
-          = f.input :title
-          = f.input :enabled
-          = f.submit 'Update'
+        %h1 Contest ##{@contest.id}
+        .row.mb-3
+          = key_pair(obj: @contest, field: :name)
+          = key_pair(obj: @contest, field: :description,width: 4)
+          = key_pair(obj: @contest, field: :enabled, as: :yes_no)
+          = key_pair(obj: @contest, field: :start)
+          = key_pair(obj: @contest, field: :stop)
+          = key_pair(obj: @contest, field: :freeze, as: :yes_no)
+        = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary'
   .col-md-6
     .card.bg-warning-subtle.shadow-sm
       .card-body
@@ -23,10 +25,14 @@
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
             %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'}}}
-              %h4 Users
+              %span.mi.mi-bs
+                person
+              Users
           %li.nav-item
             %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}}}
-              %h4 Problems
+              %span.mi.mi-bs
+                task
+              Problems
         .tab-content
           -# ==========================================
           -# ---------- users pane ------------------
@@ -169,7 +175,7 @@
         {data: 'seat'},
         {data: 'remark'},
         {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: dt_link_renderer('Remove', {className: 'link-danger fw-bold', action: 'contest#postUserAction', command: 'remove'})},
+        {data: 'user_id', render: dt_link_renderer(`[${msi('person_remove','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
       ],
       columnDefs: [{orderable: false, targets: [4,5]} ],
       drawCallback: function (settings) {

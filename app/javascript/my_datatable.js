@@ -31,7 +31,7 @@ function dt_button_renderer(label,{className = 'btn-primary', action = null, com
 }
 
 // render a link
-function dt_link_renderer(label,{className = '', action = null, command = null, href = '#', confirmation=''} = {}) {
+function dt_link_renderer(label,{className = '', action = null, command = null, href = '#', confirm=null} = {}) {
   return function(data,type,row,meta) {
     const dataAction = data_tag_unless_null(action,'action')
     const dataCommand = data_tag_unless_null(command,'command')

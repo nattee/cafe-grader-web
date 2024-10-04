@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_09_26_085522) do
+ActiveRecord::Schema[7.0].define(version: 2024_10_04_035026) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -53,13 +53,15 @@ ActiveRecord::Schema[7.0].define(version: 2024_09_26_085522) do
   end
 
   create_table "contests", id: :integer, charset: "utf8mb3", force: :cascade do |t|
-    t.string "title"
+    t.string "name"
     t.boolean "enabled"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "name"
+    t.string "description"
     t.datetime "start"
     t.datetime "stop"
+    t.boolean "freeze", default: false
+    t.text "remark"
   end
 
   create_table "contests_problems", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|

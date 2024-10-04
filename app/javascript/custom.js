@@ -6,10 +6,9 @@ $(document).on('change', '.btn-file :file', function() {
   input.trigger('fileselect', [numFiles, label]);
 });
 
-function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
+window.msi = (icon_name, className = '') => {
+  return `<span class="mi mi-bs ${className}">${icon_name}</span>`
 }
-window.delay = delay
 
 //default options for tempus dominus
 window.default_td_options = {
