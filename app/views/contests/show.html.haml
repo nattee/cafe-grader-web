@@ -56,8 +56,8 @@
                     .col-2
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary'
                 -# hidden user action form
-                = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}} do |f|
+                = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'a'}} do |f|
                   = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
               .col-md-6
@@ -169,7 +169,7 @@
         {data: 'seat'},
         {data: 'remark'},
         {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: dt_button_renderer('Remove', {className: 'btn-danger btn-sm', action: 'contest#postUserAction', command: 'remove'})},
+        {data: 'user_id', render: dt_link_renderer('Remove', {className: 'link-danger fw-bold', action: 'contest#postUserAction', command: 'remove'})},
       ],
       columnDefs: [{orderable: false, targets: [4,5]} ],
       drawCallback: function (settings) {

@@ -7,12 +7,6 @@ export default class extends Controller {
                    ]
 
   connect() {
-    //console.log('stimulus group',this.element)
-
-    //fetch("/groups/10/show_users_query", {
-    //  method: "POST",
-    //}).then(r => r.text())
-    //  .then(html => console.log(html))
   }
 
   setUsersCommand(event) {
@@ -21,6 +15,10 @@ export default class extends Controller {
   }
 
   postUserAction(event) {
+    // event.target is the dom that emits the event
+    // the parameter for the action is in data-* of  the dom
+    // we copy the parameter and set the appropriate input
+    // of the form
     const form = this.userFormTarget
     const user_id = this.userFormUserIDTarget
     const command = this.userFormCommandTarget
