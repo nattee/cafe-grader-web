@@ -125,3 +125,31 @@
       go_to_sub();
   });
 
+  function check_in() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
+    const apiUrl = '#{}'
+
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
+      },
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('error checking-in to grader');
+      }
+      return response.text(); // Use .text() if the response is a string
+    })
+    .then(endTimeString => {
+      // Parse the received end time string into a Date object
+      contestEndTime = new Date(endTimeString);
+      console.log('Contest end time:', contestEndTime);
+    })
+    .catch(error => {
+      console.error('API call failed:', error);
+    });
+  }
+
+
+

@@ -1,6 +1,6 @@
 .row.my-3.gx-3
   .col-md-6
-    .card.shadow-sm
+    .card
       .card-body
         %h1 Contest ##{@contest.id}
         .row.mb-3
@@ -12,12 +12,16 @@
           = key_pair(obj: @contest, field: :freeze, as: :yes_no)
         = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary'
   .col-md-6
-    .card.bg-warning-subtle.shadow-sm
-      .card-body
-        .card-title
-          %h4 What is a contest?
-        asdf asdf
-        asdf
+    .alert.alert-warning.shadow-sm
+      %h4 Tips
+      %ul
+        %li
+          A contest is shown to a user when the site is in
+          %strong Contest Mode.
+        %li 
+          Only enabled contest that has the current time is during its start and stop time is shown to the user.
+        %li 
+          When a contest is frozen, the user cannot submit to the contest and contest's users and problem cannot be modified.
 .row.my-3{data: {controller: 'contest'}}
   .col-12
     .card
@@ -138,6 +142,7 @@
                       %th Name
                       %th Full name
                       %th Enable
+                      %th Action
 
 %div{'data-controller': 'hello'}
 
@@ -204,10 +209,12 @@
         {data: 'number'},
         {data: 'name'},
         {data: 'full_name'},
-        {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'problem_id', render: dt_button_renderer('Remove', {className: 'btn-danger btn-sm', action: 'contest#postUserAction', command: 'remove'})},
+        {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'problem_id', render: dt_link_renderer(`[${msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?'})},
+        {data: 'problem_id', render: dt_link_renderer(`[${msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup'})},
+        {data: 'problem_id', render: dt_link_renderer(`[${msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown'})},
       ],
-      columnDefs: [{orderable: false, targets: [3,4]} ],
+      columnDefs: [{orderable: false, targets: [3,4,5,6]} ],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

@@ -6,6 +6,7 @@ class Contest < ApplicationRecord
   has_many :problems, through: :contests_problems
 
   scope :enabled, -> { where(enabled: true) }
+  scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
 
   # new_users are active record relation
   # return a toast reaponse hash
@@ -46,8 +47,8 @@ class Contest < ApplicationRecord
 
     latest_num = self.contests_problems.maximum(:number) || 1
     to_be_added.ids.each do |new_prob_id|
+      contests_problems.create(problem_id: new_prob_id,number: latest_num)
       latest_num += 1
-      contests_problems.create(problem_id: new_problem_id,number: latest_num)
     end
 
     if num_actual_add == 0
@@ -63,6 +64,17 @@ class Contest < ApplicationRecord
               "}
     end
 
+  end
+
+  # set the number of the problem to *number* and rearrage other
+  def set_problem_number(problem,number)
+    num = 1
+    self.contests_problems.where.not(problem_id: problem.id).order(:number).each do |cp,idx|
+      offset = (num) >= number ? 1 : 0
+      cp.update(number: num+offset)
+      num += 1
+    end
+    self.contests_problems.where(problem_id: problem.id).first.update(number: [self.contests_problems.count,[1,number.round].max].min)
   end
 
 end

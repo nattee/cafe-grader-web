@@ -1,162 +1,33 @@
+%h1 Edit Contest ##{@contest.id}
 .row.my-3.gx-3
   .col-md-6
     .card.shadow-sm
       .card-body
-        %h1 Edit contest
-        = simple_form_for @contest, wrapper: :horizontal_form do |f|
+        = simple_form_for @contest, wrapper: :horizontal_form, html: {data: {turbo: false}} do |f|
           = f.error_notification
           = f.input :name
-          = f.input :title
+          = f.input :description
+          .row.mb-3
+            .col-md-3.col-form-label
+              Start
+            .col-md-7
+              .input-group.td-date
+                = f.text_field :start, value: @contest.start&.strftime("%d/%b/%Y %H:%m"), class: 'form-control'
+                %span.input-group-text
+                  %span.mi event
+          .row.mb-3
+            .col-md-3.col-form-label
+              Stop
+            .col-md-7
+              .input-group.td-date
+                = f.text_field :stop, value: @contest.stop&.strftime("%d/%b/%Y %H:%m"), class: 'form-control'
+                %span.input-group-text
+                  %span.mi event
           = f.input :enabled
-          = f.submit 'Update'
-  .col-md-6
-    .card.bg-warning-subtle
-      .card-body
-        .card-title
-          What is a contest?
-        asdf asdf
-        asdf
-.row.my-4{'data-controller': 'contest'}
-  .col-sm-12
-    .card
-      .card-body
-        %ul.nav.nav-tabs.mb-3
-          %li.nav-item
-            %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'}}}
-              Users
-          %li.nav-item
-            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}}}
-              Problems
-        .tab-content
-          -# ==========================================
-          -# ---------- users pane ------------------
-          -# ==========================================
-          #tab-contest-user.tab-pane.fade.show.active
-            .row
-              .col-md-6
-                =form_tag add_user_contest_path(@contest), class: 'form-inline', 
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
-                  .row.mb-2
-                    .col-3
-                      =label_tag :user_ids, "Add these users", class: 'col-form-label'
-                    .col-7
-                      =select_tag :user_ids, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", class: 'btn btn-primary'
-                =form_tag add_user_by_group_contest_path(@contest), class: 'form-inline',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
-                  .row.mb-2
-                    .col-3
-                      =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
-                    .col-7
-                      =select_tag :user_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
-                =form_with url: do_all_users_contest_path(@contest),
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'} do |f|
-                  .row.mb-2
-                    .col-3
-                    .col-9
-                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->contest#setUsersCommand', value: 'enable'}
-                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->contest#setUsersCommand', value: 'disable'}
-                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->contest#setUsersCommand', value: 'remove'}
-                  = f.hidden_field :command, value: 1, 'data-contest-target': 'usersCommand'
-                -# hidden user action form
-                = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}} do |f|
-                  = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
-                  = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
-
-              .col-md-6
-            .row
-              .col-12
-                %table#user_table.table.datatable.table-hover
-                  %thead
-                    %tr
-                      %th Login
-                      %th Full name
-                      %th Role
-                      %th Remark
-                      %th Enabled
-                      %th Remove
-                      %th Set role
-                  %tbody
-          -# ==========================================
-          -# ---------- problem pane ------------------
-          -# ==========================================
-          #tab-contest-problem.tab-pane.fade
-            .row
-              .col-md-6
-                =form_tag add_problem_contest_path(@contest), 
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
-                  .row.mb-2
-                    .col-3
-                      =label_tag :problem_ids, "Problem",class: 'col-form-label'
-                    .col-7
-                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-auto
-                      =submit_tag "Add",class: 'btn btn-primary', 'data-contest-target': 'asdf'
-                =form_tag add_problem_by_group_contest_path(@contest), class: 'form-inline',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
-                  .row.mb-2
-                    .col-3
-                      =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
-                    .col-7
-                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
-                -# form for all problems action
-                =form_with url: do_all_problems_contest_path(@contest), 
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'} do |f|
-                  .row.mb-2
-                    .col-3
-                    .col-9
-                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->contest#setProblemsCommand', value: 'enable'}
-                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->contest#setProblemsCommand', value: 'disable'}
-                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->contest#setProblemsCommand', value: 'remove'}
-                  = f.hidden_field :command, value: 1, 'data-contest-target': 'problemsCommand'
-                -# hidden problem action form
-                = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'}} do |f|
-                  = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
-                  = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
-              .col-md-6
-            .row
-              .col-12
-                %table#problem_table.table.datatable.table-hover
-                  %thead
-                    %tr
-                      %th Name
-                      %th Full name
-                      %th Enabled
-                      %th Remark
-                  %tbody
-
-%div{'data-controller': 'hello'}
-
+          = f.input :freeze
+          = f.submit 'Update', class: 'btn btn-primary'
 :javascript
-  function reload_table() {
-    $('#user_table').DataTable({
-      destroy: true,
-      paging: false,
-      order: [[0,'asc']],
-    })
-    $('#problem_table').DataTable({
-      destroy: true,
-      paging: false,
-    })
-  }
-
-  function clear_user_form() {
-    $('#user_group_id').val(null).trigger('change')
-    $('#user_id').val(null).trigger('change')
-  }
-
-  function clear_problem_form() {
-    $('#problem_group_id').val(null).trigger('change')
-    $('#problem_id').val(null).trigger('change')
-  }
-
-  $(function() {
-    reload_table();
-  });
+  $(() => {
+    start_datetime = new TempusDominus(document.getElementById('contest_start'), default_td_options );
+    stop_datetime = new TempusDominus(document.getElementById('contest_stop'), default_td_options );
+  })

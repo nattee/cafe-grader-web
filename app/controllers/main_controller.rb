@@ -52,7 +52,9 @@ class MainController < ApplicationController
       redirect_to list_main_path, alert: 'You must specify a problem' and return
     end
 
-    unless @current_user.admin? || @current_user.available_problems.where(id: problem.id).count > 0
+    # check if the problem is submittable
+    # the problems_for_action already include the logic for admin privilege
+    unless @current_user.problems_for_action(:submit).where(id: problem).any?
       redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available" and return
     end
 

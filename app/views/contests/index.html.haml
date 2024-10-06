@@ -31,7 +31,7 @@
     %table.table.table-striped
       %tr
         %th Name
-        %th Title
+        %th Description
         %th Enabled
         %th
         %th
@@ -41,7 +41,7 @@
         - @contest = contest
         %tr
           %td= @contest.name
-          %td= @contest.title
+          %td= @contest.description
           %td= @contest.enabled
           %td= link_to 'Show', contest
           %td= link_to 'Edit', edit_contest_path(contest)

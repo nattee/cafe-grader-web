@@ -31,7 +31,9 @@ class User < ApplicationRecord
   belongs_to :site, optional: true
   belongs_to :country, optional: true
 
-  has_and_belongs_to_many :contests, -> { order(:name)}
+  # contest
+  has_many :contests_users, class_name: 'ContestUser'
+  has_many :contests, :through => :contests_users
 
   scope :activated_users, -> {where activated: true}
 
@@ -79,6 +81,7 @@ class User < ApplicationRecord
     if GraderConfiguration.multicontests?
       # legacy mode, have not been implemented yet
     elsif GraderConfiguration.contest_mode?
+      return Problem.where(id: active_contests.joins(:contests_problems).pluck(:problem_id) )
     else
       # normal mode
       if GraderConfiguration.use_problem_group?
@@ -129,6 +132,12 @@ class User < ApplicationRecord
         raise ArgumentError.new('action must be one of :edit, :report, :submit')
       end
     end
+  end
+
+  # return contests of this user that is both enabled and the current time
+  # is during the contest
+  def active_contests
+    contests.where(enabled: true).where('start <= ? and stop >= ?',Time.zone.now, Time.zone.now)
   end
 
   def self.authenticate(login, password)

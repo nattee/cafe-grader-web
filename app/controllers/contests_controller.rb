@@ -69,7 +69,7 @@ class ContestsController < ApplicationController
     respond_to do |format|
       if @contest.update(contests_params)
         flash[:notice] = 'Contest was successfully updated.'
-        format.html { redirect_to(@contest) }
+        format.html { redirect_to contest_path(@contest) }
         format.xml  { head :ok }
       else
         format.html { render :action => "edit" }
@@ -132,14 +132,22 @@ class ContestsController < ApplicationController
 
   def do_problem
     @toast = {title: "Contest #{@contest.name}"}
+    gp = @contest.contests_problems.where(problem: @problem).first
     case params[:command]
     when 'remove'
       @contest.problems.delete(@problem)
       @toast[:body] = "Problem #{@problem.name} was removed."
     when 'toggle'
-      gp = @contest.contests_problems.where(problem: @problem).first
       gp.update(enabled: !gp.enabled?)
       @toast[:body] = "The problem #{@problem.name} was updated."
+    when 'moveup'
+      gp = @contest.contests_problems.where(problem: @problem).first
+      @contest.set_problem_number(@problem,gp.number - 1.2) #instead of -1, we do -0.8 so that  it is placed "before" the original number - 1 rank
+      @toast[:body] = "Problem #{@problem.name} was moved up."
+    when 'movedown'
+      gp = @contest.contests_problems.where(problem: @problem).first
+      @contest.set_problem_number(@problem,gp.number + 1.2) #so is here
+      @toast[:body] = "Problem #{@problem.name} was moved down."
     else
       @toast[:body] = "Unknown command"
     end
@@ -148,7 +156,7 @@ class ContestsController < ApplicationController
 
   def add_user
     begin
-      users = User.find(params[:user_ids]) #this find multiple users
+      users = User.where(id: params[:user_ids])
       @toast = @contest.add_users users
       render 'turbo_toast'
     rescue => e
@@ -168,10 +176,12 @@ class ContestsController < ApplicationController
   def add_problem
     #find return arrays of objecs
     begin
-      problems = Problem.find(params[:problem_ids]) #this find multiple problems
+      problems = Problem.where(id: params[:problem_ids]) #this find multiple problems
       @toast = @contest.add_problems_and_assign_number(problems)
       render 'turbo_toast'
     rescue => e
+      puts e.message
+      puts e.backtrace
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
@@ -187,7 +197,7 @@ class ContestsController < ApplicationController
   end
 
   def user_check_in
-
+    ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
   end
 
 
@@ -226,7 +236,7 @@ class ContestsController < ApplicationController
     end
 
     def contests_params
-      params.require(:contest).permit(:title,:enabled,:name)
+      params.require(:contest).permit(:name, :descriotion,:enabled,:lock, :start, :stop)
     end
 
 end
