@@ -14,3 +14,11 @@
 //= require ace/mode-java
 //= require ace/theme-merbivore
 
+// this javascrip is loaded first, before any import map
+// because it is loaded via javascript_include_tag (which is sprocket)
+
+//TODO: should move this one into another .js that is loaded via sprocket
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

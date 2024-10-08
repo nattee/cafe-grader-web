@@ -29,18 +29,7 @@
             - else
               %div.btn.btn-dark#countdown -
               :javascript
-                contest_end = moment().add(#{@current_user.contest_time_left.to_i},'seconds')
-                function update_remaining_time() {
-                  x = contest_end - moment()
-                  if (x >= 0) {
-                    remain = moment.utc(contest_end - moment()).format('HH:mm:ss') +' remain'
-                  } else {
-                    remain = 'contest is over'
-                  }
-                  $("#countdown").html(remain)
-                }
-                update_remaining_time()
-                setInterval(update_remaining_time,500)
+                setInterval(updateRemainingTime,500)
           / admin section
           - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor']).any?)
             / management
@@ -125,31 +114,74 @@
       go_to_sub();
   });
 
+  // call check_in api and return a string of last check-in time
   function check_in() {
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
-    const apiUrl = '#{}'
-
-    fetch(apiUrl, {
+    const check_in_url = '#{user_check_in_contests_path}'
+    const response = await fetch(check_in_url, {
       method: 'POST',
       headers: {
         'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
       },
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('error checking-in to grader');
-      }
-      return response.text(); // Use .text() if the response is a string
-    })
-    .then(endTimeString => {
-      // Parse the received end time string into a Date object
-      contestEndTime = new Date(endTimeString);
-      console.log('Contest end time:', contestEndTime);
-    })
-    .catch(error => {
-      console.error('API call failed:', error);
     });
+    const data = await response.text();
+    return data.time; // Assume the API returns an object with a "time" property in ISO8601 format
   }
 
+  function check_in_loop() {
+    //sleep 5 seconds before doing anything
+    sleep(1000)
+
+    while (true) {
+      try {
+        // Fetch the time X from the API
+        const isoTime = await check_in();
+
+        // Parse the ISO8601 time
+        const targetTime = new Date(isoTime);
+
+        // Calculate the target time by adding secondsAfter
+        const secondsAfter = 30
+        const endTime = targetTime.getTime() + (secondsAfter * 1000);
+
+        // Calculate the sleep duration
+        const now = Date.now();
+        const sleepDuration = endTime - now;
+
+        // Sleep until the target time is reached
+        if (sleepDuration > 0) {
+          console.log(`Sleeping for ${sleepDuration / 1000} seconds...`);
+          await sleep(sleepDuration);
+        } else {
+          console.log("Target time has already passed.");
+        }
+
+        // Log the current time
+        console.log("Current time:", new Date().toISOString());
+
+      } catch (error) {
+        console.error("Error fetching time or sleeping:", error);
+      }
+    }
+  }
+
+  function updateRemainingTime() {
+    const contestEndTime = Date.parse('#{@current_user.contest_end_time&.iso8601}')
+    if (!contestEndTime) return; // No contest end time to display
+
+    const now = new Date();
+    const remainingTime = contestEndTime - now;
+
+    if (remainingTime > 0) {
+      const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+      const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+      document.getElementById('remaining_time').textContent =
+        `${hours}h ${minutes}m ${seconds}s remaining`;
+    } else {
+      document.getElementById('remaining_time').textContent = 'Contest ended';
+    }
+  }
 
 

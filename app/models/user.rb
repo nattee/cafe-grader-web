@@ -222,7 +222,17 @@ class User < ApplicationRecord
     return users.find_all { |u| u.contests.length == 0 }
   end
 
+  # modern contest
+  def contest_end_time
+    if GraderConfiguration.contest_mode?
+      return active_contests.first&.stop
+    else
+      return nil
+    end
+  end
 
+
+  # original contest
   def contest_time_left
     if GraderConfiguration.contest_mode?
       return nil if site==nil
@@ -247,6 +257,7 @@ class User < ApplicationRecord
       return nil
     end
   end
+
 
   def contest_finished?
     if GraderConfiguration.contest_mode?
