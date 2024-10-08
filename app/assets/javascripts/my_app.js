@@ -20,5 +20,5 @@
 //TODO: should move this one into another .js that is loaded via sprocket
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return (new Promise(resolve => setTimeout(resolve, ms))).then( () => {} );
 }

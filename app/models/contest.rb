@@ -77,4 +77,18 @@ class Contest < ApplicationRecord
     self.contests_problems.where(problem_id: problem.id).first.update(number: [self.contests_problems.count,[1,number.round].max].min)
   end
 
+  # return :later, :pre, :during, :post, :ended
+  def contest_status
+    current_time = Time.zone.now
+    return :ended if current_time > self.stop
+    return :later if current_time < self.start
+    return :during
+  end
+
+  # check in interval in seconds
+  def self.check_in_interval
+    # once every minutes
+    return 60
+  end
+
 end

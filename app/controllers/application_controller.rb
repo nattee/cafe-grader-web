@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
+  before_action :current_contest
   before_action :header_info
   before_action :unique_visitor_id
   before_action :active_controller_action
@@ -28,6 +29,13 @@ class ApplicationController < ActionController::Base
   def current_user
     return nil unless session[:user_id]
     @current_user ||= User.find(session[:user_id])
+  end
+
+  # return the current contest of the user
+  # must be called AFTER current_user
+  def current_contest
+    return nil unless @current_user
+    return @current_user.active_contests.order(:stop).first
   end
 
   def read_grader_configuration
@@ -130,7 +138,7 @@ class ApplicationController < ActionController::Base
     # check if user ip is allowed
     unless @current_user.admin? || GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       unless is_request_ip_allowed?
-        unauthorized_redirect 'Your IP is not allowed to log in at this time.', logout: true
+        unauthorized_redirect(msg: 'Your IP is not allowed to log in at this time.', logout: true)
         return false
       end
     end

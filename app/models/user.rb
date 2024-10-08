@@ -137,7 +137,11 @@ class User < ApplicationRecord
   # return contests of this user that is both enabled and the current time
   # is during the contest
   def active_contests
-    contests.where(enabled: true).where('start <= ? and stop >= ?',Time.zone.now, Time.zone.now)
+    if GraderConfiguration.contest_mode?
+      return contests.where(enabled: true).where('start <= ? and stop >= ?',Time.zone.now, Time.zone.now)
+    else
+      return Contest.none
+    end
   end
 
   def self.authenticate(login, password)
@@ -222,6 +226,9 @@ class User < ApplicationRecord
     return users.find_all { |u| u.contests.length == 0 }
   end
 
+  # ---------------------
+  # ---- contest --------
+  # ---------------------
   # modern contest
   def contest_end_time
     if GraderConfiguration.contest_mode?

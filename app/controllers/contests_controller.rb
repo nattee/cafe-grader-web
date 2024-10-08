@@ -7,7 +7,8 @@ class ContestsController < ApplicationController
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
 
-  before_action :admin_authorization
+  before_action :admin_authorization, except: [:user_check_in]
+  before_action :check_valid_login, only: [:user_check_in]
 
   # GET /contests
   # GET /contests.xml
@@ -197,7 +198,11 @@ class ContestsController < ApplicationController
   end
 
   def user_check_in
-    ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
+    #ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
+    current = Time.zone.now
+    last = @current_user.last_heartbeat || current
+    @current_user.update(last_heartbeat: current)
+    render plain: ((current - last) * 1000).to_i
   end
 
 

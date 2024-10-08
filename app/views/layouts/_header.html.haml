@@ -22,14 +22,18 @@
           - if GraderConfiguration.analysis_mode?
             %div.btn.btn-success#countdown= "ANALYSIS MODE"
           - elsif GraderConfiguration.time_limit_mode?
-            - if @current_user.contest_finished?
+            - if @current_contest&.contest_status == :ended
               %div.btn.btn-danger#countdown= "Contest is over"
-            - elsif !@current_user.contest_started?
+            - elsif !@current_contest&.contest_status == :later
               %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
             - else
-              %div.btn.btn-dark#countdown -
+              %div.btn.btn-dark#countdown
               :javascript
-                setInterval(updateRemainingTime,500)
+                $(() => {
+                  too_early_count = 0
+                  setInterval(updateRemainingTime,500)
+                  setTimeout(checkInLoop,1000)
+                })
           / admin section
           - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor']).any?)
             / management
@@ -116,53 +120,56 @@
 
   // call check_in api and return a string of last check-in time
   function check_in() {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
-    const check_in_url = '#{user_check_in_contests_path}'
-    const response = await fetch(check_in_url, {
+    fetch(check_in_url, {
       method: 'POST',
       headers: {
         'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
       },
+    }).then( response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      console.log('xxx')
+      return response.text() // this is a promise
     });
-    const data = await response.text();
-    return data.time; // Assume the API returns an object with a "time" property in ISO8601 format
+      console.log('yyy')
   }
 
-  function check_in_loop() {
-    //sleep 5 seconds before doing anything
-    sleep(1000)
+  function checkInLoop() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
+    const check_in_url = '#{user_check_in_contests_path}'
+    const check_in_interval_seconds = #{Contest.check_in_interval}
 
-    while (true) {
-      try {
-        // Fetch the time X from the API
-        const isoTime = await check_in();
-
-        // Parse the ISO8601 time
-        const targetTime = new Date(isoTime);
-
-        // Calculate the target time by adding secondsAfter
-        const secondsAfter = 30
-        const endTime = targetTime.getTime() + (secondsAfter * 1000);
-
-        // Calculate the sleep duration
-        const now = Date.now();
-        const sleepDuration = endTime - now;
-
-        // Sleep until the target time is reached
-        if (sleepDuration > 0) {
-          console.log(`Sleeping for ${sleepDuration / 1000} seconds...`);
-          await sleep(sleepDuration);
-        } else {
-          console.log("Target time has already passed.");
-        }
-
-        // Log the current time
-        console.log("Current time:", new Date().toISOString());
-
-      } catch (error) {
-        console.error("Error fetching time or sleeping:", error);
+    //call check in
+    fetch(check_in_url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
+      },
+    }).then( response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
-    }
+      return response.text() // this is a promise
+    }).then( text_as_string => {
+      ms_since_last_check_in = parseInt(text_as_string)
+
+      if (ms_since_last_check_in > check_in_interval_seconds * 1000) {
+        too_early_count = 0
+      } else {
+        too_early_count += 1
+      }
+      wait_multiplyer = (too_early_count + 1)
+      randomMs = 500 + 2000 * Math.random()
+      sleepDurationMs = wait_multiplyer * check_in_interval_seconds * 1000 + randomMs
+
+      console.log(`Next check-in in ${sleepDurationMs / 1000} seconds...(collision = ${too_early_count})`);
+      setTimeout(checkInLoop,sleepDurationMs)
+
+    }).catch( e => {
+      setTimeout(checkInLoop,5000)
+      throw e
+    }); // this catch is needed to handle the error happens in "then"
   }
 
   function updateRemainingTime() {
@@ -177,10 +184,10 @@
       const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
 
-      document.getElementById('remaining_time').textContent =
+      document.getElementById('countdown').textContent =
         `${hours}h ${minutes}m ${seconds}s remaining`;
     } else {
-      document.getElementById('remaining_time').textContent = 'Contest ended';
+      document.getElementById('countdown').textContent = 'Contest ended';
     }
   }
 
