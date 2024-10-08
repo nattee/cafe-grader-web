@@ -197,7 +197,9 @@ class ContestsController < ApplicationController
   end
 
   def user_check_in
-    ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
+    current_time = Time.zone.now
+    ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: current_time)
+
   end
 
 

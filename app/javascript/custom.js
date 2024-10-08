@@ -10,9 +10,6 @@ window.msi = (icon_name, className = '') => {
   return `<span class="mi mi-bs ${className}">${icon_name}</span>`
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 //default options for tempus dominus
 window.default_td_options = {
