@@ -63,7 +63,7 @@ class Submission < ApplicationRecord
 
   def self.find_last_for_all_available_problems(user_id)
     submissions = Array.new
-    problems = Problem.available_problems
+    problems = Problem.available
     problems.each do |problem|
       sub = Submission.find_last_by_user_and_problem(user_id, problem.id)
       submissions << sub if sub!=nil

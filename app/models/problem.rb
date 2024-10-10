@@ -33,12 +33,17 @@ class Problem < ApplicationRecord
 
   # return ids of problems that is enabled and is in an enabled group that has the given user
   # this does not check whether the user is enabled
+  #
+  # It always considers groups, regardless of the group mode configuration
+  # When group mode is false, use Problem.available_problems instead
   scope :submittable_by_user, ->(user_id) {
-    joins(groups: :groups_users)
-      .where(available: true)
-      .where('groups.enabled': true)
-      .where('groups_users.user_id': user_id)
-      .distinct(:problem_id)
+    joins(groups_problems: {group: :groups_users})
+      .where(available: true)                   #available problems only
+      .where('groups.enabled': true)            #groups is enabled
+      .where('groups_users.user_id': user_id)   #user is in the group
+      .where('groups_users.enabled': true)      #user in the group is enabled
+      .where('groups_problems.enabled': true)   #problem is enabled
+      .distinct(:problem_id)                    #get distinct
   }
 
   scope :reportable_by_user, ->(user_id) {
@@ -48,6 +53,8 @@ class Problem < ApplicationRecord
   scope :editable_by_user, ->(user_id) {
     submittable_by_user(user_id).where('groups_users.role': ['editor'])
   }
+
+  scope :default_order, -> { order(date_added: :desc).order(:name)  }
 
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
@@ -93,10 +100,6 @@ class Problem < ApplicationRecord
     return name
   end
 
-  def self.available_problems
-    available.order(date_added: :desc).order(:name)
-    #Problem.available.all(:order => "date_added DESC, name ASC")
-  end
 
   def self.create_from_import_form_params(params, old_problem=nil)
     org_problem = old_problem || Problem.new

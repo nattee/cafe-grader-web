@@ -96,7 +96,7 @@ class User < ApplicationRecord
         end
       else
         if action == :submit
-          return Problem.available_problems
+          return Problem.available
         else
           return []
         end
@@ -350,9 +350,9 @@ class User < ApplicationRecord
       #if this is a normal mode
       #we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
-        return available_problems_in_group
+        return Problem.submittable_by_user(self.id).default_order
       else
-        return Problem.available_problems
+        return Problem.available.default_order
       end
     else
       #this is multi contest mode

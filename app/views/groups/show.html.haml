@@ -7,6 +7,7 @@
         .row.mb-3
           = key_pair(obj: @group, field: :name)
           = key_pair(obj: @group, field: :description)
+          = key_pair(obj: @group, field: :enabled, as: :yes_no)
         .row.mb-3
           .col-md-6
             = link_to 'Edit', edit_group_path(@group), class: 'btn btn-primary'
