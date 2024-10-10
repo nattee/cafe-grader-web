@@ -143,11 +143,11 @@ class ContestsController < ApplicationController
       @toast[:body] = "The problem #{@problem.name} was updated."
     when 'moveup'
       gp = @contest.contests_problems.where(problem: @problem).first
-      @contest.set_problem_number(@problem,gp.number - 1.2) #instead of -1, we do -0.8 so that  it is placed "before" the original number - 1 rank
+      @contest.set_problem_number(@problem,(gp.number || 2) - 1.2) #instead of -1, we do -0.8 so that  it is placed "before" the original number - 1 rank
       @toast[:body] = "Problem #{@problem.name} was moved up."
     when 'movedown'
       gp = @contest.contests_problems.where(problem: @problem).first
-      @contest.set_problem_number(@problem,gp.number + 1.2) #so is here
+      @contest.set_problem_number(@problem,(gp.number || 0) + 1.2) #so is here
       @toast[:body] = "Problem #{@problem.name} was moved down."
     else
       @toast[:body] = "Unknown command"

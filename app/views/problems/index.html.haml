@@ -44,8 +44,6 @@
       %th.text-center
         View Data?
         = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
-      - if GraderConfiguration.multicontests?
-        %th Contests
       %th.text-center
       %th.text-center
       %th.text-center
@@ -68,9 +66,6 @@
         %td= problem.date_added
         %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
         %td= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
-        - if @multi_contest
-          %td
-            = problem.contests.collect { |c| c.name }.join(', ')
         %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-sm btn-block'
         %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-sm btn-block'
         %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'

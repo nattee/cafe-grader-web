@@ -179,17 +179,9 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
-    # get problems
-    if GraderConfiguration.multicontests?
-      @contest_problems = @current_user.available_problems_group_by_contests
-      @problems = @current_user.available_problems.with_attached_statement
-    else
-      @problems = @current_user.available_problems.with_attached_statement
-    end
-
+    @problems = @current_user.available_problems.with_attached_statement
 
     #get latest score
-
     @prob_submissions = Hash.new { |h,k| h[k] = {count: 0, submission: nil} }
     last_sub_ids = Submission.where(user: @current_user,problem: @problems).group(:problem_id).pluck('max(id)')
     Submission.where(id: last_sub_ids).each do |sub|
@@ -328,18 +320,6 @@ class MainController < ApplicationController
     end
   end
 
-  def reject_announcement_refresh_when_logged_out
-    if not session[:user_id]
-      render :text => 'Access forbidden', :status => 403
-    end
-
-    if GraderConfiguration.multicontests?
-      user = User.find(session[:user_id])
-      if user.contest_stat.forced_logout
-        render :text => 'Access forbidden', :status => 403
-      end
-    end
-  end
 
 end
 

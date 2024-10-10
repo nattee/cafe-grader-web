@@ -7,8 +7,8 @@
           = key_pair(obj: @contest, field: :name)
           = key_pair(obj: @contest, field: :description,width: 4)
           = key_pair(obj: @contest, field: :enabled, as: :yes_no)
-          = key_pair(obj: @contest, field: :start)
-          = key_pair(obj: @contest, field: :stop)
+          = key_pair(label: 'Start Time', value: @contest.start.strftime("%Y-%b-%d %H:%M"))
+          = key_pair(label: 'Finish Time', value: @contest.stop.strftime("%Y-%b-%d %H:%M"))
           = key_pair(obj: @contest, field: :freeze, as: :yes_no)
         = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary'
   .col-md-6

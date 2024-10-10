@@ -26,7 +26,6 @@ class ProblemsController < ApplicationController
       .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
       .select("MIN(MS.ms_count) as ms_count")
       .with_attached_statement
-    @multi_contest = GraderConfiguration.multicontests?
   end
 
 

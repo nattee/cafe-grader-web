@@ -102,8 +102,6 @@ class ApplicationController < ActionController::Base
   #if the user is not logged_in or the system is in "ADMIN ONLY" mode
 
   def check_valid_login
-
-
     #check if logged in
     unless @current_user
       if GraderConfiguration.single_user_mode?
@@ -156,17 +154,6 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    # check multi contest
-    if GraderConfiguration.multicontests?
-      return true if @current_user.admin?
-      begin
-        if @current_user.contest_stat(true).forced_logout
-          flash[:notice] = 'You have been automatically logged out.'
-          redirect_to :controller => 'main', :action => 'index'
-        end
-      rescue
-      end
-    end
     return true
   end
 

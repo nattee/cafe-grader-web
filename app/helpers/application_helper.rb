@@ -153,9 +153,9 @@ module ApplicationHelper
     # convert value
     if as&.to_sym == :yes_no
       if value&.downcase == 'true'
-        value = "<span class='mi mi-bs text-success'>check_circle</span> Yes"
+        value = "<span class='badge text-bg-success'>Yes</span>"
       else
-        value = "<span class='mi mi-bs text-danger'>cancel</span> No"
+        value = "<span class='badge text-bg-danger'>No</span>"
       end
     end
 
