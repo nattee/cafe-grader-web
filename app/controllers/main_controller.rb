@@ -32,6 +32,14 @@ class MainController < ApplicationController
   def list
     prepare_list_information
     prepare_announcements
+
+    if GraderConfiguration.contest_mode?
+      @contests = @current_user.contests.enabled
+    else
+      @contests = nil
+    end
+
+
     @groups = [['All',-1]] + @current_user.groups.pluck(:name,:id)
   end
 

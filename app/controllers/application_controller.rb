@@ -35,7 +35,19 @@ class ApplicationController < ActionController::Base
   # must be called AFTER current_user
   def current_contest
     return nil unless @current_user
-    return @current_user.active_contests.order(:stop).first
+    unless GraderConfiguration.contest_mode?
+      session[:contest_id] = nil
+      return @current_contest = nil 
+    end
+
+    @current_contest ||= Contest.where(id: session[:contest_id]).first
+    
+    #if the session contest is disabled, pick the earliest enabled one (or nil)
+    unless @current_contest && @current_contest.enabled?
+      @current_contest = @current_user.active_contests.order(:stop).first 
+      session[:contest_id] = @current_contest&.id
+    end
+    return @current_contest
   end
 
   def read_grader_configuration

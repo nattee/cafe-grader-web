@@ -84,11 +84,11 @@ class User < ApplicationRecord
       # normal mode
       if GraderConfiguration.use_problem_group?
         if action == :edit
-          return Problem.editable_by_user(self.id)
+          return Problem.group_editable_by_user(self.id)
         elsif action == :report
-          return Problem.reportable_by_user(self.id)
+          return Problem.group_reportable_by_user(self.id)
         elsif action == :submit
-          return Problem.submittable_by_user(self.id)
+          return Problem.group_submittable_by_user(self.id)
         else
           raise ArgumentError.new('action must be one of :edit, :report, :submit')
         end
@@ -117,11 +117,11 @@ class User < ApplicationRecord
 
     # normal mode
     if action == :edit
-      return Problem.editable_by_user(self.id)
+      return Group.editable_by_user(self.id)
     elsif action == :report
-      return Problem.reportable_by_user(self.id)
+      return Group.reportable_by_user(self.id)
     elsif action == :submit
-      return Problem.submittable_by_user(self.id)
+      return Group.submittable_by_user(self.id)
     else
       raise ArgumentError.new('action must be one of :edit, :report, :submit')
     end
@@ -321,28 +321,16 @@ class User < ApplicationRecord
   def available_problems
     # first, we check if this is normal mode
     unless GraderConfiguration.contest_mode?
-
       #if this is a normal mode
       #we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
-        return Problem.submittable_by_user(self.id).default_order
+        return Problem.group_submittable_by_user(self.id).default_order
       else
         return Problem.available.default_order
       end
     else
-      #this is multi contest mode
-      contest_problems = []
-      pin = {}
-      contests.enabled.each do |contest|
-        contest.problems.available.each do |problem|
-          if not pin.has_key? problem.id
-            contest_problems << problem
-          end
-          pin[problem.id] = true
-        end
-      end
-      other_avaiable_problems = Problem.available.find_all {|p| pin[p.id]==nil and p.contests.length==0}
-      return contest_problems + other_avaiable_problems
+      #this is contest mode
+      Problem.contests_problems_for_user(self.id).default_order
     end
   end
 

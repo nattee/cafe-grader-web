@@ -36,7 +36,7 @@ class Problem < ApplicationRecord
   #
   # It always considers groups, regardless of the group mode configuration
   # When group mode is false, use Problem.available_problems instead
-  scope :submittable_by_user, ->(user_id) {
+  scope :group_submittable_by_user, ->(user_id) {
     joins(groups_problems: {group: :groups_users})
       .where(available: true)                   #available problems only
       .where('groups.enabled': true)            #groups is enabled
@@ -46,12 +46,34 @@ class Problem < ApplicationRecord
       .distinct(:problem_id)                    #get distinct
   }
 
-  scope :reportable_by_user, ->(user_id) {
-    submittable_by_user(user_id).where('groups_users.role': ['editor','reporter'])
+  # same as before, but with role reportable
+  scope :group_reportable_by_user, ->(user_id) {
+    group_submittable_by_user(user_id).where('groups_users.role': ['editor','reporter'])
   }
 
-  scope :editable_by_user, ->(user_id) {
-    submittable_by_user(user_id).where('groups_users.role': ['editor'])
+  scope :group_editable_by_user, ->(user_id) {
+    group_submittable_by_user(user_id).where('groups_users.role': ['editor'])
+  }
+
+  scope :contests_problems_for_user, ->(user_id) {
+    now = Time.zone.now
+    joins(contests_problems: {contest: :contests_users})
+      .where(available: true)                   #available problems only
+      .where('contests.enabled': true)          #contests is enabled
+      .where('contests_users.user_id': user_id) #user is in the contest
+      .where('contests_users.enabled': true)    #user in the contest is enabled
+      .where('contests_problems.enabled': true) #problem is enabled
+      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?',now)
+      .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?',now)
+      .distinct(:problem_id)                    #get distinct
+  }
+
+  scope :submittable_by_user, -> (user_id) {
+    if GraderConfiguration.contest_mode?
+      contests_problems_for_user(user_id)
+    else
+      group_submittable_by_user(user_id)
+    end
   }
 
   scope :default_order, -> { order(date_added: :desc).order(:name)  }

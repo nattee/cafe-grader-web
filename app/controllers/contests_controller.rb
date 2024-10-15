@@ -49,12 +49,12 @@ class ContestsController < ApplicationController
   # POST /contests
   # POST /contests.xml
   def create
-    @contest = Contest.new(params[:contest])
+    @contest = Contest.new(contests_params)
 
     respond_to do |format|
       if @contest.save
         flash[:notice] = 'Contest was successfully created.'
-        format.html { redirect_to(@contest) }
+        format.html { redirect_to contests_path }
         format.xml  { render :xml => @contest, :status => :created, :location => @contest }
       else
         format.html { render :action => "new" }
