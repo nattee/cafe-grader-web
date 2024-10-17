@@ -10,7 +10,8 @@
           = key_pair(label: 'Start Time', value: @contest.start.strftime("%Y-%b-%d %H:%M"))
           = key_pair(label: 'Finish Time', value: @contest.stop.strftime("%Y-%b-%d %H:%M"))
           = key_pair(obj: @contest, field: :freeze, as: :yes_no)
-        = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary'
+        = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary me-2'
+        = link_to 'Back', contests_path, class: 'btn btn-outline-secondary'
   .col-md-6
     .alert.alert-warning.shadow-sm
       %h4 Tips

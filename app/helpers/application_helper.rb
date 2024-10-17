@@ -103,6 +103,15 @@ module ApplicationHelper
     st = time_ago_in_words(time) + ' ago (' + format_short_time(time) + ')'
   end
 
+  # display start and stop time in humanized way
+  def format_start_stop(start,stop)
+    start_text = start.strftime("%y-%b-%d %H:%M")
+    date_diff = (stop.to_date - start.to_date).to_i
+    end_text = stop.strftime("%H:%M")
+    end_text += " (+#{pluralize(date_diff,'day')})" if (date_diff > 0)
+    return "#{start_text} to #{end_text}"
+  end
+
   def read_textfile(fname,max_size=2048)
     begin
       File.open(fname).read(max_size)

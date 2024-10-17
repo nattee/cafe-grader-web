@@ -1,31 +1,10 @@
 - content_for :head do
   = javascript_include_tag "announcement_refresh"
 
-= user_title_bar(@user)
-
 .row
   .col-lg-7
     - if (GraderConfiguration.contest_mode?)
-      .card.border-warning.mb-3
-        .card-header.text-bg-warning.border-warning
-          Contest
-        .card-body
-          %table#contest-table
-            %thead
-              %tr
-                %th Contest
-                %th Start
-                %th Finish
-                %th
-            %tbody
-              - @contests.each do |contest|
-                %tr
-                  %td= contest.name
-                  %td= contest.start.strftime("%d-%b-%y %H:%m")
-                  %td= contest.stop.strftime("%d-%b-%y %H:%m")
-                  %td
-                    - unless contest == @current_contest
-                      Set active
+      = render 'contest_box'
     - if GraderConfiguration.show_submitbox_to?(@user)
       .card.border-primary
         .card-header.text-bg-primary

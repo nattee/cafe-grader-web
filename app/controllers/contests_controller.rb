@@ -31,6 +31,11 @@ class ContestsController < ApplicationController
     end
   end
 
+  # show is for manage
+  # view is for spectating
+  def view
+  end
+
   # GET /contests/new
   # GET /contests/new.xml
   def new

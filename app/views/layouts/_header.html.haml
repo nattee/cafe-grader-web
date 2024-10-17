@@ -191,4 +191,33 @@
     }
   }
 
+  // time should be a string in iso8601 format
+  function humanize_time(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
+    const time = Date.parse(time_iso8601)
+    const now = new Date();
+    const remainingTime = time - now;
+    const hours = Math.floor(Math.abs(remainingTime) / (1000 * 60 * 60));
+    const minutes = Math.floor((Math.abs(remainingTime) % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((Math.abs(remainingTime) % (1000 * 60)) / 1000);
+    let time_text = ''
+    
+    //humanize
+    if (hours == 0) {
+      if (minutes <= 3) {
+         time_text = `${minutes * 60 + seconds} seconds`
+      } else {
+        time_text = `${minutes} minutes`
+      }
+    } else {
+      time_text = `${hours}h ${minutes}m`
+    }
+
+    //return the text
+    if (remainingTime < 0) {
+      return prepend_text_after + time_text + ' ago'
+    } else {
+      return prepend_text_before + time_text
+    }
+  }
+
 

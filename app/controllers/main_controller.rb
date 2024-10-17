@@ -56,6 +56,7 @@ class MainController < ApplicationController
   #   2. submit via "new" button
   #   4. submit vis "edit" button
   def submit
+    
     problem = Problem.where(id: params[:submission][:problem_id]).first
     unless problem
       redirect_to list_main_path, alert: 'You must specify a problem' and return
@@ -64,12 +65,7 @@ class MainController < ApplicationController
     # check if the problem is submittable
     # the problems_for_action already include the logic for admin privilege
     unless @current_user.problems_for_action(:submit).where(id: problem).any?
-      redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available" and return
-    end
-
-    if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
-      @submission.errors.add(:base,"The contest is over.")
-      redirect_to list_main_path, notice: 'Error saving your submission' and return
+      redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available for you" and return
     end
 
     @submission = Submission.new(user: @current_user,

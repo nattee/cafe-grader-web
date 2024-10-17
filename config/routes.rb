@@ -11,6 +11,7 @@ Rails.application.routes.draw do
     member do
       # contest
       get 'toggle'
+      get 'view'
 
       # groups_users
       post 'show_users_query'
