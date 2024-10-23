@@ -1,5 +1,5 @@
 %header
-  %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg
+  %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg.shadow-sm
     .container-fluid
       %a.navbar-brand{href: list_main_path}
         %span.mi.mi-bs home
@@ -26,7 +26,7 @@
               %div.btn.btn-danger#countdown= "Contest is over"
             - elsif !@current_contest&.contest_status == :later
               %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
-            - else
+            - elsif @current_contest
               %div.btn.btn-dark#countdown
               :javascript
                 $(() => {

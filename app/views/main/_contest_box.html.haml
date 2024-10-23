@@ -14,7 +14,7 @@
           %tr
             %td= contest.name
             %td
-              = format_start_stop(contest.start,contest.stop)
+              = format_start_stop(contest.start,contest.stop).html_safe
             %td
               .time-counter{data: {start: contest.start.iso8601,stop: contest.stop.iso8601}}
             %td
