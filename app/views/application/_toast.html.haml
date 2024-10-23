@@ -1,11 +1,11 @@
 -# this render one toast that should be append to a series of toast
 -# local var 'toast', a hash, must be given and it is merge to toast_params
-- toast_params = {body: 'Body placeholder',type: 'notice', title: nil, subtitle: Time.zone.now.strftime("%H:%M:%S"), autohide: true}
+- toast_params = {body: 'Body placeholder',type: :notice, title: nil, subtitle: Time.zone.now.strftime("%H:%M:%S"), autohide: true}
 - toast_params.merge!( local_assigns.fetch(:toast, {}))
-- toast_header_class = case toast_params[:type]
-  - when 'notice' then 'bg-info-subtle'
-  - when 'alert' then 'bg-danger-subtle'
-  - when 'warning' then 'bg-warning-subtle'
+- toast_header_class = case toast_params[:type].to_sym
+  - when :notice then 'bg-info-subtle'
+  - when :alert then 'bg-danger-subtle'
+  - when :warning then 'bg-warning-subtle'
   - else ''
 .toast.mb-1{"aria-atomic": true, "aria-live": :assertive, role: :alert}
   .toast-header.py-1{class: toast_header_class}

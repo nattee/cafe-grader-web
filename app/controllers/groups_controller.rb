@@ -1,12 +1,16 @@
 class GroupsController < ApplicationController
-  before_action :set_group, only: [:show, :edit, :update, :destroy,
+  GroupMemberAction =             [:show, :edit, :update, :destroy,
                                    :show_users_query, :show_problems_query,
                                    :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
                                    :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
                                   ]
+  before_action :set_group, only: GroupMemberAction
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
-  before_action :group_editor_authorization
+  before_action :is_group_editor_authorization
+
+  #only for member action
+  before_action :can_edit_group_authorization, only: GroupMemberAction
 
   # GET /groups
   def index
@@ -83,24 +87,32 @@ class GroupsController < ApplicationController
     end
   end
 
+  # generic action for users in the group
   def do_user
+    @toast = {title: "Group #{@group.name}"}
     case params[:command]
     when 'remove'
-      @group.users.delete(@user)
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login} was removed."}
+      if @user != @current_user || @user.admin?
+        @group.users.delete(@user)
+        @toast[:body] = "#{@user.login} was removed."
+      else
+        @toast[:body] = "Cannot remove yourself from the group"
+        @toast[:type] = :alert
+      end
     when 'toggle'
       gu = @group.groups_users.where(user: @user).first
       gu.update(enabled: !gu.enabled?)
-      @toast = {title: "Group #{@group.name}", body: 'User was updated.'}
-    when 'make_editor'
-      GroupUser.where(user: @user, group: @group).update(role: 'editor')
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to editor."}
-    when 'make_reporter'
-      GroupUser.where(user: @user, group: @group).update(role: 'reporter')
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to reporter."}
-    when 'make_user'
-      GroupUser.where(user: @user, group: @group).update(role: 'user')
-      @toast = {title: "Group #{@group.name}", body: "#{@user.login}'s role changed to user."}
+      @toast[:body] = "User was updated."
+    when 'make_editor', 'make_reporter', 'make_user'
+      target_role = params[:command].split('_')[1]
+
+      if @user != @current_user || @user.admin? || target_role == 'editor'
+        GroupUser.where(user: @user, group: @group).update(role: target_role)
+        @toast[:body] = "#{@user.login}'s role changed to #{target_role}."
+      else
+        @toast[:body] = "Cannot demote yourself"
+        @toast[:type] = :alert
+      end
     else
     end
     render 'turbo_toast'
@@ -194,10 +206,16 @@ class GroupsController < ApplicationController
 
     # check if the user can manage group
     # admin always has the right
-    def group_editor_authorization
+    def is_group_editor_authorization
+      return true if @current_user.admin?
+      return true if @current_user.groups_for_action(:edit).any?
+      unauthorized_redirect(msg: "You cannot manage any group");
+    end
+
+    def can_edit_group_authorization
       return true if @current_user.admin?
       return true if @current_user.groups_for_action(:edit).where(id: @group).any?
-      unauthorized_redirect("You cannot manage group #{group.name}.");
+      unauthorized_redirect(msg: "You cannot manage group #{@group.name}.");
     end
 
     # Only allow a trusted parameter "white list" through.

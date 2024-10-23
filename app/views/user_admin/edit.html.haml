@@ -1,8 +1,31 @@
-%h1 Editing user
+%h1 Edit user
 .row
   .col-md-6
-    - content_for(:form_buttons) do
-      = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
-    = simple_form_for @user, url: user_admin_path(@user) do |f|
-      = render partial: 'form', locals: {f: f}
+    .card.shadow-sm
+      .card-body
+        %h4 Basic Info
+        - content_for(:form_buttons) do
+          = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
+        = simple_form_for @user, url: user_admin_path(@user) do |f|
+          = render partial: 'form', locals: {f: f}
+  .col-md-6
+    .card.shadow-sm
+      .card-body
+        %h4 Groups
+        .card.bg-warning-subtle
+          .card-body
+            Add / Remove user from the group in the management page of the group by clicking on the group name.
+        %table.table
+          %thead
+            %tr
+              %th Group
+              %th Description
+              %th Role
+          %tbody
+            - @user.groups_users.each do |gu|
+              %tr
+                %td= link_to gu.group.name, group_path(gu.group)
+                %td= gu.group.description
+                %td= gu.role
+    
 

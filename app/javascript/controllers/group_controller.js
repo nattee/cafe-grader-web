@@ -21,24 +21,33 @@ export default class extends Controller {
   }
 
   postUserAction(event) {
+    event.preventDefault() //this comes from a link, so we prevent default
     const form = this.userFormTarget
     const user_id = this.userFormUserIDTarget
     const command = this.userFormCommandTarget
     command.value = event.target.dataset.command
     user_id.value = event.target.dataset.rowId
+    if ('formConfirm' in event.target.dataset) {
+      form.dataset.turboConfirm = event.target.dataset.formConfirm
+    } else {
+      form.removeAttribute('data-turbo-confirm')
+    }
     form.requestSubmit()
   }
 
   afterUserAction(event) {
-    $("#user_table").DataTable().ajax.reload()
+    if (!event.detail.fetchResponse.response.redirected)
+      $("#user_table").DataTable().ajax.reload()
   }
 
 
   afterUsersAdd(event) {
-    $('#user_ids').val(null).trigger("change");
-    $('#user_group_ids').val(null).trigger("change");
-    const dt = $("#user_table").DataTable()
-    dt.ajax.reload()
+    if (!event.detail.fetchResponse.response.redirected) {
+      $('#user_ids').val(null).trigger("change");
+      $('#user_group_ids').val(null).trigger("change");
+      const dt = $("#user_table").DataTable()
+      dt.ajax.reload()
+    }
   }
 
   setProblemsCommand(event) {
@@ -47,22 +56,32 @@ export default class extends Controller {
   }
 
   postProblemAction(event) {
+    event.preventDefault() //this comes from a link, so we prevent default
     const form = this.problemFormTarget
     const problem_id = this.problemFormProblemIDTarget
     const command = this.problemFormCommandTarget
     command.value = event.target.dataset.command
     problem_id.value = event.target.dataset.rowId
+    if ('formConfirm' in event.target.dataset) {
+      form.dataset.turboConfirm = event.target.dataset.formConfirm
+    } else {
+      form.removeAttribute('data-turbo-confirm')
+    }
     form.requestSubmit()
   }
 
   afterProblemAction(event) {
-    $("#problem_table").DataTable().ajax.reload()
+    if (!event.detail.fetchResponse.response.redirected) {
+      $("#problem_table").DataTable().ajax.reload()
+    }
   }
 
   afterProblemsAdd(event) {
-    $('#problem_ids').val(null).trigger("change");
-    $('#problem_group_ids').val(null).trigger("change");
-    $("#problem_table").DataTable().ajax.reload()
+    if (!event.detail.fetchResponse.response.redirected) {
+      $('#problem_ids').val(null).trigger("change");
+      $('#problem_group_ids').val(null).trigger("change");
+      $("#problem_table").DataTable().ajax.reload()
+    }
   }
 
   test(event) {

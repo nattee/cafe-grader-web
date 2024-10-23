@@ -6,16 +6,18 @@ class Group < ApplicationRecord
   has_many :users, :through => :groups_users
 
   scope :editable_by_user, -> (user_id) {
-    joins(:groups_users).where(groups_users: { user_id: user_id, role: 'editor' })
+    joins(:groups_users).where(groups_users: { user_id: user_id, enabled: true, role: 'editor' })
   }
 
   scope :reportable_by_user, -> (user_id) {
-    joins(:groups_users).where(groups_users: { user_id: user_id, role: ['editor','reporter'] })
+    joins(:groups_users).where(groups_users: { user_id: user_id, enabled: true, role: ['editor','reporter'] })
   }
 
   scope :submittable_by_user, -> (user_id) {
-    joins(:groups_users).where(groups_users: { user_id: user_id })
+    joins(:groups_users).where(groups_users: { user_id: user_id, enabled: true })
   }
+  
+  scope :enabled, -> { where(enabled: true) }
 
   #has_and_belongs_to_many :problems
   #has_and_belongs_to_many :users

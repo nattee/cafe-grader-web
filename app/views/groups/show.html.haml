@@ -1,7 +1,7 @@
-%h1 Group members and problems
-.row.my-4
+%h2 Group management
+.row.g-3
   .col-md-6
-    .card
+    .card.shadow-sm
       .card-body
         %h4 Group details
         .row.mb-3
@@ -14,16 +14,20 @@
             = link_to 'Back', groups_path, class: 'btn btn-outline-secondary mx-2'
   .col-md-6
     = render partial: 'group_help'
-.row.my-4{'data-controller': 'group'}
+.row.my-3{'data-controller': 'group'}
   .col-sm-12
-    .card
+    .card.shadow-sm
       .card-body
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
             %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-group-user'}}}
+              %span.mi.mi-bs
+                person
               Users
           %li.nav-item
             %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-group-problem'}}}
+              %span.mi.mi-bs
+                task
               Problems
         .tab-content
           -# ==========================================
@@ -66,16 +70,17 @@
                   = f.hidden_field :command, 'data-group-target': 'userFormCommand'
               .col-md-6
                 -# help for GroupUser
-                .alert.alert-warning.shadow-sm
-                  %ul
-                    %li
-                      If you want to add several users to a group, it may be easier to just re-import the users in
-                      = link_to 'New list of users', new_list_user_admin_index_path
-                      page. You can also use
-                      = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
-                      page.
-                    %li
-                      Only enabled problems are shown to the enabled users of the group.
+                .card.bg-warning-subtle.shadow-sm
+                  .card-body
+                    %ul.mb-0
+                      %li
+                        If you want to add several users to a group, it may be easier to just re-import the users in
+                        = link_to 'New list of users', new_list_user_admin_index_path
+                        page. You can also use
+                        = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
+                        page.
+                      %li
+                        Only enabled problems are shown to the enabled users of the group.
             = render partial: 'group_users'
           -# ==========================================
           -# ---------- problem pane ------------------
@@ -136,11 +141,16 @@
   function role_action_button(data,type,row,meta) {
     result = ''
     if (row['role'] != 'editor') 
-      result += dt_button_renderer('Make editor',{className: 'btn-outline-success', action: 'group#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
-    if (row['role'] != 'reporter') 
-      result += dt_button_renderer('Make reporter',{className: 'btn-outline-warning', action: 'group#postUserAction', command: 'make_reporter'})(row['user_id'],type,row,meta)
-    if (row['role'] != 'user') 
-      result += dt_button_renderer('Make user',{className: 'btn-outline-info', action: 'group#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
+      result += dt_link_renderer('as editor',{className: 'link-success', action: 'group#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
+    if (row['role'] != 'reporter') {
+      if (result != '') result += ' | '
+      result += dt_link_renderer('as reporter',{className: 'link-warning', action: 'group#postUserAction', command: 'make_reporter'})(row['user_id'],type,row,meta)
+    }
+    if (row['role'] != 'user') {
+      if (result != '') result += ' | '
+      result += dt_link_renderer('as user',{className: 'link-info', action: 'group#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
+    }
+    window.xxx = result
     return result
 
   }
@@ -169,7 +179,7 @@
         {data: 'role'},
         {data: 'remark'},
         {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'group#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: dt_button_renderer('Remove', {className: 'btn-danger btn-sm', action: 'group#postUserAction', command: 'remove'})},
+        {data: 'user_id', render: dt_link_renderer(`${msi('person_remove','md-18')} Remove`, {className: 'link-danger', action: 'group#postUserAction', command: 'remove', confirm: 'Remove user from group?'})},
         {data: 'user_id', render: role_action_button},
       ],
       columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6]} ],
@@ -223,7 +233,7 @@
         {data: 'name'},
         {data: 'full_name'},
         {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'problem_id', render: dt_button_renderer('Remove', {className: 'btn-danger btn-sm', action: 'group#postProblemAction', command: 'remove'})},
+        {data: 'problem_id', render: dt_link_renderer(`${msi('delete','md-18')} Remove`,{ className: 'link-danger', action: 'group#postProblemAction', command: 'remove', confirm: 'Remove problem from group?'})},
       ],
       columnDefs: [{orderable: false, targets: [2,3]} ],
       order: [[0,'asc']],

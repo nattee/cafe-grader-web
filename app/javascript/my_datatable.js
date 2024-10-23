@@ -38,7 +38,7 @@ function dt_link_renderer(label,{className = '', action = null, command = null, 
     const dataConfirm = data_tag_unless_null(confirm,'form-confirm')
     return `
       <a href="${href}" class="${className}" data-row-id="${data}" ${dataAction} ${dataCommand} ${dataConfirm}>
-      ${label}</button>
+      ${label}</a>
     `
   }
 }

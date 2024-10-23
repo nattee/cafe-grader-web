@@ -2,24 +2,29 @@ class ProblemsController < ApplicationController
 
   include ActiveStorage::SetCurrent
 
-  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :get_attachment,
-                                     :delete_statement, :delete_attachment,
-                                     :toggle, :toggle_test, :toggle_view_testcase, :stat,
-                                     :add_dataset,:import_testcases, :view_live_testcases
-                                    ]
+  MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
+                   :delete_statement, :delete_attachment,
+                   :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                   :add_dataset,:import_testcases,
+                  ]
 
-  before_action :admin_authorization, except: [:stat, :get_statement, :get_attachment]
-  before_action :check_valid_login, only: [:stat, :get_statement, :get_attachment]
+  before_action :set_problem, only: MEMBER_METHOD
+  before_action :check_valid_login
+
+  #permission
+  before_action :is_group_editor_authorization
+  before_action :can_edit_problem, only: [:edit, :update, :destroy,
+                                           :delete_statement, :delete_attachment,
+                                           :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                                           :add_dataset,:import_testcases,
+                                          ]
+  before_action :can_report_problem, only: [:stat]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
-  before_action only: [:stat] do
-    authorization_by_roles(['admin','ta'])
-  end
-
 
   def index
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
     ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
-    @problems = Problem.joins(:datasets)
+    @problems = @current_user.editable_problems.joins(:datasets)
       .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
       .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
       .includes(:tags).order(date_added: :desc).group('problems.id')
@@ -33,10 +38,6 @@ class ProblemsController < ApplicationController
   def add_dataset
     @dataset = @problem.datasets.create(name: @problem.get_next_dataset_name)
     render 'datasets/update'
-  end
-
-  def view_live_testcases
-    @dataset = @problem.live_dataset
   end
 
   #get statement download link
@@ -329,61 +330,9 @@ class ProblemsController < ApplicationController
   end
 
 
-  def remove_contest
-    problem = Problem.find(params[:id])
-    contest = Contest.find(params[:contest_id])
-    if problem!=nil and contest!=nil
-      problem.contests.delete(contest)
-    end
-    redirect_to :action => 'manage'
-  end
-
   ##################################
   protected
 
-  def allow_test_pair_import?
-    if defined? ALLOW_TEST_PAIR_IMPORT
-      return ALLOW_TEST_PAIR_IMPORT
-    else
-      return false
-    end
-  end
-
-
-  # for bulk manage
-  def change_date_added(problems)
-    date = Date.parse(params[:date_added])
-    problems.update_all(date_added: date)
-    @result << "Date changed to #{date}"
-  end
-
-  def add_to_contest(problems)
-    contest = Contest.find(params[:contest][:id])
-    if contest!=nil and contest.enabled
-      problems.each do |p|
-        p.contests << contest
-      end
-    end
-    @result << "Problem added to contest #{contest.title}"
-  end
-
-
-  def get_problems_from_params
-    ids = []
-    params.keys.each do |k|
-      if k.index('prob-')==0
-        #name, id, order = k.split('-')
-        #problems << Problem.find(id)
-        ids << k.split('-')[1]
-      end
-    end
-    return Problem.where(id: ids)
-  end
-
-  def get_problems_stat
-  end
-
-  private
 
     def set_problem
       @problem = Problem.find(params[:id])
@@ -399,8 +348,70 @@ class ProblemsController < ApplicationController
       params.require(:description).permit(:body, :markdowned)
     end
 
+    def can_edit_problem
+      return true if @current_user.admin?
+      return true if @current_user.problems_for_action(:edit).where(id: @problem).any?
+      unauthorized_redirect(msg: 'You are not authorized to edit this problem')
+    end
+
+    def can_report_problem
+      return true if @current_user.admin?
+      return true if @current_user.problems_for_action(:report).where(id: @problem).any?
+      unauthorized_redirect(msg: 'You are not authorized to analyze this problem')
+    end
+
     def can_view_problem
-      unauthorized_redirect('You are not authorized to access this problem') unless @current_user.can_view_problem?(@problem)
+      return true if @current_user.admin?
+
+      #if a user is a reporter or an editor, they can access disabled problem, which is not allowed in problems_for_action(:submit)
+      return true if @current_user.problems_for_action(:report).where(id: @problem).any? 
+      return true if @current_user.problems_for_action(:submit).where(id: @problem).any?
+      unauthorized_redirect(msg: 'You are not authorized to access this problem')
+    end
+
+    def is_group_editor_authorization
+      return true if @current_user.admin?
+      return true if @current_user.groups_for_action(:edit).any?
+      unauthorized_redirect(msg: "You cannot manage any problem");
+    end
+
+    def allow_test_pair_import?
+      if defined? ALLOW_TEST_PAIR_IMPORT
+        return ALLOW_TEST_PAIR_IMPORT
+      else
+        return false
+      end
+    end
+
+
+    # for bulk manage
+    def change_date_added(problems)
+      date = Date.parse(params[:date_added])
+      problems.update_all(date_added: date)
+      @result << "Date changed to #{date}"
+    end
+
+    def add_to_contest(problems)
+      contest = Contest.find(params[:contest][:id])
+      if contest!=nil and contest.enabled
+        problems.each do |p|
+          p.contests << contest
+        end
+      end
+      @result << "Problem added to contest #{contest.title}"
+    end
+
+
+    def get_problems_from_params
+      ids = []
+      params.keys.each do |k|
+        if k.index('prob-')==0
+          #name, id, order = k.split('-')
+          #problems << Problem.find(id)
+          ids << k.split('-')[1]
+        end
+      end
+      return Problem.where(id: ids)
     end
 
 end

@@ -26,10 +26,8 @@ export default class extends Controller {
     user_id.value = event.target.dataset.rowId
     if ('formConfirm' in event.target.dataset) {
       form.dataset.turboConfirm = event.target.dataset.formConfirm
-      console.log('asdf')
     } else {
       form.removeAttribute('data-turbo-confirm')
-      console.log('illl')
     }
     form.requestSubmit()
   }

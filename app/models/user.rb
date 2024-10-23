@@ -78,8 +78,10 @@ class User < ApplicationRecord
 
     action = action.to_sym
 
-    if GraderConfiguration.contest_mode?
-      return Problem.where(id: self.active_contests.joins(:contests_problems).pluck(:problem_id) )
+    if GraderConfiguration.multicontests?
+      # legacy mode, have not been implemented yet
+    elsif GraderConfiguration.contest_mode?
+      return Problem.contests_problems_for_user(self.id)
     else
       # normal mode
       if GraderConfiguration.use_problem_group?
@@ -102,7 +104,7 @@ class User < ApplicationRecord
     end
   end
 
-  # ---- return groups for the users for specific action ------
+  # ---- groups for the users for specific action ------
   # * This includes logic of User.role where admin always has right to any group
   # * This also includes logics of mode of the grader (normal, contest, analysis)
   # * This also consider whether the user is enabled ---
@@ -317,7 +319,7 @@ class User < ApplicationRecord
     return true
   end
 
-  #get a list of available problem
+  #get a list of available problem for submission
   def available_problems
     # first, we check if this is normal mode
     unless GraderConfiguration.contest_mode?
@@ -334,39 +336,18 @@ class User < ApplicationRecord
     end
   end
 
-  # new feature, get list of available problem in all enabled group that the user belongs to
-  def available_problems_in_group
-    pids = self.groups.where(enabled: true).joins(:problems).select('distinct problem_id').pluck :problem_id
-    return Problem.where(id: pids).where(available: true).order('date_added DESC').order('name')
-  end
-
-  def editable_problems_in_group
-    pids = enabled_problems_in_groups_with_role(['editor'])
-    return Problem.where(id: pids).where(available: true)
-  end
-
-  def reportable_problems_in_group
-    pids = enabled_problems_in_groups_with_role(['reporter','editor'])
-    return Problem.where(id: pids).where(available: true)
-  end
-
-  def enabled_problems_ids_in_groups_with_role(roles = ['reporter','editor'])
+  def editable_problems
     if GraderConfiguration.use_problem_group?
-      self.groups_users.where(role: roles).
-        joins(group: :problems).where(group: {enabled: true})
-        .distinct(:problem_id)
-        .pluck :problem_id
+      return Problem.group_editable_by_user(self.id).default_order
     else
-      return []
+      return Problem.all if admin?
+      return Problem.none
     end
   end
 
   # return enabled groups that the user has given roles
   def enabled_groups_with_roles(roles)
-    ids = groups_users.joins(:group)
-      .where(role: roles,group: {enabled: true})
-      .pluck(:group_id)
-    return Group.where(id: ids)
+    return Group.enabled.editable_by_user(self.id)
   end
 
   #check if the user has the right to view that problem
