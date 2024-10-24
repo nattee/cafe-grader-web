@@ -12,11 +12,12 @@ class ProblemsController < ApplicationController
   before_action :check_valid_login
 
   #permission
+  before_action :admin_authorization, only: [:toggle, :turn_all_on, :turn_all_off ]
   before_action :is_group_editor_authorization
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
                                           :delete_statement, :delete_attachment,
-                                          :toggle, :toggle_test, :toggle_view_testcase, :stat,
-                                          :import, :do_import, :add_dataset,:import_testcases,
+                                          :toggle_test, :toggle_view_testcase, :stat,
+                                          :add_dataset,:import_testcases,
                                          ]
   before_action :can_report_problem, only: [:stat]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
@@ -179,14 +180,14 @@ class ProblemsController < ApplicationController
   end
 
   def manage
-    @problems = Problem.order(date_added: :desc).includes(:tags)
+    @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
   end
 
   def do_manage
 
     @result = []
     @error = []
-    problems = get_problems_from_params
+    problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids )
 
     change_date_added(problems) if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
     add_to_contest(problems) if params.has_key? 'add_to_contest'
@@ -228,7 +229,7 @@ class ProblemsController < ApplicationController
 
 
     #redirect_to :action => 'manage'
-    @problems = Problem.order(date_added: :desc).includes(:tags)
+    @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
     render :manage
   end
 
@@ -290,7 +291,14 @@ class ProblemsController < ApplicationController
     else
       @log = pi.log
       @problem = pi.problem
-      Group.problems << @problem if group
+      group.problems << @problem if group
+
+      # when non-admin (editor) import a problem, we set available to true
+      # (because they cannot set the available) but set the enabled to false
+      unless @current_user.admin?
+        @problem.update(available: true)
+        GroupProblem.where(group: group, problem: problem).first.update(enabled: false)
+      end
     end
   end
 

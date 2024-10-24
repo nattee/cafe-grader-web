@@ -74,7 +74,7 @@ class User < ApplicationRecord
   # valid action is either :submit, :report, :edit
   def problems_for_action(action)
     return Problem.all if admin?
-    return [] unless enabled?
+    return Problem.none unless enabled?
 
     action = action.to_sym
 
@@ -98,7 +98,7 @@ class User < ApplicationRecord
         if action == :submit
           return Problem.available
         else
-          return []
+          return Problem.none
         end
       end
     end
@@ -113,7 +113,7 @@ class User < ApplicationRecord
   # valid action is either :submit, :report, :edit
   def groups_for_action(action)
     return Group.all if admin?
-    return [] unless enabled?
+    return Group.none unless enabled?
 
     action = action.to_sym
 
@@ -127,6 +127,11 @@ class User < ApplicationRecord
     else
       raise ArgumentError.new('action must be one of :edit, :report, :submit')
     end
+  end
+
+  def reportable_users
+    return User.all if admin?
+    User.where(id: groups_for_action(:report).joins(:users).pluck('groups_users.user_id'))
   end
 
   # return contests of this user that is both enabled and the current time

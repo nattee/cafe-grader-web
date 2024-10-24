@@ -3,20 +3,14 @@ require 'csv'
 class ReportController < ApplicationController
 
   before_action :check_valid_login
-  before_action(except: [:problem_hof]) {
-    group_role_authorization(:report)
-  }
-
   before_action :selected_problems, only: [ :show_max_score, :submission_query ]
   before_action :selected_users, only: [ :show_max_score, :submission_query ]
 
-  #before_action :admin_authorization, except: [:problem_hof]
-
-  before_action(only: [:problem_hof]) { |c|
-    return false unless check_valid_login
-
-    admin_authorization unless GraderConfiguration["right.user_view_submission"]
+  before_action(except: [:problem_hof]) {
+    group_action_authorization(:report)
   }
+
+  before_action :hall_of_fame_authorization, only: [:problem_hof]
 
   def max_score
     @problems = @current_user.problems_for_action(:report)
@@ -26,7 +20,7 @@ class ReportController < ApplicationController
   # post max_score
   def show_max_score
     # calculate submission with max score
-    max_records = Submission.where(user_id: @users.ids, problem_id: @problems.ids).group('user_id,problem_id')
+    max_records = Submission.where(user_id: @users.ids, problem_id: @problems).group('user_id,problem_id')
       .select('MAX(submissions.points) as max_score, user_id, problem_id')
     max_records = submission_in_range(max_records,params[:sub_range])
 
@@ -448,8 +442,10 @@ ORDER BY submitted_at
 
     # build @problems that matches the given params
     def selected_problems
-      #problems
-      @problems = @current_user.problems_for_action(:report) # start with reportable problems of this user
+      # start with reportable problems (this already consider when @current_user is an admin)
+      @problems = @current_user.problems_for_action(:report)
+
+      #problem
       prob_use = params[:probs][:use] rescue ''
       if prob_use == 'ids'
         @problems = @problems.where(id: params[:probs][:ids])
@@ -463,9 +459,6 @@ ORDER BY submitted_at
         @problems = Problem.where('id > 0 and id < 0')
       end
 
-      # if user is not admin, filter problem to be only that are reportable
-      @problems = @problems.where(id: @currnet_user.problems_for_action(:report)) unless @current_user.admin?
-
       # sort it
       @problems = @problems.order(:date_added)
     end
@@ -478,6 +471,9 @@ ORDER BY submitted_at
                else
                  User.all
                end
+
+      # if user is not admin, filter problem to be only that are reportable
+      @users = @users.where(id: @current_user.reportable_users) unless @current_user.admin?
     end
 
     # return  a hash {score: xx, stat: yy}
@@ -534,5 +530,10 @@ ORDER BY submitted_at
       end
       result[:count] = count
       return result
+    end
+
+    def hall_of_fame_authorization
+      return true if @current_user.admin?
+      unauthorized_redirect(msg: 'Hall of fame is disabled') unless GraderConfiguration["right.user_hall_of_fame"]
     end
 end

@@ -43,7 +43,7 @@ class Problem < ApplicationRecord
       .where('groups_users.user_id': user_id)   #user is in the group
       .where('groups_users.enabled': true)      #user in the group is enabled
       .where('groups_problems.enabled': true)   #problem is enabled
-      .distinct(:problem_id)                    #get distinct
+      .distinct(:id)                            #get distinct
   }
 
   # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
@@ -62,7 +62,7 @@ class Problem < ApplicationRecord
       .where('groups.enabled': true)            #groups is enabled
       .where('groups_users.user_id': user_id)   #user is in the group
       .where('groups_users.role': roles)        #filter for user with roles
-      .distinct(:problem_id)                    #get distinct
+      .distinct(:id)                            #get distinct
   }
 
   scope :contests_problems_for_user, ->(user_id) {
