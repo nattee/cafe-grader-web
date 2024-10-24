@@ -35,7 +35,7 @@
                   setTimeout(checkInLoop,1000)
                 })
           / admin section
-          - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor']).any?)
+          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:edit).any?)
             / management
             %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle.active-with-children{href: '#',
@@ -59,7 +59,7 @@
                   %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
                 -#
           / report
-          - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor','reporter']).any?)
+          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
             %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle.active-with-children{href: '#', data: {bs: {toggle:'dropdown'}},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Report

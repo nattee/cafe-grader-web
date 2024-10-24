@@ -336,20 +336,6 @@ class User < ApplicationRecord
     end
   end
 
-  def editable_problems
-    if GraderConfiguration.use_problem_group?
-      return Problem.group_editable_by_user(self.id).default_order
-    else
-      return Problem.all if admin?
-      return Problem.none
-    end
-  end
-
-  # return enabled groups that the user has given roles
-  def enabled_groups_with_roles(roles)
-    return Group.enabled.editable_by_user(self.id)
-  end
-
   #check if the user has the right to view that problem
   #this also consider group based problem policy
   def can_view_problem?(problem)

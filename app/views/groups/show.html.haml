@@ -51,7 +51,7 @@
                     .col-3
                       =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
                     .col-7
-                      =select_tag :user_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :user_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-2
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary'
                 =form_with url: do_all_users_group_path(@group),
@@ -94,7 +94,7 @@
                     .col-3
                       =label_tag :problem_ids, "Problem",class: 'col-form-label'
                     .col-7
-                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :problem_ids, options_from_collection_for_select(@current_user.problems_for_action(:edit),'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-auto
                       =submit_tag "Add",class: 'btn btn-primary', 'data-group-target': 'asdf'
                 =form_tag add_problem_by_group_group_path(@group), class: 'form-inline',
@@ -103,7 +103,7 @@
                     .col-3
                       =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
                     .col-7
-                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-2
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary'
                 -# form for all problems action
@@ -112,6 +112,7 @@
                   .row.mb-2
                     .col-3
                     .col-9
+                      = link_to "New Problem", import_problems_path, class: 'btn btn-success'
                       = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->group#setProblemsCommand', value: 'enable'}
                       = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->group#setProblemsCommand', value: 'disable'}
                       = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->group#setProblemsCommand', value: 'remove'}

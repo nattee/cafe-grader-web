@@ -4,7 +4,7 @@ class ReportController < ApplicationController
 
   before_action :check_valid_login
   before_action(except: [:problem_hof]) {
-    group_role_authorization(['reporter','editor'])
+    group_role_authorization(:report)
   }
 
   before_action :selected_problems, only: [ :show_max_score, :submission_query ]
@@ -426,110 +426,113 @@ ORDER BY submitted_at
 
   protected
 
-  # receive an ActiveRecord::AAssociation *query* of submissions
-  # and add more where clause limiting the submission to be in the
-  # rnage specified only
-  def submission_in_range(query,range_params)
-    if range_params[:use] ==  'sub_id'
-      #use sub id
-      since_id = range_params.fetch(:from_id,0).to_i
-      until_id = range_params.fetch(:to_id,0).to_i
-      query = query.where('submissions.id >= ?',range_params[:from_id]) if since_id > 0
-      query = query.where('submissions.id <= ?',range_params[:to_id]) if until_id > 0
-    else
-      #use sub time
-      since_time = Time.zone.parse( range_params[:from_time] ) || Time.zone.now.beginning_of_day rescue Time.zone.now.beginning_of_day
-      until_time = Time.zone.parse( range_params[:to_time] ) || Time.zone.now.end_of_day rescue Time.zone.now.end_of_day
-      datetime_range= since_time..until_time
-      query = query.where(submitted_at: datetime_range)
-    end
-    return query
-  end
-
-  # build @problems that matches the given params
-  def selected_problems
-    #problems
-    @problems = @current_user.problems_for_action(:report) # start with reportable problems of this user
-    prob_use = params[:probs][:use] rescue ''
-    if prob_use == 'ids'
-      @problems = @problems.where(id: params[:probs][:ids])
-    elsif prob_use == 'groups'
-      ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
-      @problems = @problems.where(id: ids)
-    elsif prob_use == 'tags'
-      ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
-      @problems = @problems.where(id: ids)
-    else
-      @problems = Problem.where('id > 0 and id < 0')
-    end
-    @problems = @problems.order(:date_added)
-  end
-
-  def selected_users
-    @users = if params[:users][:use] == "group" then
-               User.where(id: Group.where(id: params[:users][:group_ids]).joins(:users).pluck(:user_id) )
-             elsif params[:users][:use] == 'enabled'
-               User.where(enabled: true)
-             else
-               User.all
-             end
-  end
-
-  # return  a hash {score: xx, stat: yy}
-  # xx is {
-  #   #{user.login}: {
-  #     id:, full_name:, remark:,
-  #     prob_#{prob.name}:, time_#{prob.name}
-  #     ...
-  # }
-  def calculate_max_score(records,problems,users)
-    result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
-    users.each do |u|
-      result[:score][u.login]['id'] = u.id;
-      result[:score][u.login]['full_name'] = u.full_name;
-      result[:score][u.login]['remark'] = u.remark;
-    end
-    records.each do |score|
-      #result[:score][score.login]['id'] = score.id
-      #result[:score][score.login]['full_name'] = score.full_name
-      result[:score][score.login]['prob_'+score.name] = score.max_score || 0
-      unless (result[:score][score.login]['time'+score.name] || Date.new) > score.submitted_at
-        result[:score][score.login]['time'+score.name] = score.submitted_at
+    # receive an ActiveRecord::AAssociation *query* of submissions
+    # and add more where clause limiting the submission to be in the
+    # rnage specified only
+    def submission_in_range(query,range_params)
+      if range_params[:use] ==  'sub_id'
+        #use sub id
+        since_id = range_params.fetch(:from_id,0).to_i
+        until_id = range_params.fetch(:to_id,0).to_i
+        query = query.where('submissions.id >= ?',range_params[:from_id]) if since_id > 0
+        query = query.where('submissions.id <= ?',range_params[:to_id]) if until_id > 0
+      else
+        #use sub time
+        since_time = Time.zone.parse( range_params[:from_time] ) || Time.zone.now.beginning_of_day rescue Time.zone.now.beginning_of_day
+        until_time = Time.zone.parse( range_params[:to_time] ) || Time.zone.now.end_of_day rescue Time.zone.now.end_of_day
+        datetime_range= since_time..until_time
+        query = query.where(submitted_at: datetime_range)
       end
+      return query
     end
 
-    # calculate stats (min, max, zero, partial)
-    result[:score].each do |k,v|
-      sum = 0
-      v.each do |k2,v2|
-        if k2[0..4] == 'prob_'
-          #v2 is the score
-          prob_name = k2[5...]
-          result[:stat][prob_name][:score] << v2
-          result[:stat][prob_name][:sum] += v2 || 0
-          sum += v2 || 0;
-          if v2 == 0
-            result[:stat][prob_name][:zero] += 1
-          elsif v2 == 100
-            result[:stat][prob_name][:full] += 1
-          else
-            result[:stat][prob_name][:partial] += 1
-          end
+    # build @problems that matches the given params
+    def selected_problems
+      #problems
+      @problems = @current_user.problems_for_action(:report) # start with reportable problems of this user
+      prob_use = params[:probs][:use] rescue ''
+      if prob_use == 'ids'
+        @problems = @problems.where(id: params[:probs][:ids])
+      elsif prob_use == 'groups'
+        ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
+        @problems = @problems.where(id: ids)
+      elsif prob_use == 'tags'
+        ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
+        @problems = @problems.where(id: ids)
+      else
+        @problems = Problem.where('id > 0 and id < 0')
+      end
+
+      # if user is not admin, filter problem to be only that are reportable
+      @problems = @problems.where(id: @currnet_user.problems_for_action(:report)) unless @current_user.admin?
+
+      # sort it
+      @problems = @problems.order(:date_added)
+    end
+
+    def selected_users
+      @users = if params[:users][:use] == "group" then
+                 User.where(id: Group.where(id: params[:users][:group_ids]).joins(:users).pluck(:user_id) )
+               elsif params[:users][:use] == 'enabled'
+                 User.where(enabled: true)
+               else
+                 User.all
+               end
+    end
+
+    # return  a hash {score: xx, stat: yy}
+    # xx is {
+    #   #{user.login}: {
+    #     id:, full_name:, remark:,
+    #     prob_#{prob.name}:, time_#{prob.name}
+    #     ...
+    # }
+    def calculate_max_score(records,problems,users)
+      result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+      users.each do |u|
+        result[:score][u.login]['id'] = u.id;
+        result[:score][u.login]['full_name'] = u.full_name;
+        result[:score][u.login]['remark'] = u.remark;
+      end
+      records.each do |score|
+        #result[:score][score.login]['id'] = score.id
+        #result[:score][score.login]['full_name'] = score.full_name
+        result[:score][score.login]['prob_'+score.name] = score.max_score || 0
+        unless (result[:score][score.login]['time'+score.name] || Date.new) > score.submitted_at
+          result[:score][score.login]['time'+score.name] = score.submitted_at
         end
       end
-      v[:user_sum] = sum
+
+      # calculate stats (min, max, zero, partial)
+      result[:score].each do |k,v|
+        sum = 0
+        v.each do |k2,v2|
+          if k2[0..4] == 'prob_'
+            #v2 is the score
+            prob_name = k2[5...]
+            result[:stat][prob_name][:score] << v2
+            result[:stat][prob_name][:sum] += v2 || 0
+            sum += v2 || 0;
+            if v2 == 0
+              result[:stat][prob_name][:zero] += 1
+            elsif v2 == 100
+              result[:stat][prob_name][:full] += 1
+            else
+              result[:stat][prob_name][:partial] += 1
+            end
+          end
+        end
+        v[:user_sum] = sum
+      end
+
+      # summary graph result
+      count = {zero: [], partial: [], full: []}
+      problems.each do |p|
+        count[:zero] << result[:stat][p.name][:zero]
+        count[:full] << result[:stat][p.name][:full]
+        count[:partial] << result[:stat][p.name][:partial]
+      end
+      result[:count] = count
+      return result
     end
-
-    # summary graph result
-    count = {zero: [], partial: [], full: []}
-    problems.each do |p|
-      count[:zero] << result[:stat][p.name][:zero]
-      count[:full] << result[:stat][p.name][:full]
-      count[:partial] << result[:stat][p.name][:partial]
-    end
-    result[:count] = count
-    return result
-  end
-
-
 end

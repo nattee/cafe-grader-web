@@ -14,17 +14,17 @@ class ProblemsController < ApplicationController
   #permission
   before_action :is_group_editor_authorization
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
-                                           :delete_statement, :delete_attachment,
-                                           :toggle, :toggle_test, :toggle_view_testcase, :stat,
-                                           :add_dataset,:import_testcases,
-                                          ]
+                                          :delete_statement, :delete_attachment,
+                                          :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                                          :import, :do_import, :add_dataset,:import_testcases,
+                                         ]
   before_action :can_report_problem, only: [:stat]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
 
   def index
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
     ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
-    @problems = @current_user.editable_problems.joins(:datasets)
+    @problems = @current_user.problems_for_action(:edit).joins(:datasets)
       .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
       .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
       .includes(:tags).order(date_added: :desc).group('problems.id')
@@ -239,6 +239,7 @@ class ProblemsController < ApplicationController
 
   # import as a new problem
   def do_import
+    # check valid file
     unless params[:problem][:file]
       @errors = ['You must upload a valid ZIP file']
       render :import and return
@@ -246,13 +247,22 @@ class ProblemsController < ApplicationController
     name = params[:problem][:name]
     uploaded_file_path = params[:problem][:file].to_path
 
+    #chekc valid group
+    group = Group.find(params[:problem][:group]) rescue nil
+    unless @current_user.admin? || @current_user.groups_for_action(:edit).where(id: group).any?
+      @errors = ['You can only upload a problem into a group that you are editor']
+      render :import and return
+    end
+
+
     pi = ProblemImporter.new
 
     # unzip uploaded file to raw folder
     extracted_path = pi.unzip_to_dir(
       uploaded_file_path,
       name,
-      Rails.configuration.worker[:directory][:judge_raw_path])
+      Rails.configuration.worker[:directory][:judge_raw_path]
+    )
 
     if pi.errors.count > 0
       @errors = pi.errors
@@ -280,6 +290,7 @@ class ProblemsController < ApplicationController
     else
       @log = pi.log
       @problem = pi.problem
+      Group.problems << @problem if group
     end
   end
 
