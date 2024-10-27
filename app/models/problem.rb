@@ -92,6 +92,16 @@ class Problem < ApplicationRecord
 
   end
 
+  def public_tags
+    #tags.where(public: true)
+    return tags
+  end
+
+
+  def can_view_testcase
+    return GraderConfiguration.show_testcase && self.view_testcase
+  end
+
   def get_jschart_history
     start = 4.month.ago.beginning_of_day
     start_date = start.to_date

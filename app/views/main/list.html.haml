@@ -12,8 +12,8 @@
         .card-body
           = render 'submission_box'
     - if GraderConfiguration.show_tasks_to?(@user)
-      .mt-3
-        = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
+      %h2.mt-3 Problems
+      = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
   .col-lg-5
     .card
       .card-header
@@ -28,16 +28,37 @@
     Announcement.registerRefreshEventTimer();
 
 :javascript
+  function filter_tag() {
+    let selected_tag = $('#filter-tag :selected').val()
+    table.column(5).search(selected_tag).draw()
+  }
+
   $(function() {
-    $("#main_table").DataTable({
+    table = $("#main_table").DataTable({
       columnDefs: [
-        { targets: [3,4], sortable: false },
+        { targets: [3,4], sortable: false }, // latest result & action
+        { targets: [5], visible: false }, // hidden tags column
       ],
       paging: false,
       responsive: true,
-      dom: "<'row'<'#prob-group.col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
-        "<'row'<'col-sm-12'tr>>" +
-        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      layout: {
+        topStart: () => {
+          let element = document.createElement('div');
+          element.className = 'row'
+          element.innerHTML = '<div class="col-auto"><label class="cl-form-label"> <span class="text-nowrap">Topic Filter:</span> </label></div>' +
+            '<div class="col-auto"><select id="filter-tag" class="form-select form-select-sm select2" onchange="filter_tag()">' +
+            '<option value=""> -- All --</option>' +
+            '#{j options_from_collection_for_select(Tag.all,:name,:name)}' +
+            '</select></div>'
+          return element;
+
+        },
+        topEnd: 'search'
+
+      }
+      //dom: "<'row'<'#prob-group.col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+      //  "<'row'<'col-sm-12'tr>>" +
+      //  "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     })
 
     $("#contest-table").DataTable({
@@ -49,5 +70,6 @@
         bottomStart: null,
       }
     })
+
   });
 

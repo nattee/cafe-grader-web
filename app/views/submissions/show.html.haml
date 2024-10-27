@@ -1,19 +1,16 @@
-%h1= "Submission: #{@submission.id}"
+%h2= "Submission: #{@submission.id}"
 
 %textarea#data{style: "display:none;"}
   :preserve
     #{@submission.source}
 
-//%div.highlight{:style => "border: 1px solid black;"}
-//=@formatted_code.html_safe
-
-
+// fluid-container
 .containter
   .row
     .col-md-7
-      %h2 Source Code
+      %h4 Source Code
     .col-md-5
-      %h2 Stat
+      %h4 Stat
   .row
     .col-md-7
       %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;" }
@@ -128,7 +125,7 @@
                 - if @current_user.has_role?('ta')
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
       - if @submission.evaluations.count > 0
-        %h2 Evaluations
+        %h4 Evaluations
         %table.table
           %thead
             %tr
@@ -152,7 +149,7 @@
                   %span.text-secondary MB
                 %td
                   = ev.result_as_word
-                  - unless ev.result_text.blank?
+                  - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
                     %div.text-secondary
                       = ev.result_text
                 %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
