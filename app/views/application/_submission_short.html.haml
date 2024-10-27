@@ -3,9 +3,20 @@
 - else
   - if local_assigns[:show_id]
     .row
-      .col-lg-3.text-secondary
-        Sub ID
-      .col-lg-9= submission.id
+      .col-1
+        %span.mi.mi-bs.text-secondary tag
+      .col
+        = link_to submission.id, submission_path(submission)
+        %span.ms-2
+          = "(#{link_to pluralize(sub_count || '-',"try"), problem_submissions_path(submission.problem_id)})"
+        %span.ms-2
+          - if submission.status == 'compilation_error'
+            - compiler_msg_class = 'link-danger'
+          - elsif !submission.compiler_message.blank?
+            - compiler_msg_class = 'link-warning'
+          - else
+            - compiler_msg_class = ''
+          = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: compiler_msg_class, data: {turbo: true, turbo_method: :post} }
   - unless submission.graded_at
     .row
       .col-lg-3.text-secondary= t 'main.submitted_at'

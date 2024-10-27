@@ -2,31 +2,36 @@ class ProblemsController < ApplicationController
 
   include ActiveStorage::SetCurrent
 
-  before_action :set_problem, only: [:show, :edit, :update, :destroy, :get_statement, :get_attachment,
-                                     :delete_statement, :delete_attachment,
-                                     :toggle, :toggle_test, :toggle_view_testcase, :stat,
-                                     :add_dataset,:import_testcases, :view_live_testcases
-                                    ]
+  MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
+                   :delete_statement, :delete_attachment,
+                   :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                   :add_dataset,:import_testcases,
+                  ]
 
-  before_action :admin_authorization, except: [:stat, :get_statement, :get_attachment]
-  before_action :check_valid_login, only: [:stat, :get_statement, :get_attachment]
+  before_action :set_problem, only: MEMBER_METHOD
+  before_action :check_valid_login
+
+  #permission
+  before_action :admin_authorization, only: [:toggle, :turn_all_on, :turn_all_off ]
+  before_action :is_group_editor_authorization
+  before_action :can_edit_problem, only: [:edit, :update, :destroy,
+                                          :delete_statement, :delete_attachment,
+                                          :toggle_test, :toggle_view_testcase, :stat,
+                                          :add_dataset,:import_testcases,
+                                         ]
+  before_action :can_report_problem, only: [:stat]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
-  before_action only: [:stat] do
-    authorization_by_roles(['admin','ta'])
-  end
-
 
   def index
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
     ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
-    @problems = Problem.joins(:datasets)
+    @problems = @current_user.problems_for_action(:edit).joins(:datasets)
       .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
       .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
       .includes(:tags).order(date_added: :desc).group('problems.id')
       .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
       .select("MIN(MS.ms_count) as ms_count")
       .with_attached_statement
-    @multi_contest = GraderConfiguration.multicontests?
   end
 
 
@@ -34,10 +39,6 @@ class ProblemsController < ApplicationController
   def add_dataset
     @dataset = @problem.datasets.create(name: @problem.get_next_dataset_name)
     render 'datasets/update'
-  end
-
-  def view_live_testcases
-    @dataset = @problem.live_dataset
   end
 
   #get statement download link
@@ -179,14 +180,14 @@ class ProblemsController < ApplicationController
   end
 
   def manage
-    @problems = Problem.order(date_added: :desc).includes(:tags)
+    @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
   end
 
   def do_manage
 
     @result = []
     @error = []
-    problems = get_problems_from_params
+    problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids )
 
     change_date_added(problems) if params[:change_date_added] == '1' && params[:date_added].strip.empty? == false
     add_to_contest(problems) if params.has_key? 'add_to_contest'
@@ -228,7 +229,7 @@ class ProblemsController < ApplicationController
 
 
     #redirect_to :action => 'manage'
-    @problems = Problem.order(date_added: :desc).includes(:tags)
+    @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
     render :manage
   end
 
@@ -239,6 +240,7 @@ class ProblemsController < ApplicationController
 
   # import as a new problem
   def do_import
+    # check valid file
     unless params[:problem][:file]
       @errors = ['You must upload a valid ZIP file']
       render :import and return
@@ -246,13 +248,22 @@ class ProblemsController < ApplicationController
     name = params[:problem][:name]
     uploaded_file_path = params[:problem][:file].to_path
 
+    #chekc valid group
+    group = Group.find(params[:problem][:group]) rescue nil
+    unless @current_user.admin? || @current_user.groups_for_action(:edit).where(id: group).any?
+      @errors = ['You can only upload a problem into a group that you are editor']
+      render :import and return
+    end
+
+
     pi = ProblemImporter.new
 
     # unzip uploaded file to raw folder
     extracted_path = pi.unzip_to_dir(
       uploaded_file_path,
       name,
-      Rails.configuration.worker[:directory][:judge_raw_path])
+      Rails.configuration.worker[:directory][:judge_raw_path]
+    )
 
     if pi.errors.count > 0
       @errors = pi.errors
@@ -280,6 +291,14 @@ class ProblemsController < ApplicationController
     else
       @log = pi.log
       @problem = pi.problem
+      group.problems << @problem if group
+
+      # when non-admin (editor) import a problem, we set available to true
+      # (because they cannot set the available) but set the enabled to false
+      unless @current_user.admin?
+        @problem.update(available: true)
+        GroupProblem.where(group: group, problem: problem).first.update(enabled: false)
+      end
     end
   end
 
@@ -330,61 +349,9 @@ class ProblemsController < ApplicationController
   end
 
 
-  def remove_contest
-    problem = Problem.find(params[:id])
-    contest = Contest.find(params[:contest_id])
-    if problem!=nil and contest!=nil
-      problem.contests.delete(contest)
-    end
-    redirect_to :action => 'manage'
-  end
-
   ##################################
   protected
 
-  def allow_test_pair_import?
-    if defined? ALLOW_TEST_PAIR_IMPORT
-      return ALLOW_TEST_PAIR_IMPORT
-    else
-      return false
-    end
-  end
-
-
-  # for bulk manage
-  def change_date_added(problems)
-    date = Date.parse(params[:date_added])
-    problems.update_all(date_added: date)
-    @result << "Date changed to #{date}"
-  end
-
-  def add_to_contest(problems)
-    contest = Contest.find(params[:contest][:id])
-    if contest!=nil and contest.enabled
-      problems.each do |p|
-        p.contests << contest
-      end
-    end
-    @result << "Problem added to contest #{contest.title}"
-  end
-
-
-  def get_problems_from_params
-    ids = []
-    params.keys.each do |k|
-      if k.index('prob-')==0
-        #name, id, order = k.split('-')
-        #problems << Problem.find(id)
-        ids << k.split('-')[1]
-      end
-    end
-    return Problem.where(id: ids)
-  end
-
-  def get_problems_stat
-  end
-
-  private
 
     def set_problem
       @problem = Problem.find(params[:id])
@@ -400,8 +367,70 @@ class ProblemsController < ApplicationController
       params.require(:description).permit(:body, :markdowned)
     end
 
+    def can_edit_problem
+      return true if @current_user.admin?
+      return true if @current_user.problems_for_action(:edit).where(id: @problem).any?
+      unauthorized_redirect(msg: 'You are not authorized to edit this problem')
+    end
+
+    def can_report_problem
+      return true if @current_user.admin?
+      return true if @current_user.problems_for_action(:report).where(id: @problem).any?
+      unauthorized_redirect(msg: 'You are not authorized to analyze this problem')
+    end
+
     def can_view_problem
-      unauthorized_redirect('You are not authorized to access this problem') unless @current_user.can_view_problem?(@problem)
+      return true if @current_user.admin?
+
+      #if a user is a reporter or an editor, they can access disabled problem, which is not allowed in problems_for_action(:submit)
+      return true if @current_user.problems_for_action(:report).where(id: @problem).any? 
+      return true if @current_user.problems_for_action(:submit).where(id: @problem).any?
+      unauthorized_redirect(msg: 'You are not authorized to access this problem')
+    end
+
+    def is_group_editor_authorization
+      return true if @current_user.admin?
+      return true if @current_user.groups_for_action(:edit).any?
+      unauthorized_redirect(msg: "You cannot manage any problem");
+    end
+
+    def allow_test_pair_import?
+      if defined? ALLOW_TEST_PAIR_IMPORT
+        return ALLOW_TEST_PAIR_IMPORT
+      else
+        return false
+      end
+    end
+
+
+    # for bulk manage
+    def change_date_added(problems)
+      date = Date.parse(params[:date_added])
+      problems.update_all(date_added: date)
+      @result << "Date changed to #{date}"
+    end
+
+    def add_to_contest(problems)
+      contest = Contest.find(params[:contest][:id])
+      if contest!=nil and contest.enabled
+        problems.each do |p|
+          p.contests << contest
+        end
+      end
+      @result << "Problem added to contest #{contest.title}"
+    end
+
+
+    def get_problems_from_params
+      ids = []
+      params.keys.each do |k|
+        if k.index('prob-')==0
+          #name, id, order = k.split('-')
+          #problems << Problem.find(id)
+          ids << k.split('-')[1]
+        end
+      end
+      return Problem.where(id: ids)
     end
 
 end

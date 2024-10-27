@@ -1,9 +1,4 @@
-- content_for :head do
-  = stylesheet_link_tag 'problems'
-
-%h1 Import problems
-
-%p= link_to '[Back to problem list]', problems_path
+%h2 Import problems
 
 - if @errors
   -# show errors
@@ -14,12 +9,13 @@
         %li= msg
 
 .row
-  .col-md-4
+  .col-md-6
     = simple_form_for :problem, url: do_import_problems_path, html: {multipart: true}, wrapper: :horizontal_form do |f|
       = f.input :name
       = f.input :full_name
       = f.input :time_limit, required: false
       = f.input :memory_limit, required: false
+      = f.input :groups, collection: @current_user.groups_for_action(:edit), label_method: :name, value_method: :id, class: 'select2', include_blank: false, style: 'width: 100%', wrapper: :horizontal_collection
       .card.mb-2
         .card-body
           %h5.card-title Dataset
@@ -28,7 +24,7 @@
           = f.input :sol_pattern, input_html: { value: '*.sol' }
           = f.input :replace, label: 'replace all existing datasets of this problem', as: :boolean, wrapper: :horizontal_boolean
       = f.button :submit, class: 'btn-primary'
-  .col-md-4
+  .col-md-6
     .card.bg-warning-subtle.mt-2
       .card-body
         .card-title

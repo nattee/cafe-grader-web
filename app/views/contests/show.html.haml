@@ -1,11 +1,229 @@
-%h1
-  Contest: #{h @contest.title}
-.infobox
-  %b Go back to:
-  [#{link_to 'contest management', :controller => 'contest_management', :action => 'index'}]
-%p
-  %b Enabled:
-  = h @contest.enabled
-= link_to 'Edit', edit_contest_path(@contest)
-|
-= link_to 'Back', contests_path
+%h2 Contest management
+.row.my-3.gx-3
+  .col-md-6
+    .card
+      .card-body
+        %h4 Contest Detail
+        .row.mb-3
+          = key_pair(obj: @contest, field: :name)
+          = key_pair(obj: @contest, field: :description,width: 4)
+          = key_pair(obj: @contest, field: :enabled, as: :yes_no)
+          = key_pair(label: 'Start Time', value: @contest.start.strftime("%Y-%b-%d %H:%M"))
+          = key_pair(label: 'Finish Time', value: @contest.stop.strftime("%Y-%b-%d %H:%M"))
+          = key_pair(obj: @contest, field: :freeze, as: :yes_no)
+        = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary me-2'
+        = link_to 'Back', contests_path, class: 'btn btn-outline-secondary'
+  .col-md-6
+    .alert.alert-warning.shadow-sm
+      %h4 Tips
+      %ul
+        %li
+          A contest is shown to a user when the site is in
+          %strong Contest Mode.
+        %li 
+          Only enabled contest that has the current time is during its start and stop time is shown to the user.
+        %li 
+          When a contest is frozen, the user cannot submit to the contest and contest's users and problem cannot be modified.
+.row.my-3{data: {controller: 'contest'}}
+  .col-12
+    .card
+      .card-body
+        %ul.nav.nav-tabs.mb-3
+          %li.nav-item
+            %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'}}}
+              %span.mi.mi-bs
+                person
+              Users
+          %li.nav-item
+            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}}}
+              %span.mi.mi-bs
+                task
+              Problems
+        .tab-content
+          -# ==========================================
+          -# ---------- users pane ------------------
+          -# ==========================================
+          #tab-contest-user.tab-pane.fade.show.active
+            .row
+              .col-md-6
+                %h5.mb-2.card-subtitle.text-body-secondary List of users in this contest
+                .mb-2
+                  Use following actions to add users to this contest.
+                =form_tag add_user_contest_path(@contest), class: 'mb-3 form-inline', 
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :user_ids, "Add these users", class: 'col-form-label'
+                    .col-7
+                      =select_tag :user_ids, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", class: 'btn btn-primary'
+                =form_tag add_user_by_group_contest_path(@contest), class: 'mb-3 form-inline', 
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
+                    .col-7
+                      =select_tag :user_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                -# hidden user action form
+                = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'a'}} do |f|
+                  = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
+                  = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
+              .col-md-6
+                -# help for GroupUser
+                .alert.alert-warning.shadow-sm
+                  %ul
+                    %li
+                      If you want to add several users to a group, it may be easier to just re-import the users in
+                      = link_to 'New list of users', new_list_user_admin_index_path
+                      page. You can also use
+                      = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
+                      page.
+                    %li
+                      Only enabled problems are shown to the enabled users of the group.
+            %table#user_table.table.datatable.table-hover
+              %thead
+                %tr
+                  %th Login
+                  %th Full name
+                  %th Seat
+                  %th Remark
+                  %th Enable
+                  %th Remove
+          -# ==========================================
+          -# ---------- problem pane ------------------
+          -# ==========================================
+          #tab-contest-problem.tab-pane.fade
+            .row
+              .col-md-6
+                %h5.mb-2.card-subtitle.text-body-secondary List of problems in this contest
+                .mb-2
+                  Use following actions to add problems to this contest.
+                =form_tag add_problem_contest_path(@contest), class: 'mb-3 form-inline',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd' } do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :problem_ids, "Problem",class: 'col-form-label'
+                    .col-7
+                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-auto
+                      =submit_tag "Add",class: 'btn btn-primary', 'data-group-target': 'asdf'
+                =form_tag add_problem_by_group_contest_path(@contest), class: 'mb-3 form-inline',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
+                  .row.mb-2
+                    .col-3
+                      =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
+                    .col-7
+                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                    .col-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                -# hidden problem action form
+                = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'}} do |f|
+                  = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
+                  = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
+              .col-md-6
+                -# help for group problem
+                .alert.alert-warning.shadow-sm
+                  %ul
+                    %li
+                      If you want to add several problem to a group, it may be easier to bulk manage them in the
+                      = link_to 'Bulk Manage Problems', manage_problems_path
+                      page.
+                    %li
+                      Only enabled problems are shown to the enabled users of the group.
+            .row
+              .col-12
+                %table#problem_table.table.datatable.table-hover
+                  %thead
+                    %tr
+                      %th Number
+                      %th Name
+                      %th Full name
+                      %th Enable
+                      %th Action
+
+%div{'data-controller': 'hello'}
+
+:javascript
+  function clear_user_form() {
+    $('#user_group_id').val(null).trigger('change')
+    $('#user_id').val(null).trigger('change')
+  }
+
+  function clear_problem_form() {
+    $('#problem_group_id').val(null).trigger('change')
+    $('#problem_id').val(null).trigger('change')
+  }
+
+  $(function() {
+    //user table
+    user_table_config = {
+      processing: true,
+      rowId: 'id',
+      destroy: true,
+      paging: false,
+      order: [[0,'asc']],
+      ajax: {
+        url: "#{show_users_query_contest_path(@contest)}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+      },
+      layout: {
+        topStart: 'info',
+        topEnd: 'search',
+      },
+      columns: [ 
+        {data: 'login'},
+        {data: 'full_name'},
+        {data: 'seat'},
+        {data: 'remark'},
+        {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'user_id', render: dt_link_renderer(`[${msi('person_remove','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
+      ],
+      columnDefs: [{orderable: false, targets: [4,5]} ],
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
+    }
+
+    //problem table
+    problem_table_config = {
+      processing: true,
+      rowId: 'id',
+      destroy: true,
+      paging: false,
+      order: [[0,'asc']],
+      ajax: {
+        url: "#{show_problems_query_contest_path(@contest)}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+      },
+      layout: {
+        topStart: 'info',
+        topEnd: 'search',
+      },
+      columns: [ 
+        {data: 'number'},
+        {data: 'name'},
+        {data: 'full_name'},
+        {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'problem_id', render: dt_link_renderer(`[${msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?'})},
+        {data: 'problem_id', render: dt_link_renderer(`[${msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup'})},
+        {data: 'problem_id', render: dt_link_renderer(`[${msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown'})},
+      ],
+      columnDefs: [{orderable: false, targets: [3,4,5,6]} ],
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
+    }
+
+    //initialize the table
+    $('#user_table').DataTable(user_table_config)
+    $('#problem_table').DataTable(problem_table_config)
+  });

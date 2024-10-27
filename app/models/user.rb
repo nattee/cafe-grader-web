@@ -31,7 +31,9 @@ class User < ApplicationRecord
   belongs_to :site, optional: true
   belongs_to :country, optional: true
 
-  has_and_belongs_to_many :contests, -> { order(:name)}
+  # contest
+  has_many :contests_users, class_name: 'ContestUser'
+  has_many :contests, :through => :contests_users
 
   scope :activated_users, -> {where activated: true}
 
@@ -67,43 +69,79 @@ class User < ApplicationRecord
 
   # ---- problem for the users for specific action ------
   # -- this includes logic of User.role where admin always has right ---
-  # -- this also includes logics of mode of the grader
+  # -- this also includes logics of mode of the grader (normal, contest, analysis)
   # -- this also consider whether the user is enabled ---
-  # action is either :submit, :report, :edit
+  # valid action is either :submit, :report, :edit
   def problems_for_action(action)
     return Problem.all if admin?
-    return [] unless enabled?
+    return Problem.none unless enabled?
+
+    action = action.to_sym
 
     if GraderConfiguration.multicontests?
       # legacy mode, have not been implemented yet
     elsif GraderConfiguration.contest_mode?
+      return Problem.contests_problems_for_user(self.id)
     else
       # normal mode
       if GraderConfiguration.use_problem_group?
-        if action.to_sym == :edit
-          return Problem.editable_by_user(self.id)
-        elsif action.to_sym == :report
-          return Problem.reportable_by_user(self.id)
-        elsif action.to_sym == :submit
-          return Problem.submittable_by_user(self.id)
+        if action == :edit
+          return Problem.group_editable_by_user(self.id)
+        elsif action == :report
+          return Problem.group_reportable_by_user(self.id)
+        elsif action == :submit
+          return Problem.group_submittable_by_user(self.id)
         else
           raise ArgumentError.new('action must be one of :edit, :report, :submit')
         end
       else
-        if action.to_sym == :submit
-          return Problem.available_problems
+        if action == :submit
+          return Problem.available
         else
-          return []
+          return Problem.none
         end
       end
     end
   end
 
-  def editable_groups
+  # ---- groups for the users for specific action ------
+  # * This includes logic of User.role where admin always has right to any group
+  # * This also includes logics of mode of the grader (normal, contest, analysis)
+  # * This also consider whether the user is enabled ---
+  # * This DOES NOT respect group_mode, it always performed as the group mode is enabled
+  #
+  # valid action is either :submit, :report, :edit
+  def groups_for_action(action)
     return Group.all if admin?
-    return [] unless enabled?
+    return Group.none unless enabled?
 
-    return Group.editable_by_user(self.id)
+    action = action.to_sym
+
+    # normal mode
+    if action == :edit
+      return Group.editable_by_user(self.id)
+    elsif action == :report
+      return Group.reportable_by_user(self.id)
+    elsif action == :submit
+      return Group.submittable_by_user(self.id)
+    else
+      raise ArgumentError.new('action must be one of :edit, :report, :submit')
+    end
+  end
+
+  def reportable_users
+    return User.all if admin?
+    User.where(id: groups_for_action(:report).joins(:users).pluck('groups_users.user_id'))
+  end
+
+  # return contests of this user that is both enabled and the current time
+  # is during the contest
+  def active_contests
+    if GraderConfiguration.contest_mode?
+      return contests.where(enabled: true).where('start <= ? and stop >= ?',Time.zone.now, Time.zone.now)
+    else
+      return Contest.none
+    end
   end
 
   def self.authenticate(login, password)
@@ -188,7 +226,20 @@ class User < ApplicationRecord
     return users.find_all { |u| u.contests.length == 0 }
   end
 
+  # ---------------------
+  # ---- contest --------
+  # ---------------------
+  # modern contest
+  def contest_end_time
+    if GraderConfiguration.contest_mode?
+      return active_contests.first&.stop
+    else
+      return nil
+    end
+  end
 
+
+  # original contest
   def contest_time_left
     if GraderConfiguration.contest_mode?
       return nil if site==nil
@@ -213,6 +264,7 @@ class User < ApplicationRecord
       return nil
     end
   end
+
 
   def contest_finished?
     if GraderConfiguration.contest_mode?
@@ -262,24 +314,6 @@ class User < ApplicationRecord
     return false
   end
 
-  def available_problems_group_by_contests
-    contest_problems = []
-    pin = {}
-    contests.enabled.each do |contest|
-      available_problems = contest.problems.available
-      contest_problems << {
-        :contest => contest,
-        :problems => available_problems
-      }
-      available_problems.each {|p| pin[p.id] = true}
-    end
-    other_avaiable_problems = Problem.available.find_all {|p| pin[p.id]==nil and p.contests.length==0}
-    contest_problems << {
-      :contest => nil,
-      :problems => other_avaiable_problems
-    }
-    return contest_problems
-  end
 
   def solve_all_available_problems?
     available_problems.each do |p|
@@ -290,67 +324,21 @@ class User < ApplicationRecord
     return true
   end
 
-  #get a list of available problem
+  #get a list of available problem for submission
   def available_problems
     # first, we check if this is normal mode
-    unless GraderConfiguration.multicontests?
-
+    unless GraderConfiguration.contest_mode?
       #if this is a normal mode
       #we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
-        return available_problems_in_group
+        return Problem.group_submittable_by_user(self.id).default_order
       else
-        return Problem.available_problems
+        return Problem.available.default_order
       end
     else
-      #this is multi contest mode
-      contest_problems = []
-      pin = {}
-      contests.enabled.each do |contest|
-        contest.problems.available.each do |problem|
-          if not pin.has_key? problem.id
-            contest_problems << problem
-          end
-          pin[problem.id] = true
-        end
-      end
-      other_avaiable_problems = Problem.available.find_all {|p| pin[p.id]==nil and p.contests.length==0}
-      return contest_problems + other_avaiable_problems
+      #this is contest mode
+      Problem.contests_problems_for_user(self.id).default_order
     end
-  end
-
-  # new feature, get list of available problem in all enabled group that the user belongs to
-  def available_problems_in_group
-    pids = self.groups.where(enabled: true).joins(:problems).select('distinct problem_id').pluck :problem_id
-    return Problem.where(id: pids).where(available: true).order('date_added DESC').order('name')
-  end
-
-  def editable_problems_in_group
-    pids = enabled_problems_in_groups_with_role(['editor'])
-    return Problem.where(id: pids).where(available: true)
-  end
-
-  def reportable_problems_in_group
-    pids = enabled_problems_in_groups_with_role(['reporter','editor'])
-    return Problem.where(id: pids).where(available: true)
-  end
-
-  def enabled_problems_ids_in_groups_with_role(roles = ['reporter','editor'])
-    if GraderConfiguration.use_problem_group?
-      self.groups_users.where(role: roles).
-        joins(group: :problems).where(group: {enabled: true})
-        .distinct(:problem_id)
-        .pluck :problem_id
-    else
-      return []
-    end
-  end
-
-  def enabled_groups_with_roles(roles)
-    ids = groups_users.joins(:group)
-      .where(role: roles,group: {enabled: true})
-      .pluck(:group_id)
-    return Group.where(id: ids)
   end
 
   #check if the user has the right to view that problem

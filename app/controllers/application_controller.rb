@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
+  before_action :current_contest
   before_action :header_info
   before_action :unique_visitor_id
   before_action :active_controller_action
@@ -28,6 +29,25 @@ class ApplicationController < ActionController::Base
   def current_user
     return nil unless session[:user_id]
     @current_user ||= User.find(session[:user_id])
+  end
+
+  # return the current contest of the user
+  # must be called AFTER current_user
+  def current_contest
+    return nil unless @current_user
+    unless GraderConfiguration.contest_mode?
+      session[:contest_id] = nil
+      return @current_contest = nil 
+    end
+
+    @current_contest ||= Contest.where(id: session[:contest_id]).first
+    
+    #if the session contest is disabled, pick the earliest enabled one (or nil)
+    unless @current_contest && @current_contest.enabled?
+      @current_contest = @current_user.active_contests.order(:stop).first 
+      session[:contest_id] = @current_contest&.id
+    end
+    return @current_contest
   end
 
   def read_grader_configuration
@@ -62,12 +82,11 @@ class ApplicationController < ActionController::Base
   end
 
   # redirect when user does not have specific roles in any group
-  # allowed_roles should be 'xxx' or ['xxx','yyy']
-  def group_role_authorization(allowed_roles)
-    return false unless check_valid_login
+  # allowed_roles should be :xxx
+  def group_action_authorization(action)
     return true if @current_user.admin?
-    return true if @current_user.enabled_groups_with_roles(allowed_roles).any?
-    unauthorized_redirect
+    return true if @current_user.groups_for_action(action).any?
+    unauthorized_redirect(msg: "You cannot #{action} on any group");
   end
 
   def authorization_by_roles(allowed_roles)
@@ -94,8 +113,6 @@ class ApplicationController < ActionController::Base
   #if the user is not logged_in or the system is in "ADMIN ONLY" mode
 
   def check_valid_login
-
-
     #check if logged in
     unless @current_user
       if GraderConfiguration.single_user_mode?
@@ -130,7 +147,7 @@ class ApplicationController < ActionController::Base
     # check if user ip is allowed
     unless @current_user.admin? || GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       unless is_request_ip_allowed?
-        unauthorized_redirect 'Your IP is not allowed to log in at this time.', logout: true
+        unauthorized_redirect(msg: 'Your IP is not allowed to log in at this time.', logout: true)
         return false
       end
     end
@@ -148,17 +165,6 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    # check multi contest
-    if GraderConfiguration.multicontests?
-      return true if @current_user.admin?
-      begin
-        if @current_user.contest_stat(true).forced_logout
-          flash[:notice] = 'You have been automatically logged out.'
-          redirect_to :controller => 'main', :action => 'index'
-        end
-      rescue
-      end
-    end
     return true
   end
 

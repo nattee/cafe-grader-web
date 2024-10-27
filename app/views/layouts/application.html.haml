@@ -4,7 +4,7 @@
   %title= GraderConfiguration['contest.name']
   = stylesheet_link_tag "application", params[:controller], :media => "all"
   /%link{href:"https://cdn.datatables.net/v/dt/dt-2.1.7/datatables.min.css", rel:"stylesheet"}
-  = stylesheet_link_tag "datatables-new"
+  = stylesheet_link_tag "datatables/datatables-new.min"
   = csrf_meta_tags
   = csp_meta_tag
   = javascript_include_tag :my_app
@@ -28,6 +28,9 @@
         = message
         %button.btn-close{type: 'button', 'data-bs-dismiss': :alert}
     = yield
+  
+  -# for msg modal, we have a turbo_frame, ready to be shown via turbo
+  = turbo_frame_tag :msg_modal_main, data: {turbo: true}
 
   -# for toast
   = turbo_frame_tag :toast_main, data: {turbo: true} do

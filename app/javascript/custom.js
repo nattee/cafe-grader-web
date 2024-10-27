@@ -6,6 +6,11 @@ $(document).on('change', '.btn-file :file', function() {
   input.trigger('fileselect', [numFiles, label]);
 });
 
+window.msi = (icon_name, className = '') => {
+  return `<span class="mi mi-bs ${className}">${icon_name}</span>`
+}
+
+
 //default options for tempus dominus
 window.default_td_options = {
   display: {

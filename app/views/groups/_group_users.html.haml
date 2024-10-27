@@ -6,36 +6,7 @@
         %th Full name
         %th Role
         %th Remark
-        %th= link_to 'Remove All', remove_all_user_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL USERS from group?" }, class: 'btn btn-danger btn-sm'
+        %th Enabled
+        %th Remove
         %th Set role
-        %th
     %tbody
-      - @group.groups_users.joins(:user).includes(:user).each do |gu|
-        - user = gu.user
-        - role = gu.role
-        %tr
-          %td= user.login
-          %td= user.full_name
-          %td{'data-order':GroupUser.roles[role]}= role
-          %td= user.remark
-          %td
-            = button_to 'Remove',
-              remove_user_group_path(@group,user), method: :delete, 
-              form: {data: { confirm: "Remove #{user.full_name}?", turbo: 'true', 'turbo-method': 'delete'}}, class: 'm-1 btn btn-danger btn-sm'
-          - if role != 'user'
-            %td
-              = button_to 'To User',
-                set_user_role_group_path(@group,user, 'user'),
-                form: {data: { turbo: 'true'} }, class: "btn m-1 btn-outline-info btn-sm"
-          - if role != 'reporter'
-            %td
-              = button_to 'To Reporter',
-                set_user_role_group_path(@group,user, 'reporter'),
-                form: {data: { turbo: 'true'} }, class: "btn m-1 btn-outline-warning btn-sm"
-          - if role != 'editor'
-            %td
-              = button_to 'To Editor',
-                set_user_role_group_path(@group,user, 'editor'),
-                form: {data: { turbo: 'true'} }, class: "btn m-1 btn-outline-success  btn-sm"
-  :javascript
-    reload_table();

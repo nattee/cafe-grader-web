@@ -70,7 +70,7 @@ class DatasetsController < ApplicationController
 
   def file_view
     att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}
+    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}
   end
 
   def file_download
@@ -83,14 +83,13 @@ class DatasetsController < ApplicationController
   # as turbo
   def testcase_input
     tc = Testcase.find(params[:tc_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.inp_file.download }
-
+    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.inp_file.download }
   end
 
   # as turbo
   def testcase_sol
     tc = Testcase.find(params[:tc_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.ans_file.download }
+    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.ans_file.download }
   end
 
   # as turbo

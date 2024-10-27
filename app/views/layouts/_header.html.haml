@@ -1,5 +1,5 @@
 %header
-  %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg
+  %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg.shadow-sm
     .container-fluid
       %a.navbar-brand{href: list_main_path}
         %span.mi.mi-bs home
@@ -22,50 +22,44 @@
           - if GraderConfiguration.analysis_mode?
             %div.btn.btn-success#countdown= "ANALYSIS MODE"
           - elsif GraderConfiguration.time_limit_mode?
-            - if @current_user.contest_finished?
+            - if @current_contest&.contest_status == :ended
               %div.btn.btn-danger#countdown= "Contest is over"
-            - elsif !@current_user.contest_started?
+            - elsif !@current_contest&.contest_status == :later
               %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
-            - else
-              %div.btn.btn-dark#countdown -
+            - elsif @current_contest
+              %div.btn.btn-dark#countdown
               :javascript
-                contest_end = moment().add(#{@current_user.contest_time_left.to_i},'seconds')
-                function update_remaining_time() {
-                  x = contest_end - moment()
-                  if (x >= 0) {
-                    remain = moment.utc(contest_end - moment()).format('HH:mm:ss') +' remain'
-                  } else {
-                    remain = 'contest is over'
-                  }
-                  $("#countdown").html(remain)
-                }
-                update_remaining_time()
-                setInterval(update_remaining_time,500)
+                $(() => {
+                  too_early_count = 0
+                  setInterval(updateRemainingTime,500)
+                  setTimeout(checkInLoop,1000)
+                })
           / admin section
-          - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor']).any?)
+          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:edit).any?)
             / management
             %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle.active-with-children{href: '#',
                 data: {'bs': {toggle:'dropdown'}}, aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Manage
               %ul.dropdown-menu
-                %li= link_to 'Announcements', announcements_path, class: 'dropdown-item'+active_class_when(controller: :announcements)
+                %li= link_to 'Announcements', announcements_path, class: 'dropdown-item'+active_class_when(controller: :announcements) if @current_user.admin?
                 %li= link_to 'Problems', problems_path, class: 'dropdown-item'+active_class_when(controller: :problems)
-                %li= link_to 'Tags', tags_path, class: 'dropdown-item'+active_class_when(controller: :tags)
-                %li= link_to 'Users', user_admin_index_path, class: 'dropdown-item'+active_class_when(controller: :user_admin)
+                %li= link_to 'Tags', tags_path, class: 'dropdown-item'+active_class_when(controller: :tags) if @current_user.admin?
+                %li= link_to 'Users', user_admin_index_path, class: 'dropdown-item'+active_class_when(controller: :user_admin) if @current_user.admin?
                 %li= link_to 'Groups', groups_path, class: 'dropdown-item'+active_class_when(controller: :groups)
-                %li= link_to 'Graders', grader_processes_path, class: 'dropdown-item'+active_class_when(controller: :graders)
-                %li= link_to 'Message ', console_messages_path, class: 'dropdown-item'+active_class_when(controller: :messages)
-                %li
-                  %hr.dropdown-divider
-                %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :grader_configuration)
-                %li
-                  %hr.dropdown-divider
-                %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites)
-                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
+                %li= link_to 'Graders', grader_processes_path, class: 'dropdown-item'+active_class_when(controller: :graders) if @current_user.admin?
+                %li= link_to 'Message ', console_messages_path, class: 'dropdown-item'+active_class_when(controller: :messages) if @current_user.admin?
+                - if @current_user.admin?
+                  %li
+                    %hr.dropdown-divider
+                  %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :grader_configuration)
+                  %li
+                    %hr.dropdown-divider
+                  %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites)
+                  %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
                 -#
           / report
-          - if @current_user && (@current_user.admin? || @current_user.enabled_groups_with_roles(['editor','reporter']).any?)
+          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
             %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle.active-with-children{href: '#', data: {bs: {toggle:'dropdown'}},  aria: {haspopup:"true", expanded:"false"}, role: "button"}
                 Report
@@ -124,4 +118,107 @@
       e.preventDefault();
       go_to_sub();
   });
+
+  // call check_in api and return a string of last check-in time
+  function check_in() {
+    fetch(check_in_url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
+      },
+    }).then( response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      console.log('xxx')
+      return response.text() // this is a promise
+    });
+      console.log('yyy')
+  }
+
+  function checkInLoop() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
+    const check_in_url = '#{user_check_in_contests_path}'
+    const check_in_interval_seconds = #{Contest.check_in_interval}
+
+    //call check in
+    fetch(check_in_url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
+      },
+    }).then( response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.text() // this is a promise
+    }).then( text_as_string => {
+      ms_since_last_check_in = parseInt(text_as_string)
+
+      if (ms_since_last_check_in > check_in_interval_seconds * 1000) {
+        too_early_count = 0
+      } else {
+        too_early_count += 1
+      }
+      wait_multiplyer = (too_early_count + 1)
+      randomMs = 500 + 2000 * Math.random()
+      sleepDurationMs = wait_multiplyer * check_in_interval_seconds * 1000 + randomMs
+
+      console.log(`Next check-in in ${sleepDurationMs / 1000} seconds...(collision = ${too_early_count})`);
+      setTimeout(checkInLoop,sleepDurationMs)
+
+    }).catch( e => {
+      setTimeout(checkInLoop,5000)
+      throw e
+    }); // this catch is needed to handle the error happens in "then"
+  }
+
+  function updateRemainingTime() {
+    const contestEndTime = Date.parse('#{@current_user.contest_end_time&.iso8601}')
+    if (!contestEndTime) return; // No contest end time to display
+
+    const now = new Date();
+    const remainingTime = contestEndTime - now;
+
+    if (remainingTime > 0) {
+      const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+      const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+      document.getElementById('countdown').textContent =
+        `${hours}h ${minutes}m ${seconds}s remaining`;
+    } else {
+      document.getElementById('countdown').textContent = 'Contest ended';
+    }
+  }
+
+  // time should be a string in iso8601 format
+  function humanize_time(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
+    const time = Date.parse(time_iso8601)
+    const now = new Date();
+    const remainingTime = time - now;
+    const hours = Math.floor(Math.abs(remainingTime) / (1000 * 60 * 60));
+    const minutes = Math.floor((Math.abs(remainingTime) % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((Math.abs(remainingTime) % (1000 * 60)) / 1000);
+    let time_text = ''
+    
+    //humanize
+    if (hours == 0) {
+      if (minutes <= 3) {
+         time_text = `${minutes * 60 + seconds} seconds`
+      } else {
+        time_text = `${minutes} minutes`
+      }
+    } else {
+      time_text = `${hours}h ${minutes}m`
+    }
+
+    //return the text
+    if (remainingTime < 0) {
+      return prepend_text_after + time_text + ' ago'
+    } else {
+      return prepend_text_before + time_text
+    }
+  }
+
 

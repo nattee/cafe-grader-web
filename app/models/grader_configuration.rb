@@ -64,10 +64,6 @@ class GraderConfiguration < ApplicationRecord
   def self.show_submitbox_to?(user)
     mode = get(SYSTEM_MODE_CONF_KEY)
     return false if mode=='analysis'
-    if (mode=='contest') 
-      return false if (user.site!=nil) and 
-        ((user.site.started!=true) or (user.site.finished?))
-    end
     return true
   end
 

@@ -1,0 +1,41 @@
+.card.border-warning.mb-3
+  .card-header.text-bg-warning.border-warning
+    Contest
+  .card-body
+    %table#contest-table.datatable{style: "width: 100%"}
+      %thead
+        %tr
+          %th Contest
+          %th Time
+          %th Status
+          %th
+      %tbody
+        - @contests.each do |contest|
+          %tr
+            %td= contest.name
+            %td
+              = format_start_stop(contest.start,contest.stop).html_safe
+            %td
+              .time-counter{data: {start: contest.start.iso8601,stop: contest.stop.iso8601}}
+            %td
+              - unless contest == @current_contest
+                = link_to 'Set as active'
+:javascript
+  function updateContestStatusTime() {
+    const x = document.getElementsByClassName('time-counter')
+    const now = new Date();
+    for (i = 0;i < x.length;i++) {
+      const start_time = Date.parse(x[i].dataset.start)
+      const stop_time = Date.parse(x[i].dataset.stop)
+      if (now <  start_time) {
+        x[i].textContent = humanize_time(x[i].dataset.start,'start in ','started ')
+      } else {
+        x[i].textContent = humanize_time(x[i].dataset.stop,'end in ','ended ')
+      }
+    }
+    $('#contest-table')
+  }
+
+  $(() => {
+    setInterval(updateContestStatusTime,500)
+  })

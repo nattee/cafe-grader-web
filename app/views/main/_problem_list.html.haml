@@ -1,28 +1,11 @@
-- if not GraderConfiguration.multicontests?
-  %table#main_table.table.table-striped.table-condensed{width: '100%'}
-    %thead
-      %tr
-        %th No.
-        %th.all Name
-        %th Best Score
-        %th.all Latest Results
-        %th.all
-    %tbody
-      - @numbering = 1
-      = render :partial => 'problem', collection: problems
-- else
-  - contest_problems.each do |cp|
-    - if cp[:problems].length > 0
-      %h2{:class =>'contest-title'}
-        = "#{cp[:contest] ? cp[:contest].title : 'Public problems'}"
-      %table#main_table.table.table-striped.table-condensed{width: '100%'}
-        %thead
-          %tr
-            %th Task name
-            %th.all Full name
-            %th # of sub(s)
-            %th.all Results
-            %th.all
-        %tbody
-          = render :partial => 'problem', :collection => cp[:problems]
-
+%table#main_table.table.table-striped.table-condensed{width: '100%'}
+  %thead
+    %tr
+      %th No.
+      %th.all Name
+      %th Best Score
+      %th.all Latest Results
+      %th.all
+  %tbody
+    - @numbering = 1
+    = render :partial => 'problem', collection: problems
