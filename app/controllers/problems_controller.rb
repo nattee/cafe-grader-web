@@ -12,15 +12,16 @@ class ProblemsController < ApplicationController
   before_action :check_valid_login
 
   #permission
+  before_action :is_group_editor_authorization, except: [:get_statement, :get_attachment]
+  before_action :can_view_problem, only: [:get_statement, :get_attachment]
+
   before_action :admin_authorization, only: [:toggle, :turn_all_on, :turn_all_off ]
-  before_action :is_group_editor_authorization
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
                                           :delete_statement, :delete_attachment,
                                           :toggle_test, :toggle_view_testcase, :stat,
                                           :add_dataset,:import_testcases,
                                          ]
   before_action :can_report_problem, only: [:stat]
-  before_action :can_view_problem, only: [:get_statement, :get_attachment]
 
   def index
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
