@@ -55,7 +55,7 @@
                 = form.file_field :load_file, class: 'form-control', id: 'load_file'
             .row.mb-2
               .col-12
-                = submit_tag 'Submit', class: 'btn ' + (@submission && @submission.number >= 100 ? 'golden-btn' : 'btn-success'), id: 'live_submit', 
+                = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
                   data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
 
       -# latest submission status

@@ -73,7 +73,7 @@ class User < ApplicationRecord
     user = find_by_login(login)
     if user
       return user if user.authenticated?(password)
-      if user.authenticated_by_cucas?(password)
+      if GraderConfiguration.get('chula.allow_cu_net_password') && user.authenticated_by_cucas?(password)
         user.password = password
         user.save
         return user
