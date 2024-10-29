@@ -5,7 +5,7 @@
       .card-body
         %h4 Basic Info
         - content_for(:form_buttons) do
-          = link_to 'Back to user list', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
+          = link_to 'Back', user_admin_index_path, class: 'btn btn-outline-secondary mx-2'
         = simple_form_for @user, url: user_admin_path(@user) do |f|
           = render partial: 'form', locals: {f: f}
   .col-md-6

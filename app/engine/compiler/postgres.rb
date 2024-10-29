@@ -4,10 +4,10 @@ class Compiler::Postgres < Compiler
   # but accidentally select postgres as the programming language,
   # which trigger compilation as postgres
   def validate
-    unless @prob_config_file && File.exists?(@prob_config_file)
-      raise GraderError.new("Compiling as PostgreSQL but the Problem does not have PostgreSQL config file.",
-                            submission_id: @sub.id)
-    end
+    #unless @prob_config_file && File.exists?(@prob_config_file)
+    #  raise GraderError.new("Compiling as PostgreSQL but the Problem does not have PostgreSQL config file.",
+    #                        submission_id: @sub.id)
+    #end
     super()
   end
 
