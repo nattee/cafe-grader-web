@@ -48,7 +48,7 @@
           element.innerHTML = '<div class="col-auto"><label class="cl-form-label"> <span class="text-nowrap">Topic Filter:</span> </label></div>' +
             '<div class="col-auto"><select id="filter-tag" class="form-select form-select-sm select2" onchange="filter_tag()">' +
             '<option value=""> -- All --</option>' +
-            '#{j options_from_collection_for_select(Tag.all,:name,:name)}' +
+            '#{j options_from_collection_for_select(Tag.where(public: true),:name,:name)}' +
             '</select></div>'
           return element;
 

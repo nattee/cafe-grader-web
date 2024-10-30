@@ -1,6 +1,6 @@
 .row
   .col-md-5
-    .card
+    .card.shadow-sm
       .card-body
         = simple_form_for problem, wrapper: :horizontal_form do |form|
           %h4 Basic Information
@@ -21,9 +21,9 @@
             .col-md-9
               %p
                 - if @problem.statement.attached?
-                  %a{href: get_statement_problem_path(@problem)} [Download current Statement]
-                  |
-                  = link_to '[delete]', statement_problem_path(@problem), method: :delete, data: {confirm: 'Are you sure?'}
+                  = link_to '<span class="mi mi-bs md-18">description</span> Read'.html_safe, get_statement_problem_path(@problem)
+                  = " | "
+                  = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, statement_problem_path(@problem), method: :delete, class: 'link-danger', data: {confirm: 'Are you sure?'}
                 - else
                   This problem has no statement
           = form.input :description, as: :text
@@ -41,11 +41,11 @@
                   = link_to '[delete]', attachment_problem_path(@problem), method: :delete, data: {confirm: 'Are you sure?'}
                 - else
                   This problem has no attachment
-          = form.button :submit, class: 'btn btn-primary mx-2'
-          = link_to 'Back', problems_path, class: 'btn btn-outline-secondary mx-2'
-          = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary mx-2'
+          = form.button :submit, class: 'btn btn-primary me-2'
+          = link_to 'Back', problems_path, class: 'btn btn-outline-secondary me-2'
+          = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary me-2'
   .col-md-7
-    .card
+    .card.shadow-sm
       .card-body
         %h4 Datasets
         %ul.nav.nav-tabs
