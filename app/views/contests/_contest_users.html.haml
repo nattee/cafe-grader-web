@@ -1,0 +1,18 @@
+= turbo_frame_tag :contest_user_table_frame do
+  %table#user_table.table.datatable.table-hover
+    %thead
+      %tr
+        %th Login
+        %th Full name
+        %th Remark
+        %th Remove
+    %tbody
+      - @contest.users.each do |user|
+        %tr
+          %td= user.login
+          %td= user.full_name
+          %td= user.remark
+          %td
+            -#= button_to 'Remove', remove_user_contest_path(@contest,user), method: :delete, data: { confirm: "Remove #{user.full_name}?", turbo: true, 'turbo-method': 'delete'}, class: 'btn btn-danger btn-sm'
+  :javascript
+    reload_table();

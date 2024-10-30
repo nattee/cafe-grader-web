@@ -1,4 +1,16 @@
 class Compiler::Postgres < Compiler
+  # postgres requires config file
+  # this error happens when a user submits to non-postgreSQL problem
+  # but accidentally select postgres as the programming language,
+  # which trigger compilation as postgres
+  def validate
+    unless @prob_config_file && File.exists?(@prob_config_file)
+      raise GraderError.new("Compiling as PostgreSQL but the Problem does not have PostgreSQL config file.",
+                            submission_id: @sub.id)
+    end
+    super()
+  end
+
   def pre_compile
     sql = File.read(@source_file)
     sql = "\\set ON_ERROR_STOP\nEXPLAIN " + sql;

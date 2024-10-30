@@ -1,4 +1,5 @@
 class Announcement < ApplicationRecord
+  has_one_attached :file
 
   def self.published(contest_started=false)
     if contest_started

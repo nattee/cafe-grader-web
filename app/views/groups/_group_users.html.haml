@@ -4,21 +4,9 @@
       %tr
         %th Login
         %th Full name
+        %th Role
         %th Remark
-        %th= link_to 'Remove All', remove_all_user_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL USERS from group?" }, class: 'btn btn-danger btn-sm'
-        %th Editor
+        %th Enabled
+        %th Remove
+        %th Set role
     %tbody
-      - @group.groups_users.joins(:user).includes(:user).each do |gu|
-        - user = gu.user
-        - role = gu.role
-        %tr{class:  "#{(role == 'editor') ? "table-success" : ""}"}
-          %td= user.login
-          %td= user.full_name
-          %td= user.remark
-          %td= button_to 'Remove', remove_user_group_path(@group,user), method: :delete, form: {data: { confirm: "Remove #{user.full_name}?", turbo: 'true', 'turbo-method': 'delete'}}, class: 'btn btn-danger btn-sm'
-          %td= button_to role == 'editor' ? 'Yes' : 'No',
-            set_user_role_group_path(@group,user, role == 'editor' ? 'user' : 'editor'),
-            form: {data: { confirm: "Remove #{user.full_name}?", turbo: 'true', 'turbo-method': 'delete'} },
-            class: "btn btn-sm btn-#{ role == 'editor' ? 'success' : 'outline-secondary'}"
-  :javascript
-    reload_table();

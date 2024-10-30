@@ -20,7 +20,7 @@
             %span.mi event
 
 :javascript
-  $( document ).on('import-map-loaded', (e) => {
+  $(function() {
     since_datetime = new TempusDominus(document.getElementById('since_datetime'), default_td_options );
     until_datetime = new TempusDominus(document.getElementById('until_datetime'), default_td_options );
   })

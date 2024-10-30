@@ -3,11 +3,14 @@
 %head
   %title= GraderConfiguration['contest.name']
   = stylesheet_link_tag "application", params[:controller], :media => "all"
+  /%link{href:"https://cdn.datatables.net/v/dt/dt-2.1.7/datatables.min.css", rel:"stylesheet"}
+  = stylesheet_link_tag "datatables/datatables-new.min"
   = csrf_meta_tags
   = csp_meta_tag
   = javascript_include_tag :my_app
   -# = javascript_import_module_tag('prepend_jquery')
   = javascript_importmap_tags
+  = javascript_import_module_tag "custom"
   = content_for :header
   = yield :head
   %meta{name: :viewport, content: "width=device-width, initial-scale=1"}
@@ -19,9 +22,21 @@
     = render 'layouts/header'
 
   /= content_tag(:p,flash[:notice],class: 'alert alert-success') if flash[:notice]!=nil
-  #main-content.container-fluid
+  #main-content{class: (@container_fluid.nil? || @container_fluid) ? 'container-fluid' : 'container' }
     - flash.each do |msg_type, message|
       .alert.alert-dismissible.my-2.fade.show{class: bootstrap_class_for(msg_type)}
         = message
         %button.btn-close{type: 'button', 'data-bs-dismiss': :alert}
     = yield
+  
+  -# for msg modal, we have a turbo_frame, ready to be shown via turbo
+  = turbo_frame_tag :msg_modal_main, data: {turbo: true}
+
+  -# for toast
+  = turbo_frame_tag :toast_main, data: {turbo: true} do
+    #toast-area.toast-container.position-fixed.top-0.end-0.p-3
+      / place holder
+  -# for appending javascript response
+  = turbo_frame_tag :js_response, data: {turbo: true} do
+    #js-response
+      / place holder

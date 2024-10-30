@@ -31,6 +31,15 @@ class MainController < ApplicationController
 
   def list
     prepare_list_information
+    prepare_announcements
+
+    if GraderConfiguration.contest_mode?
+      @contests = @current_user.contests.enabled
+    else
+      @contests = nil
+    end
+
+
     @groups = [['All',-1]] + @current_user.groups.pluck(:name,:id)
   end
 
@@ -47,18 +56,16 @@ class MainController < ApplicationController
   #   2. submit via "new" button
   #   4. submit vis "edit" button
   def submit
+    
     problem = Problem.where(id: params[:submission][:problem_id]).first
     unless problem
       redirect_to list_main_path, alert: 'You must specify a problem' and return
     end
 
-    unless @current_user.admin? || @current_user.available_problems.where(id: problem.id).count > 0
-      redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available" and return
-    end
-
-    if @current_user.admin? == false && GraderConfiguration.time_limit_mode? && @current_user.contest_finished?
-      @submission.errors.add(:base,"The contest is over.")
-      redirect_to list_main_path, notice: 'Error saving your submission' and return
+    # check if the problem is submittable
+    # the problems_for_action already include the logic for admin privilege
+    unless @current_user.problems_for_action(:submit).where(id: problem).any?
+      redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available for you" and return
     end
 
     @submission = Submission.new(user: @current_user,
@@ -154,19 +161,6 @@ class MainController < ApplicationController
     @user = User.find(session[:user_id])
   end
 
-  # announcement refreshing and hiding methods
-
-  def announcements
-    if params.has_key? 'recent'
-      prepare_announcements(params[:recent])
-    else
-      prepare_announcements
-    end
-    render(:partial => 'announcement', 
-           :collection => @announcements,
-           :locals => {:announcement_effect => true})
-  end
-
   def confirm_contest_start
     user = User.find(session[:user_id])
     if request.method == 'POST'
@@ -186,57 +180,19 @@ class MainController < ApplicationController
     else
       @announcements = Announcement.published
     end
-    if recent!=nil
-      recent_id = recent.to_i
-      @announcements = @announcements.find_all { |a| a.id > recent_id }
-    end
   end
 
   def prepare_list_information
-    if GraderConfiguration.multicontests?
-      @contest_problems = @current_user.available_problems_group_by_contests
-      @problems = @current_user.available_problems.with_attached_statement
-    else
-      @problems = @current_user.available_problems.with_attached_statement
-    end
-    #max score
+    @problems = @current_user.available_problems.with_attached_statement
 
+    #get latest score
     @prob_submissions = Hash.new { |h,k| h[k] = {count: 0, submission: nil} }
-    last_sub_ids = Submission.where(user: @current_user).group(:problem_id).pluck('max(id)')
+    last_sub_ids = Submission.where(user: @current_user,problem: @problems).group(:problem_id).pluck('max(id)')
     Submission.where(id: last_sub_ids).each do |sub|
       @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
     end
 
     Submission.where(user: @current_user).group(:problem_id).pluck('problem_id','max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
-
-
-    # @problems.each do |p|
-    #   sub = Submission.find_last_by_user_and_problem(@user.id,p.id)
-    #   if sub!=nil
-    #     @prob_submissions[p.id] = { :count => sub.number, :submission => sub }
-    #   else
-    #     @prob_submissions[p.id] = { :count => 0, :submission => nil }
-    #   end
-    # end
-    prepare_announcements
-  end
-
-  def prepare_list_information_old
-    if GraderConfiguration.multicontests?
-      @contest_problems = @current_user.available_problems_group_by_contests
-      @problems = @current_user.available_problems.with_attached_statement
-    else
-      @problems = @current_user.available_problems.with_attached_statement
-    end
-    @problems.each do |p|
-      sub = Submission.find_last_by_user_and_problem(@user.id,p.id)
-      if sub!=nil
-        @prob_submissions[p.id] = { :count => sub.number, :submission => sub }
-      else
-        @prob_submissions[p.id] = { :count => 0, :submission => nil }
-      end
-    end
-    prepare_announcements
   end
 
   def check_viewability
@@ -368,18 +324,6 @@ class MainController < ApplicationController
     end
   end
 
-  def reject_announcement_refresh_when_logged_out
-    if not session[:user_id]
-      render :text => 'Access forbidden', :status => 403
-    end
-
-    if GraderConfiguration.multicontests?
-      user = User.find(session[:user_id])
-      if user.contest_stat.forced_logout
-        render :text => 'Access forbidden', :status => 403
-      end
-    end
-  end
 
 end
 

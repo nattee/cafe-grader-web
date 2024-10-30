@@ -10,7 +10,7 @@
     = yield(:form_buttons)
 
 :javascript
-  $(document).on('import-map-loaded',function(e) {
+  $(function() {
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})
     $('.select2').select2()
     td_options = structuredClone(default_td_date_options)

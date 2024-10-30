@@ -6,22 +6,22 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
+  before_action :current_contest
   before_action :header_info
   before_action :unique_visitor_id
   before_action :active_controller_action
 
-  SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
   # report and redirect for unauthorized activities
-  def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')
-    session[:user_id] = nil
-    if @current_user && false == GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-      redirect_to list_main_path, alert: msg
-    else
+  def unauthorized_redirect(logout: false, msg: 'You are not authorized to view the page you requested')
+    if logout || @current_user.nil?
+      session[:user_id] = nil
       redirect_to login_main_path, alert: msg
+    else
+      redirect_to list_main_path, alert: msg
     end
   end
 
@@ -29,6 +29,25 @@ class ApplicationController < ActionController::Base
   def current_user
     return nil unless session[:user_id]
     @current_user ||= User.find(session[:user_id])
+  end
+
+  # return the current contest of the user
+  # must be called AFTER current_user
+  def current_contest
+    return nil unless @current_user
+    unless GraderConfiguration.contest_mode?
+      session[:contest_id] = nil
+      return @current_contest = nil 
+    end
+
+    @current_contest ||= Contest.where(id: session[:contest_id]).first
+    
+    #if the session contest is disabled, pick the earliest enabled one (or nil)
+    unless @current_contest && @current_contest.enabled?
+      @current_contest = @current_user.active_contests.order(:stop).first 
+      session[:contest_id] = @current_contest&.id
+    end
+    return @current_contest
   end
 
   def read_grader_configuration
@@ -62,6 +81,14 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  # redirect when user does not have specific roles in any group
+  # allowed_roles should be :xxx
+  def group_action_authorization(action)
+    return true if @current_user.admin?
+    return true if @current_user.groups_for_action(action).any?
+    unauthorized_redirect(msg: "You cannot #{action} on any group");
+  end
+
   def authorization_by_roles(allowed_roles)
     return false unless check_valid_login
     return true if @current_user.admin?
@@ -86,14 +113,12 @@ class ApplicationController < ActionController::Base
   #if the user is not logged_in or the system is in "ADMIN ONLY" mode
 
   def check_valid_login
-
-
     #check if logged in
     unless @current_user
-      if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY]
-        unauthorized_redirect('You need to login but you cannot log in at this time')
+      if GraderConfiguration.single_user_mode?
+        unauthorized_redirect(msg: 'You need to log in but the system does not permit usage at this time', logout: true)
       else
-        unauthorized_redirect('You need to login')
+        unauthorized_redirect(msg: 'You need to log in', logout: true)
       end
       return false
     end
@@ -102,27 +127,27 @@ class ApplicationController < ActionController::Base
     if !@current_user.admin?
       unless session[:last_login] &&
           Time.new(session[:last_login]) >= GraderConfiguration.minimum_last_login_time
-        unauthorized_redirect('Your session is expired, please login again.')
+        unauthorized_redirect(msg: 'Your session is expired, please login again.', logout: true)
         return
       end
     end
 
     # check if run in single user mode
-    if GraderConfiguration[SINGLE_USER_MODE_CONF_KEY] && !@current_user.admin?
-      unauthorized_redirect('You cannot log in at this time')
+    if GraderConfiguration.single_user_mode?  && !@current_user.admin?
+      unauthorized_redirect(msg: 'The system does not permit usage at is time', logout: true)
       return false
     end
 
     # check if the user is enabled
     unless @current_user.enabled? || @current_user.admin?
-      unauthorized_redirect 'Your account is disabled'
+      unauthorized_redirect msg: 'Your account is disabled', logout: true
       return false
     end
 
     # check if user ip is allowed
     unless @current_user.admin? || GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
       unless is_request_ip_allowed?
-        unauthorized_redirect 'Your IP is not allowed to login at this time.'
+        unauthorized_redirect(msg: 'Your IP is not allowed to log in at this time.', logout: true)
         return false
       end
     end
@@ -140,17 +165,6 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    # check multi contest
-    if GraderConfiguration.multicontests?
-      return true if @current_user.admin?
-      begin
-        if @current_user.contest_stat(true).forced_logout
-          flash[:notice] = 'You have been automatically logged out.'
-          redirect_to :controller => 'main', :action => 'index'
-        end
-      rescue
-      end
-    end
     return true
   end
 

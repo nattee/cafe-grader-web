@@ -101,7 +101,7 @@ class Grader
           process_job_scoring
         else
           #we don't know how to process this job, report so
-          @job.report({status: :error,result: 'grader does not have handler for this job_type'})
+          @job.report({status: :error,result_description: 'grader does not have handler for this job_type'})
         end
       rescue GraderError => ge
         judge_log Rainbow('(GraderError)').bg(COLOR_ERROR).color(:yellow) + " " + ge.message, Logger::ERROR

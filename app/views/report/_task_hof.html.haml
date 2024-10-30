@@ -151,7 +151,7 @@
                       = link_to "(##{value[:first][:sub_id].to_s})", submission_path( value[:first][:sub_id])
 
 :javascript
-  $(document).on('import-map-loaded',(e) => {
+  $(function() {
     data = #{@chart_dataset}
     config = {
       type: 'bar',

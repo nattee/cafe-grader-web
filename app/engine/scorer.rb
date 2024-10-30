@@ -25,7 +25,7 @@ class Scorer
   def group_min
     evs = sorted_evaluation.select(:group, :group_name,:score,:weight,:testcase_id).map{ |r| r.attributes.symbolize_keys }
     max_group = evs.max { |x,y| x[:group] || 0 && y[:group] || 0 }
-    evs << {group: max_group[:group]+1, result_text: ''}
+    evs << {group: max_group[:group]+1} #this is sentinel, the after final group
 
     last_group = max_group[:group]+2
     sum_user_score,sum_total_weight = 0.to_d,0.to_d;
@@ -57,23 +57,24 @@ class Scorer
     return score;
   end
 
+  # build a combined short string that represent evaluation results of the entire dataset
   def build_grading_text
     result = ''
 
     #gen group info
-    evs = sorted_evaluation.select(:group,:group_name,:result_text,:testcase_id).map{ |r| r.attributes.symbolize_keys }
+    evs = sorted_evaluation.select(:group,:group_name,:result,:testcase_id).map{ |r| r.attributes.symbolize_keys }
     max_group = evs.max { |x,y| x[:group] || 0 && y[:group] || 0 }
-    evs << {group: max_group[:group]+1, result_text: ''}
+    evs << {group: max_group[:group]+1, result: ''} #this is sentinel
 
-    last_group = max_group[:group]+2
+    last_group = max_group[:group]+2 # some group number that is not in the data and not sentinel
     group_result = ''
     current_group_count = 0
     # build the string
     evs.each do |ev|
       group = ev[:group]
-      result_text = ev[:result_text]
+      result_code = Evaluation.result_enum_to_code(ev[:result])
 
-      #process group
+      # process end of group
       if last_group != group
         #found new group, save old group result
         if last_group != nil
@@ -90,7 +91,7 @@ class Scorer
         current_group_count = 0
       end
 
-      group_result += result_text
+      group_result += result_code
       current_group_count += 1
       last_group = group
     end

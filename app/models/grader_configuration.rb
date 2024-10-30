@@ -64,10 +64,6 @@ class GraderConfiguration < ApplicationRecord
   def self.show_submitbox_to?(user)
     mode = get(SYSTEM_MODE_CONF_KEY)
     return false if mode=='analysis'
-    if (mode=='contest') 
-      return false if (user.site!=nil) and 
-        ((user.site.started!=true) or (user.site.finished?))
-    end
     return true
   end
 
@@ -104,7 +100,7 @@ class GraderConfiguration < ApplicationRecord
     end
     return GraderConfiguration.task_grading_info_cache
   end
-  
+
   def self.standard_mode?
     return get(SYSTEM_MODE_CONF_KEY) == 'standard'
   end
@@ -132,6 +128,10 @@ class GraderConfiguration < ApplicationRecord
 
   def self.use_problem_group?
     return get(SYSTEM_USE_PROBLEM_GROUP)
+  end
+
+  def self.single_user_mode?
+    return get(SINGLE_USER_KEY)
   end
 
   def self.contest_time_limit

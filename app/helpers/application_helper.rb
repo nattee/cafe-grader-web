@@ -103,6 +103,15 @@ module ApplicationHelper
     st = time_ago_in_words(time) + ' ago (' + format_short_time(time) + ')'
   end
 
+  # display start and stop time in humanized way
+  def format_start_stop(start,stop)
+    start_text = start.strftime("%y-%b-%d %H:%M")
+    date_diff = (stop.to_date - start.to_date).to_i
+    end_text = stop.strftime("%H:%M")
+    end_text += " (+#{pluralize(date_diff,'day')})" if (date_diff > 0)
+    return "#{start_text} to #{end_text}"
+  end
+
   def read_textfile(fname,max_size=2048)
     begin
       File.open(fname).read(max_size)
@@ -144,6 +153,27 @@ module ApplicationHelper
     end
   end
 
+  # render a key pair as two lines (label & value)
+  # input can be either label & value or object & field
+  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil)
+    label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
+    value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
+
+    # convert value
+    if as&.to_sym == :yes_no
+      if value&.downcase == 'true'
+        value = "<span class='badge text-bg-success'>Yes</span>"
+      else
+        value = "<span class='badge text-bg-danger'>No</span>"
+      end
+    end
+
+    #render
+    content = <<~HTML
+      <div class="col-#{width} mb-3"><div class="fw-bold">#{label}</div>#{value}</div>
+    HTML
+    return content.html_safe
+  end
 
   def user_title_bar(user)
     header = ''

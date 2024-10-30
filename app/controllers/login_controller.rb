@@ -35,16 +35,6 @@ class LoginController < ApplicationController
     session[:admin] = user.admin?
     session[:last_login] = Time.zone.now
 
-    # clear forced logout flag for multicontests contest change
-    if GraderConfiguration.multicontests?
-      contest_stat = user.contest_stat
-      if contest_stat.respond_to? :forced_logout
-        if contest_stat.forced_logout
-          contest_stat.forced_logout = false
-          contest_stat.save
-        end
-      end
-    end
 
     #save login information
     Login.create(user_id: user.id, ip_address: request.remote_ip ,cookie: cookies.encrypted[:uuid])

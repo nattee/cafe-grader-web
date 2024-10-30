@@ -2,6 +2,10 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   connect() {
-    this.element.textContent = "Hello World!"
+  }
+
+  test(event) {
+    console.log('xxxx',this.element)
+    console.log(event)
   }
 }

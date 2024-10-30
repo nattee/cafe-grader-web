@@ -14,6 +14,7 @@
   = f.input :frontpage, label: 'Display in the front page only?'
   = f.input :on_nav_bar, label: 'Show on menu bar?'
   = f.input :contest_only, label: 'Display in contest only?'
+  = f.input :file
   = f.submit class: 'btn btn-primary'
   - if content_for?(:form_buttons)
     = yield(:form_buttons)

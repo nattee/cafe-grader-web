@@ -7,7 +7,32 @@ Rails.application.routes.draw do
   #logins
   match 'login/login',  to: 'login#login', via: [:get,:post]
 
-  resources :contests
+  resources :contests do
+    member do
+      # contest
+      get 'toggle'
+      get 'view'
+
+      # groups_users
+      post 'show_users_query'
+      post 'add_user'
+      post 'add_user_by_group'
+      post 'do_all_users'
+      post 'do_user'
+
+      # groups_problems
+      post 'show_problems_query'
+      post 'add_problem'
+      post 'add_problem_by_group'
+      post 'do_all_problems'
+      post 'do_problem'
+    end
+    collection do
+      post 'set_system_mode'
+      post 'user_check_in'
+    end
+  end
+
   resources :sites
   resources :test
 
@@ -56,9 +81,7 @@ Rails.application.routes.draw do
     member do
       post 'file/delete/:att_id', action: 'file_delete', as: 'file_delete'
       post 'file/view/:att_id', action: 'file_view', as: 'file_view'
-      post 'checker_view'
-      post 'checker_download'
-      post 'checker_delete'
+      post 'file/download/:att_id', action: 'file_download', as: 'file_download'
       post 'testcase/input/:tc_id', action: 'testcase_input', as: 'testcase_input'
       post 'testcase/sol/:tc_id', action: 'testcase_sol', as: 'testcase_sol'
       post 'testcase/delete/:tc_id', action: 'testcase_delete', as: 'testcase_delete'
@@ -71,14 +94,23 @@ Rails.application.routes.draw do
 
   resources :groups do
     member do
-      post 'set_user_role/:user_id/:role', to: 'groups#set_user_role', as: 'set_user_role'
-      post 'add_user', to: 'groups#add_user', as: 'add_user'
-      delete 'remove_user/:user_id', to: 'groups#remove_user', as: 'remove_user'
-      delete 'remove_all_user', to: 'groups#remove_all_user', as: 'remove_all_user'
-      post 'add_problem', to: 'groups#add_problem', as: 'add_problem'
-      delete 'remove_problem/:problem_id', to: 'groups#remove_problem', as: 'remove_problem'
-      delete 'remove_all_problem', to: 'groups#remove_all_problem', as: 'remove_all_problem'
+      # groups
       get 'toggle'
+
+      # groups_users
+      post 'show_users_query'
+      post 'add_user', to: 'groups#add_user', as: 'add_user'
+      post 'add_user_by_group'
+      post 'do_all_users'
+      post 'do_user'
+
+      # groups_problems
+      post 'show_problems_query'
+      post 'add_problem', to: 'groups#add_problem', as: 'add_problem'
+      post 'add_problem_by_group'
+      post 'do_all_problems'
+      post 'do_problem'
+
     end
     collection do
 
@@ -203,7 +235,6 @@ Rails.application.routes.draw do
     get 'logout'
     get 'list'
     get 'submission(/:id)', action: 'submission', as: 'main_submission'
-    get 'announcements'
     get 'help'
     post 'submit'
     post 'prob_grop'

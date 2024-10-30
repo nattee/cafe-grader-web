@@ -33,7 +33,7 @@ class SubmissionsController < ApplicationController
     SubmissionViewLog.create(user_id: session[:user_id],submission_id: @submission.id) unless user.admin?
 
     @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
-      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text)
+      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text, :result)
 
 
   end
@@ -43,8 +43,7 @@ class SubmissionsController < ApplicationController
   end
 
   def compiler_msg
-    #render partial: "shared/msg_modal_show", locals: {header_msg: 'Compiler message', body_msg: @submission.compiler_message}
-    render partial: "shared/msg_modal_show", locals: {do_popup: true, header_msg: 'Compiler message', body_msg: @submission.compiler_message}
+    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: @submission.compiler_message}
   end
 
   #on-site new submission on specific problem

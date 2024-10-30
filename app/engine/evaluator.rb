@@ -39,7 +39,9 @@ class Evaluator
     isolate_args += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
     isolate_args += ["-i","#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) #redirect input, if needed
     isolate_args += ['-f 50000'] # allow max 50MB output
-    input = {"#{@isolate_input_path}":@input_file.dirname, "#{@isolate_bin_path}":@mybin_path.cleanpath}
+    input = {"#{@isolate_input_path}":@input_file.dirname,
+             "#{@isolate_data_path}":@prob_data_path.cleanpath,
+             "#{@isolate_bin_path}":@mybin_path.cleanpath}
     output = {"#{@isolate_output_path}":@output_path}
     meta_file = @sub_testcase_path + 'meta.txt'
 
@@ -91,11 +93,11 @@ class Evaluator
       checker = Checker.get_checker(@sub).new(@worker_id, @box_id)
       check_result = checker.process(@sub,@testcase)
       e.update( time: meta['time'] * 1000,memory: meta['max-rss'],
-                result: check_result[:result], score: check_result[:score])
+                result: check_result[:result], score: check_result[:score],
+                result_text: (check_result[:comment] || '').truncate(250))
     end
 
     #save final result
-    e.set_result_text_from_result
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"
     return result;
   end

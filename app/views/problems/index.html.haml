@@ -3,25 +3,39 @@
   .col-md-5
     = link_to 'Import problems', {:action => 'import'}, class: 'btn btn-success m-1'
     = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info m-1'
-    = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-secondary m-1'
-    = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-secondary m-1'
+    - if @current_user.admin?
+      = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-secondary m-1'
+      = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-secondary m-1'
   .col-md-7
-    .alert.alert-warning
-      Setting
-      %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
-      is
-      %strong= "#{GraderConfiguration.use_problem_group?}."
-      - if GraderConfiguration.use_problem_group?
-        Normal users will see only
-        %strong enabled
-        problems in the groups that there are memebers of.
-        You can manage groups at
-        = link_to 'Manage/User Groups', groups_path
-      - else
-        Normal users will see
-        %strong every
-        problems that are
-        %strong enabled.
+    .card.bg-warning-subtle.shadow-sm.mb-3
+      .card-body
+        %ul.mb-0
+          %li
+            Setting
+            %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
+            is
+            %strong= "#{GraderConfiguration.use_problem_group?}."
+            - if GraderConfiguration.use_problem_group?
+              Normal users will see only
+              %strong enabled
+              problems in the groups of which they are memebers.
+              You can manage groups at
+              = link_to 'Manage/Groups', groups_path
+            - else
+              Normal users will see
+              %strong every
+              problems that are
+              %strong available.
+          - if GraderConfiguration.use_problem_group?
+            %li
+              %strong Available 
+              is a global setting. Problems that have their available set to
+              %strong false
+              will not be shown to a user even though the problem are enabled in a group. 
+              Only admin can change the availability of problems. 
+              For group editor, use the
+              %strong enabled
+              option in group management
 
 %table#main_table.table.table-condense.table-hover
   %thead
@@ -44,8 +58,6 @@
       %th.text-center
         View Data?
         = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
-      - if GraderConfiguration.multicontests?
-        %th Contests
       %th.text-center
       %th.text-center
       %th.text-center
@@ -66,13 +78,13 @@
             %span.badge.text-bg-secondary.bg-opacity-100= t.name
         %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
         %td= problem.date_added
-        %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
+        - if @current_user.admin?
+          %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
+        - else
+          %td= @problem.available?
         %td= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
-        - if @multi_contest
-          %td
-            = problem.contests.collect { |c| c.name }.join(', ')
-        %td= link_to 'Stat', {:action => 'stat', :id => problem.id}, class: 'btn btn-info btn-sm btn-block'
-        %td= link_to 'Edit', {:action => 'edit', :id => problem}, class: 'btn btn-info btn-sm btn-block'
+        %td= link_to 'Stat', {:action => 'stat', :id => problem.id}
+        %td= link_to 'Edit', {:action => 'edit', :id => problem}
         %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 
 :javascript
@@ -80,7 +92,7 @@
     $("#main_table").DataTable({
       sorting: false,
       columnDefs: [
-        { targets: [3,4], sortable: false },
+        { targets: [3,4,5,6,10,11,12], sortable: false },
       ],
       paging: false,
       responsive: true,
@@ -90,7 +102,7 @@
     })
   }
 
-  $(document).on('import-map-loaded',(e) => {
+  $(function() {
     init_table();
   });
 

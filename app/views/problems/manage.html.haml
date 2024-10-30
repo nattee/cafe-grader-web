@@ -63,14 +63,6 @@
                 = f.check_box :set_languages, class: 'form-check-input'
             .col-md-auto
               = f.select "lang_ids", options_from_collection_for_select( Language.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select languages'}
-          - if GraderConfiguration.multicontests?
-            .row.mb-3.align-items-center
-              .col-md-auto
-                .form-check
-                  = f.label :add_contest, 'Add selected problems to contest'
-                  = f.check_box :add_contest, class: 'form-check-input'
-              .col-md-auto
-                = f.select "contest_id", options_from_collection_for_select( Contest.all, :id,:title), {}, class: 'select2 form-control'
       .row.mb-3
         .col-auto
           = f.submit :go, class: 'btn btn-primary'
@@ -85,8 +77,6 @@
         %th Tags
         %th Available
         %th Date added
-        - if GraderConfiguration.multicontests?
-          %th Contests
 
     %tbody
       - num = 0
@@ -104,14 +94,10 @@
               %span.badge.text-bg-secondary= t.name
           %td= problem.available
           %td= problem.date_added
-          - if GraderConfiguration.multicontests?
-            %td
-              - problem.contests.each do |contest|
-                = "(#{contest.name} [#{link_to 'x', :action => 'remove_contest', :id => problem.id, :contest_id => contest.id }])"
 
 :javascript
 
-  $(document).on('import-map-loaded', function() {
+  $(function() {
     function shiftclick(start,stop,value) {
       $('tr input').each( function(id,input) { 
         var $input=$(input);

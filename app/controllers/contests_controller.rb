@@ -1,6 +1,14 @@
 class ContestsController < ApplicationController
+  before_action :set_contest, only: [:show, :edit, :update, :destroy,
+                                     :show_users_query, :show_problems_query,
+                                     :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
+                                     :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
+                                    ]
+  before_action :set_user, only: [:do_user]
+  before_action :set_problem, only: [:do_problem]
 
-  before_action :admin_authorization
+  before_action :admin_authorization, except: [:user_check_in]
+  before_action :check_valid_login, only: [:user_check_in]
 
   # GET /contests
   # GET /contests.xml
@@ -16,12 +24,16 @@ class ContestsController < ApplicationController
   # GET /contests/1
   # GET /contests/1.xml
   def show
-    @contest = Contest.find(params[:id])
 
     respond_to do |format|
       format.html # show.html.erb
       format.xml  { render :xml => @contest }
     end
+  end
+
+  # show is for manage
+  # view is for spectating
+  def view
   end
 
   # GET /contests/new
@@ -37,18 +49,17 @@ class ContestsController < ApplicationController
 
   # GET /contests/1/edit
   def edit
-    @contest = Contest.find(params[:id])
   end
 
   # POST /contests
   # POST /contests.xml
   def create
-    @contest = Contest.new(params[:contest])
+    @contest = Contest.new(contests_params)
 
     respond_to do |format|
       if @contest.save
         flash[:notice] = 'Contest was successfully created.'
-        format.html { redirect_to(@contest) }
+        format.html { redirect_to contests_path }
         format.xml  { render :xml => @contest, :status => :created, :location => @contest }
       else
         format.html { render :action => "new" }
@@ -60,12 +71,11 @@ class ContestsController < ApplicationController
   # PUT /contests/1
   # PUT /contests/1.xml
   def update
-    @contest = Contest.find(params[:id])
 
     respond_to do |format|
       if @contest.update(contests_params)
         flash[:notice] = 'Contest was successfully updated.'
-        format.html { redirect_to(@contest) }
+        format.html { redirect_to contest_path(@contest) }
         format.xml  { head :ok }
       else
         format.html { render :action => "edit" }
@@ -74,10 +84,136 @@ class ContestsController < ApplicationController
     end
   end
 
+  # --- users & problems ---
+  def show_users_query
+    render json: {data: @contest.contests_users.joins(:user)
+      .select('contests_users.id',:user_id,:enabled, :full_name, :login, :remark, :seat)}
+  end
+
+  def show_problems_query
+    render json: {data: @contest.contests_problems.joins(:problem)
+      .select('contests_problems.id',:problem_id,:enabled, :name, :full_name, :number)}
+  end
+
+  def do_all_users
+    if params[:command] == 'enable'
+      ContestUser.where(contest: @contest).update_all(enabled: true)
+    elsif params[:command] == 'disable'
+      ContestUser.where(contest: @contest).update_all(enabled: false)
+    elsif params[:command] == 'remove'
+      @contest.users.clear
+    else
+      return
+    end
+  end
+
+  def do_user
+    @toast = {title: "Contest #{@contest.name}"}
+    case params[:command]
+    when 'remove'
+      @contest.users.delete(@user)
+      @toast[:body] = "#{@user.login} was removed."
+    when 'toggle'
+      gu = @contest.contests_users.where(user: @user).first
+      gu.update(enabled: !gu.enabled?)
+      @toast[:body] = 'User was updated.'
+    else
+      @toast[:body] = "Unknown command"
+    end
+    render 'turbo_toast'
+  end
+
+  def do_all_problems
+    if params[:command] == 'enable'
+      ContestProblem.where(contest: @contest).update_all(enabled: true)
+    elsif params[:command] == 'disable'
+      ContestProblem.where(contest: @contest).update_all(enabled: false)
+    elsif params[:command] == 'remove'
+      @contest.problems.clear
+    else
+      return
+    end
+    render 'turbo_toast'
+  end
+
+  def do_problem
+    @toast = {title: "Contest #{@contest.name}"}
+    gp = @contest.contests_problems.where(problem: @problem).first
+    case params[:command]
+    when 'remove'
+      @contest.problems.delete(@problem)
+      @toast[:body] = "Problem #{@problem.name} was removed."
+    when 'toggle'
+      gp.update(enabled: !gp.enabled?)
+      @toast[:body] = "The problem #{@problem.name} was updated."
+    when 'moveup'
+      gp = @contest.contests_problems.where(problem: @problem).first
+      @contest.set_problem_number(@problem,(gp.number || 2) - 1.2) #instead of -1, we do -0.8 so that  it is placed "before" the original number - 1 rank
+      @toast[:body] = "Problem #{@problem.name} was moved up."
+    when 'movedown'
+      gp = @contest.contests_problems.where(problem: @problem).first
+      @contest.set_problem_number(@problem,(gp.number || 0) + 1.2) #so is here
+      @toast[:body] = "Problem #{@problem.name} was moved down."
+    else
+      @toast[:body] = "Unknown command"
+    end
+    render 'turbo_toast'
+  end
+
+  def add_user
+    begin
+      users = User.where(id: params[:user_ids])
+      @toast = @contest.add_users users
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+    end
+  end
+
+  def add_user_by_group
+    begin
+      @toast = @contest.add_users User.where(id: user_ids)
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
+    end
+  end
+
+  def add_problem
+    #find return arrays of objecs
+    begin
+      problems = Problem.where(id: params[:problem_ids]) #this find multiple problems
+      @toast = @contest.add_problems_and_assign_number(problems)
+      render 'turbo_toast'
+    rescue => e
+      puts e.message
+      puts e.backtrace
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+    end
+  end
+
+  def add_problem_by_group
+    begin
+      problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @contest.problems.ids).pluck :problem_id
+      @toast = @contest.add_problems_and_assign_number(Problem.where(id: problem_ids))
+      render 'turbo_toast'
+    rescue => e
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
+    end
+  end
+
+  def user_check_in
+    #ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
+    current = Time.zone.now
+    last = @current_user.last_heartbeat || current
+    @current_user.update(last_heartbeat: current)
+    render plain: ((current - last) * 1000).to_i
+  end
+
+
   # DELETE /contests/1
   # DELETE /contests/1.xml
   def destroy
-    @contest = Contest.find(params[:id])
     @contest.destroy
 
     respond_to do |format|
@@ -86,10 +222,31 @@ class ContestsController < ApplicationController
     end
   end
 
+  def set_system_mode
+    if ['standard','contest','indv-contest','analysis'].include? params[:mode]
+      GraderConfiguration.where(key: 'system.mode').update(value: params[:mode])
+      redirect_to contests_path, notice: 'Mode changed succesfully'
+    else
+      redirect_to contests_path, notice: 'Unrecognized mode'
+    end
+  end
+
   private
 
+    def set_contest
+      @contest = Contest.find(params[:id])
+    end
+
+    def set_user
+      @user = User.find(params[:user_id]) rescue nil
+    end
+
+    def set_problem
+      @problem = Problem.find(params[:problem_id]) rescue nil
+    end
+
     def contests_params
-      params.require(:contest).permit(:title,:enabled,:name)
+      params.require(:contest).permit(:name, :descriotion,:enabled,:lock, :start, :stop)
     end
 
 end

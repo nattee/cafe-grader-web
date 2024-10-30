@@ -6,6 +6,11 @@ $(document).on('change', '.btn-file :file', function() {
   input.trigger('fileselect', [numFiles, label]);
 });
 
+window.msi = (icon_name, className = '') => {
+  return `<span class="mi mi-bs ${className}">${icon_name}</span>`
+}
+
+
 //default options for tempus dominus
 window.default_td_options = {
   display: {
@@ -40,7 +45,7 @@ window.default_td_options = {
   },
   localization: {
     locale: 'en-uk',
-    format: 'dd/MMM/yyyy hh:mm',
+    format: 'dd/MMM/yyyy HH:mm',
   }
 }
 
@@ -71,7 +76,7 @@ window.default_td_date_options = {
 
 
 //global initialization
-$(function() {
+$(document).ready(function(e) {
   var e;
   $(".select2").select2({
     theme: "bootstrap-5",

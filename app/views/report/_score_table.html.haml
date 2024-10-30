@@ -1,7 +1,8 @@
 = turbo_frame_tag "max_score_result", data: {turbo: "true"} do
-  %table#score-table.table.table-striped.table-bordered.table-condensed
+  %table#score-table.table.table-hover
     %thead
       %tr
+        %th #
         %th Login
         %th Name
         %th Remark
@@ -14,8 +15,10 @@
     %tbody
       - super_sum, super_pass = 0,0
       - row_count = 0
+      - col_num_for_total = 4 + @problems.count * (@show_time ? 2 : 1)
       - @result[:score].each do |login,score|
         %tr
+          %td
           %td= link_to login, stat_user_path(score['id'])
           %td= score['full_name']
           %td= score['remark']
@@ -32,6 +35,7 @@
           %td.text-end= pass
     %tfoot
       %tr
+        %td
         %td Summation
         %td
         %td
@@ -44,63 +48,86 @@
   :javascript
     $('#score-table').DataTable({
       paging: false,
-      dom: 'Bfrtip',
+      layout: {
+         topStart: 'buttons',
+         topEnd: 'search'
+      },
       buttons: [
           'copyHtml5',
           'excelHtml5',
-      ]
+      ],
+      order: [[#{col_num_for_total},'asc']]
+
     })
 
-    //history graph
+    // add row numbering
+    $('#score-table').DataTable().on('order.dt search.dt', function () {
+      let i = 1;
+
+      table = $('#score-table').DataTable()
+
+      table.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+        this.data(i++);
+      });
+    }).draw();
+
+    np = #{[1,@problems.count].max}
     data = {
-      labels: [#{@problems.pluck(:name).map{ |x| '"'+x+'"'}.join(',').html_safe}],
+      labels: #{(1..@result[:score].keys.count).to_a.to_s.html_safe},
       datasets: [
-        {
-          label: 'Zero',
-          borderColor: '#ff6384',
-          backgroundColor: '#ffe0e6',
-          borderWidth: 1,
-          data: [#{@result[:count][:zero].join(',')}],
-        }, {
-          label: 'Partial',
-          borderColor: '#36a2eb',
-          backgroundColor: '#d7ecfb',
-          borderWidth: 1,
-          data: [#{@result[:count][:partial].join(',')}]
-        }, {
-          label: 'Full',
-          borderColor: '#4bc0c0',
-          backgroundColor: '#dbf2f2',
-          borderWidth: 1,
-          data: [#{@result[:count][:full].join(',')}]
-        },
+        #{
+          @result[:stat].map{ |prob_name, detail|
+            "{ label: '#{prob_name}',data: #{detail[:score].sort.map{ |x| x.to_i }.to_s} }"
+          }.join(",\n").html_safe
+        }
       ]
     }
-    np = #{[1,@problems.count].max}
+
+    //left padd with zero and sort the data
+    maxLength = data.labels.length
+    data.datasets.forEach(dataset => {
+        const paddingLength = maxLength - dataset.data.length;
+        if (paddingLength > 0) {
+            const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
+            dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
+        }
+    });
+
     config = {
-      type: 'bar',
+      type: 'line',
       data: data,
       options: {
-        indexAxis: 'y', //horizontal bar
-        aspectRatio: 17/np + (0.25*np),
-        plugins: {
-          legend: {
-            display: false
+        responstive: true,
+        maintainAspectRatio: false,
+        elements: {
+          point: {
+            pointStyle: false
           },
-        },
-        scales: {
-          y: {
-            stacked: true
-          },
-          x: {
-            stacked: true
-          }
         }
-      }
+      },
     }
-    if (typeof my_chart !== 'undefined') {
-      my_chart.destroy()
+
+    //clone the config to be used in the second graph
+    //this has to be done before we construct the chart.js object,
+    //else the config is already changed
+    config2 = structuredClone(config)
+    data2 = {
+      labels: #{(1..@result[:score].keys.count).to_a.to_s.html_safe},
+      datasets: [
+        {
+          label: 'Total Score',
+          data: #{@result[:score].map{ |login,detail| detail[:user_sum].to_f }.sort.to_s}
+        }
+      ]
     }
+    config2.data = data2
+
+    // destroy old graph
+    if (typeof chart1 !== 'undefined') { chart1.destroy() }
+    if (typeof chart2 !== 'undefined') { chart2.destroy() }
+
+    // display graph
     Chart.defaults.font.size = 15
     //Chart.defaults.font.family = 'Sarabun Light'
-    my_chart = new Chart($('#chart'),config)
+    chart1 = new Chart($('#chart'),config)
+    chart2 = new Chart($('#chart_2'),config2)

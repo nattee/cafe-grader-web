@@ -21,6 +21,7 @@ module JudgeBase
   ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'
   ISOLATE_INPUT_PATH = 'input'
   ISOLATE_OUTPUT_PATH = 'output'
+  ISOLATE_DATA_PATH = 'data'
 
   #color for Rainbow
   COLOR_SUB = :skyblue
@@ -47,7 +48,7 @@ module JudgeBase
 
   def isolate_need_cg_by_lang(language_name)
     case language_name
-    when 'java', 'digital', 'go'
+    when 'java', 'digital', 'go', 'python'
       true
     else
       false
@@ -59,6 +60,8 @@ module JudgeBase
     case language_name
     when 'pas','php'
       '-d /etc/alternatives'
+    when 'python'
+      '-p -d /venv -E HOME -d /etc/alternatives'
     when 'java'
       '-p -d /etc/alternatives'
     when 'haskell'
@@ -148,6 +151,7 @@ module JudgeBase
     @isolate_input_file = @isolate_input_path + INPUT_FILENAME
     @isolate_output_path = Pathname.new('/'+ISOLATE_OUTPUT_PATH)
     @isolate_stdout_file = @isolate_output_path + STDOUT_FILENAME
+    @isolate_data_path = Pathname.new('/'+ISOLATE_DATA_PATH)
   end
 
   # set up directory and path/filename of the dataset 
@@ -156,27 +160,32 @@ module JudgeBase
     #preparing path name variable
     #base path
     @problem_path = Pathname.new(Rails.configuration.worker[:directory][:judge_path]) + Grader::JudgeProblemPath + dataset.problem.id.to_s
+    @ds_path = @problem_path + ('dsid_'+dataset.id.to_s)
 
     #checker path
-    @prob_checker_path = @problem_path + 'checker'
+    @prob_checker_path = @ds_path + 'checker'
     @prob_checker_file = @prob_checker_path + dataset.checker.filename.to_s if dataset.checker.attached?
 
+    #data path
+    @prob_data_path = @ds_path + 'data'
 
     # manager path
-    @manager_path = @problem_path + Grader::JUDGE_MANAGER_PATH
+    @manager_path = @ds_path + Grader::JUDGE_MANAGER_PATH
 
     #init path and file
-    @prob_init_path = @problem_path + 'initializers'
+    @prob_init_path = @ds_path + 'initializers'
     @prob_init_file = @prob_init_path + dataset.initializer_filename if dataset.initializer_filename
-    @prob_init_work_path =  @problem_path + 'init_workspace'
+    @prob_init_work_path =  @ds_path + 'init_workspace'
     #TODO: fix this hardcode
     @prob_config_file = @prob_init_path + 'postgresql_config.yml'
 
     #prepare folder
+    @ds_path.mkpath
     @prob_checker_path.mkpath
     @manager_path.mkpath
     @prob_init_path.mkpath
     @prob_init_work_path.mkpath
+    @prob_data_path.mkpath
   end
 
 
@@ -207,6 +216,14 @@ module JudgeBase
         url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(init.id)
         download_from_web(url,dest,download_type: 'initializer',chmod_mode: 'a+x')
       end
+
+      # download any data
+      dataset.data_files.each do |data_file|
+        basename = data_file.filename.base + data_file.filename.extension_with_delimiter
+        dest = @prob_data_path + basename
+        url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(data_file.id)
+        download_from_web(url,dest,download_type: 'data_file')
+      end
     end
 
     #download any testcases
@@ -225,12 +242,10 @@ module JudgeBase
         FileUtils.touch(@prob_testcase_path + tc.get_name_for_dir)
 
         #dataset_id/testcase_codename (symlink to prob_id/testcase_id)
-        ds_dir = @problem_path + ('dsid_'+tc.dataset.id.to_s)
-        ds_dir.mkpath
-        ds_ts_codename_dir = ds_dir + tc.get_name_for_dir
+        ds_ts_codename_dir = @ds_path + tc.get_name_for_dir
         ds_codename_dir = @problem_path + ('dsname_'+tc.dataset.get_name_for_dir)
         FileUtils.symlink(@prob_testcase_path, ds_ts_codename_dir) unless File.exist? ds_ts_codename_dir.cleanpath
-        FileUtils.symlink(ds_dir, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
+        FileUtils.symlink(@ds_path, ds_codename_dir) unless File.exist? ds_codename_dir.cleanpath
 
         judge_log("Testcase #{tc.id} (#{tc.code_name}) downloaded")
       end
@@ -296,7 +311,7 @@ module JudgeBase
     end
 
     init_cmd = [@prob_init_file.to_s,
-                tc_hash.to_json.dump,
+                tc_hash.to_json.dump,              # dump is to escape the quote
                 @prob_config_file.to_s.dump,
                 @prob_init_work_path.to_s.dump,
                ]
@@ -330,12 +345,12 @@ module JudgeBase
 
   def build_result_hash
     {status: nil,
-     result_text: nil
+     result_description: nil
     }
   end
 
   def default_success_result(msg = nil)
-    {status: :success, result_text: msg}
+    {status: :success, result_description: msg}
   end
 
   def judge_log(msg,severity = Logger::INFO)

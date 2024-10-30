@@ -57,7 +57,7 @@ gem 'haml-rails'
 gem 'jbuilder'
 
 # jquery addition
-gem 'jquery-rails'
+gem 'jquery-rails', '~> 4.6'
 #gem 'jquery-ui-rails'
 #gem 'jquery-timepicker-addon-rails'
 #gem 'jquery-tablesorter'

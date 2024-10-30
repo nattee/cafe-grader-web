@@ -3,7 +3,7 @@ class Problem < ApplicationRecord
   #how the submission should be compiled
   enum compilation_type:  {self_contained: 0,
                            with_managers: 1}
-  enum task_type: { batch: 0}
+  enum task_type: { batch: 0 }
   #belongs_to :description
 
   has_and_belongs_to_many :contests, :uniq => true
@@ -31,6 +31,55 @@ class Problem < ApplicationRecord
 
   scope :available, -> { where(available: true) }
 
+  # return problems that is enabled and is in an enabled group that has the given user
+  # this does not check whether the user is enabled
+  #
+  # It always considers groups, regardless of the group mode configuration
+  # When group mode is false, use Problem.available_problems instead
+  scope :group_submittable_by_user, ->(user_id) {
+    joins(groups_problems: {group: :groups_users})
+      .where(available: true)                   #available problems only
+      .where('groups.enabled': true)            #groups is enabled
+      .where('groups_users.user_id': user_id)   #user is in the group
+      .where('groups_users.enabled': true)      #user in the group is enabled
+      .where('groups_problems.enabled': true)   #problem is enabled
+      .distinct(:id)                            #get distinct
+  }
+
+  # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
+  scope :group_reportable_by_user, ->(user_id) {
+    group_actionable_by_user(user_id,['editor','reporter'])
+  }
+
+  # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
+  scope :group_editable_by_user, ->(user_id) {
+    group_actionable_by_user(user_id,['editor'])
+  }
+
+  scope :group_actionable_by_user, ->(user_id,roles = ['editor']) { 
+    joins(groups_problems: {group: :groups_users})
+      .where(available: true)                   #available problems only
+      .where('groups.enabled': true)            #groups is enabled
+      .where('groups_users.user_id': user_id)   #user is in the group
+      .where('groups_users.role': roles)        #filter for user with roles
+      .distinct(:id)                            #get distinct
+  }
+
+  scope :contests_problems_for_user, ->(user_id) {
+    now = Time.zone.now
+    joins(contests_problems: {contest: :contests_users})
+      .where(available: true)                   #available problems only
+      .where('contests.enabled': true)          #contests is enabled
+      .where('contests_users.user_id': user_id) #user is in the contest
+      .where('contests_users.enabled': true)    #user in the contest is enabled
+      .where('contests_problems.enabled': true) #problem is enabled
+      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?',now)
+      .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?',now)
+      .distinct(:problem_id)                    #get distinct
+  }
+
+  scope :default_order, -> { order(date_added: :desc).order(:name)  }
+
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
 
@@ -41,6 +90,16 @@ class Problem < ApplicationRecord
 
   def set_default_value
 
+  end
+
+  def public_tags
+    #tags.where(public: true)
+    return tags
+  end
+
+
+  def can_view_testcase
+    return GraderConfiguration.show_testcase && self.view_testcase
   end
 
   def get_jschart_history
@@ -75,16 +134,11 @@ class Problem < ApplicationRecord
     return name
   end
 
-  def self.available_problems
-    available.order(date_added: :desc).order(:name)
-    #Problem.available.all(:order => "date_added DESC, name ASC")
-  end
 
   def self.create_from_import_form_params(params, old_problem=nil)
     org_problem = old_problem || Problem.new
     import_params, problem = Problem.extract_params_and_check(params,
                                                               org_problem)
-
     if !problem.errors.empty?
       return problem, 'Error importing'
     end

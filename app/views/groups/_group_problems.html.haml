@@ -2,14 +2,9 @@
   %table#problem_table.table.datatable.table-hover
     %thead
       %tr
-        %th name
+        %th Name
         %th Full name
-        %th #Dataset
-        %th= link_to 'Remove All', remove_all_problem_group_path(@group), method: :delete, :data => { :confirm => "Remove ALL PROBLEMS from group?" }, class: 'btn btn-danger btn-sm'
+        %th Enabled
+        %th Remove
     %tbody
-      - @group.problems.each do |problem|
-        %tr
-          %td= problem.name
-          %td= problem.full_name
-          %td= problem.datasets.count
-          %td= button_to 'Remove', remove_problem_group_path(@group,problem), method: :delete, form: {data: { confirm: "Remove #{problem.full_name}?", turbo: 'true', 'turbo-method': 'delete'}}, class: 'btn btn-danger btn-sm'
+      -# we use datatable ajax data source (see _groups_users.haml for example)

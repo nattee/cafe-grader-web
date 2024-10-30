@@ -1,7 +1,6 @@
 class DatasetsController < ApplicationController
   before_action :set_dataset, only: %i[ show edit update destroy
-                                        file_delete file_view
-                                        checker_view checker_download checker_delete
+                                        file_delete file_view file_download
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
                                       ]
@@ -35,15 +34,19 @@ class DatasetsController < ApplicationController
   # PATCH/PUT /datasets/1 or /datasets/1.json
   def update
     respond_to do |format|
+      # file attachment
       @dataset.managers.attach params[:dataset][:managers] if params[:dataset][:managers]
+      @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset][:data_files]
       @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset][:initializers]
-      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers]
-        # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
-        # when it is updated
+
+      # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
+      # when it is updated
+      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files]
         WorkerDataset.where(dataset_id: @dataset).delete_all
       end
+
       if @dataset.update(dataset_params)
-        flash.now[:notice] = "Updated successfully on #{Time.zone.now}"
+        @toast = {title: 'Dataset', body: 'Dataset is updated.'}
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
       else
@@ -57,42 +60,36 @@ class DatasetsController < ApplicationController
   def file_delete
     att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
     att.purge
-    flash.now[:notice] = "#{att.name.capitalize} file [#{att.filename}] is deleted"
+
+    @dataset.reload
+    @dataset.save if @dataset.update_main_filename
+
+    @toast = {title: 'File deleted',
+              body: "#{att.name.capitalize} file [#{att.filename}] is deleted."}
   end
 
   def file_view
     att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}
+    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}
   end
 
-  def checker_view
-    c = @dataset.checker
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: c.filename, body_msg: c.download}
-  end
-
-  def checker_download
-    type = @dataset.checker.content_type
-    filename = @dataset.checker.filename.to_s
-    send_data @dataset.checker.download, disposition: 'inline', type: type, filename: filename
-  end
-
-  def checker_delete
-    @dataset.checker.purge
-    flash.now[:notice] = "Checker is deleted"
-    render 'manager_delete'
+  def file_download
+    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    type = att.content_type
+    filename = att.filename.to_s
+    send_data att.download, disposition: 'inline', type: type, filename: filename
   end
 
   # as turbo
   def testcase_input
     tc = Testcase.find(params[:tc_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.inp_file.download }
-
+    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: tc.inp_file.download }
   end
 
   # as turbo
   def testcase_sol
     tc = Testcase.find(params[:tc_id])
-    render partial: 'shared/msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.ans_file.download }
+    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: tc.ans_file.download }
   end
 
   # as turbo
@@ -100,7 +97,8 @@ class DatasetsController < ApplicationController
     tc = Testcase.find(params[:tc_id])
     tc.destroy
 
-    flash.now[:notice] = "Testcase ##{tc.num} is deleted"
+    @toast = {title: 'Testcase changed',
+              body: "Testcase ##{tc.num} is deleted."}
     render :update
   end
 
@@ -109,12 +107,14 @@ class DatasetsController < ApplicationController
       config = JSON.parse(params[:weight_param])
       if config.is_a? Array
         @dataset.set_by_array(:weight,config)
-      else
+      elsif config.is_a? Hash
         @dataset.set_by_hash(config.symbolize_keys)
+      else
+        raise JSON::ParserError
       end
-      flash.now[:notice] = "Testcases' parameters are updated"
+      @toast = {body: "Testcases' parameters are updated.",title: 'Testcase updated'}
     rescue JSON::ParserError => e
-      flash.now[:alert] = 'weight params is malformed'
+      @toast = {body: "Weight parameter is malformed.",title: 'Testcase updated', type: 'alert'}
     end
     render :update
   end
@@ -126,7 +126,8 @@ class DatasetsController < ApplicationController
 
   def set_as_live
     @dataset.problem.update(live_dataset: @dataset)
-    flash.now[:notice] = "Dataset #{@dataset.name} is live"
+    @toast = {title: 'Dataset changed',
+              body: "Dataset [#{@dataset.name}] is now live."}
     render :update
   end
 
@@ -143,14 +144,18 @@ class DatasetsController < ApplicationController
     p = @dataset.problem
     if p.datasets.count == 1
       # can't delete last dataset
-      flash.now[:alert] = 'Cannot delete the last dataset'
+      @toast = {title: 'Delete error',type: 'alert',
+                body: "Cannot delete the last remaining dataset."}
     elsif @dataset == p.live_dataset
       # can't delete the live dataset
-      flash.now[:alert] = 'Cannot delete live dataset'
+      @toast = {title: 'Delete error',type: 'alert',
+                body: "Cannot delete the live dataset."}
     else
       @dataset.destroy
+      @toast = {title: 'Dataset changed',type: 'warning',
+                body: "Dataset  [#{@dataset.name}] is deleted."}
+      # render new dataset
       @dataset = p.datasets.first
-      flash.now[:notice] = 'Dataset is deleted'
     end
 
 
