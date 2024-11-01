@@ -1,0 +1,40 @@
+%h1 Spectating contest #{@contest.name}
+%table#table.table
+
+:javascript
+
+  $(function() {
+    //main table
+    table_config = {
+      processing: true,
+      rowId: 'id',
+      destroy: true,
+      paging: false,
+      order: [[0,'asc']],
+      ajax: {
+        url: "#{view_query_contests_path(@contest)}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+      },
+      layout: {
+        topStart: 'info',
+        topEnd: 'search',
+      },
+      columns: [ 
+        {data: 'login'},
+        {data: 'full_name'},
+        {data: 'remark'},
+        {data: 'seat'},
+        {data: 'heartbeat'},
+        {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'user_id', render: dt_link_renderer(`[${msi('person_remove','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
+      ],
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
+    }
+
+    //initialize the table
+    $('#table').DataTable(table_config)
+  });

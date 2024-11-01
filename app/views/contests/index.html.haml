@@ -45,5 +45,5 @@
           %td= @contest.enabled
           %td= link_to 'Manage', contest
           %td= link_to 'Watch', view_contest_path(contest)
-          %td= link_to 'Destroy', contest, :confirm => 'Are you sure?', :method => :delete
+          %td= link_to 'Destroy', contest, :confirm => 'Are you sure?', :method => :delete, class: 'link-danger'
     %br/

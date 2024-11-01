@@ -9,9 +9,13 @@ Rails.application.routes.draw do
 
   resources :contests do
     member do
+      # report
+
       # contest
       get 'toggle'
       get 'view'
+      post 'view_query'
+      post 'add_users_from_csv'
 
       # groups_users
       post 'show_users_query'
