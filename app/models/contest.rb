@@ -11,6 +11,7 @@ class Contest < ApplicationRecord
   # new_users are active record relation
   # return a toast reaponse hash
 
+  # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
   def add_users(new_users)
@@ -34,7 +35,42 @@ class Contest < ApplicationRecord
                 while the other #{pluralize (num_request_add - num_actual_add), 'user'} are already in the contest.
               "}
     end
+  end
 
+  def add_users_from_csv(lines)
+    error_logins = []
+    first_error = nil
+    added_users = []
+
+    lines.split("\n").each do |line|
+      #split with large limit, this will cause consecutive ',' to be result in a blank instead of nil
+      items = line.chomp.split(',',1000)
+
+      login = items[0]
+      remark = items.length >= 2 ? items[1] : nil
+      seat = items.length >= 3 ? items[2] : nil
+
+      user = User.where(login: login).first
+      
+      unless user
+        error_logins << "'#{login}'"
+        next
+      end
+
+      cu = self.contests_users.find_or_create_by(user: user)
+
+      cu.remark = remark if remark
+      cu.seat = seat if seat
+
+      if cu.save
+        added_users << user
+      else
+        error_logins << "'#{login}'"
+        first_error = user.errors.full_messages.to_sentence unless first_error
+      end
+    end
+
+    return {error_logins: error_logins, first_error: first_error, added_users:  added_users}
   end
 
   def add_problems_and_assign_number(new_problems)

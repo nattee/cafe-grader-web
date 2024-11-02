@@ -1,32 +1,33 @@
 %h2 Contest management
 .row.my-3.gx-3
   .col-md-6
-    .card
+    .card.shadow-sm
       .card-body
         %h4 Contest Detail
         .row.mb-3
           = key_pair(obj: @contest, field: :name)
           = key_pair(obj: @contest, field: :description,width: 4)
           = key_pair(obj: @contest, field: :enabled, as: :yes_no)
-          = key_pair(label: 'Start Time', value: @contest.start&.strftime("%Y-%b-%d %H:%M"))
-          = key_pair(label: 'Finish Time', value: @contest.stop&.strftime("%Y-%b-%d %H:%M"))
+          = key_pair(label: 'Start Time', value: @contest&.start&.strftime("%Y-%b-%d %H:%M"))
+          = key_pair(label: 'Finish Time', value: @contest&.stop&.strftime("%Y-%b-%d %H:%M"))
           = key_pair(obj: @contest, field: :freeze, as: :yes_no)
         = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary me-2'
         = link_to 'Back', contests_path, class: 'btn btn-outline-secondary'
   .col-md-6
-    .alert.alert-warning.shadow-sm
-      %h4 Tips
-      %ul
-        %li
-          A contest is shown to a user when the site is in
-          %strong Contest Mode.
-        %li 
-          Only enabled contest that has the current time is during its start and stop time is shown to the user.
-        %li 
-          When a contest is frozen, the user cannot submit to the contest and contest's users and problem cannot be modified.
+    .card.bg-warning-subtle.shadow-sm
+      .card-body
+        %h4 Tips
+        %ul
+          %li
+            A contest is shown to a user when the site is in
+            %strong Contest Mode.
+          %li 
+            Only enabled contest that has the current time is during its start and stop time is shown to the user.
+          %li 
+            When a contest is frozen, the user cannot submit to the contest and contest's users and problem cannot be modified.
 .row.my-3{data: {controller: 'contest'}}
   .col-12
-    .card
+    .card.shadow-sm
       .card-body
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
@@ -39,6 +40,11 @@
               %span.mi.mi-bs
                 task
               Problems
+          %li.nav-item
+            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-add-users'}}}
+              %span.mi.mi-bs
+                upload
+              Import
         .tab-content
           -# ==========================================
           -# ---------- users pane ------------------
@@ -74,16 +80,17 @@
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
               .col-md-6
                 -# help for GroupUser
-                .alert.alert-warning.shadow-sm
-                  %ul
-                    %li
-                      If you want to add several users to a group, it may be easier to just re-import the users in
-                      = link_to 'New list of users', new_list_user_admin_index_path
-                      page. You can also use
-                      = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
-                      page.
-                    %li
-                      Only enabled problems are shown to the enabled users of the group.
+                .card.bg-warning-subtle.shadow-sm
+                  .card-body
+                    %ul
+                      %li
+                        If you want to add several users to a group, it may be easier to just re-import the users in
+                        = link_to 'New list of users', new_list_user_admin_index_path
+                        page. You can also use
+                        = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
+                        page.
+                      %li
+                        Only enabled problems are shown to the enabled users of the group.
             %table#user_table.table.datatable.table-hover
               %thead
                 %tr
@@ -127,14 +134,15 @@
                   = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
               .col-md-6
                 -# help for group problem
-                .alert.alert-warning.shadow-sm
-                  %ul
-                    %li
-                      If you want to add several problem to a group, it may be easier to bulk manage them in the
-                      = link_to 'Bulk Manage Problems', manage_problems_path
-                      page.
-                    %li
-                      Only enabled problems are shown to the enabled users of the group.
+                .card.bg-warning-subtle.shadow-sm
+                  .card-body
+                    %ul
+                      %li
+                        If you want to add several problem to a group, it may be easier to bulk manage them in the
+                        = link_to 'Bulk Manage Problems', manage_problems_path
+                        page.
+                      %li
+                        Only enabled problems are shown to the enabled users of the group.
             .row
               .col-12
                 %table#problem_table.table.datatable.table-hover
@@ -145,6 +153,54 @@
                       %th Full name
                       %th Enable
                       %th Action
+          -# ==========================================
+          -# ---------- import users ------------------
+          -# ==========================================
+          #tab-add-users.tab-pane.fade
+            .row
+              .col-md-6
+                %h5.mb-2.card-subtitle.text-body-secondary Add users to the contest
+                = form_with url: add_users_from_csv_contest_path(@contest), 
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do |f|
+                  .row.align-items-center.mb-3
+                    .col-auto
+                      = f.submit 'Add following users',class: 'btn btn-primary'
+                  .row.mb-3
+                    .col-12
+                      = f.text_area :user_list, value: nil, class: 'form-control', style: 'height: 30rem'
+              .col-md-6
+                .card.bg-warning-subtle.shadow-sm
+                  .card-body
+                    .card-title
+                      %h4
+                        .mi.mi-bs.fill help
+                        Usage
+                    Add users to the contest from a csv text. One user per line.
+                    %ul
+                      %li
+                        Each line must be in the following format. A square bracket indicates that the parameter is optional.
+                        %span.rounded.bg-light.p-1.font-monospace user_id[,remark[,seat]]]
+                      %li
+                        If the users with the same user_id already exists, existing information will be overwritten.
+                      %li
+                        The columns
+                        %span.rounded.bg-light.p-1.font-monospace remark
+                        and
+                        %span.rounded.bg-light.p-1.font-monospace seat
+                        are optional. When
+                        %span.rounded.bg-light.p-1.font-monospace  remark
+                        or
+                        %span.rounded.bg-light.p-1.font-monospace seat
+                        is empty (but not missing), the original value will be used.
+                    .card-title
+                      %h5 Example
+                    %ul
+                      %li.mb-2
+                        .rounded.bg-light.p-1.font-monospace user1
+                        will add the user with login "user1" to the contest. If the user already exists, no change is made to the contest user
+                      %li.mb-2
+                        .rounded.bg-light.p-1.font-monospace user1,room 403,
+                        will add the user with login "user1" and and set the remark to "room 403" and set the seating to an empty string. If the user already exists, the remark and seat fields are updated.
 
 %div{'data-controller': 'hello'}
 
@@ -179,8 +235,8 @@
       columns: [ 
         {data: 'login'},
         {data: 'full_name'},
-        {data: 'seat'},
         {data: 'remark'},
+        {data: 'seat'},
         {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'user_id', render: dt_link_renderer(`[${msi('person_remove','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
       ],

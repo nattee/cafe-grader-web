@@ -130,10 +130,8 @@
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-      console.log('xxx')
       return response.text() // this is a promise
     });
-      console.log('yyy')
   }
 
   function checkInLoop() {

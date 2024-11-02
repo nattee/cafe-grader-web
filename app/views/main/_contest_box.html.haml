@@ -2,24 +2,27 @@
   .card-header.text-bg-warning.border-warning
     Contest
   .card-body
-    %table#contest-table.datatable{style: "width: 100%"}
-      %thead
-        %tr
-          %th Contest
-          %th Time
-          %th Status
-          %th
-      %tbody
-        - @contests.each do |contest|
+    - if @contests.count == 0
+      The system is in contest mode but you are not in any active contest. Please contact the staff.
+    - else
+      %table#contest-table.datatable{style: "width: 100%"}
+        %thead
           %tr
-            %td= contest.name
-            %td
-              = format_start_stop(contest.start,contest.stop).html_safe
-            %td
-              .time-counter{data: {start: contest.start.iso8601,stop: contest.stop.iso8601}}
-            %td
-              - unless contest == @current_contest
-                = link_to 'Set as active'
+            %th Contest
+            %th Time
+            %th Status
+            %th
+        %tbody
+          - @contests.each do |contest|
+            %tr
+              %td= contest.name
+              %td
+                = format_start_stop(contest.start,contest.stop).html_safe
+              %td
+                .time-counter{data: {start: contest.start.iso8601,stop: contest.stop.iso8601}}
+              %td
+                - unless contest == @current_contest
+                  = link_to 'Set as active'
 :javascript
   function updateContestStatusTime() {
     const x = document.getElementsByClassName('time-counter')

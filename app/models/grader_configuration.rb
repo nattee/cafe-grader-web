@@ -68,9 +68,9 @@ class GraderConfiguration < ApplicationRecord
   end
 
   def self.show_tasks_to?(user)
-    if time_limit_mode?
-      return false if not user.contest_started?
-    end
+    #if time_limit_mode?
+    #  return false if not user.contest_started?
+    #end
     return true
   end
 

@@ -1,0 +1,51 @@
+%h1 Spectating contest #{@contest.name}
+%table#table.table
+
+:javascript
+
+  $(function() {
+    // build columns
+    problem_ids = [#{@contest.problems.pluck(:id).join(',')}]
+
+    problem_ids = []
+    problem_colums = problem_ids.map( id => {
+      return {data: `problem_${id}`,className: 'text-end'}
+    })
+    columns = [
+      {data: 'login'},
+      {data: 'full_name'},
+      {data: 'remark'},
+      {data: 'seat'},
+      {data: 'last_heartbeat',label: 'Last Checkin'},
+    ].concat(problem_columns)
+    .concat( [
+      //{data: 'sum'},
+      //{data: 'pass'}
+    ])
+
+    //main table
+    table_config = {
+      processing: true,
+      rowId: 'id',
+      destroy: true,
+      paging: false,
+      order: [[0,'asc']],
+      ajax: {
+        url: "#{view_query_contests_path(@contest)}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+      },
+      layout: {
+        topStart: 'info',
+        topEnd: 'search',
+      },
+      columns: columns,
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
+    }
+
+    //initialize the table
+    $('#table').DataTable(table_config)
+  });

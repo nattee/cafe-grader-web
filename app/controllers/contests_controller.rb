@@ -1,5 +1,6 @@
 class ContestsController < ApplicationController
-  before_action :set_contest, only: [:show, :edit, :update, :destroy,
+  before_action :set_contest, only: [:show, :edit, :update, :destroy, :view,
+                                     :add_users_from_csv,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
                                      :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
@@ -9,6 +10,8 @@ class ContestsController < ApplicationController
 
   before_action :admin_authorization, except: [:user_check_in]
   before_action :check_valid_login, only: [:user_check_in]
+
+  delegate :pluralize, to: 'ActionController::Base.helpers'
 
   # GET /contests
   # GET /contests.xml
@@ -34,6 +37,10 @@ class ContestsController < ApplicationController
   # show is for manage
   # view is for spectating
   def view
+  end
+  
+  def view_query
+    render json: {data: @contest.contests_users.joins(:user).select(:user_id,:login,:full_name,:remark,:seat,:last_heartbeat)}
   end
 
   # GET /contests/new
@@ -177,6 +184,17 @@ class ContestsController < ApplicationController
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     end
+  end
+
+  def add_users_from_csv
+    lines = params[:user_list]
+
+    res = @contest.add_users_from_csv(lines)
+    @toast = {title: "Contest #{@contest.name}"}
+    body = "#{pluralize(res[:added_users].count,'user')} were added or updated. "
+    body += "#{pluralize(res[:error_logins].count,'user')} failed to be added. The first error is #{res[:first_error]}" if res[:error_logins].count > 0
+    @toast[:body] = body
+    render 'turbo_toast'
   end
 
   def add_problem
