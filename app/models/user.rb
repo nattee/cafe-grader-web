@@ -229,15 +229,6 @@ class User < ApplicationRecord
   # ---------------------
   # ---- contest --------
   # ---------------------
-  # modern contest
-  def contest_end_time
-    if GraderConfiguration.contest_mode?
-      return active_contests.first&.stop
-    else
-      return nil
-    end
-  end
-
 
   # original contest
   def contest_time_left

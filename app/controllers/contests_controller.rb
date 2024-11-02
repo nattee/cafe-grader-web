@@ -227,7 +227,11 @@ class ContestsController < ApplicationController
     current = Time.zone.now
     last = @current_user.last_heartbeat || current
     @current_user.update(last_heartbeat: current)
-    render plain: ((current - last) * 1000).to_i
+    ms_since_last_check_in = ((current - last) * 1000).to_i
+    if (@current_contest)
+      ms_until_contest_end = ((@current_contest.stop - current) * 1000).to_i
+    end
+    render json: {ms_since_last_check_in: ms_since_last_check_in, ms_until_contest_end: ms_until_contest_end, current_time: current}
   end
 
 

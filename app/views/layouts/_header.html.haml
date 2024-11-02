@@ -97,6 +97,8 @@
               %span.mi.mi-bs.md-18 exit_to_app
               = @current_user.full_name
 :javascript
+  let server_time_offset_ms = 0
+
   $(function() {
     $('.active-with-children').each( (index,obj) => { 
       if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
@@ -138,6 +140,8 @@
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Get the CSRF token
     const check_in_url = '#{user_check_in_contests_path}'
     const check_in_interval_seconds = #{Contest.check_in_interval}
+    let response_received_time = moment()
+
 
     //call check in
     fetch(check_in_url, {
@@ -146,12 +150,19 @@
         'X-CSRF-Token': csrfToken  // Send CSRF token in the headers
       },
     }).then( response => {
+      response_received_time = moment()
+      
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
       return response.text() // this is a promise
-    }).then( text_as_string => {
-      ms_since_last_check_in = parseInt(text_as_string)
+    }).then( response_text => {
+      response = JSON.parse(response_text)
+      ms_since_last_check_in = response.ms_since_last_check_in
+
+      //recalculate time offset
+      server_time_offset_ms = response_received_time - moment(response.current_time)
+
 
       if (ms_since_last_check_in > check_in_interval_seconds * 1000) {
         too_early_count = 0
@@ -172,11 +183,11 @@
   }
 
   function updateRemainingTime() {
-    const contestEndTime = Date.parse('#{@current_user.contest_end_time&.iso8601}')
+    const contestEndTime = Date.parse('#{@current_contest&.stop&.iso8601}')
     if (!contestEndTime) return; // No contest end time to display
 
-    const now = new Date();
-    const remainingTime = contestEndTime - now;
+    const now = (new Date())
+    const remainingTime = contestEndTime - now + server_time_offset_ms
 
     if (remainingTime > 0) {
       const hours = Math.floor(remainingTime / (1000 * 60 * 60));
@@ -193,8 +204,8 @@
   // time should be a string in iso8601 format
   function humanize_time(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
     const time = Date.parse(time_iso8601)
-    const now = new Date();
-    const remainingTime = time - now;
+    const now = new Date() ;
+    const remainingTime = time - now + server_time_offset_ms;
     const hours = Math.floor(Math.abs(remainingTime) / (1000 * 60 * 60));
     const minutes = Math.floor((Math.abs(remainingTime) % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((Math.abs(remainingTime) % (1000 * 60)) / 1000);
