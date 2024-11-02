@@ -24,6 +24,10 @@ class ContestsController < ApplicationController
     end
   end
 
+  def index_query
+    render json: {data: Contest.all}
+  end
+
   # GET /contests/1
   # GET /contests/1.xml
   def show

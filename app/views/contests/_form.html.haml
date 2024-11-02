@@ -1,32 +1,32 @@
-.row.my-3.gx-3
-  .col-md-6
-    .card.shadow-sm
-      .card-body
-        = simple_form_for @contest, wrapper: :horizontal_form, html: {data: {turbo: false}} do |f|
-          = f.error_notification
-          = f.input :name
-          = f.input :description
-          = f.input :pre_contest_seconds
-          .row.mb-3
-            .col-md-3.col-form-label
-              Start
-            .col-md-7
-              .input-group.td-date
-                = f.text_field :start, value: @contest.start&.strftime("%d/%b/%Y %H:%M"), class: 'form-control'
-                %span.input-group-text
-                  %span.mi event
-          .row.mb-3
-            .col-md-3.col-form-label
-              Stop
-            .col-md-7
-              .input-group.td-date
-                = f.text_field :stop, value: @contest.stop&.strftime("%d/%b/%Y %H:%M"), class: 'form-control'
-                %span.input-group-text
-                  %span.mi event
-          = f.input :post_contest_seconds
-          = f.input :enabled
-          = f.input :freeze
-          = f.submit 'Update', class: 'btn btn-primary'
+= simple_form_for @contest, wrapper: :horizontal_form, html: {data: {turbo: false}} do |f|
+  = f.error_notification
+  = f.input :name
+  = f.input :description
+  = f.input :pre_contest_seconds
+  .row.mb-3
+    .col-md-3.col-form-label
+      Start
+    .col-md-7
+      .input-group.td-date
+        = f.text_field :start, value: @contest.start&.strftime("%d/%b/%Y %H:%M"), class: 'form-control'
+        %span.input-group-text
+          %span.mi event
+  .row.mb-3
+    .col-md-3.col-form-label
+      Stop
+    .col-md-7
+      .input-group.td-date
+        = f.text_field :stop, value: @contest.stop&.strftime("%d/%b/%Y %H:%M"), class: 'form-control'
+        %span.input-group-text
+          %span.mi event
+  = f.input :post_contest_seconds
+  = f.input :enabled
+  = f.input :freeze
+  = f.button :submit, class: 'btn btn-primary'
+  - if @contest.id
+    = link_to 'Back', contest_path(@contest), class: 'btn btn-outline-secondary mx-2'
+  - else
+    = link_to 'Back', contests_path, class: 'btn btn-outline-secondary mx-2'
 :javascript
   $(() => {
     start_datetime = new TempusDominus(document.getElementById('contest_start'), default_td_options );
