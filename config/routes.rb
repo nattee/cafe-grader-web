@@ -35,6 +35,7 @@ Rails.application.routes.draw do
       post 'index_query'
       post 'set_system_mode'
       post 'user_check_in'
+      post 'contest_action'
     end
   end
 

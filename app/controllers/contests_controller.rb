@@ -95,6 +95,19 @@ class ContestsController < ApplicationController
     end
   end
 
+  def contest_action
+    @contest = Contest.find(params[:contest_id])
+    @toast = {title: "Contest #{@contest.name}"}
+    case params[:command]
+    when 'toggle'
+      @contest.update(enabled: !@contest.enabled?)
+      @toast[:body] = @contest.enabled? ? 'Contest was enabled.' : 'Contest was disaabled.'
+    else
+      @toast[:body] = "Unknown command"
+    end
+    render 'turbo_toast'
+  end
+
   # --- users & problems ---
   def show_users_query
     render json: {data: @contest.contests_users.joins(:user)
