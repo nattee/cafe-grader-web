@@ -43,5 +43,18 @@ function dt_link_renderer(label,{className = '', action = null, command = null, 
   }
 }
 
+function dt_yes_no_pill_renderer() {
+  return function(data,type,row,meta) {
+    console.log('xxx')
+    console.log(data)
+    if (data == '1' || data == 'true' || data == 1 || data == true)
+      return '<span class="badge text-bg-success">Yes</span>'
+    else if (data == '0' || data == 'false' || data == 0 || data == false)
+      return '<span class="badge text-bg-success">No</span>'
+    return ''
+  }
+}
+
 window.dt_button_renderer = dt_button_renderer
 window.dt_link_renderer = dt_link_renderer
+window.dt_yes_no_pill_renderer = dt_yes_no_pill_renderer

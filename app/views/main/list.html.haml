@@ -65,6 +65,9 @@
     $("#contest-table").DataTable({
       paging: false,
       responsive: true,
+      columnDefs: [
+        { targets: [3], sortable: false }, // latest result & action
+      ],
       layout: {
         topStart: null,
         topEnd: null,
