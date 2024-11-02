@@ -138,11 +138,11 @@
                   .card-body
                     %ul
                       %li
-                        If you want to add several problem to a group, it may be easier to bulk manage them in the
+                        If you want to add several problem to a contest, it may be easier to bulk manage them in the
                         = link_to 'Bulk Manage Problems', manage_problems_path
                         page.
                       %li
-                        Only enabled problems are shown to the enabled users of the group.
+                        A problem is available to a user only if it is globally available and enabled in the contest.
             .row
               .col-12
                 %table#problem_table.table.datatable.table-hover
@@ -151,6 +151,7 @@
                       %th Number
                       %th Name
                       %th Full name
+                      %th.text-center Global Available
                       %th Enable
                       %th Action
           -# ==========================================
@@ -267,6 +268,7 @@
         {data: 'number'},
         {data: 'name'},
         {data: 'full_name'},
+        {data: 'available', render: dt_yes_no_pill_renderer(), className: 'text-center'},
         {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'problem_id', render: dt_link_renderer(`[${msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?'})},
         {data: 'problem_id', render: dt_link_renderer(`[${msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup'})},

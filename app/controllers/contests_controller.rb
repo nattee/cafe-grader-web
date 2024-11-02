@@ -1,5 +1,5 @@
 class ContestsController < ApplicationController
-  before_action :set_contest, only: [:show, :edit, :update, :destroy, :view,
+  before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
                                      :add_users_from_csv,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
@@ -40,7 +40,7 @@ class ContestsController < ApplicationController
   end
   
   def view_query
-    render json: {data: @contest.contests_users.joins(:user).select(:user_id,:login,:full_name,:remark,:seat,:last_heartbeat)}
+    render json: {data: @contest.contests_users.joins(:user).select(:id, :user_id,:login,:full_name,:remark,:seat,:last_heartbeat)}
   end
 
   # GET /contests/new
@@ -99,7 +99,7 @@ class ContestsController < ApplicationController
 
   def show_problems_query
     render json: {data: @contest.contests_problems.joins(:problem)
-      .select('contests_problems.id',:problem_id,:enabled, :name, :full_name, :number)}
+      .select('contests_problems.id',:problem_id,:available,:enabled, :name, :full_name, :number)}
   end
 
   def do_all_users

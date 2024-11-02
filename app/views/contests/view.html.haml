@@ -1,14 +1,27 @@
-%h1 Spectating contest #{@contest.name}
-%table#table.table
+%h1 Contest Status [#{@contest.name}]
+%table#table.table.datatable
+  %thead
+    %tr
+      %th Login
+      %th Name
+      %th Remark
+      %th Seat
+      %th Last Seen
 
 :javascript
 
   $(function() {
+    humanize_time_renderer = function(data,type,row,meta) {
+      if (!data) return ''
+      return humanize_time(data)
+
+    }
+
     // build columns
     problem_ids = [#{@contest.problems.pluck(:id).join(',')}]
 
     problem_ids = []
-    problem_colums = problem_ids.map( id => {
+    problem_columns = problem_ids.map( id => {
       return {data: `problem_${id}`,className: 'text-end'}
     })
     columns = [
@@ -16,7 +29,7 @@
       {data: 'full_name'},
       {data: 'remark'},
       {data: 'seat'},
-      {data: 'last_heartbeat',label: 'Last Checkin'},
+      {data: 'last_heartbeat',label: 'Last Checkin', render: humanize_time_renderer},
     ].concat(problem_columns)
     .concat( [
       //{data: 'sum'},
@@ -30,14 +43,19 @@
       destroy: true,
       paging: false,
       order: [[0,'asc']],
+      layout: {
+         topStart: 'buttons',
+         topEnd: 'search'
+      },
+      buttons: [
+          { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()}},
+          'copyHtml5',
+          'excelHtml5',
+      ],
       ajax: {
-        url: "#{view_query_contests_path(@contest)}",
+        url: "#{view_query_contest_path(@contest)}",
         type: 'POST',
         headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
-      },
-      layout: {
-        topStart: 'info',
-        topEnd: 'search',
       },
       columns: columns,
       drawCallback: function (settings) {
