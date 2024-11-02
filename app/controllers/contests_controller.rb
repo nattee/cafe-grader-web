@@ -179,6 +179,8 @@ class ContestsController < ApplicationController
 
   def add_user_by_group
     begin
+      user_ids = GroupUser.where(group_id: params[:user_group_ids]).where.not(user_id: @contest.users.ids).pluck :user_id
+      user_ids = GroupUser.where(group_id: params[:user_group_ids]).pluck :user_id
       @toast = @contest.add_users User.where(id: user_ids)
       render 'turbo_toast'
     rescue => e
