@@ -40,6 +40,7 @@ class ContestsController < ApplicationController
   end
   
   def view_query
+    render json: {data: @contest.contests_users.joins(:user).select(:user_id,:login,:full_name,:remark,:seat,:last_heartbeat)}
   end
 
   # GET /contests/new

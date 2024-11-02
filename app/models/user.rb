@@ -337,7 +337,7 @@ class User < ApplicationRecord
       end
     else
       #this is contest mode
-      Problem.contests_problems_for_user(self.id).default_order
+      return Problem.contests_problems_for_user(self.id).default_order
     end
   end
 
