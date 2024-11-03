@@ -93,8 +93,7 @@ class Problem < ApplicationRecord
   end
 
   def public_tags
-    #tags.where(public: true)
-    return tags
+    tags.where(public: true)
   end
 
 

@@ -5,6 +5,7 @@
       %div= link_to 'stat', stat_problem_path(problem)
       %div= link_to 'edit', edit_problem_path(problem)
   - @numbering+=1
+  -# problem name, pdf, attachments, etc.
   %td
     = render partial: 'problems/problem_name', locals: {problem: problem}
   -# score column
@@ -24,7 +25,7 @@
       = link_to 'Edit', edit_submission_path(@prob_submissions[problem.id][:submission]), class: 'btn btn-success'
     - else
       = link_to 'New', direct_edit_problem_submissions_path(problem.id), class: 'btn btn-success'
-  -# hiddenc olumn
+  -# hidden column
   %td
     = problem.public_tags.pluck(:name).join ','
     

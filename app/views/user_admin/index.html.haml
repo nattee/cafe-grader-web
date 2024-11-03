@@ -17,19 +17,6 @@
         = f.text_field 'email', :size => 10,class: 'form-control', placeholder: 'email'
       =submit_tag "Create", class: 'btn btn-success align-items-bottom'
 
-.card.border-success.mb-3
-  .card-header.text-bg-success.border-success
-    Import from site management
-  .card-body
-    = form_with url: import_user_admin_index_path, :multipart => true do |f|
-      .row
-        .col-auto
-          = f.label :file, 'File:', class: 'col-form-label'
-        .col-auto
-          = f.file_field :file, class: 'form-control'
-        .col-auto
-          = f.submit 'Submit', class: 'btn btn-secondary'
-
 
 %p
   = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success m-1'}
@@ -76,6 +63,7 @@
 :javascript
   $(function() {
     $('.datatable').DataTable({
-      'pageLength': 50
+      'pageLength': 50,
+      columnDefs: [{orderable: false, targets: [4,5,7,8,9,10]} ],
     });
   })

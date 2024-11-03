@@ -50,7 +50,7 @@ class ContestsController < ApplicationController
   # GET /contests/new
   # GET /contests/new.xml
   def new
-    @contest = Contest.new
+    @contest = Contest.new(start: Time.zone.now, stop: Time.zone.now+3.hour)
 
     respond_to do |format|
       format.html # new.html.erb
