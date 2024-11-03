@@ -73,7 +73,7 @@
         {data: null, render: dt_link_renderer(`${msi('summarize','md-18')} Watch`, {path: '#{view_contest_path(-123)}'})},
         {data: null, render: dt_link_renderer(`${msi('delete','md-18')} Destroy`, {path: '#{contest_path(-123)}', className: 'link-danger', })},
       ],
-      columnDefs: [{orderable: false, targets: [3,4,5,6]} ],
+      columnDefs: [{orderable: false, targets: [2,5,6,7]} ],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

@@ -16,5 +16,5 @@
   = f.input :contest_only, label: 'Display in contest only?'
   = f.input :file
   = f.submit class: 'btn btn-primary'
-  - if content_for?(:form_buttons)
-    = yield(:form_buttons)
+  = link_to 'Back', announcements_path, class: 'btn btn-outline-secondary mx-2'
+
