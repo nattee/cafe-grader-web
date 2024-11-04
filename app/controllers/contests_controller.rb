@@ -287,7 +287,7 @@ class ContestsController < ApplicationController
     end
 
     def contests_params
-      params.require(:contest).permit(:name, :descriotion,:enabled,:lock, :start, :stop)
+      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop)
     end
 
 end

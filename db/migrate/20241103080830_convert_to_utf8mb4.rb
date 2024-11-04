@@ -1,6 +1,10 @@
 class ConvertToUtf8mb4 < ActiveRecord::Migration[7.0]
   def up
+    # fix some errors in created_at and updated_at of old records
     GraderConfiguration.where(created_at: nil).update_all('created_at = updated_at')
+    User.where(updated_at: 0).update_all('updated_at = created_at')
+
+    # convert
     execute "ALTER TABLE announcements CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"
     execute "ALTER TABLE contests CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"
     execute "ALTER TABLE countries CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"

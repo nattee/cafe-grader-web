@@ -65,7 +65,7 @@ function dt_yes_no_pill_renderer() {
     if (data == '1' || data == 'true' || data == 1 || data == true)
       return '<span class="badge text-bg-success">Yes</span>'
     else if (data == '0' || data == 'false' || data == 0 || data == false)
-      return '<span class="badge text-bg-success">No</span>'
+      return '<span class="badge text-bg-danger">No</span>'
     return ''
   }
 }
