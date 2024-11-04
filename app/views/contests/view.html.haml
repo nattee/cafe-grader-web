@@ -25,7 +25,7 @@
       return {data: `problem_${id}`,className: 'text-end'}
     })
     columns = [
-      {data: 'login'},
+      {data: 'login', render: dt_link_renderer(null,{path: '#{stat_user_path(-123)}', })},
       {data: 'full_name'},
       {data: 'remark'},
       {data: 'seat'},
