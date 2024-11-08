@@ -1,9 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
+import { rowFieldToggle } from "../mixins/row_field_toggle";
 
-export default class extends Controller {
+export default class extends rowFieldToggle(Controller) {
 
   static targets = ["usersCommand", "userForm", "userFormUserID", "userFormCommand" ,
                     "problemsCommand", "problemForm", "problemFormProblemID", "problemFormCommand" ,
+                    "toggleForm",
                    ]
 
   connect() {
@@ -13,6 +15,13 @@ export default class extends Controller {
     //  method: "POST",
     //}).then(r => r.text())
     //  .then(html => console.log(html))
+  }
+
+  toggle(event) {
+    event.target.disabled = true
+    const recId = event.target.dataset.id
+    const form = this.toggleFormTarget
+    this.submitToggleForm(form,recId)
   }
 
   setUsersCommand(event) {

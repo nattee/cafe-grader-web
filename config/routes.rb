@@ -100,7 +100,7 @@ Rails.application.routes.draw do
   resources :groups do
     member do
       # groups
-      get 'toggle'
+      post 'toggle'
 
       # groups_users
       post 'show_users_query'
