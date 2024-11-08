@@ -1,6 +1,6 @@
 = turbo_stream.replace :contest_problem_table_frame, partial: 'contest_problems'
 - if @toast
-  = turbo_stream.append 'toast-area', partial: 'shared/toast', locals: {toast: @toast}
+  = turbo_stream.append 'toast-area', partial: 'toast', locals: {toast: @toast}
 - if @clear_form
   = turbo_stream.append 'js-response' do
     :javascript

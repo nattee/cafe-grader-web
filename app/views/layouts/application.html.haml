@@ -32,7 +32,7 @@
 
     -# -- for adding toast --
       to respond with additional toast, use
-      = turbo_stream.append 'toast-area', partial: 'shared/toast', locals: {toast: @toast}
+      = turbo_stream.append 'toast-area', partial: 'toast', locals: {toast: @toast}
     = turbo_frame_tag :toast_main, data: {turbo: true} do
       #toast-area.toast-container.position-fixed.top-0.end-0.p-3
         / place holder

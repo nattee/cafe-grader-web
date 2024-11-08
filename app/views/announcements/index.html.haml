@@ -2,7 +2,6 @@
 
 = link_to '+ Add announcement', new_announcement_path, class: 'btn btn-success'
 %br
-%br
 
 %table.table.table-striped
   %thead
@@ -28,10 +27,29 @@
           %br/
         = h announcement.body
       %td= h announcement.author
-      %td= toggle_button(announcement.published?, toggle_announcement_path(@announcement), "announcement_toggle_#{@announcement.id}", {size: 'btn-sm'})
-      %td= toggle_button(announcement.frontpage?, toggle_front_announcement_path(@announcement), "announcement_toggle_front_#{@announcement.id}", {size: 'btn-sm'})
+      %td
+        .form-check.form-switch
+          %input.form-check-input{id: "ann-#{announcement.id}-published-switch", checked: announcement.published, type: "checkbox", data: {action: 'announcement#toggle', id: announcement.id, field: 'published'}}
+      %td
+        .form-check.form-switch
+          %input.form-check-input{id: "ann-#{announcement.id}-front-switch", checked: announcement.frontpage, type: "checkbox", data: {action: 'announcement#toggle', id: announcement.id, field: 'front'}}
       %td= link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-block btn-sm btn-info'
       %td= link_to 'Destroy', announcement, :confirm => 'Are you sure?', :method => :delete, class: "btn btn-block btn-sm btn-danger"
 %br
 
-= link_to '+ Add announcement', new_announcement_path, class: 'btn btn-success'
+-# hidden form for announcement toggle
+= form_with url: toggle_published_announcement_path(-123), html: {'data-announcement-target': 'togglePublishedForm',
+  data: {turbo: true} } do
+  /
+= form_with url: toggle_front_announcement_path(-123), html: {'data-announcement-target': 'toggleFrontForm', data: {turbo: true}} do
+  /
+:javascript
+  function set_announcement_switch(announcement_id,published,front) {
+    document.getElementById(`ann-${announcement_id}-published-switch`).checked = published
+    document.getElementById(`ann-${announcement_id}-published-switch`).disabled = false
+
+    document.getElementById(`ann-${announcement_id}-front-switch`).checked = front
+    document.getElementById(`ann-${announcement_id}-front-switch`).disabled = false
+
+  }
+

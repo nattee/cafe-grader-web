@@ -94,10 +94,12 @@
         %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 
 -# hidden form for problem toggle
-= form_with url: toggle_problem_path(-123), html: {'data-problem-target': 'toggleForm',
-  data: {turbo: true, action: 'turbo:submit-end->problem#updateSwitch'}} do |f|
-  = f.hidden_field :problem_id, 'data-problem-target': 'toggleFormId'
-  = f.hidden_field :command, 'data-problem-target': 'toggleFormCommand'
+= form_with url: toggle_view_testcase_problem_path(-123), html: {'data-problem-target': 'toggleViewTestcaseForm',
+  data: {turbo: true, action: 'turbo:submit-end->problem#updateSwitch'}} do
+  /
+= form_with url: toggle_available_problem_path(-123), html: {'data-problem-target': 'toggleAvailableForm',
+  data: {turbo: true, action: 'turbo:submit-end->problem#updateSwitch'}} do
+  /
 
 :javascript
   function init_table() {
@@ -115,7 +117,6 @@
   }
 
   function set_problem_switch(problem_id,available,view_testcase) {
-    console.log('xxx')
     document.getElementById(`prob-${problem_id}-available-switch`).checked = available
     document.getElementById(`prob-${problem_id}-available-switch`).disabled = false
 

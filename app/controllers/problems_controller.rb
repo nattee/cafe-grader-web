@@ -4,7 +4,7 @@ class ProblemsController < ApplicationController
 
   MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
                    :delete_statement, :delete_attachment,
-                   :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                   :toggle_available, :toggle_view_testcase, :stat,
                    :add_dataset,:import_testcases,
                   ]
 
@@ -15,10 +15,10 @@ class ProblemsController < ApplicationController
   before_action :is_group_editor_authorization, except: [:get_statement, :get_attachment]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
 
-  before_action :admin_authorization, only: [:toggle, :turn_all_on, :turn_all_off ]
+  before_action :admin_authorization, only: [:toggle_available, :turn_all_on, :turn_all_off ]
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
                                           :delete_statement, :delete_attachment,
-                                          :toggle_test, :toggle_view_testcase, :stat,
+                                          :toggle_view_testcase, :stat,
                                           :add_dataset,:import_testcases,
                                          ]
   before_action :can_report_problem, only: [:stat]
@@ -126,23 +126,16 @@ class ProblemsController < ApplicationController
     redirect_to action: :index
   end
 
-  def toggle
-    #@problem.update(available: !(@problem.available) )
-    sleep(1)
-    if params[:command] == 'available'
-    @problem.update(available: false)
+  def toggle_available
+    @problem.update(available: !@problem.available)
     @toast = {title: "Problem #{@problem.name}",body: "Available updated"}
     render 'toggle'
   end
 
-  def toggle_test
-    @problem.update(test_allowed: !(@problem.test_allowed?) )
-    render "problem"
-  end
-
   def toggle_view_testcase
-    @problem.update(view_testcase: !(@problem.view_testcase?) )
-    render "problem"
+    @problem.update(view_testcase: !@problem.view_testcase)
+    @toast = {title: "Problem #{@problem.name}",body: "View Testcase updated"}
+    render 'toggle'
   end
 
   def turn_all_off

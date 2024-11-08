@@ -55,15 +55,14 @@ Rails.application.routes.draw do
 
   resources :announcements do
     member do
-      get 'toggle','toggle_front'
+      post 'toggle_published','toggle_front'
     end
   end
 
   resources :problems, except: [:new, :show] do
     member do
-      post 'toggle'
-      get 'toggle_test'
-      get 'toggle_view_testcase'
+      post 'toggle_available'
+      post 'toggle_view_testcase'
       get 'stat'
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
       get 'get_attachment(/:filename)', as: 'get_attachment', action: 'get_attachment'
