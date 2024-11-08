@@ -38,10 +38,9 @@
 %br
 
 -# hidden form for announcement toggle
-= form_with url: toggle_published_announcement_path(-123), html: {'data-announcement-target': 'togglePublishedForm',
-  data: {turbo: true} } do
+= form_with url: toggle_published_announcement_path(-123), html: {data: {turbo: true, action: 'turbo:submit-end->announcement#resetToggleForm', 'announcement-target': 'togglePublishedForm'} } do
   /
-= form_with url: toggle_front_announcement_path(-123), html: {'data-announcement-target': 'toggleFrontForm', data: {turbo: true}} do
+= form_with url: toggle_front_announcement_path(-123), html: {data: {turbo: true, action: 'turbo:submit-end->announcement#resetToggleForm', 'announcement-target': 'toggleFrontForm'}} do
   /
 :javascript
   function set_announcement_switch(announcement_id,published,front) {

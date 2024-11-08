@@ -1,35 +1,20 @@
 import { Controller } from "@hotwired/stimulus"
+import { rowFieldToggle } from "../mixins/row_field_toggle";
 
-export default class extends Controller {
+export default class extends rowFieldToggle(Controller) {
   static targets = ["toggleAvailableForm", "toggleViewTestcaseForm",
                    ]
   connect() {
   }
 
-  updateSwitch(event) {
-  }
-
-  // these functions are not tied to action, it is called by
-  // other action
-  submitToggleAvailable(problemId) {
-    const form = this.toggleAvailableFormTarget
-    form.action = form.action.replace(-123,problemId)
-    form.requestSubmit()
-  }
-
-  submitToggleViewTestcase(problemId) {
-    const form = this.toggleViewTestcaseFormTarget
-    form.action = form.action.replace(-123,problemId)
-    form.requestSubmit()
-  }
-
-
   toggle(event) {
     event.target.disabled = true
-    const problemId = event.target.dataset.id
+    const recId = event.target.dataset.id
     const field = event.target.dataset.field
-    if (field == "available") this.submitToggleAvailable(problemId)
-      else if (field == "view_testcase") this.submitToggleViewTestcase(problemId)
+    const form = field === 'available'     ? this.toggleAvailableFormTarget :
+                 field === 'view_testcase' ? this.toggleViewTestcaseFormTarget :
+                 null
+    this.submitToggleForm(form,recId)
   }
 
 }

@@ -94,11 +94,9 @@
         %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
 
 -# hidden form for problem toggle
-= form_with url: toggle_view_testcase_problem_path(-123), html: {'data-problem-target': 'toggleViewTestcaseForm',
-  data: {turbo: true, action: 'turbo:submit-end->problem#updateSwitch'}} do
+= form_with url: toggle_view_testcase_problem_path(-123), html: {data: {turbo: true, 'problem-target': 'toggleViewTestcaseForm', action: 'turbo:submit-end->problem#resetToggleForm'}} do
   /
-= form_with url: toggle_available_problem_path(-123), html: {'data-problem-target': 'toggleAvailableForm',
-  data: {turbo: true, action: 'turbo:submit-end->problem#updateSwitch'}} do
+= form_with url: toggle_available_problem_path(-123), html: {data: {turbo: true, 'problem-target': 'toggleAvailableForm', action: 'turbo:submit-end->problem#resetToggleForm'}} do
   /
 
 :javascript
