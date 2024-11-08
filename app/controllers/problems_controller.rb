@@ -22,6 +22,7 @@ class ProblemsController < ApplicationController
                                           :add_dataset,:import_testcases,
                                          ]
   before_action :can_report_problem, only: [:stat]
+  before_action :stimulus_controller
 
   def index
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
@@ -33,6 +34,7 @@ class ProblemsController < ApplicationController
       .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
       .select("MIN(MS.ms_count) as ms_count")
       .with_attached_statement
+      .with_attached_attachment
   end
 
 
@@ -125,24 +127,22 @@ class ProblemsController < ApplicationController
   end
 
   def toggle
-    @problem.update(available: !(@problem.available) )
-    respond_to do |format|
-      format.js { }
-    end
+    #@problem.update(available: !(@problem.available) )
+    sleep(1)
+    if params[:command] == 'available'
+    @problem.update(available: false)
+    @toast = {title: "Problem #{@problem.name}",body: "Available updated"}
+    render 'toggle'
   end
 
   def toggle_test
     @problem.update(test_allowed: !(@problem.test_allowed?) )
-    respond_to do |format|
-      format.js { }
-    end
+    render "problem"
   end
 
   def toggle_view_testcase
     @problem.update(view_testcase: !(@problem.view_testcase?) )
-    respond_to do |format|
-      format.js { }
-    end
+    render "problem"
   end
 
   def turn_all_off
@@ -352,6 +352,9 @@ class ProblemsController < ApplicationController
 
   ##################################
   protected
+    def stimulus_controller
+      @stimulus_controller = 'problem'
+    end
 
 
     def set_problem

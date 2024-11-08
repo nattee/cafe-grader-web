@@ -1,6 +1,6 @@
 //main entry point for sprocket
 //= require jquery3
-//= require jquery_ujs
+// = req uire jque  ry_ujs
 //= require popper
 //= require bootstrap-sprockets
 //= require moment

@@ -61,7 +61,7 @@ Rails.application.routes.draw do
 
   resources :problems, except: [:new, :show] do
     member do
-      get 'toggle'
+      post 'toggle'
       get 'toggle_test'
       get 'toggle_view_testcase'
       get 'stat'

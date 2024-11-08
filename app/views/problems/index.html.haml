@@ -79,13 +79,25 @@
         %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
         %td= problem.date_added
         - if @current_user.admin?
-          %td= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
+          %td
+            -#= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
+            .form-check.form-switch
+              %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', id: problem.id, field: 'available'}}
         - else
           %td= @problem.available?
-        %td= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
+        %td 
+          -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
+          .form-check.form-switch
+            %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', id: problem.id, field: 'view_testcase'}}
         %td= link_to 'Stat', {:action => 'stat', :id => problem.id}
         %td= link_to 'Edit', {:action => 'edit', :id => problem}
         %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
+
+-# hidden form for problem toggle
+= form_with url: toggle_problem_path(-123), html: {'data-problem-target': 'toggleForm',
+  data: {turbo: true, action: 'turbo:submit-end->problem#updateSwitch'}} do |f|
+  = f.hidden_field :problem_id, 'data-problem-target': 'toggleFormId'
+  = f.hidden_field :command, 'data-problem-target': 'toggleFormCommand'
 
 :javascript
   function init_table() {
@@ -100,6 +112,19 @@
         "<'row'<'col-sm-12'tr>>" +
         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     })
+  }
+
+  function set_problem_switch(problem_id,available,view_testcase) {
+    console.log('xxx')
+    document.getElementById(`prob-${problem_id}-available-switch`).checked = available
+    document.getElementById(`prob-${problem_id}-available-switch`).disabled = false
+
+    row = document.getElementById(`prob-${problem_id}`)
+    if (available) { row.classList.add('table-success')} else { row.classList.remove('table-success')}
+
+    document.getElementById(`prob-${problem_id}-view-testcase-switch`).checked = view_testcase
+    document.getElementById(`prob-${problem_id}-view-testcase-switch`).disabled = false
+
   }
 
   $(function() {
