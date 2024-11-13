@@ -242,4 +242,10 @@ class Problem < ApplicationRecord
     end
   end
 
+  # export  the problem into the default dump dir
+  def export
+    pe = ProblemExporter.new
+    pe.export_problem_to_dir(self, zip: true)
+  end
+
 end

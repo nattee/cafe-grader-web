@@ -66,6 +66,7 @@ Rails.application.routes.draw do
       get 'stat'
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
       get 'get_attachment(/:filename)', as: 'get_attachment', action: 'get_attachment'
+      get 'download_archive'
       post 'add_dataset'
       post 'import_testcases'
       delete 'attachment', action: 'delete_attachment'

@@ -2,9 +2,10 @@ class ProblemExporter
 
   require 'open3'
 
-  STATEMENT_FN = 'statement.pdf'
   INP_EXT = 'in'
   ANS_EXT = 'sol'
+
+  attr_reader :problem, :log, :errors, :got, :dataset
 
 
   def initialize
@@ -16,7 +17,7 @@ class ProblemExporter
 
   def export_pdf
     return unless @problem.statement.attached?
-    @statement_filename = @main_dir + STATEMENT_FN;
+    @statement_filename = @main_dir + OptionConst::DEFAULT[:file][:statement];
     @statement_filename.dirname.mkpath
 
     File.open(@statement_filename,'w:ASCII-8BIT') do |f|
@@ -90,6 +91,7 @@ class ProblemExporter
     end
   end
 
+  # save the @options hash into a YAML file
   def export_options
     #problem fields
     p_options = %i(name full_name submission_filename task_type compilation_type permitted_lang)
@@ -122,12 +124,17 @@ class ProblemExporter
 
   # this export the problem and its live dataset to a dir
   # with the name of the problem into *base_dir*
-  def export_problem_to_dir(problem, base_dir)
+  def export_problem_to_dir(problem, base_dir: Rails.root.join('../judge/dump'), zip: fasle)
     @problem = problem
     @ds = @problem.live_dataset
     raise 'No live dataset' unless @ds
 
     @main_dir = Pathname.new(base_dir) + problem.name
+
+    # clean the directory
+    FileUtils.rm_rf(@main_dir)
+
+    # export everything
 
     export_pdf
     export_attachment
@@ -135,14 +142,22 @@ class ProblemExporter
     export_managers_checker
     export_options
     export_solutions
+
+    if zip
+      cmd = "zip ../#{problem.name}.zip -r *"
+      out,err,status = Open3.capture3(cmd, chdir: @main_dir)
+      puts out
+    end
   end
 
 
   # dump all problem in *probs* to base_dir
+  # Usage
+  #   ProblemExporter.dump_problems(Problem.where(id: 123), base_dir = '/home/user/dump')
   def self.dump_problems(probs = Problem.available, base_dir = Rails.root.join('../judge/dump') )
     probs.each do |p|
-      pi = ProblemExporter.new
-      pi.export_problem_to_dir(p,base_dir)
+      pe = ProblemExporter.new
+      pe.export_problem_to_dir(p,base_dir: base_dir)
       puts "dump '#{p.name}' to #{base_dir}"
     end
   end

@@ -1,3 +1,5 @@
+# these are configs for judge engine
+# Currently, most of them is about the filename and config keys of the problem .zip file
 module OptionConst
   #YAML default options value
   DEFAULT = {
@@ -15,6 +17,7 @@ module OptionConst
     }
   }
 
+  # the config filename 
   YAML_FILENAME = 'config.yml'
 
   # these are keys of the Option hash, MUST BE SYMBOL
