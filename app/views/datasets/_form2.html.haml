@@ -1,0 +1,19 @@
+-# dataset tabs
+%ul.nav.nav-tabs
+  %li.nav-item
+    %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#settings"}},class: 'active'} Settings
+  %li.nav-item
+    %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#testcases"}}} Testcases
+  %li.nav-item
+    %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#files"}}} Files
+-# dataset tabs content
+.tab-content
+  %div#settings.tab-pane.fade.show.active
+    %div.mb-3
+    = render partial: "form", locals: {ds: @dataset}
+  %div#testcases.tab-pane.fade
+    %div.mb-3
+    = render partial: "testcases", locals: {ds: @dataset}
+  %div#files.tab-pane.fade
+    %div.mb-3
+    = render partial: "managers", locals: {ds: @dataset}

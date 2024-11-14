@@ -12,8 +12,13 @@ class DatasetsController < ApplicationController
     @dataset = Dataset.new
   end
 
+  #
+  def show
+  end
+
   # GET /datasets/1/edit
   def edit
+    render turbo_stream: turbo_stream.replace(:dataset, partial: 'form2', locals: {ds: @dataset})
   end
 
   # POST /datasets or /datasets.json

@@ -83,8 +83,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :datasets, only: [:update, :destroy] do
+  resources :datasets, only: [:edit, :update, :destroy] do
     member do
+      #turbo render
+      get 'settings'
+      get 'testcases'
+      get 'files'
+
       post 'file/delete/:att_id', action: 'file_delete', as: 'file_delete'
       post 'file/view/:att_id', action: 'file_view', as: 'file_view'
       post 'file/download/:att_id', action: 'file_download', as: 'file_download'
