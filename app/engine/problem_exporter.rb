@@ -124,12 +124,14 @@ class ProblemExporter
 
   # this export the problem and its live dataset to a dir
   # with the name of the problem into *base_dir*
+  # when zip is true, "#{problem.name}.zip" is also generated and saved to *base_dir*
   def export_problem_to_dir(problem, base_dir: Rails.root.join('../judge/dump'), zip: fasle)
+    result = {}
     @problem = problem
     @ds = @problem.live_dataset
     raise 'No live dataset' unless @ds
 
-    @main_dir = Pathname.new(base_dir) + problem.name
+    @main_dir = Pathname.new(base_dir) + problem.name.parameterize
 
     # clean the directory
     FileUtils.rm_rf(@main_dir)
@@ -142,12 +144,28 @@ class ProblemExporter
     export_managers_checker
     export_options
     export_solutions
+    result[:status] = :ok
 
     if zip
-      cmd = "zip ../#{problem.name}.zip -r *"
+      zip_name = "#{problem.name.parameterize}.zip"
+      zip_path = Pathname.new(base_dir) + zip_name
+
+      #remove old file, if exists
+      FileUtils.rm(zip_path) if File.exist?(zip_path)
+
+      cmd = "zip ../#{zip_name} -r *"
       out,err,status = Open3.capture3(cmd, chdir: @main_dir)
-      puts out
+      @log << out
+
+      result[:zip] = zip_path
+      if status != 0
+        result[:status] = :error
+        result[:error] = err
+      end
     end
+
+    result[:log] = @log.clone
+    return result
   end
 
 

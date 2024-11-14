@@ -128,6 +128,8 @@ class ProblemsController < ApplicationController
   end
 
   def download_archive
+    result = @problem.export
+    send_file result[:zip], type: 'application/x-zip',  disposition: 'attachment', filename: result[:zip].basename.to_s
   end
 
   def toggle_available

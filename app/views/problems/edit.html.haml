@@ -1,4 +1,7 @@
-%h1 Edit problem
+%h1 
+  Edit problem
+.mb-3
+  = link_to '<span class="mi mi-bs">download</span> Download'.html_safe, download_archive_problem_path(@problem)
 = render 'form', problem: @problem
 .row.my-3
   .col-md-4

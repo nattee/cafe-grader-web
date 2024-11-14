@@ -1,5 +1,7 @@
 = turbo_frame_tag dom_id(ds, :manager), data: {turbo: true} do
-  %h5.my-2 Managers
+  %h5.my-2 
+    %span.mi.mi-bs clinical_notes
+    Managers
   - ds.managers.each do |mg|
     .row
       .col-md-6
@@ -16,7 +18,9 @@
     - if local_assigns[:form]
       = form.input :managers, label: 'Add manager', wrapper: :horizontal_file
   - if ['custom_cafe','custom_cms'].include? ds.evaluation_type
-    %h5.my-2 Checker
+    %h5.my-2
+      %span.mi.mi-bs checkbook
+      Checker
     - if ds.checker.attached?
       .row.mb-2
         .col-md-6
@@ -34,7 +38,9 @@
         Evaluation type of "#{ds.evaluation_type}" requires a custom checker but none is added to this dataset.
     - if local_assigns[:form]
       = form.input :checker, label: 'Set checker', wrapper: :horizontal_file
-  %h5.my-2 Initializers
+  %h5.my-2 
+    %span.mi.mi-bs video_settings
+    Initializers
   - ds.initializers.each do |init|
     .row
       .col-md-6
@@ -50,7 +56,9 @@
   .my-2
     - if local_assigns[:form]
       = form.input :initializers, label: 'Add initializers', wrapper: :horizontal_file
-  %h5.my-2 Data Files
+  %h5.my-2 
+    %span.mi.mi-bs database
+    Data Files
   - ds.data_files.each do |data_file|
     .row
       .col-md-6
