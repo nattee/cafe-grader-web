@@ -1,6 +1,7 @@
 -# require *ds* as a dataset object
 = turbo_frame_tag dom_id(ds, :testcases), data: {turbo: true} do
   -# testcase settings
+  %h4 Testcases
   = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
     .col-12
       .form-check
@@ -11,7 +12,7 @@
       = text_field_tag :weight_param, nil, class: 'form-control'
     .col-12
       = f.submit 'Set', class: 'btn btn-primary'
-  %table.datatable.table-hover
+  %table.datatable.table-hover{style: 'width: 100%'}
     %thead
       %tr
         %th #
@@ -46,8 +47,7 @@
             |
             %span= link_to 'delete', testcase_delete_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
             ]
-  -# testcase import
-  %h4 Import testcases into this problem
+  %h4.mt-5 Import testcases
   - if @errors
     .alert.alert-danger
       There are following errors
@@ -60,7 +60,7 @@
       %button.btn-close{data: {'bs-dismiss': :alert}}
 
   .row
-    .col-sm-12
+    .col-md-6
       = simple_form_for :import, url: import_testcases_problem_path(@dataset.problem), html: {multipart: true}, wrapper: :horizontal_form do |f|
         = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
         = f.input :input_pattern, input_html: { value: '*.in' }
@@ -68,6 +68,7 @@
         = f.input :target, label: "Import to dataset",  collection: [['As a new dataset','new'],['Into the selected dataset','replace']], checked: :new,  as: :radio_buttons, wrapper: :horizontal_collection, input_html: {onclick: 'update_import_target()'}
         = f.input :dataset, collection: @dataset.problem.datasets, selected: @dataset.problem.live_dataset, wrapper: :horizontal_select
         = f.button :submit, value: 'Import', class: 'btn-primary'
+    .col-md-6
   - if @log
     .row
       .col-sm-12
