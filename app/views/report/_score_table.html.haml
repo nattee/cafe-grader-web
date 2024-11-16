@@ -40,11 +40,11 @@
         %td
         %td
         - @problems.each do |p|
-          %td.text-end= number_with_delimiter(@result[:stat][p.name][:sum], precision: 0)
+          %td.text-end= number_with_precision(@result[:stat][p.name][:sum], delimiter: ',', precision: 0)
           - if @show_time
             %td
-        %td.text-end= number_with_delimiter(super_sum, precision: 0)
-        %td.text-end= number_with_delimiter(super_pass, precision: 0)
+        %td.text-end= number_with_precision(super_sum, delimiter: ',', precision: 0)
+        %td.text-end= number_with_precision(super_pass, delimiter: ',', precision: 0)
   :javascript
     $('#score-table').DataTable({
       paging: false,
@@ -56,7 +56,8 @@
           'copyHtml5',
           'excelHtml5',
       ],
-      order: [[#{col_num_for_total},'asc']]
+      order: [[#{col_num_for_total},'asc']],
+      columnDefs: [{orderable: false, targets: [0]} ],
 
     })
 

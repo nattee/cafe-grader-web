@@ -17,33 +17,82 @@
             = button_to "Normal", set_system_mode_contests_path, params: {mode: 'standard'}, class: 'btn btn-sm btn-outline-success'
           .col-auto.p-1
             = button_to "Contest", set_system_mode_contests_path, params: {mode: 'contest'}, class: 'btn btn-sm btn-outline-warning'
-          .col-auto.p-1
-            = button_to "Individual Contest", set_system_mode_contests_path, params: {mode: 'indv-contest'}, class: 'btn btn-sm btn-outline-warning'
+          -#
+            .col-auto.p-1
+              = button_to "Individual Contest", set_system_mode_contests_path, params: {mode: 'indv-contest'}, class: 'btn btn-sm btn-outline-warning'
           .col-auto.p-1
             = button_to "Analysis", set_system_mode_contests_path, params: {mode: 'analysis'}, class: 'btn btn-sm btn-outline-info'
   .col-md-8
     = render partial: 'contest_help'
 
-.card.shadow-sm
+.card.shadow-sm{data: {controller: 'contest'}}
   .card-body
     %h3 Contests
     %p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
-    %table.table.table-striped
-      %tr
-        %th Name
-        %th Description
-        %th Enabled
-        %th
-        %th
-        %th
-
-      - @contests.each do |contest|
-        - @contest = contest
+    %table#contest_table.table.table-striped
+      %thead
         %tr
-          %td= @contest.name
-          %td= @contest.description
-          %td= @contest.enabled
-          %td= link_to 'Manage', contest
-          %td= link_to 'Watch', view_contest_path(contest)
-          %td= link_to 'Destroy', contest, :confirm => 'Are you sure?', :method => :delete, class: 'link-danger'
-    %br/
+          %th Name
+          %th Description
+          %th Enabled
+          %th User:Problem
+          %th Start
+          %th End
+          %th
+          %th
+          %th
+  -# hidden contest action form
+  = form_with url: contest_action_contests_path, html: {'data-contest-target': 'contestForm', id: 'do-contest-form',
+    data: {turbo: true, action: 'turbo:submit-end->contest#afterContestAction', 'turbo-confirm': '.'}} do |f|
+    = f.hidden_field :contest_id, 'data-contest-target': 'contestFormContestID'
+    = f.hidden_field :command, 'data-contest-target': 'contestFormCommand'
+
+:javascript
+  //user and problem count renderer
+  function user_prob(data,type,row,meta) {
+    return userCount[row['id']]+':'+probCount[row['id']]
+  }
+
+  $(() => {
+    //on doc ready
+    table_config = {
+      processing: true,
+      rowId: 'id',
+      destroy: true,
+      paging: false,
+      ajax: {
+        url: "#{index_query_contests_path}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+        dataSrc: function(json) {
+          userCount = json.userCount
+          probCount = json.probCount
+          return json.data
+
+        }
+      },
+      layout: {
+        topStart: 'info',
+        topEnd: 'search',
+      },
+      columns: [ 
+        {data: 'name'},
+        {data: 'description'},
+        {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postContestAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: null, render: user_prob},
+        {data: 'start', render: cafe.dt.render.datetime()},
+        {data: 'stop', render: cafe.dt.render.datetime()},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('settings','md-18')} Manage`, {path: '#{contest_path(-123)}'})},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: '#{view_contest_path(-123)}'})},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: '#{contest_path(-123)}', className: 'link-danger', })},
+      ],
+      columnDefs: [{orderable: false, targets: [2,5,6,7]} ],
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
+    }
+
+    table = $('#contest_table').DataTable(table_config)
+
+  })

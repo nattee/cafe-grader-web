@@ -24,6 +24,12 @@ class ContestsController < ApplicationController
     end
   end
 
+  def index_query
+    render json: {data: Contest.all,
+                  userCount: ContestUser.group('contest_id').count('user_id'),
+                  probCount: ContestProblem.group('contest_id').count('problem_id') }
+  end
+
   # GET /contests/1
   # GET /contests/1.xml
   def show
@@ -37,16 +43,24 @@ class ContestsController < ApplicationController
   # show is for manage
   # view is for spectating
   def view
+    @problems = @contest.problems
   end
-  
+
   def view_query
-    render json: {data: @contest.contests_users.joins(:user).select(:id, :user_id,:login,:full_name,:remark,:seat,:last_heartbeat)}
+    @result = Contest.build_score_result(@contest.score_report,@contest.users)
+
+    render json: {
+      data: @contest.contests_users.joins(:user)
+        .select(:id, :user_id,:login,:full_name,:remark,:seat,:last_heartbeat), 
+      result: @result,
+      problem: @contest.problems.select(:id,:name)
+    }
   end
 
   # GET /contests/new
   # GET /contests/new.xml
   def new
-    @contest = Contest.new
+    @contest = Contest.new(start: Time.zone.now, stop: Time.zone.now+3.hour)
 
     respond_to do |format|
       format.html # new.html.erb
@@ -91,6 +105,19 @@ class ContestsController < ApplicationController
     end
   end
 
+  def contest_action
+    @contest = Contest.find(params[:contest_id])
+    @toast = {title: "Contest #{@contest.name}"}
+    case params[:command]
+    when 'toggle'
+      @contest.update(enabled: !@contest.enabled?)
+      @toast[:body] = @contest.enabled? ? 'Contest was enabled.' : 'Contest was disaabled.'
+    else
+      @toast[:body] = "Unknown command"
+    end
+    render 'turbo_toast'
+  end
+
   # --- users & problems ---
   def show_users_query
     render json: {data: @contest.contests_users.joins(:user)
@@ -103,15 +130,20 @@ class ContestsController < ApplicationController
   end
 
   def do_all_users
+    @toast = {title: "Contest #{@contest.name}"}
     if params[:command] == 'enable'
       ContestUser.where(contest: @contest).update_all(enabled: true)
+      @toast[:body] = "All users were enabled."
     elsif params[:command] == 'disable'
       ContestUser.where(contest: @contest).update_all(enabled: false)
+      @toast[:body] = "All users were disabled."
     elsif params[:command] == 'remove'
       @contest.users.clear
+      @toast[:body] = "All users were removed."
     else
-      return
+      @toast[:body] = "ERROR: Unknown command"
     end
+    render 'turbo_toast'
   end
 
   def do_user
@@ -270,7 +302,7 @@ class ContestsController < ApplicationController
     end
 
     def contests_params
-      params.require(:contest).permit(:name, :descriotion,:enabled,:lock, :start, :stop)
+      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop)
     end
 
 end

@@ -17,19 +17,6 @@
         = f.text_field 'email', :size => 10,class: 'form-control', placeholder: 'email'
       =submit_tag "Create", class: 'btn btn-success align-items-bottom'
 
-.card.border-success.mb-3
-  .card-header.text-bg-success.border-success
-    Import from site management
-  .card-body
-    = form_with url: import_user_admin_index_path, :multipart => true do |f|
-      .row
-        .col-auto
-          = f.label :file, 'File:', class: 'col-form-label'
-        .col-auto
-          = f.file_field :file, class: 'form-control'
-        .col-auto
-          = f.submit 'Submit', class: 'btn btn-secondary'
-
 
 %p
   = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success m-1'}
@@ -66,8 +53,8 @@
       %td= toggle_button(user.enabled?, toggle_enable_user_path(user),"toggle_enable_user_#{user.id}")
       %td= user.last_ip
       %td= link_to 'Clear IP', {:action => 'clear_last_ip', :id => user, :page=>params[:page]}, :confirm => 'This will reset last logging in ip of the user, are you sure?', class: 'btn btn-secondary btn-sm btn-block'
-      %td= link_to 'Show', {:action => 'show', :id => user}, class: 'btn btn-info btn-sm btn-block'
-      %td= link_to 'Edit', {:action => 'edit', :id => user}, class: 'btn btn-info btn-sm btn-block'
+      %td= link_to 'Show', {:action => 'show', :id => user}
+      %td= link_to 'Edit', {:action => 'edit', :id => user}
       %td= link_to 'Destroy', {action: :destroy, id: user}, data: {confirm: 'Are you sure?'}, method: :delete, class: 'btn btn-danger btn-sm btn-block'
 %br/
 = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success '}
@@ -76,6 +63,7 @@
 :javascript
   $(function() {
     $('.datatable').DataTable({
-      'pageLength': 50
+      'pageLength': 50,
+      columnDefs: [{orderable: false, targets: [4,5,7,8,9,10]} ],
     });
   })

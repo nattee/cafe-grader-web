@@ -17,14 +17,14 @@ Rails.application.routes.draw do
       post 'view_query'
       post 'add_users_from_csv'
 
-      # groups_users
+      # contests_users
       post 'show_users_query'
       post 'add_user'
       post 'add_user_by_group'
       post 'do_all_users'
       post 'do_user'
 
-      # groups_problems
+      # contests_problems
       post 'show_problems_query'
       post 'add_problem'
       post 'add_problem_by_group'
@@ -32,8 +32,10 @@ Rails.application.routes.draw do
       post 'do_problem'
     end
     collection do
+      post 'index_query'
       post 'set_system_mode'
       post 'user_check_in'
+      post 'contest_action'
     end
   end
 
@@ -53,18 +55,18 @@ Rails.application.routes.draw do
 
   resources :announcements do
     member do
-      get 'toggle','toggle_front'
+      post 'toggle_published','toggle_front'
     end
   end
 
   resources :problems, except: [:new, :show] do
     member do
-      get 'toggle'
-      get 'toggle_test'
-      get 'toggle_view_testcase'
+      post 'toggle_available'
+      post 'toggle_view_testcase'
       get 'stat'
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
       get 'get_attachment(/:filename)', as: 'get_attachment', action: 'get_attachment'
+      get 'download_archive'
       post 'add_dataset'
       post 'import_testcases'
       delete 'attachment', action: 'delete_attachment'
@@ -81,8 +83,13 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :datasets, only: [:update, :destroy] do
+  resources :datasets, only: [:edit, :update, :destroy] do
     member do
+      #turbo render
+      get 'settings'
+      get 'testcases'
+      get 'files'
+
       post 'file/delete/:att_id', action: 'file_delete', as: 'file_delete'
       post 'file/view/:att_id', action: 'file_view', as: 'file_view'
       post 'file/download/:att_id', action: 'file_download', as: 'file_download'
@@ -99,7 +106,7 @@ Rails.application.routes.draw do
   resources :groups do
     member do
       # groups
-      get 'toggle'
+      post 'toggle'
 
       # groups_users
       post 'show_users_query'

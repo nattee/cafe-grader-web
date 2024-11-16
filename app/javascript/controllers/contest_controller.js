@@ -4,6 +4,7 @@ export default class extends Controller {
 
   static targets = ["usersCommand", "userForm", "userFormUserID", "userFormCommand" ,
                     "problemsCommand", "problemForm", "problemFormProblemID", "problemFormCommand" ,
+                    "contestForm","contestFormContestID","contestFormCommand",
                    ]
 
   connect() {
@@ -16,7 +17,7 @@ export default class extends Controller {
 
   postUserAction(event) {
     // event.target is the dom that emits the event
-    // the parameter for the action is in data-* of  the dom
+    // the parameter for the action is in data-* of that dom
     // we copy the parameter and set the appropriate input
     // of the form
     const form = this.userFormTarget
@@ -65,6 +66,29 @@ export default class extends Controller {
     $('#problem_ids').val(null).trigger("change");
     $('#problem_group_ids').val(null).trigger("change");
     $("#problem_table").DataTable().ajax.reload()
+  }
+
+  //for contest
+  postContestAction(event) {
+    // event.target is the dom that emits the event
+    // the parameter for the action is in data-* of  the dom
+    // we copy the parameter and set the appropriate input
+    // of the form
+    const form = this.contestFormTarget
+    const contest_id = this.contestFormContestIDTarget
+    const command = this.contestFormCommandTarget
+    command.value = event.target.dataset.command
+    contest_id.value = event.target.dataset.rowId
+    if ('formConfirm' in event.target.dataset) {
+      form.dataset.turboConfirm = event.target.dataset.formConfirm
+    } else {
+      form.removeAttribute('data-turbo-confirm')
+    }
+    form.requestSubmit()
+  }
+
+  afterContestAction(event) {
+    $("#contest_table").DataTable().ajax.reload()
   }
 
 }

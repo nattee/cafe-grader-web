@@ -12,8 +12,7 @@
 :javascript
   $(function() {
     $('.datatable').DataTable({destroy: true, searching: false, paging: false})
-    $('.select2').select2()
-    td_options = structuredClone(default_td_date_options)
+    td_options = structuredClone(cafe.config.td.date)
     td_options['localization']['format'] = 'yyyy-MM-dd HH:mm'
     td_options['defaultDate'] = "#{site.start_time}"
     new TempusDominus(document.getElementById('site_start_time'), td_options );

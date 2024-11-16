@@ -4,8 +4,9 @@ class ProblemsController < ApplicationController
 
   MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
                    :delete_statement, :delete_attachment,
-                   :toggle, :toggle_test, :toggle_view_testcase, :stat,
+                   :toggle_available, :toggle_view_testcase, :stat,
                    :add_dataset,:import_testcases,
+                   :download_archive
                   ]
 
   before_action :set_problem, only: MEMBER_METHOD
@@ -15,13 +16,14 @@ class ProblemsController < ApplicationController
   before_action :is_group_editor_authorization, except: [:get_statement, :get_attachment]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
 
-  before_action :admin_authorization, only: [:toggle, :turn_all_on, :turn_all_off ]
+  before_action :admin_authorization, only: [:toggle_available, :turn_all_on, :turn_all_off, :download_archive]
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
                                           :delete_statement, :delete_attachment,
-                                          :toggle_test, :toggle_view_testcase, :stat,
+                                          :toggle_view_testcase, :stat,
                                           :add_dataset,:import_testcases,
                                          ]
   before_action :can_report_problem, only: [:stat]
+  before_action :stimulus_controller
 
   def index
     tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
@@ -33,6 +35,7 @@ class ProblemsController < ApplicationController
       .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
       .select("MIN(MS.ms_count) as ms_count")
       .with_attached_statement
+      .with_attached_attachment
   end
 
 
@@ -102,21 +105,32 @@ class ProblemsController < ApplicationController
   end
 
   def update
-    permitted_lang_as_string = params[:problem][:permitted_lang].map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
-    @problem.permitted_lang = permitted_lang_as_string
-    if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
-        flash[:error] = 'Error: Uploaded file is not PDF'
-        render :action => 'edit'
-        return
-    end
+    
     if @problem.update(problem_params)
-      flash[:notice] = 'Problem was successfully updated. '
-      flash[:notice] += 'A new statement PDF is uploaded' if problem_params[:statement]
+      msg = 'Problem was successfully updated. '
+      msg += 'A new statement PDF is uploaded' if problem_params[:statement]
+
+      # permitted lang is updated separately
+      permitted_lang_as_string = params[:problem][:permitted_lang].map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
+      @problem.permitted_lang = permitted_lang_as_string
       @problem.save
-      redirect_to edit_problem_path(@problem)
-    else
-      render :action => 'edit'
+
+      @toast = {title: "Problem #{@problem.name}",body: "Problem settings updated"}
     end
+    if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
+      @problem.errors.add(:base,' Uploaded file is not PDF')
+    end
+
+    if @problem.errors.any?
+      error_html = "<ul>#{@problem.errors.full_messages.map {|m| "<li>#{m}</li>"}.join}</ul>"
+      render partial: 'msg_modal_show', locals: {do_popup: true, 
+                                                 header_msg: 'Problem update error', 
+                                                 header_class: 'bg-danger-subtle',
+                                                 body_msg: error_html.html_safe}
+    else
+      render :update
+    end
+
   end
 
   def destroy
@@ -124,25 +138,21 @@ class ProblemsController < ApplicationController
     redirect_to action: :index
   end
 
-  def toggle
-    @problem.update(available: !(@problem.available) )
-    respond_to do |format|
-      format.js { }
-    end
+  def download_archive
+    result = @problem.export
+    send_file result[:zip], type: 'application/x-zip',  disposition: 'attachment', filename: result[:zip].basename.to_s
   end
 
-  def toggle_test
-    @problem.update(test_allowed: !(@problem.test_allowed?) )
-    respond_to do |format|
-      format.js { }
-    end
+  def toggle_available
+    @problem.update(available: !@problem.available)
+    @toast = {title: "Problem #{@problem.name}",body: "Available updated"}
+    render 'toggle'
   end
 
   def toggle_view_testcase
-    @problem.update(view_testcase: !(@problem.view_testcase?) )
-    respond_to do |format|
-      format.js { }
-    end
+    @problem.update(view_testcase: !@problem.view_testcase)
+    @toast = {title: "Problem #{@problem.name}",body: "View Testcase updated"}
+    render 'toggle'
   end
 
   def turn_all_off
@@ -352,6 +362,9 @@ class ProblemsController < ApplicationController
 
   ##################################
   protected
+    def stimulus_controller
+      @stimulus_controller = 'problem'
+    end
 
 
     def set_problem
@@ -360,7 +373,7 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :submission_filename, :difficulty,:attachment, :statement,
+                                      :submission_filename, :difficulty,:attachment, :statement, :markdown,
                                       :test_allowed, :output_only, :url, :description, :description, tag_ids:[], group_ids:[])
     end
 

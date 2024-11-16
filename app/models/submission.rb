@@ -23,6 +23,23 @@ class Submission < ApplicationRecord
 
   has_many_attached :compiled_files
 
+  # filter submissions in the range
+  scope :in_range, -> (by ,from, to ) {
+    if by.to_sym == :sub_id
+      #use sub id
+      from_id = from.to_i
+      to_id = to.to_i
+      query = self
+      query = query.where('submissions.id >= ?',from_id) if from_id > 0
+      query = query.where('submissions.id <= ?',to_id) if to_id > 0
+      return query
+    else
+      #use sub time
+      datetime_range= from..to
+      return self.where(submitted_at: datetime_range)
+    end
+  }
+
   def add_judge_job(dataset = problem.live_dataset,priority = 0)
     evaluations.delete_all
     self.update(status: 'submitted', points: nil, grader_comment: nil,graded_at: nil)
@@ -87,6 +104,7 @@ class Submission < ApplicationRecord
       return "#{self.problem.name}-#{timestamp}.#{self.language.ext}"
     end
   end
+
 
   protected
 

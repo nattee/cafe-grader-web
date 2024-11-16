@@ -1,6 +1,10 @@
 class AnnouncementsController < ApplicationController
 
+  before_action :set_announcement, only: [:show, :edit, :create, :edit, :destroy,
+                                          :toggle_published, :toggle_front]
+
   before_action :admin_authorization
+  before_action :stimulus_controller
 
   # GET /announcements
   # GET /announcements.xml
@@ -16,7 +20,6 @@ class AnnouncementsController < ApplicationController
   # GET /announcements/1
   # GET /announcements/1.xml
   def show
-    @announcement = Announcement.find(params[:id])
 
     respond_to do |format|
       format.html # show.html.erb
@@ -37,14 +40,11 @@ class AnnouncementsController < ApplicationController
 
   # GET /announcements/1/edit
   def edit
-    @announcement = Announcement.find(params[:id])
   end
 
   # POST /announcements
   # POST /announcements.xml
   def create
-    @announcement = Announcement.new(announcement_params)
-
     respond_to do |format|
       if @announcement.save
         flash[:notice] = 'Announcement was successfully created.'
@@ -60,8 +60,6 @@ class AnnouncementsController < ApplicationController
   # PUT /announcements/1
   # PUT /announcements/1.xml
   def update
-    @announcement = Announcement.find(params[:id])
-
     respond_to do |format|
       if @announcement.update(announcement_params)
         flash[:notice] = 'Announcement was successfully updated.'
@@ -76,28 +74,21 @@ class AnnouncementsController < ApplicationController
     end
   end
 
-  def toggle
-    @announcement = Announcement.find(params[:id])
+  def toggle_published
     @announcement.update( published:  !@announcement.published? )
-    respond_to do |format|
-      format.js { render partial: 'toggle_button',
-                  locals: {button_id: "#announcement_toggle_#{@announcement.id}",button_on: @announcement.published? } }
-    end
+    @toast = {title: "Annnouncement",body: "published updated"}
+    render 'toggle'
   end
 
   def toggle_front
-    @announcement = Announcement.find(params[:id])
     @announcement.update( frontpage:  !@announcement.frontpage? )
-    respond_to do |format|
-      format.js { render partial: 'toggle_button',
-                  locals: {button_id: "#announcement_toggle_front_#{@announcement.id}",button_on: @announcement.frontpage? } }
-    end
+    @toast = {title: "Announcement",body: "front updated"}
+    render 'toggle'
   end
 
   # DELETE /announcements/1
   # DELETE /announcements/1.xml
   def destroy
-    @announcement = Announcement.find(params[:id])
     @announcement.destroy
 
     respond_to do |format|
@@ -107,8 +98,15 @@ class AnnouncementsController < ApplicationController
   end
 
   private
+    def set_announcement
+      @announcement = Announcement.find(params[:id])
+    end
 
     def announcement_params
       params.require(:announcement).permit(:author, :body, :published, :frontpage, :contest_only, :title, :on_nav_bar, :file)
+    end
+
+    def stimulus_controller
+      @stimulus_controller = 'announcement'
     end
 end

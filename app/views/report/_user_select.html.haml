@@ -2,19 +2,38 @@
   .card-header.text-bg-primary.border-primary
     Users
   .card-body
-    .form-check.mt-2.mb-3
-      = radio_button_tag :'users[use]', :all, true, class: 'form-check-input'
-      = label_tag :users_use_all, 'All Users'
-    .form-check.my-2
-      = radio_button_tag :'users[use]', :enabled, false, class: 'form-check-input'
-      = label_tag :users_use_enabled, 'Only enabled users'
-    .row.row-cols-lg-auto.align-items-center
-      .col-12
-        .form-check.form-check-inline
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag :'users[use]', :all, true, class: 'form-check-input'
+      .col-11
+        .form-check.ps-0
+          = label_tag :users_use_all, 'All Users', class: 'form-check-label'
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag :'users[use]', :enabled, false, class: 'form-check-input'
+      .col-11
+        .form-check.ps-0
+          = label_tag :users_use_enabled, 'Only enabled users', class: 'form-check-label'
+    .row
+      .col-1
+        .form-check
           = radio_button_tag :'users[use]', :group, false, class: 'form-check-input'
-          = label_tag :users_use_group, 'Only users from this group'
-      .col-12
+      .col-11
+        .form-check.ps-0
+          = label_tag :users_use_group, 'Only users from this group', class: 'form-check-label'
+    .row
+      .col-1
+      .col-11
         = select_tag "users[group_ids]", options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]), class: 'select2', style: 'width: 20em';
+    .row.mt-1
+      .col-1
+      .col-11
+        .form-check
+          %input#only-users.form-check-input{type: 'checkbox', name: 'users[only_users]', checked: true}
+          %label.form-check-label{for: 'only-users'} Exclude editors and reporters
+
 :javascript
   // save the problem selection input into d
   // (to be used by DataTable Ajax data source)

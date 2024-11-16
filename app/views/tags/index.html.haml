@@ -21,8 +21,8 @@
             .badge{style: "background-color: #{tag.color}"}= tag.name
         %td= tag.description
         %td= tag.public
-        %td= link_to 'Edit', edit_tag_path(tag), class: 'btn btn-info'
-        %td= button_to 'Destroy', tag, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger'
+        %td= link_to 'Edit', edit_tag_path(tag)
+        %td= button_to 'Destroy', tag, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-sm btn-danger'
 
 %br
 

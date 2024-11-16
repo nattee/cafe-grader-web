@@ -93,8 +93,7 @@ class Problem < ApplicationRecord
   end
 
   def public_tags
-    #tags.where(public: true)
-    return tags
+    tags.where(public: true)
   end
 
 
@@ -192,8 +191,9 @@ class Problem < ApplicationRecord
   end
 
   # return ids array of permitted lang
-  def get_permitted_lang_as_ids
-    return Language.ids if self.permitted_lang.blank?
+  # if permitted_lang is blank, show nil 
+  def get_permitted_lang_as_ids(when_blank: Language.ids)
+    return when_blank if self.permitted_lang.blank?
     return Language.where(name: self.permitted_lang.split(' ').uniq).ids
   end
 
@@ -241,6 +241,12 @@ class Problem < ApplicationRecord
     else
       'submission'
     end
+  end
+
+  # export  the problem into the default dump dir
+  def export
+    pe = ProblemExporter.new
+    pe.export_problem_to_dir(self, zip: true)
   end
 
 end

@@ -22,6 +22,7 @@ class ProblemImporter
       next unless mc
       name = mc[1]
 
+
       #default codename, use the part that match the wildcard
       codename = name
 

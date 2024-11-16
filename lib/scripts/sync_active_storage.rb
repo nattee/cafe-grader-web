@@ -5,10 +5,10 @@
 
 
 remote_rails_root = 'cafe_grader/web'
-remote_host = '10.0.5.50'
+remote_host = '10.0.5.80'
 
 # prefix dir
-remote_base = "#{remote_host}:#{remote_rails_root}/storage"
+REMOTE_BASE = "#{remote_host}:#{remote_rails_root}/storage"
 
 
 # sync a single attachment
@@ -16,7 +16,7 @@ remote_base = "#{remote_host}:#{remote_rails_root}/storage"
 def sync_single_attachment(attachment)
   return nil unless attachment
   key = attachment.blob.key
-  src = [remote_base,key[0..1],key[2..3],key].join '/'
+  src = [REMOTE_BASE,key[0..1],key[2..3],key].join '/'
   dst = Rails.root.join 'storage',key[0..1],key[2..3],key
   dst.dirname.mkpath
   cmd = "rsync #{src} #{dst}"
@@ -46,7 +46,7 @@ def sync_problem(problem)
     ds.data_files.each { |m| puts "  data files [#{m.attachment.blob.filename}]" if sync_single_attachment(m.attachment) }
     ds.testcases.each do |tc|
       puts "  input #{tc.code_name} #{tc.inp_file.blob.key}" if sync_single_attachment tc.inp_file
-      puts "  ans   #{tc.code_name} #{tc.inp_file.blob.key}" if isync_single_attachment tc.ans_file
+      puts "  ans   #{tc.code_name} #{tc.inp_file.blob.key}" if sync_single_attachment tc.ans_file
     end
   end
 
@@ -55,7 +55,9 @@ end
 
 
 # this sync everything except compiled file
-attachments = ActiveStorage::Attachment.where.not(name: 'compiled_files').includes(:blob)
-sync_collection(attachments)
+# attachments = ActiveStorage::Attachment.where.not(name: 'compiled_files').includes(:blob)
+# sync_collection(attachments)
+
+sync_problem(Problem.find(1579))
 
 

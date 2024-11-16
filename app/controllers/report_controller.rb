@@ -465,7 +465,11 @@ ORDER BY submitted_at
 
     def selected_users
       @users = if params[:users][:use] == "group" then
-                 User.where(id: Group.where(id: params[:users][:group_ids]).joins(:users).pluck(:user_id) )
+                 if params[:users][:only_users]
+                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).where(groups_users: {role: 'user'}).pluck(:user_id) )
+                 else
+                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).pluck(:user_id) )
+                 end
                elsif params[:users][:use] == 'enabled'
                  User.where(enabled: true)
                else

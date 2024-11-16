@@ -4,6 +4,7 @@ class GroupsController < ApplicationController
                                    :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
                                    :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
                                   ]
+  before_action :stimulus_controller
   before_action :set_group, only: GroupMemberAction
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
@@ -69,8 +70,9 @@ class GroupsController < ApplicationController
   end
 
   def toggle
-    @group.enabled = @group.enabled? ? false : true
-    @group.save
+    @group.update(enabled:  !@group.enabled?)
+    @toast = {title: "Group #{@group.name}",body: "Enabled updated"}
+    render 'toggle'
   end
 
 
@@ -191,6 +193,10 @@ class GroupsController < ApplicationController
   end
 
   private
+    def stimulus_controller
+      @stimulus_controller = 'group'
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_group
       @group = Group.find(params[:id])
