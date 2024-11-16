@@ -1,14 +1,14 @@
 -# require *ds* as a dataset object
-= turbo_frame_tag dom_id(ds, :settings), data: {turbo: true} do
-  = simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
-    .row
-      .col-12
-        %h5.my-2 Basic Info
-        = f.input :name
-        = f.input :time_limit, label: "Time limit (s)", tooltip: 'Decimal is ok, e.g., 1.2'
-        = f.input :memory_limit, label: "Memory Limit (MB)"
-        = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], include_blank: false, wrapper: :horizontal_select
-        = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, include_blank: false, wrapper: :horizontal_select
-        = f.input :main_filename, collection: ds.managers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select
-        = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: true, wrapper: :horizontal_select
-        = f.button :submit, class: 'btn-primary'
+-#= turbo_frame_tag dom_id(ds, :settings), data: {turbo: true} do
+= simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
+  .row
+    .col-12
+      %h5.my-2 Basic Info
+      = f.input :name
+      = f.input :time_limit, label: "Time limit (s)", tooltip: 'Decimal is ok, e.g., 1.2'
+      = f.input :memory_limit, label: "Memory Limit (MB)"
+      = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], include_blank: false, wrapper: :horizontal_select
+      = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, include_blank: false, wrapper: :horizontal_select
+      = f.input :main_filename, collection: ds.managers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select, disabled: ds.problem.compilation_type == 'self_contained'
+      = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: true, wrapper: :horizontal_select
+      = f.button :submit, class: 'btn-primary'

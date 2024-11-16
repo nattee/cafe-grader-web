@@ -76,6 +76,17 @@ function dt_datetime_renderer(format = "Y-MM-DD HH:mm") {
   }
 }
 
+const dt = {
+  render: {
+    button: dt_button_renderer,
+    link: dt_link_renderer,
+    yes_no_pill: dt_yes_no_pill_renderer,
+    datetime: dt_datetime_renderer,
+  }
+}
+
+export { dt }
+
 window.dt_button_renderer = dt_button_renderer
 window.dt_link_renderer = dt_link_renderer
 window.dt_yes_no_pill_renderer = dt_yes_no_pill_renderer

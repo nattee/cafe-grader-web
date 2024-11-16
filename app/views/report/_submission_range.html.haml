@@ -56,8 +56,8 @@
                 %span.mi event
 :javascript
   $(function() {
-    since_datetime = new TempusDominus(document.getElementById('sub_range_from_time'), default_td_options );
-    until_datetime = new TempusDominus(document.getElementById('sub_range_to_time'), default_td_options );
+    since_datetime = new TempusDominus(document.getElementById('sub_range_from_time'), cafe.config.td.datetime );
+    until_datetime = new TempusDominus(document.getElementById('sub_range_to_time'), cafe.config.td.datetime );
   })
 
   function build_sub_range_params(d) {

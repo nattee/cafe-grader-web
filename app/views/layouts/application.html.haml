@@ -8,7 +8,6 @@
     = csp_meta_tag
     = javascript_include_tag :my_app
     = javascript_importmap_tags
-    = javascript_import_module_tag "custom"
     = content_for :header
     = yield :head
     %meta{name: :viewport, content: "width=device-width, initial-scale=1"}
@@ -28,6 +27,7 @@
       = yield
     
     -# for msg modal, we have a turbo_frame, ready to be shown via turbo
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     = turbo_frame_tag :msg_modal_main, data: {turbo: true}
 
     -# -- for adding toast --
@@ -42,6 +42,7 @@
       = turbo_stream.append 'js-response' do
         :javascript
           <your code here>
+      Also, if the response is html, it can directly contain :javascript tag.
     = turbo_frame_tag :js_response, data: {turbo: true} do
       #js-response
         / place holder

@@ -3,6 +3,7 @@ class DatasetsController < ApplicationController
                                         file_delete file_view file_download
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
+                                        settings files testcases
                                       ]
   before_action :admin_authorization
   before_action :check_valid_login
@@ -83,6 +84,19 @@ class DatasetsController < ApplicationController
     type = att.content_type
     filename = att.filename.to_s
     send_data att.download, disposition: 'inline', type: type, filename: filename
+  end
+
+  #--- turbo response ---
+  def settings
+    render turbo_stream: turbo_stream.update( 'dataset_settings', partial: 'settings', locals: {ds: @dataset})
+  end
+
+  def testcases
+    render turbo_stream: turbo_stream.update( 'dataset_testcases', partial: 'testcases', locals: {ds: @dataset})
+  end
+
+  def files
+    render turbo_stream: turbo_stream.update( 'dataset_files', partial: 'managers', locals: {ds: @dataset})
   end
 
   # as turbo

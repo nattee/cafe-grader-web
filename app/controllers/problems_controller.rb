@@ -105,21 +105,32 @@ class ProblemsController < ApplicationController
   end
 
   def update
-    permitted_lang_as_string = params[:problem][:permitted_lang].map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
-    @problem.permitted_lang = permitted_lang_as_string
-    if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
-        flash[:error] = 'Error: Uploaded file is not PDF'
-        render :action => 'edit'
-        return
-    end
+    
     if @problem.update(problem_params)
-      flash[:notice] = 'Problem was successfully updated. '
-      flash[:notice] += 'A new statement PDF is uploaded' if problem_params[:statement]
+      msg = 'Problem was successfully updated. '
+      msg += 'A new statement PDF is uploaded' if problem_params[:statement]
+
+      # permitted lang is updated separately
+      permitted_lang_as_string = params[:problem][:permitted_lang].map { |x| Language.find(x.to_i).name unless x.blank? }.join(' ')
+      @problem.permitted_lang = permitted_lang_as_string
       @problem.save
-      redirect_to edit_problem_path(@problem)
-    else
-      render :action => 'edit'
+
+      @toast = {title: "Problem #{@problem.name}",body: "Problem settings updated"}
     end
+    if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
+      @problem.errors.add(:base,' Uploaded file is not PDF')
+    end
+
+    if @problem.errors.any?
+      error_html = "<ul>#{@problem.errors.full_messages.map {|m| "<li>#{m}</li>"}.join}</ul>"
+      render partial: 'msg_modal_show', locals: {do_popup: true, 
+                                                 header_msg: 'Problem update error', 
+                                                 header_class: 'bg-danger-subtle',
+                                                 body_msg: error_html.html_safe}
+    else
+      render :update
+    end
+
   end
 
   def destroy
@@ -362,7 +373,7 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :submission_filename, :difficulty,:attachment, :statement,
+                                      :submission_filename, :difficulty,:attachment, :statement, :markdown,
                                       :test_allowed, :output_only, :url, :description, :description, tag_ids:[], group_ids:[])
     end
 

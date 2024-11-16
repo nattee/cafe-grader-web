@@ -14,7 +14,6 @@ pin_all_from "app/javascript/controllers", under: "controllers"
 
 # datatable
 # I have to fix vfs_font.js for this to work
-pin "my_datatable", to: 'my_datatable.js'
 pin "datatables", to: "datatables/datatables.min.js"
 pin "vfs-fonts", to: "datatables/vfs_fonts.js"
 pin "pdfmake", to: 'datatables/pdfmake.min.js'
@@ -23,7 +22,10 @@ pin "pdfmake", to: 'datatables/pdfmake.min.js'
 pin "select2", to: "select2.min.js"
 
 #my local js
-pin "custom", to: "custom.js"
+pin "cafe_bundle", to: "cafe_bundle.js"
+pin "cafe", to: "cafe.js"
+pin "cafe_event", to: "cafe_event.js"
+pin "cafe_datatable", to: 'cafe_datatable.js'
 
 #pin "ace-rails-ap"
 pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js

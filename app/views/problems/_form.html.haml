@@ -1,84 +1,44 @@
-.row
-  .col-md-5
-    .card.shadow-sm
-      .card-body
-        = simple_form_for problem, wrapper: :horizontal_form do |form|
-          %h4 Basic Information
-          = form.input :name
-          = form.input :full_name
-          = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
-          = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
-          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @permitted_lang_ids, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: 'Blank value means any language can be used'
-          = form.input :date_added, input_html: {value: nil}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
-          = form.input :available, wrapper: :horizontal_boolean
-          = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
-          = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
-          = form.input :submission_filename
-          %h4 Statements
-          = form.input :statement, wrapper: :horizontal_file
-          .row
-            .col-md-3
-            .col-md-9
-              %p
-                - if @problem.statement.attached?
-                  = link_to '<span class="mi mi-bs md-18">description</span> Read'.html_safe, get_statement_problem_path(@problem)
-                  = " | "
-                  = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, statement_problem_path(@problem), method: :delete, class: 'link-danger', data: {confirm: 'Are you sure?'}
-                - else
-                  This problem has no statement
-          = form.input :description, as: :text
-          = form.input :markdown, wrapper: :horizontal_boolean
-          = form.input :url
-          %h4 Attachment
-          = form.input :attachment, wrapper: :horizontal_file
-          .row
-            .col-md-3
-            .col-md-9
-              %p
-                - if @problem.attachment.attached?
-                  %a{href: get_attachment_problem_path(@problem)} [Download attachment]
-                  |
-                  = link_to '[delete]', attachment_problem_path(@problem), method: :delete, data: {confirm: 'Are you sure?'}
-                - else
-                  This problem has no attachment
-          = form.button :submit, class: 'btn btn-primary me-2'
-          = link_to 'Back', problems_path, class: 'btn btn-outline-secondary me-2'
-          = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary me-2'
-  .col-md-7
-    .card.shadow-sm
-      .card-body
-        %h4 Datasets
+=turbo_frame_tag :problem, data: {controller: 'problem', turbo: true, action: "turbo:frame-load->problem#initProblemForm"} do
+  = simple_form_for problem, wrapper: :horizontal_form do |form|
+    %h4 Basic Information
+    = form.input :name
+    = form.input :full_name
+    = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
+    = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
+    = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: 'Blank value means any language can be used'
+    = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%m/%Y")}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
+    = form.input :available, wrapper: :horizontal_boolean
+    = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
+    = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
+    = form.input :submission_filename
+    %h4 Statements
+    = form.input :statement, wrapper: :horizontal_file
+    .row
+      .col-md-3
+      .col-md-9
+        %p
+          - if @problem.statement.attached?
+            = link_to "<span class='mi mi-bs md-18'>description</span> Read (#{@problem.statement.filename})".html_safe, get_statement_problem_path(@problem)
+            = " | "
+            = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, statement_problem_path(@problem), method: :delete, class: 'link-danger', data: {confirm: 'Are you sure?'}
+          - else
+            This problem has no statement
+    = form.input :description, as: :text
+    = form.input :markdown, wrapper: :horizontal_boolean
+    = form.input :url
+    %h4 Attachment
+    = form.input :attachment, wrapper: :horizontal_file
+    .row
+      .col-md-3
+      .col-md-9
+        %p
+          - if @problem.attachment.attached?
+            = link_to "<span class='mi mi-bs md-18'>archive</span> File (#{@problem.attachment.filename})".html_safe, get_attachment_problem_path(@problem)
+            |
+            = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, attachment_problem_path(@problem), method: :delete, class: 'link-danger', data: {confirm: 'Are you sure?'}
+          - else
+            This problem has no attachment
+    = form.button :submit, class: 'btn btn-primary me-2'
+    = link_to 'Back', problems_path, class: 'btn btn-outline-secondary me-2'
+    = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary me-2'
 
-        -# dataset selector
-        .alert.alert-secondary
-          .row.row-cols-lg-auto.g-3.align-items-center
-            .col
-              .form-check
-                %label.form-check-label Select a dataset to view
-            .col
-              = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(@problem.live_dataset), wrapper: :inline_form do |f|
-                = f.input :dsid, collection: @problem.datasets.reload, selected: @problem.live_dataset.id, input_html: {class: 'form-select-sm form-select', onchange: 'ds_change()'}, wrapper: :inline_form
-            .col
-              .form-check
-                %label.form-check-label Action
-            .col
-              = link_to 'Add', add_dataset_problem_path(@problem), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-success btn-sm mx-1'
-              = link_to 'Set as live', set_as_live_dataset_path(@problem.live_dataset), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm mx-1' if @problem.live_dataset != @problem.live_dataset
-              = link_to 'Delete', dataset_path(@problem.live_dataset), data: {turbo: true,
-                'turbo-method': 'delete',
-                turbo_confirm: "Really delete the dataset [#{@problem.live_dataset.name}]?"}, class: 'btn btn-danger btn-sm mx-1'
-              = link_to 'Rejudge', rejudge_dataset_path(@problem.live_dataset), data: {turbo: true,
-                'turbo-method': 'post',
-                turbo_confirm: "Rejudge all #{@problem.submissions.count} submissions of #{@problem.name} using the dataset [#{@problem.live_dataset.name}]?"}, 
-                class: 'btn btn-warning btn-sm mx-1'
-
-        -# dataset form
-        = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset)
-:javascript
-  $(document).ready(function(e) {
-    $('.datatable').DataTable({destroy: true, searching: false, paging: false})
-    td_options = structuredClone(default_td_date_options)
-    td_options['localization']['format'] = 'dd/MM/yyyy'
-    td_options['defaultDate'] = "#{problem.date_added&.strftime("%d/%m/%Y")}"
-    new TempusDominus(document.getElementById('problem_date_added'), td_options );
-  });

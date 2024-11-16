@@ -69,9 +69,9 @@
         {data: 'id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postContestAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'start', render: dt_datetime_renderer()},
         {data: 'stop', render: dt_datetime_renderer()},
-        {data: null, render: dt_link_renderer(`${msi('settings','md-18')} Manage`, {path: '#{contest_path(-123)}'})},
-        {data: null, render: dt_link_renderer(`${msi('summarize','md-18')} Watch`, {path: '#{view_contest_path(-123)}'})},
-        {data: null, render: dt_link_renderer(`${msi('delete','md-18')} Destroy`, {path: '#{contest_path(-123)}', className: 'link-danger', })},
+        {data: null, render: dt_link_renderer(`${cafe.msi('settings','md-18')} Manage`, {path: '#{contest_path(-123)}'})},
+        {data: null, render: dt_link_renderer(`${cafe.msi('summarize','md-18')} Watch`, {path: '#{view_contest_path(-123)}'})},
+        {data: null, render: dt_link_renderer(`${cafe.msi('delete','md-18')} Destroy`, {path: '#{contest_path(-123)}', className: 'link-danger', })},
       ],
       columnDefs: [{orderable: false, targets: [2,5,6,7]} ],
       drawCallback: function (settings) {

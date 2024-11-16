@@ -8,9 +8,6 @@ import "controllers"
 //import "bootstrap"
 //window.bootstrap = bootstrap
 
-// my datatables
-import "my_datatable"
-
 import "select2"
 import "chart"
 
@@ -44,3 +41,7 @@ Turbo.session.drive = false
 //window.importmapScriptsLoaded = true
 //const import_map_loaded = new CustomEvent('import-map-loaded', { });
 //document.dispatchEvent(import_map_loaded);
+
+//Import cafe-grader global functions into *cafe* object
+import * as cafe from 'cafe_bundle'
+window.cafe = cafe

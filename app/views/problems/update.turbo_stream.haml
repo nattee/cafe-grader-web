@@ -1,0 +1,3 @@
+= turbo_stream.replace :problem, partial: 'form', locals: {problem: @problem}
+- if @toast
+  = turbo_stream.append 'toast-area', partial: 'toast', locals: {toast: @toast}
