@@ -1,4 +1,12 @@
 %h1 Contest Status [#{@contest.name}]
+-# graph area
+.row.mb-3
+  .col-lg-6
+    %div{style: 'height: 350px'}
+      %canvas#chart
+  .col-lg-6
+    %div{style: 'height: 350px'}
+      %canvas#chart_2
 %table#table.table.datatable
   %thead
     %tr
@@ -7,34 +15,68 @@
       %th Remark
       %th Seat
       %th Last Seen
+      - @problems.each do |p|
+        %th= p.name.gsub('_',' ')
+      %th Sum
+
 
 :javascript
 
   $(function() {
     humanize_time_renderer = function(data,type,row,meta) {
       if (!data) return ''
-      return humanize_time(data)
+      if (type == 'display' || type == 'filter')
+        return humanize_time(data)
 
+      //for sort, we just return the data which is supposed to be iso8601
+      return data
     }
 
     // build columns
-    problem_ids = [#{@contest.problems.pluck(:id).join(',')}]
+    problem_ids = [#{@problems.pluck(:id).join(',')}]
 
-    problem_ids = []
     problem_columns = problem_ids.map( id => {
-      return {data: `problem_${id}`,className: 'text-end'}
+      return {data: `prob_${id}`,className: 'text-end'}
     })
     columns = [
-      {data: 'login', render: dt_link_renderer(null,{path: '#{stat_user_path(-123)}', })},
+      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_user_path(-123)}', replace_field: 'user_id' })},
       {data: 'full_name'},
       {data: 'remark'},
       {data: 'seat'},
       {data: 'last_heartbeat',label: 'Last Checkin', render: humanize_time_renderer},
     ].concat(problem_columns)
     .concat( [
-      //{data: 'sum'},
+      {data: 'sum_score'},
       //{data: 'pass'}
     ])
+
+    //function that combines and render graph
+    //return the data table
+    function score_display(json) {
+      //combine score into user record
+      // at start json.data[i] is a user data (id,login,name,remark,seat, etc)
+      for (let i = 0, ien = json.data.length; i < ien; i++) {
+        user_id = json.data[i].user_id
+
+        //we loop over each problems (in json.problems)
+        sum_score = 0.0
+        json.problem.forEach ( (prob) => {
+          prob_id = prob.id
+
+          //and pluck the score of that user from the "score_table" (json.result)
+          score_result = json.result.score[user_id]
+          prob_score = (score_result) ? score_result[prob_id] || '' : ''
+          if (prob_score.length > 0) prob_score = parseFloat(prob_score).toFixed(1)
+          json.data[i][`prob_${prob.id}`] = prob_score
+
+          //also sum the score
+          sum_score += parseFloat(prob_score || 0.0)
+        })
+        json.data[i]['sum_score'] = sum_score.toFixed(1)
+      }
+      draw_graph(json)
+      return json.data;
+    }
 
     //main table
     table_config = {
@@ -56,6 +98,9 @@
         url: "#{view_query_contest_path(@contest)}",
         type: 'POST',
         headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+        dataSrc: function (json) {
+          return score_display(json)
+        }
       },
       columns: columns,
       drawCallback: function (settings) {
@@ -67,3 +112,71 @@
     //initialize the table
     $('#table').DataTable(table_config)
   });
+
+    //
+    // -------   draw graph -----------
+    // json is the response from the controller {data: ..., result:..., problem: ...}
+    function draw_graph(json) {
+      //build dataset
+      users_count = json.data.length
+      data = {
+        labels: Array.from(Array(users_count), (_, i) => i+1), //this build [1,2,3,4,....,N]
+        datasets:
+          json.problem.map( (a) => {
+            return {
+              label: a.name,
+              data: json.data.map( (b) => b[`prob_${a.id}`] || 0).sort( (a,b) => a-b )
+            }
+          })
+      }
+
+      //left pad each dataset with zero
+      maxLength = data.labels.length
+      data.datasets.forEach(dataset => {
+        const paddingLength = maxLength - dataset.data.length;
+        if (paddingLength > 0) {
+            const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
+            dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
+        }
+      });
+
+      config = {
+        type: 'line',
+        data: data,
+        options: {
+          responstive: true,
+          maintainAspectRatio: false,
+          elements: {
+            point: {
+              pointStyle: false
+            },
+          }
+        },
+      }
+
+      //clone the config to be used in the second graph
+      //this has to be done before we construct the chart.js object,
+      //else the config is already changed
+      config2 = structuredClone(config)
+      data2 = {
+        labels: Array.from(Array(users_count), (_, i) => i+1), //this build [1,2,3,4,....,N]
+        datasets: [
+          {
+            label: 'Total Score',
+            data: json.data.map( (a) => a.sum_score ).sort( (a,b) => a-b )
+          }
+        ]
+      }
+      config2.data = data2
+
+      // destroy old graph
+      if (typeof chart1 !== 'undefined') { chart1.destroy() }
+      if (typeof chart2 !== 'undefined') { chart2.destroy() }
+
+      // display graph
+      Chart.defaults.font.size = 15
+      //Chart.defaults.font.family = 'Sarabun Light'
+      chart1 = new Chart($('#chart'),config)
+      chart2 = new Chart($('#chart_2'),config2)
+    }
+

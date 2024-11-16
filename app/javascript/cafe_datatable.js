@@ -53,10 +53,8 @@ function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '
       href = path.replace(replace_pattern,row[replace_field])
     }
     const dataConfirm = data_tag_unless_null(confirm,'form-confirm')
-    if (label === null) {
-      label = data
-    }
-    return `<a href="${href}" class="${className}" ${dataConfirm}> ${label}</a>`
+    let link_text = (label === null) ? data : label
+    return `<a href="${href}" class="${className}" ${dataConfirm}> ${link_text}</a>`
   }
 }
 

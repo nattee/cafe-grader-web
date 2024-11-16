@@ -14,4 +14,11 @@ export const rowFieldToggle = (superclass) => class extends superclass {
     const form = event.target
     form.action = form.dataset.orig_action
   }
+
+  //this function is for submitting a form
+  //
+  setFieldAndSubmit(form,field,value,confirm) {
+
+  }
+  
 };

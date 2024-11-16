@@ -75,20 +75,27 @@
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary'
                 -# hidden user action form
                 = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'a'}} do |f|
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'placeholder'}} do |f|
                   = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
+                -# actions affecting all users buttons
+                .row.mb-2
+                  .col-3
+                  .col-9
+                    = button_to 'Enable All', do_all_users_contest_path(@contest), class: 'btn btn-primary', value: 'enable', name: 'command',
+                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                    = button_to 'Disable All', do_all_users_contest_path(@contest), class: 'btn btn-primary', value: 'disable', name: 'command',
+                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                    = button_to 'Remove All', do_all_users_contest_path(@contest), class: 'btn btn-danger', value: 'remove', name: 'command',
+                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction',
+                      'turbo-confirm': 'Really remove all users from the contest?'}}
               .col-md-6
                 -# help for GroupUser
                 .card.bg-warning-subtle.shadow-sm
                   .card-body
                     %ul
                       %li
-                        If you want to add several users to a group, it may be easier to just re-import the users in
-                        = link_to 'New list of users', new_list_user_admin_index_path
-                        page. You can also use
-                        = link_to 'Bulk Manage User', bulk_manage_user_admin_index_path
-                        page.
+                        If you want to add several users to a contest, use the Import tab.
                       %li
                         Only enabled problems are shown to the enabled users of the group.
             %table#user_table.table.datatable.table-hover
@@ -237,8 +244,8 @@
         {data: 'full_name'},
         {data: 'remark'},
         {data: 'seat'},
-        {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: dt_button_renderer(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
+        {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
       ],
       columnDefs: [{orderable: false, targets: [4,5]} ],
       drawCallback: function (settings) {
@@ -267,11 +274,11 @@
         {data: 'number'},
         {data: 'name'},
         {data: 'full_name'},
-        {data: 'available', render: dt_yes_no_pill_renderer(), className: 'text-center'},
-        {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'problem_id', render: dt_button_renderer(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
-        {data: 'problem_id', render: dt_button_renderer(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
-        {data: 'problem_id', render: dt_button_renderer(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
+        {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
+        {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
+        {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
+        {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
       ],
       columnDefs: [{orderable: false, targets: [3,4,5,6]} ],
       drawCallback: function (settings) {

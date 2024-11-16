@@ -17,7 +17,7 @@ export default class extends Controller {
 
   postUserAction(event) {
     // event.target is the dom that emits the event
-    // the parameter for the action is in data-* of  the dom
+    // the parameter for the action is in data-* of that dom
     // we copy the parameter and set the appropriate input
     // of the form
     const form = this.userFormTarget

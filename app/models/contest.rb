@@ -127,4 +127,48 @@ class Contest < ApplicationRecord
     return 60
   end
 
+  #
+  # -------- report ---------------
+  #
+  
+  def score_report
+    # calculate submission with max score
+    max_records = Submission.in_range(:time,start,stop)
+      .where(user: users, problem: problems)
+      .group('user_id,problem_id')
+      .select('MAX(submissions.points) as max_score, user_id, problem_id')
+
+    # convert to score hash
+  end
+
+  protected
+  # this is refactored from the report controller
+  #  *records* is a result from Contest.score_report
+  #  *users* is the User relation that is used to build *records*
+  #
+  # return  a hash {score: xx, stat: yy}
+  # xx is {
+  #   #{user.login}: {
+  #     id:, full_name:, remark:,
+  #     prob_#{prob.name}:, time_#{prob.name}
+  #     ...
+  # }
+  def self.build_score_result(records,users)
+
+    # init score hash
+    result = {score: Hash.new { |h,k| h[k] = {} }, 
+              stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+
+    # populate users
+    users.each { |u| result[:score][u.login] = {id: u.id, full_name: u.full_name, remark: u.remark} }
+
+    # populate result
+    records.each do |score|
+      result[:score][score.user_id][score.problem_id] = score.max_score || 0
+    end
+
+    return result
+  end
+
+
 end

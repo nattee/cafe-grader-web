@@ -25,7 +25,9 @@ class ContestsController < ApplicationController
   end
 
   def index_query
-    render json: {data: Contest.all}
+    render json: {data: Contest.all,
+                  userCount: ContestUser.group('contest_id').count('user_id'),
+                  probCount: ContestProblem.group('contest_id').count('problem_id') }
   end
 
   # GET /contests/1
@@ -41,10 +43,18 @@ class ContestsController < ApplicationController
   # show is for manage
   # view is for spectating
   def view
+    @problems = @contest.problems
   end
-  
+
   def view_query
-    render json: {data: @contest.contests_users.joins(:user).select(:id, :user_id,:login,:full_name,:remark,:seat,:last_heartbeat)}
+    @result = Contest.build_score_result(@contest.score_report,@contest.users)
+
+    render json: {
+      data: @contest.contests_users.joins(:user)
+        .select(:id, :user_id,:login,:full_name,:remark,:seat,:last_heartbeat), 
+      result: @result,
+      problem: @contest.problems.select(:id,:name)
+    }
   end
 
   # GET /contests/new
@@ -120,15 +130,20 @@ class ContestsController < ApplicationController
   end
 
   def do_all_users
+    @toast = {title: "Contest #{@contest.name}"}
     if params[:command] == 'enable'
       ContestUser.where(contest: @contest).update_all(enabled: true)
+      @toast[:body] = "All users were enabled."
     elsif params[:command] == 'disable'
       ContestUser.where(contest: @contest).update_all(enabled: false)
+      @toast[:body] = "All users were disabled."
     elsif params[:command] == 'remove'
       @contest.users.clear
+      @toast[:body] = "All users were removed."
     else
-      return
+      @toast[:body] = "ERROR: Unknown command"
     end
+    render 'turbo_toast'
   end
 
   def do_user

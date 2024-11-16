@@ -17,14 +17,14 @@ Rails.application.routes.draw do
       post 'view_query'
       post 'add_users_from_csv'
 
-      # groups_users
+      # contests_users
       post 'show_users_query'
       post 'add_user'
       post 'add_user_by_group'
       post 'do_all_users'
       post 'do_user'
 
-      # groups_problems
+      # contests_problems
       post 'show_problems_query'
       post 'add_problem'
       post 'add_problem_by_group'
