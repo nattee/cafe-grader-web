@@ -70,10 +70,10 @@ class ContestsController < ApplicationController
 
   def clone
     new_contest = Contest.new(name: @contest.name + ' Copy', start: Time.zone.now, stop: Time.zone.now+3.hour)
-    new_contest.contests_users = @contest.contests_users
-    new_contest.contests_problems = @contest.contests_problems
     new_contest.save
-    redirect_to contest_path(new_contest)
+    @contest.contests_users.each { |cu| new_contest.contests_users.create(user_id: cu.user_id)}
+    @contest.contests_problems.each { |cp| new_contest.contests_problems.create(problem_id: cp.problem_id)}
+    redirect_to contest_path(new_contest), notice: "Contest \"#{@contest.name}\" is cloned to this contest"
   end
 
   # GET /contests/1/edit
