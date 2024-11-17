@@ -128,6 +128,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_17_084758) do
     t.decimal "score", precision: 8, scale: 6
     t.string "result_text"
     t.string "isolate_message"
+    t.text "output"
     t.index ["submission_id"], name: "index_evaluations_on_submission_id"
     t.index ["testcase_id"], name: "index_evaluations_on_testcase_id"
   end
@@ -251,7 +252,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_17_084758) do
     t.integer "task_type", limit: 1, default: 0
     t.integer "compilation_type", limit: 1, default: 0
     t.string "permitted_lang"
-    t.text "log"
+    t.text "log", size: :medium
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
