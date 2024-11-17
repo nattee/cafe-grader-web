@@ -93,8 +93,3 @@ const dt = {
 }
 
 export { dt }
-
-window.dt_button_renderer = dt_button_renderer
-window.dt_link_renderer = dt_link_renderer
-window.dt_yes_no_pill_renderer = dt_yes_no_pill_renderer
-window.dt_datetime_renderer = dt_datetime_renderer

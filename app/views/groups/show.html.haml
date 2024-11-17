@@ -142,14 +142,14 @@
   function role_action_button(data,type,row,meta) {
     result = ''
     if (row['role'] != 'editor') 
-      result += dt_button_renderer('as editor',{element_type: 'link', className: 'link-success', action: 'group#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
+      result += cafe.dt.render.button('as editor',{element_type: 'link', className: 'link-success', action: 'group#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
     if (row['role'] != 'reporter') {
       if (result != '') result += ' | '
-      result += dt_button_renderer('as reporter',{element_type: 'link', className: 'link-warning', action: 'group#postUserAction', command: 'make_reporter'})(row['user_id'],type,row,meta)
+      result += cafe.dt.render.button('as reporter',{element_type: 'link', className: 'link-warning', action: 'group#postUserAction', command: 'make_reporter'})(row['user_id'],type,row,meta)
     }
     if (row['role'] != 'user') {
       if (result != '') result += ' | '
-      result += dt_button_renderer('as user',{element_type: 'link', className: 'link-info', action: 'group#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
+      result += cafe.dt.render.button('as user',{element_type: 'link', className: 'link-info', action: 'group#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
     }
     return result
 
@@ -178,8 +178,8 @@
         {data: 'full_name'},
         {data: 'role'},
         {data: 'remark'},
-        {data: 'user_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'group#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: dt_button_renderer(`${cafe.msi('person_remove','md-18')} Remove`, {element_type: 'link', className: 'link-danger', action: 'group#postUserAction', command: 'remove', confirm: 'Remove user from group?'})},
+        {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'group#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'user_id', render: cafe.dt.render.button(`${cafe.msi('person_remove','md-18')} Remove`, {element_type: 'link', className: 'link-danger', action: 'group#postUserAction', command: 'remove', confirm: 'Remove user from group?'})},
         {data: 'user_id', render: role_action_button},
       ],
       columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6]} ],
@@ -232,8 +232,8 @@
       columns: [ 
         {data: 'name'},
         {data: 'full_name'},
-        {data: 'problem_id', render: dt_button_renderer(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'problem_id', render: dt_button_renderer(`${cafe.msi('delete','md-18')} Remove`,{element_type: 'link',  className: 'link-danger', action: 'group#postProblemAction', command: 'remove', confirm: 'Remove problem from group?'})},
+        {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'problem_id', render: cafe.dt.render.button(`${cafe.msi('delete','md-18')} Remove`,{element_type: 'link',  className: 'link-danger', action: 'group#postProblemAction', command: 'remove', confirm: 'Remove problem from group?'})},
       ],
       columnDefs: [{orderable: false, targets: [2,3]} ],
       order: [[0,'asc']],
