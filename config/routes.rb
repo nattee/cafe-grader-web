@@ -16,6 +16,7 @@ Rails.application.routes.draw do
       get 'view'
       post 'view_query'
       post 'add_users_from_csv'
+      get 'clone'
 
       # contests_users
       post 'show_users_query'

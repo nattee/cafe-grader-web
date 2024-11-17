@@ -7,38 +7,45 @@ function data_tag_unless_null(value,label) {
 
 }
 
-// render a button or a switch
-function dt_button_renderer(label,{className = 'btn-primary', 
+// return a render function that render a button, a switch or a link
+// with a property of data-row-id  set to *data*
+function dt_button_renderer(label,{element_type = 'button',
+                                   className = 'btn-primary', 
                                    action = null,
                                    command = null,
-                                   element_type = 'button',
-                                   checked_data_field = 'enabled',
-                                   href='#',
                                    confirm = null,
+                                   checked_data_field = 'enabled', // for 'switch' type only
+                                   href='#',                       // for 'link' type only
+                                   method = null,                  // for 'link' type only
                                   } = {}) {
   return function(data,type,row,meta) {
     const dataAction = data_tag_unless_null(action,'action')
     const dataCommand = data_tag_unless_null(command,'command')
     const dataConfirm = data_tag_unless_null(confirm,'form-confirm')
+    const dataMethod = data_tag_unless_null(method,'turbo-method') // for link only
 
 
-    // type 'button'
-    if (element_type == 'button') {
-      return `
-        <button class="btn ${className}" data-row-id="${data}" ${dataAction} ${dataCommand}>
-        ${label}</button>
-      `
-    // type 'switch'
-    } else if (element_type == 'switch') {
+    if (element_type == 'switch') {
+      // as <input type="switch">
       const checked_text = row[checked_data_field] ? "checked" : "";
       return `
         <div class="form-check form-switch">
-        <input type="checkbox" class="form-check-input" data-row-id="${data}" ${checked_text} ${dataAction} ${dataCommand}>
+          <input type="checkbox" class="form-check-input" data-row-id="${data}"
+          ${dataAction} ${dataCommand} ${dataConfirm} ${checked_text}>
         </div>
       `
-    } else if (element_type == 'link') {
+    } else if (element_type == 'button') {
+      // as '<button>'
       return `
-        <a href="${href}" class="${className}" data-row-id="${data}" ${dataAction} ${dataCommand} ${dataConfirm}>
+        <button class="btn ${className}" data-row-id="${data}" 
+        ${dataAction} ${dataCommand} ${dataConfirm}>
+        ${label}</button>
+      `
+    } else if (element_type == 'link') {
+      // as '<a>'
+      return `
+        <a href="${href}" class="${className}" data-row-id="${data}" 
+        ${dataAction} ${dataCommand} ${dataConfirm} ${dataMethod}>
         ${label}</a>
       `
     }
@@ -46,15 +53,17 @@ function dt_button_renderer(label,{className = 'btn-primary',
 }
 
 // render a normal link
-function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '-123', replace_field = 'id', confirm=null} = {}) {
+function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '-123', replace_field = 'id', confirm=null, turbo=false, method=null} = {}) {
   return function(data,type,row,meta) {
+    const dataMethod = data_tag_unless_null(method,'turbo-method')
     let href = path
+    if (method) turbo = true
     if (replace_field && replace_pattern) {
       href = path.replace(replace_pattern,row[replace_field])
     }
-    const dataConfirm = data_tag_unless_null(confirm,'form-confirm')
+    const dataConfirm = data_tag_unless_null(confirm,'turbo-confirm')
     let link_text = (label === null) ? data : label
-    return `<a href="${href}" class="${className}" ${dataConfirm}> ${link_text}</a>`
+    return `<a href="${href}" class="${className}" ${dataConfirm} ${dataMethod} data-turbo="${turbo}"> ${link_text}</a>`
   }
 }
 

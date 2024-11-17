@@ -50,7 +50,12 @@
 :javascript
   //user and problem count renderer
   function user_prob(data,type,row,meta) {
-    return userCount[row['id']]+':'+probCount[row['id']]
+    uc = userCount[row['id']] || '-'
+    pc = probCount[row['id']] || '-'
+    if (type == 'display' || type == 'filter')
+      return uc+' : '+pc
+
+    return parseFloat(`${uc}.${pc}`)
   }
 
   $(() => {
@@ -84,9 +89,10 @@
         {data: 'stop', render: cafe.dt.render.datetime()},
         {data: null, render: cafe.dt.render.link(`${cafe.msi('settings','md-18')} Manage`, {path: '#{contest_path(-123)}'})},
         {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: '#{view_contest_path(-123)}'})},
-        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: '#{contest_path(-123)}', className: 'link-danger', })},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`, {path: '#{clone_contest_path(-123)}', className: 'btn btn-sm btn-success'}), className: 'align-middle py-1'},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: '#{contest_path(-123)}', method: 'delete', confirm: 'hahaha', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
       ],
-      columnDefs: [{orderable: false, targets: [2,5,6,7]} ],
+      columnDefs: [{orderable: false, targets: [2,6,7,8,9]} ],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

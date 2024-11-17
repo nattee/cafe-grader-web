@@ -1,6 +1,6 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
-                                     :add_users_from_csv,
+                                     :add_users_from_csv,:clone,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
                                      :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
@@ -66,6 +66,14 @@ class ContestsController < ApplicationController
       format.html # new.html.erb
       format.xml  { render :xml => @contest }
     end
+  end
+
+  def clone
+    new_contest = Contest.new(name: @contest.name + ' Copy', start: Time.zone.now, stop: Time.zone.now+3.hour)
+    new_contest.contests_users = @contest.contests_users
+    new_contest.contests_problems = @contest.contests_problems
+    new_contest.save
+    redirect_to contest_path(new_contest)
   end
 
   # GET /contests/1/edit
