@@ -1,19 +1,23 @@
-= form_with url: submit_main_path, multipart: true, class: 'form' do |form|
-  - if @submission and @submission.errors.any?
-    #error_explanation
-      .alert.alert-danger
-        %h3= "#{pluralize(@submission.errors.count, "error")} prohibited this user from being saved:"
-        %ul
-          - @submission.errors.full_messages.each do |msg|
-            %li= msg
-  .row.mb-2
-    .col-sm-2
-      = form.label :submission, 'Problem:', class: 'col-form-label'
-    .col-sm-10
-      = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control', style: "width: 100%" }
-  .row.mb-2
-    .col-sm-2
-      = form.label :file, 'File:', class: 'col-form-label'
-    .col-sm-10
-      = form.file_field :file, class: 'form-control'
-  = form.submit 'Submit', class: 'btn btn-primary'
+.card.border-primary
+  .card-header.text-bg-primary
+    Submission
+  .card-body
+    = form_with url: submit_main_path, multipart: true, class: 'form' do |form|
+      - if @submission and @submission.errors.any?
+        #error_explanation
+          .alert.alert-danger
+            %h3= "#{pluralize(@submission.errors.count, "error")} prohibited this user from being saved:"
+            %ul
+              - @submission.errors.full_messages.each do |msg|
+                %li= msg
+      .row.mb-2
+        .col-sm-2
+          = form.label :submission, 'Problem:', class: 'col-form-label'
+        .col-sm-10
+          = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control', style: "width: 100%" }
+      .row.mb-2
+        .col-sm-2
+          = form.label :file, 'File:', class: 'col-form-label'
+        .col-sm-10
+          = form.file_field :file, class: 'form-control'
+      = form.submit 'Submit', class: 'btn btn-primary'

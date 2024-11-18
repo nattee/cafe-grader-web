@@ -22,7 +22,7 @@
                 .time-counter{data: {start: contest.start.iso8601,stop: contest.stop.iso8601}}
               %td
                 - unless contest == @current_contest
-                  = link_to 'Set as active'
+                  = link_to 'Set as active', set_active_contest_path(contest)
 :javascript
   function updateContestStatusTime() {
     const x = document.getElementsByClassName('time-counter')

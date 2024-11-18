@@ -14,6 +14,11 @@ class Contest < ApplicationRecord
   # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
+  def active?
+    now = Time.zone.now
+    return enabled? && start <= now && stop >= now
+  end
+
   def add_users(new_users)
     return {title: 'Contest users are NOT changed', body: 'No new users given.'} if new_users.count == 0
 

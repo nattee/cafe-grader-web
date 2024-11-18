@@ -44,7 +44,7 @@ class ApplicationController < ActionController::Base
     
     #if the session contest is disabled, pick the earliest enabled one (or nil)
     unless @current_contest && @current_contest.enabled?
-      @current_contest = @current_user.contests.order(:stop).first 
+      @current_contest = @current_user.contests.where(enabled: true).where('stop >= ?',Time.zone.now).order(:stop).first 
       session[:contest_id] = @current_contest&.id if @current_contest
     end
     return @current_contest
