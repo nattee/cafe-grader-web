@@ -1,4 +1,4 @@
-=turbo_frame_tag :problem, data: {controller: 'problem', turbo: true, action: "turbo:frame-load->problem#initProblemForm"} do
+=turbo_frame_tag :problem, data: {controller: 'problem', turbo: true} do
   = simple_form_for problem, wrapper: :horizontal_form do |form|
     %h4 Basic Information
     = form.input :name
@@ -39,8 +39,6 @@
           - else
             This problem has no attachment
     = form.button :submit, class: 'btn btn-primary me-2'
-    = link_to 'Back', problems_path, class: 'btn btn-outline-secondary me-2'
-    = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary me-2'
 
 :javascript
   function problem_form_init() {

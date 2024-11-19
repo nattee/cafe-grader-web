@@ -3,7 +3,7 @@ import { rowFieldToggle } from "mixins/row_field_toggle";
 
 export default class extends rowFieldToggle(Controller) {
   static targets = ["toggleAvailableForm", "toggleViewTestcaseForm",
-                    "problemDate","datasetSelect",
+                    "problemDate","datasetSelect","datasetSelectForm", "activeTab",
                     "datasetSettings","datasetTestcases","datasetFiles","dataset"
                    ]
   connect() {
@@ -21,16 +21,18 @@ export default class extends rowFieldToggle(Controller) {
     this.submitToggleForm(form,recId)
   }
 
-  //init the problem form
-  initProblemForm() {
-  }
-
   refreshDataset(event) {
     const dsid = this.datasetSelectTarget.value
-    console.log('change to ' + dsid)
     const frame = this.datasetTarget
     frame.src = frame.src.replace(frame.dataset.currentId,dsid)
     frame.dataset.currentId = dsid
+  }
+
+  viewDataset(event) {
+    const form = this.datasetSelectFormTarget
+    const active = this.activeTabTarget
+    active.value = $('#dataset .tab-pane.active')[0].id
+    form.requestSubmit()
   }
 
 }

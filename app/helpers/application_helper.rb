@@ -1,6 +1,11 @@
 # Methods added to this helper will be available to all templates in the application.
 module ApplicationHelper
 
+  # render material design icon
+  def mdi(icon,class_name = '')
+    "<span class='mi mi-bs #{class_name}'>#{icon}</span>".html_safe
+  end
+
   #new bootstrap header
   def navbar_user_header
     left_menu = ''

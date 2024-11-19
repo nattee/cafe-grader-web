@@ -1,109 +1,20 @@
-= turbo_frame_tag :dataset_update, data: {turbo: true} do
-  %div.mb-3
-  - if flash[:alert]
-    .alert.alert-dismissible.fade.show.alert-danger
-      = flash[:alert]
-      %button.btn-close{data: {'bs-dismiss': :alert}}
-  - if flash[:notice]
-    .alert.alert-dismissible.fade.show.alert-info
-      = flash[:notice]
-      %button.btn-close{data: {'bs-dismiss': :alert}}
-  .alert.alert-secondary
-    .row.row-cols-lg-auto.g-3.align-items-center
-      .col
-        .form-check
-          %label.form-check-label Select a dataset to view
-      .col
-        = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(ds), wrapper: :inline_form do |f|
-          = f.input :dsid, collection: ds.problem.datasets.reload, selected: ds.id, input_html: {class: 'form-select-sm form-select', data: {action: 'change->problem#refreshDataset'} }, wrapper: :inline_form
-      .col
-        .form-check
-          %label.form-check-label Action
-      .col
-        = link_to 'Add', add_dataset_problem_path(ds.problem), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-success btn-sm mx-1'
-        = link_to 'Set as live', set_as_live_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm mx-1' if ds != ds.problem.live_dataset
-        = link_to 'Delete', dataset_path(ds), data: {turbo: true,
-          'turbo-method': 'delete',
-          turbo_confirm: "Really delete the dataset [#{ds.name}]?"}, class: 'btn btn-danger btn-sm mx-1'
-        = link_to 'Rejudge', rejudge_dataset_path(ds), data: {turbo: true,
-          'turbo-method': 'post',
-          turbo_confirm: "Rejudge all #{ds.problem.submissions.count} submissions of #{ds.problem.name} using the dataset [#{ds.name}]?"}, 
-          class: 'btn btn-warning btn-sm mx-1'
-  = simple_form_for ds, wrapper: :horizontal_form_half, multipart: true do |f|
-    .row
-      .col-md-6
-        %h5.my-2 Basic Info
-        = f.input :name
-        = f.input :time_limit, label: "Time limit (s)", tooltip: 'Decimal is ok, e.g., 1.2'
-        = f.input :memory_limit, label: "Memory Limit (MB)"
-        = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], include_blank: false, wrapper: :horizontal_select_half
-        = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, include_blank: false, wrapper: :horizontal_select_half
-        = f.input :main_filename, collection: ds.managers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select_half
-        = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: true, wrapper: :horizontal_select_half
-        = f.button :submit, class: 'btn-primary'
-      .col-md-6
-        = render partial: 'datasets/managers', locals: {ds: ds, form: f}
-  %h5.mt-4 Testcases
-  = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
-    .col-12
-      .form-check
-        Testcase config
-        -#
-          %span.mi.mi-bs.md-18.text-body-tertiary{ data: {bs: {toggle: "tooltip", placement:"top", 
-            title:'Input as array of weights or array of pair [weight, count]'}} } help_center
-        %a{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank'} 
-          %span.mi.mi-bs.md-18 help_center
-
-    .col-12
-      = text_field_tag :weight_param, nil, class: 'form-control'
-    .col-12
-      = f.submit 'Set', class: 'btn btn-primary'
-  %table.datatable.table-hover
-    %thead
-      %tr
-        %th #
-        %th Codename
-        %th Group
-        %th Group Name
-        %th Weight
-        %th Action
-    %tbody
-      - last_group = nil
-      - odd = true
-      - ds.testcases.display_order.each.with_index do |tc,idx|
-        - if tc.group != last_group
-          - odd = !odd
-          - last_group = tc.group
-        %tr{class: (odd ? 'bg-secondary bg-opacity-25' : '')}
-          %td
-            = tc.num
-          %td
-            = tc.code_name
-          %td
-            = tc.group
-          %td
-            = tc.group_name
-          %td
-            = tc.weight
-          %td
-            [
-            %span= link_to 'input', testcase_input_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
-            |
-            %span= link_to 'output', testcase_sol_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
-            |
-            %span= link_to 'delete', testcase_delete_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
-            ]
-
-  :javascript
-
-    if (typeof importmapScriptsLoaded !== 'undefined') {
-      $('.datatable').DataTable({destroy: true, searching: false, paging: false})
-      $('[data-bs-toggle="tooltip"]').tooltip()
-    }
-
-    //trigger turbo  action
-    function ds_change() {
-      $('#ds_select_form')[0].requestSubmit();
-    }
-
-
+-# dataset tabs
+- @active_tab = 'settings' unless @active_tab
+%ul.nav.nav-tabs
+  %li.nav-item
+    %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#settings"}},class: ('active' if @active_tab == 'settings') } Settings
+  %li.nav-item
+    %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#testcases"}},class: ('active' if @active_tab == 'testcases')} Testcases
+  %li.nav-item
+    %button.nav-link{href: '#', data: {bs: {toggle: :tab, target: "#files"}},class: ('active' if @active_tab == 'files')} Files
+-# dataset tabs content
+.tab-content
+  %div#settings.tab-pane.fade{class: (' show active ' if @active_tab == 'settings')}
+    %div.mb-3
+      = turbo_frame_tag 'dataset_settings', src: settings_dataset_path(ds), data: {'problem-target': 'datasetSettings'}
+  %div#testcases.tab-pane.fade{class: (' show active ' if @active_tab == 'testcases')}
+    %div.mb-3
+      = turbo_frame_tag 'dataset_testcases', src: testcases_dataset_path(ds), data: {'problem-target': 'datasetTestcases'}
+  %div#files.tab-pane.fade{class: (' show active ' if @active_tab == 'files')}
+    %div.mb-3
+      = turbo_frame_tag 'dataset_files', src: files_dataset_path(ds), data: {'problem-target': 'datasetFiles'}
