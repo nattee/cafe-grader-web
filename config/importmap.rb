@@ -5,6 +5,7 @@ pin "application"
 pin "prepend_jquery"
 #pin "my_sprocket"
 pin_all_from "app/javascript/controllers", under: "controllers"
+#pin_all_from "app/javascript/mixins", under: "mixins"
 
 #we don't need jquery in importmap because we use sprocket version
 #pin "jquery", to: 'my_jquery.js', preload: true

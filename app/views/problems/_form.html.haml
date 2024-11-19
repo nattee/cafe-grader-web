@@ -42,3 +42,12 @@
     = link_to 'Back', problems_path, class: 'btn btn-outline-secondary me-2'
     = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary me-2'
 
+:javascript
+  function problem_form_init() {
+    let td_options = structuredClone(cafe.config.td.date)
+    td_options['localization']['format'] = 'dd/MM/yyyy'
+    new TempusDominus(document.getElementById('problem_date_added'), td_options );
+    cafe.initSelect2()
+  }
+
+

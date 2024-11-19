@@ -1,14 +1,13 @@
 //global initialization
 $(document).ready(function(e) {
-  var e;
   cafe.initSelect2();
   $('[data-bs-toggle="tooltip"]').tooltip()
 
   if ($("#editor").length > 0) {
-    e = ace.edit("editor");
-    e.setTheme('ace/theme/merbivore');
-    e.getSession().setTabSize(2);
-    e.getSession().setUseSoftTabs(true);
+    let editor = ace.edit("editor");
+    editor.setTheme('ace/theme/merbivore');
+    editor.getSession().setTabSize(2);
+    editor.getSession().setUseSoftTabs(true);
   }
 
 });

@@ -1,80 +1,78 @@
 -# require *ds* as a dataset object
-= turbo_frame_tag dom_id(ds, :testcases), data: {turbo: true} do
-  -# testcase settings
-  %h4 Testcases
-  = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
-    .col-12
-      .form-check
-        Testcase config
-        %a{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank'} 
-          %span.mi.mi-bs.md-18 help_center
-    .col-12
-      = text_field_tag :weight_param, nil, class: 'form-control'
-    .col-12
-      = f.submit 'Set', class: 'btn btn-primary'
-  %table.datatable.table-hover{style: 'width: 100%'}
-    %thead
-      %tr
-        %th #
-        %th Codename
-        %th Group
-        %th Group Name
-        %th Weight
-        %th Action
-    %tbody
-      - last_group = nil
-      - odd = true
-      - ds.testcases.display_order.each.with_index do |tc,idx|
-        - if tc.group != last_group
-          - odd = !odd
-          - last_group = tc.group
-        %tr{class: (odd ? 'bg-secondary bg-opacity-25' : '')}
-          %td
-            = tc.num
-          %td
-            = tc.code_name
-          %td
-            = tc.group
-          %td
-            = tc.group_name
-          %td
-            = tc.weight
-          %td
-            [
-            %span= link_to 'input', testcase_input_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
-            |
-            %span= link_to 'output', testcase_sol_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
-            |
-            %span= link_to 'delete', testcase_delete_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
-            ]
-  %h4.mt-5 Import testcases
-  - if @errors
-    .alert.alert-danger
-      There are following errors
-      %ul
-        - @errors.each do |msg|
-          %li= msg
-  - if local_assigns[:updated]
-    .alert.alert-info.alert-dismissible
-      = updated
-      %button.btn-close{data: {'bs-dismiss': :alert}}
+%h4 Testcases
+= form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
+  .col-12
+    .form-check
+      Testcase config
+      %a{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank'} 
+        %span.mi.mi-bs.md-18 help_center
+  .col-12
+    = text_field_tag :weight_param, nil, class: 'form-control'
+  .col-12
+    = f.submit 'Set', class: 'btn btn-primary'
+%table.datatable.table-hover{style: 'width: 100%'}
+  %thead
+    %tr
+      %th #
+      %th Codename
+      %th Group
+      %th Group Name
+      %th Weight
+      %th Action
+  %tbody
+    - last_group = nil
+    - odd = true
+    - ds.testcases.display_order.each.with_index do |tc,idx|
+      - if tc.group != last_group
+        - odd = !odd
+        - last_group = tc.group
+      %tr{class: (odd ? 'bg-secondary bg-opacity-25' : '')}
+        %td
+          = tc.num
+        %td
+          = tc.code_name
+        %td
+          = tc.group
+        %td
+          = tc.group_name
+        %td
+          = tc.weight
+        %td
+          [
+          %span= link_to 'input', testcase_input_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
+          |
+          %span= link_to 'output', testcase_sol_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post' }
+          |
+          %span= link_to 'delete', testcase_delete_dataset_path(ds,tc), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+          ]
+%h4.mt-5 Import testcases
+- if @errors
+  .alert.alert-danger
+    There are following errors
+    %ul
+      - @errors.each do |msg|
+        %li= msg
+- if local_assigns[:updated]
+  .alert.alert-info.alert-dismissible
+    = updated
+    %button.btn-close{data: {'bs-dismiss': :alert}}
 
+.row
+  .col-md-6
+    = simple_form_for :import, url: import_testcases_problem_path(@dataset.problem), html: {multipart: true}, wrapper: :horizontal_form do |f|
+      = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
+      = f.input :input_pattern, input_html: { value: '*.in' }
+      = f.input :sol_pattern, input_html: { value: '*.sol' }
+      = f.input :target, label: "Import to dataset",  collection: [['As a new dataset','new'],['Into the selected dataset','replace']], checked: :new,  as: :radio_buttons, wrapper: :horizontal_collection, input_html: {onclick: 'update_import_target()'}
+      = f.input :dataset, collection: @dataset.problem.datasets, selected: @dataset.problem.live_dataset, wrapper: :horizontal_select
+      = f.button :submit, value: 'Import', class: 'btn-primary'
+  .col-md-6
+- if @log
   .row
-    .col-md-6
-      = simple_form_for :import, url: import_testcases_problem_path(@dataset.problem), html: {multipart: true}, wrapper: :horizontal_form do |f|
-        = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
-        = f.input :input_pattern, input_html: { value: '*.in' }
-        = f.input :sol_pattern, input_html: { value: '*.sol' }
-        = f.input :target, label: "Import to dataset",  collection: [['As a new dataset','new'],['Into the selected dataset','replace']], checked: :new,  as: :radio_buttons, wrapper: :horizontal_collection, input_html: {onclick: 'update_import_target()'}
-        = f.input :dataset, collection: @dataset.problem.datasets, selected: @dataset.problem.live_dataset, wrapper: :horizontal_select
-        = f.button :submit, value: 'Import', class: 'btn-primary'
-    .col-md-6
-  - if @log
-    .row
-      .col-sm-12
-        %h4 Import log
-        %pre.import-log
-          = @log.join("\n")
+    .col-sm-12
+      %h4 Import log
+      %pre.import-log
+        = @log.join("\n")
 
 :javascript
   function update_import_target() {

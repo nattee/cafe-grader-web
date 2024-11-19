@@ -1,6 +1,10 @@
 %h1 
   Edit problem
 .mb-3
+  = link_to "Back", problems_path
+  |
+  = link_to 'Submissions', stat_problem_path(@problem)
+  |
   = link_to '<span class="mi mi-bs">download</span> Download'.html_safe, download_archive_problem_path(@problem)
 .row{'data-controller': 'problem'}
   -# problem card
@@ -38,4 +42,7 @@
                 class: 'btn btn-warning btn-sm mx-1'
 
         -# dataset form
-        = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset)
+        = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset), data: {'problem-target': 'dataset', 'current-id': @problem.live_dataset.id}
+
+:javascript
+  //page 

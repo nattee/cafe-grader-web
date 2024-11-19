@@ -1,0 +1,21 @@
+.alert.alert-secondary
+  .row.row-cols-lg-auto.g-3.align-items-center
+    .col
+      .form-check
+        %label.form-check-label Select a dataset to view
+    .col
+      = simple_form_for :null, id: :ds_select_form, url: view_dataset_path(problem.live_dataset), wrapper: :inline_form do |f|
+        = f.input :dsid, collection: problem.datasets.reload, selected: problem.live_dataset.id, input_html: {class: 'form-select-sm form-select', data: {turbo: true, action: 'change->problem#refreshDataset', 'problem-target': 'datasetSelect'}}, wrapper: :inline_form
+    .col
+      .form-check
+        %label.form-check-label Action
+    .col
+      = link_to 'Add', add_dataset_problem_path(problem), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-success btn-sm mx-1'
+      = link_to 'Set as live', set_as_live_dataset_path(problem.live_dataset), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm mx-1' if problem.live_dataset != problem.live_dataset
+      = link_to 'Delete', dataset_path(problem.live_dataset), data: {turbo: true,
+        'turbo-method': 'delete',
+        turbo_confirm: "Really delete the dataset [#{problem.live_dataset.name}]?"}, class: 'btn btn-danger btn-sm mx-1'
+      = link_to 'Rejudge', rejudge_dataset_path(problem.live_dataset), data: {turbo: true,
+        'turbo-method': 'post',
+        turbo_confirm: "Rejudge all #{problem.submissions.count} submissions of #{problem.name} using the dataset [#{problem.live_dataset.name}]?"}, 
+        class: 'btn btn-warning btn-sm mx-1'
