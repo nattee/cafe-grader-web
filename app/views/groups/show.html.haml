@@ -1,22 +1,25 @@
-%h1 Group management
+%h2 Group manage
+.mb-3
+  [
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, groups_path, class: 'mx-1'
+  ]
 .row
   .col-md-6
-    .card.shadow-sm
+    .card.shadow-sm.my-2
       .card-body
         %h4 Group details
         .row.mb-3
           = key_pair(obj: @group, field: :name)
           = key_pair(obj: @group, field: :description)
           = key_pair(obj: @group, field: :enabled, as: :yes_no)
-        .row.mb-3
+        .row.mb-2
           .col-md-6
             = link_to 'Edit', edit_group_path(@group), class: 'btn btn-primary'
-            = link_to 'Back', groups_path, class: 'btn btn-outline-secondary mx-2'
   .col-md-6
     = render partial: 'group_help'
-.row.my-4{'data-controller': 'group'}
+.row.my-2{'data-controller': 'group'}
   .col-sm-12
-    .card.shadow-sm
+    .card.shadow-sm.my-2
       .card-body
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
@@ -39,29 +42,29 @@
                 =form_tag add_user_group_path(@group), class: 'form-inline', 
                   data: {turbo: true, action: 'turbo:submit-end->group#afterUsersAdd'} do
                   .row.mb-2
-                    .col-3
+                    .col-md-3
                       =label_tag :user_ids, "Add these users", class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :user_ids, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", class: 'btn btn-primary'
+                    .col-md-2
+                      =submit_tag "Add", class: 'btn btn-primary my-1'
                 =form_tag add_user_by_group_group_path(@group), class: 'form-inline',
                   data: {turbo: true, action: 'turbo:submit-end->group#afterUsersAdd'} do
                   .row.mb-2
-                    .col-3
+                    .col-md-3
                       =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :user_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                    .col-md-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 =form_with url: do_all_users_group_path(@group),
                   data: {turbo: true, action: 'turbo:submit-end->group#afterUserAction'} do |f|
                   .row.mb-2
-                    .col-3
-                    .col-9
-                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->group#setUsersCommand', value: 'enable'}
-                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->group#setUsersCommand', value: 'disable'}
-                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->group#setUsersCommand', value: 'remove'}
+                    .col-md-3
+                    .col-md-9
+                      = f.submit "Enable All", class: 'btn btn-primary my-1', data: {action: 'click->group#setUsersCommand', value: 'enable'}
+                      = f.submit "Disable All", class: 'btn btn-primary my-1', data: {action: 'click->group#setUsersCommand', value: 'disable'}
+                      = f.submit "Remove All", class: 'btn btn-danger my-1', data: {action: 'click->group#setUsersCommand', value: 'remove'}
                   = f.hidden_field :command, value: 1, 'data-group-target': 'usersCommand'
                 -# hidden user action form
                 = form_with url: do_user_group_path, html: {'data-group-target': 'userForm',
@@ -91,21 +94,21 @@
                 =form_tag add_problem_group_path(@group), 
                   data: {turbo: true, action: 'turbo:submit-end->group#afterProblemsAdd'} do
                   .row.mb-2
-                    .col-3
+                    .col-md-3
                       =label_tag :problem_ids, "Problem",class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :problem_ids, options_from_collection_for_select(@current_user.problems_for_action(:edit),'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-auto
-                      =submit_tag "Add",class: 'btn btn-primary', 'data-group-target': 'asdf'
+                      =submit_tag "Add",class: 'btn btn-primary my-1', 'data-group-target': 'asdf'
                 =form_tag add_problem_by_group_group_path(@group), class: 'form-inline',
                   data: {turbo: true, action: 'turbo:submit-end->group#afterProblemsAdd'} do
                   .row.mb-2
-                    .col-3
+                    .col-md-3
                       =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                    .col-md-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# form for all problems action
                 =form_with url: do_all_problems_group_path(@group), 
                   data: {turbo: true, action: 'turbo:submit-end->group#afterProblemAction'} do |f|
@@ -113,9 +116,9 @@
                     .col-3
                     .col-9
                       = link_to "New Problem", import_problems_path, class: 'btn btn-success'
-                      = f.submit "Enable All", class: 'btn btn-primary', data: {action: 'click->group#setProblemsCommand', value: 'enable'}
-                      = f.submit "Disable All", class: 'btn btn-primary', data: {action: 'click->group#setProblemsCommand', value: 'disable'}
-                      = f.submit "Remove All", class: 'btn btn-danger', data: {action: 'click->group#setProblemsCommand', value: 'remove'}
+                      = f.submit "Enable All", class: 'btn btn-primary my-1', data: {action: 'click->group#setProblemsCommand', value: 'enable'}
+                      = f.submit "Disable All", class: 'btn btn-primary my-1', data: {action: 'click->group#setProblemsCommand', value: 'disable'}
+                      = f.submit "Remove All", class: 'btn btn-danger my-1', data: {action: 'click->group#setProblemsCommand', value: 'remove'}
                   = f.hidden_field :command, value: 1, 'data-group-target': 'problemsCommand'
                 -# hidden problem action form
                 = form_with url: do_problem_group_path, html: {'data-group-target': 'problemForm',
@@ -160,6 +163,7 @@
     // user tables
     user_role_column = 2
     $('#user_table').DataTable({
+      responsive: true,
       processing: true,
       ajax: {
         url: "#{show_users_query_group_path(@group)}",
@@ -218,6 +222,7 @@
 
     // problem table
     $('#problem_table').DataTable({
+      responstive: true,
       destroy: true,
       paging: false,
       processing: true,

@@ -1,6 +1,6 @@
 =turbo_frame_tag :problem, data: {controller: 'problem', turbo: true} do
   = simple_form_for problem, wrapper: :horizontal_form do |form|
-    %h4 Basic Information
+    %h4 Problem Detail
     = form.input :name
     = form.input :full_name
     = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"

@@ -160,7 +160,7 @@ module ApplicationHelper
 
   # render a key pair as two lines (label & value)
   # input can be either label & value or object & field
-  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil)
+  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil, className: '')
     label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
     value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
 
@@ -175,7 +175,7 @@ module ApplicationHelper
 
     #render
     content = <<~HTML
-      <div class="col-#{width} mb-3"><div class="fw-bold">#{label}</div>#{value}</div>
+      <div class="col-md-#{width} mb-3 #{className}"><div class="fw-bold">#{label}</div>#{value}</div>
     HTML
     return content.html_safe
   end

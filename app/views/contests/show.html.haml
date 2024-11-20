@@ -1,9 +1,14 @@
 %h2 Contest management
+.mb-3
+  [
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1'
+  ]
 .row.my-3.gx-3
   .col-md-6
-    .card.shadow-sm
+    .card.shadow-sm.my-1
       .card-body
-        %h4 Contest Detail
+        %h4 
+          Contest Detail
         .row.mb-3
           = key_pair(obj: @contest, field: :name)
           = key_pair(obj: @contest, field: :description,width: 4)
@@ -12,9 +17,8 @@
           = key_pair(label: 'Finish Time', value: @contest&.stop&.strftime("%Y-%b-%d %H:%M"))
           = key_pair(obj: @contest, field: :freeze, as: :yes_no)
         = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary me-2'
-        = link_to 'Back', contests_path, class: 'btn btn-outline-secondary'
   .col-md-6
-    .card.bg-warning-subtle.shadow-sm
+    .card.bg-warning-subtle.shadow-sm.my-1
       .card-body
         %h4 Tips
         %ul
@@ -31,17 +35,20 @@
       .card-body
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
-            %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'}}}
+            %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'},
+              action: 'shown.bs.tab->contest#tabChange', table: {id: 'problem_table',init: 'no'}}}
               %span.mi.mi-bs
                 person
               Users
           %li.nav-item
-            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}}}
+            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}, 
+              action: 'shown.bs.tab->contest#tabChange', table: {id: 'problem_table',init: 'no'}}}
               %span.mi.mi-bs
                 task
               Problems
           %li.nav-item
-            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-add-users'}}}
+            %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-add-users'},
+              action: 'shown.bs.tab->contest#tabChange'}}
               %span.mi.mi-bs
                 upload
               Import
@@ -55,24 +62,24 @@
                 %h5.mb-2.card-subtitle.text-body-secondary List of users in this contest
                 .mb-2
                   Use following actions to add users to this contest.
-                =form_tag add_user_contest_path(@contest), class: 'mb-3 form-inline', 
+                =form_tag add_user_contest_path(@contest), class: 'mb-1 form-inline', 
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
-                  .row.mb-2
-                    .col-3
+                  .row.mb-1
+                    .col-md-3
                       =label_tag :user_ids, "Add these users", class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :user_ids, options_from_collection_for_select(User.all,'id','login_with_name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", class: 'btn btn-primary'
-                =form_tag add_user_by_group_contest_path(@contest), class: 'mb-3 form-inline', 
+                    .col-md-2
+                      =submit_tag "Add", class: 'btn btn-primary my-1'
+                =form_tag add_user_by_group_contest_path(@contest), class: 'mb-1 form-inline', 
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterUsersAdd'} do
-                  .row.mb-2
-                    .col-3
+                  .row.mb-1
+                    .col-md-3
                       =label_tag :user_group_ids, "Add all from groups", class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :user_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                    .col-md-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# hidden user action form
                 = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'placeholder'}} do |f|
@@ -80,13 +87,13 @@
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
                 -# actions affecting all users buttons
                 .row.mb-2
-                  .col-3
-                  .col-9
-                    = button_to 'Enable All', do_all_users_contest_path(@contest), class: 'btn btn-primary', value: 'enable', name: 'command',
+                  .col-md-3
+                  .col-md-9
+                    = button_to 'Enable All', do_all_users_contest_path(@contest), class: 'btn btn-primary m-1', value: 'enable', name: 'command',
                       form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
-                    = button_to 'Disable All', do_all_users_contest_path(@contest), class: 'btn btn-primary', value: 'disable', name: 'command',
+                    = button_to 'Disable All', do_all_users_contest_path(@contest), class: 'btn btn-primary m-1', value: 'disable', name: 'command',
                       form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
-                    = button_to 'Remove All', do_all_users_contest_path(@contest), class: 'btn btn-danger', value: 'remove', name: 'command',
+                    = button_to 'Remove All', do_all_users_contest_path(@contest), class: 'btn btn-danger m-1', value: 'remove', name: 'command',
                       form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction',
                       'turbo-confirm': 'Really remove all users from the contest?'}}
               .col-md-6
@@ -116,24 +123,24 @@
                 %h5.mb-2.card-subtitle.text-body-secondary List of problems in this contest
                 .mb-2
                   Use following actions to add problems to this contest.
-                =form_tag add_problem_contest_path(@contest), class: 'mb-3 form-inline',
+                =form_tag add_problem_contest_path(@contest), class: 'mb-1 form-inline',
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd' } do
-                  .row.mb-2
-                    .col-3
+                  .row.mb-1
+                    .col-md-3
                       =label_tag :problem_ids, "Problem",class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-auto
-                      =submit_tag "Add",class: 'btn btn-primary', 'data-group-target': 'asdf'
-                =form_tag add_problem_by_group_contest_path(@contest), class: 'mb-3 form-inline',
+                      =submit_tag "Add",class: 'btn btn-primary my-1', 'data-group-target': 'asdf'
+                =form_tag add_problem_by_group_contest_path(@contest), class: 'mb-1 form-inline',
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
-                  .row.mb-2
-                    .col-3
+                  .row.mb-1
+                    .col-md-3
                       =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
-                    .col-7
+                    .col-md-7
                       =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                    .col-2
-                      =submit_tag "Add", value: "Add", class: 'btn btn-primary'
+                    .col-md-2
+                      =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# hidden problem action form
                 = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'}} do |f|
@@ -225,6 +232,7 @@
   $(function() {
     //user table
     user_table_config = {
+      responsive: true,
       processing: true,
       rowId: 'id',
       destroy: true,
@@ -256,6 +264,7 @@
 
     //problem table
     problem_table_config = {
+      responsive: true,
       processing: true,
       rowId: 'id',
       destroy: true,
@@ -280,7 +289,8 @@
         {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
         {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
       ],
-      columnDefs: [{orderable: false, targets: [3,4,5,6]} ],
+      columnDefs: [{visible: false, targets: [0]},
+                   {orderable: false, targets: [1,2,3,4,5,6,7]}],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

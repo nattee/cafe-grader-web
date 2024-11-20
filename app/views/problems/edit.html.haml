@@ -1,4 +1,4 @@
-%h1 
+%h2 
   Edit problem
 .mb-3
   [
@@ -11,12 +11,12 @@
 .row{'data-controller': 'problem'}
   -# problem card
   .col-md-5
-    .card.shadow-sm
+    .card.shadow-sm.my-2
       .card-body
         = render 'form', problem: @problem
   -# dataset card
   .col-md-7
-    .card.shadow-sm
+    .card.shadow-sm.my-2
       .card-body
         %h4 Datasets
         -# dataset selector
