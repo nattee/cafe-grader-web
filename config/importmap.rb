@@ -5,7 +5,7 @@ pin "application"
 pin "prepend_jquery"
 #pin "my_sprocket"
 pin_all_from "app/javascript/controllers", under: "controllers"
-#pin_all_from "app/javascript/mixins", under: "mixins"
+pin_all_from "app/javascript/mixins", under: "mixins"
 
 #we don't need jquery in importmap because we use sprocket version
 #pin "jquery", to: 'my_jquery.js', preload: true
@@ -39,4 +39,4 @@ pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 
 # rails usj (should be removed soon)
-pin "rails-ujs", to: 'rails-ujs.esm'
+pin "rails-ujs", to: 'rails-ujs.esm.js'
