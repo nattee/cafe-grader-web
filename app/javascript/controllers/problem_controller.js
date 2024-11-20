@@ -1,13 +1,14 @@
 import { Controller } from "@hotwired/stimulus"
-import { rowFieldToggle } from "../mixins/row_field_toggle";
+import { rowFieldToggle } from "mixins/row_field_toggle";
 
 export default class extends rowFieldToggle(Controller) {
   static targets = ["toggleAvailableForm", "toggleViewTestcaseForm",
-                    "problemDate","datasetSelect",
-                    "datasetSettings","datasetTestcases","datasetFiles",
+                    "problemDate","datasetSelect","datasetSelectForm", "activeTab",
+                    "datasetSettings","datasetTestcases","datasetFiles","dataset"
                    ]
   connect() {
-    this.initProblemForm()
+    if (typeof page_init === "function")
+      page_init()
   }
 
   toggle(event) {
@@ -20,24 +21,18 @@ export default class extends rowFieldToggle(Controller) {
     this.submitToggleForm(form,recId)
   }
 
-  //init the problem form
-  initProblemForm() {
-    let td_options = structuredClone(cafe.config.td.date)
-    td_options['localization']['format'] = 'dd/MM/yyyy'
-    //td_options['defaultDate'] = $('#problem_date_added').val()
-    new TempusDominus(document.getElementById('problem_date_added'), td_options );
-    cafe.initSelect2()
+  refreshDataset(event) {
+    const dsid = this.datasetSelectTarget.value
+    const frame = this.datasetTarget
+    frame.src = frame.src.replace(frame.dataset.currentId,dsid)
+    frame.dataset.currentId = dsid
   }
 
-  refreshDataset(event) {
-    console.log('change...')
-    this.datasetSettingsTarget.src = '#{settings_dataset_path(-123)}'.replace(-123,this.datasetSelectTarget.value)
-    //this.datasetTestcasesTarget.src = '#{testcases_dataset_path(-123)}'.replace(-123,this.datasetSelectTarget.value)
-    //this.datasetFilesTarget.src = '#{files_dataset_path(-123)}'.replace(-123,this.datasetSelectTarget.value)
-
-    //this.datasetSettingsTarget.reload()
-    //this.datasetTesstcasesTarget.reload()
-    //this.datasetFilesTarget.reload()
+  viewDataset(event) {
+    const form = this.datasetSelectFormTarget
+    const active = this.activeTabTarget
+    active.value = $('#dataset .tab-pane.active')[0].id
+    form.requestSubmit()
   }
 
 }

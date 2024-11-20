@@ -1,17 +1,15 @@
-
 :css
   .fix-width {
     font-family: Droid Sans Mono,Consolas, monospace, mono, Courier New, Courier;
   }
 
 %h1 User stats
-%h5.text-secondary= @user.login
 
 .row.my-3
   .col-md-8
     .card
       .card-body
-        %h2.card-title Sub Info
+        %h2.card-title Submission History
         %canvas#chart{height: '50px'}
 
   .col-md-4
@@ -19,22 +17,22 @@
       .card-body
         %h2.card-title General Info
         .row
-          .col-sm-6.fw-bold
+          .col-sm-6.text-secondary.text-end
             Login
           .col-sm-6
             = @user.login
         .row
-          .col-sm-6.fw-bold
+          .col-sm-6.text-secondary.text-end
             Full name
           .col-sm-6
             = @user.full_name
         .row
-          .col-sm-6.fw-bold
+          .col-sm-6.text-secondary.text-end
             Subs
           .col-sm-6
             = @summary[:count]
         .row
-          .col-sm-6.fw-bold
+          .col-sm-6.text-secondary.text-end
             Solved/Attempted Problem
           .col-sm-6
             #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
@@ -60,9 +58,11 @@
         %td= link_to s.problem.name, stat_problem_path(s.problem)
         %td= s.problem.full_name
         %td= s.language.pretty_name
-        %td  #{s.submitted_at.strftime('%Y-%m-%d %H:%M')} (#{time_ago_in_words(s.submitted_at)} ago)
-        %td.fix-width= s.grader_comment
-        %td= ( s.try(:points) ? s.points  : '' )
+        %td{data: {order: s.submitted_at}}
+          #{s.submitted_at.strftime('%Y-%m-%d %H:%M')} 
+          %span.text-secondary (#{time_ago_in_words(s.submitted_at)} ago)
+        %td.grader-comment= s.grader_comment
+        %td.text-end= s.points
         - if session[:admin]
           %td= s.ip_address
 

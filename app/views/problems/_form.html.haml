@@ -1,6 +1,6 @@
-=turbo_frame_tag :problem, data: {controller: 'problem', turbo: true, action: "turbo:frame-load->problem#initProblemForm"} do
+=turbo_frame_tag :problem, data: {controller: 'problem', turbo: true} do
   = simple_form_for problem, wrapper: :horizontal_form do |form|
-    %h4 Basic Information
+    %h4 Problem Detail
     = form.input :name
     = form.input :full_name
     = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
@@ -39,6 +39,13 @@
           - else
             This problem has no attachment
     = form.button :submit, class: 'btn btn-primary me-2'
-    = link_to 'Back', problems_path, class: 'btn btn-outline-secondary me-2'
-    = link_to 'Stat', stat_problem_path(@problem), class: 'btn btn-outline-secondary me-2'
+
+:javascript
+  function problem_form_init() {
+    let td_options = structuredClone(cafe.config.td.date)
+    td_options['localization']['format'] = 'dd/MM/yyyy'
+    new TempusDominus(document.getElementById('problem_date_added'), td_options );
+    cafe.initSelect2()
+  }
+
 

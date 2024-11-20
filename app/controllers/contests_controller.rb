@@ -1,6 +1,6 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
-                                     :add_users_from_csv,
+                                     :add_users_from_csv,:clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
                                      :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
@@ -8,8 +8,9 @@ class ContestsController < ApplicationController
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
 
-  before_action :admin_authorization, except: [:user_check_in]
-  before_action :check_valid_login, only: [:user_check_in]
+  USER_ACTION = [:user_check_in, :set_active]
+  before_action :admin_authorization, except: USER_ACTION
+  before_action :check_valid_login, only: USER_ACTION
 
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
@@ -21,6 +22,16 @@ class ContestsController < ApplicationController
     respond_to do |format|
       format.html # index.html.erb
       format.xml  { render :xml => @contests }
+    end
+  end
+
+  def set_active
+    #validate
+    unless @contest.users.include?(@current_user) && @contest.enabled?
+      redirect_to list_main_path, error: 'You are not part of the selected contest'
+    else
+      session[:contest_id] = @contest.id
+      redirect_to list_main_path
     end
   end
 
@@ -66,6 +77,14 @@ class ContestsController < ApplicationController
       format.html # new.html.erb
       format.xml  { render :xml => @contest }
     end
+  end
+
+  def clone
+    new_contest = Contest.new(name: @contest.name + ' Copy', start: Time.zone.now, stop: Time.zone.now+3.hour)
+    new_contest.save
+    @contest.contests_users.each { |cu| new_contest.contests_users.create(user_id: cu.user_id)}
+    @contest.contests_problems.each { |cp| new_contest.contests_problems.create(problem_id: cp.problem_id)}
+    redirect_to contest_path(new_contest), notice: "Contest \"#{@contest.name}\" is cloned to this contest"
   end
 
   # GET /contests/1/edit

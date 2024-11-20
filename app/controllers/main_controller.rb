@@ -69,6 +69,7 @@ class MainController < ApplicationController
     end
 
     @submission = Submission.new(user: @current_user,
+                                 language: Language.where(name: 'cpp').first,
                                  problem: problem,
                                  submitted_at: Time.zone.now,
                                  cookie: cookies.encrypted[:uuid],

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_03_080830) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_17_084758) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -60,7 +60,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_03_080830) do
     t.string "description"
     t.datetime "start"
     t.datetime "stop"
-    t.boolean "freeze", default: false
+    t.boolean "finalized", default: false
     t.text "remark", size: :medium
     t.integer "pre_contest_seconds", default: 0
     t.integer "post_contest_seconds", default: 0
@@ -86,6 +86,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_03_080830) do
     t.string "remark"
     t.string "seat"
     t.boolean "enabled", default: true
+    t.datetime "last_heartbeat"
     t.index ["contest_id"], name: "index_contests_users_on_contest_id"
     t.index ["user_id"], name: "index_contests_users_on_user_id"
   end
@@ -127,6 +128,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_03_080830) do
     t.decimal "score", precision: 8, scale: 6
     t.string "result_text"
     t.string "isolate_message"
+    t.text "output"
     t.index ["submission_id"], name: "index_evaluations_on_submission_id"
     t.index ["testcase_id"], name: "index_evaluations_on_testcase_id"
   end
@@ -250,6 +252,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_03_080830) do
     t.integer "task_type", limit: 1, default: 0
     t.integer "compilation_type", limit: 1, default: 0
     t.string "permitted_lang"
+    t.text "log", size: :medium
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 

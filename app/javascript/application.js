@@ -26,7 +26,7 @@ window.TempusDominus = tempusDominus.TempusDominus
 
 // running rails ujs
 // this should be phase out??? and replace by turbo / stimulus
-import Rails from '@rails/ujs';
+import Rails from 'rails-ujs';
 Rails.start()
 
 

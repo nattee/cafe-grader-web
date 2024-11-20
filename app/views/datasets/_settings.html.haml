@@ -1,5 +1,5 @@
 -# require *ds* as a dataset object
--#= turbo_frame_tag dom_id(ds, :settings), data: {turbo: true} do
+-#= turbo_frame_tag 'dataset_settings', data: {'problem-target': 'datasetSettings', 'base-url': settings_dataset_path(-123)} do
 = simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
   .row
     .col-12

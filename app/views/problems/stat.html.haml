@@ -1,8 +1,6 @@
 %h1
   Problem Stat:
   = @problem.full_name
-%h5.font-monospace
-  = @problem.name
 
 .row.mb-3
   .col-md-8
@@ -43,11 +41,12 @@
         %th ID
         %th Login
         %th Name
-        %th Submitted_at
-        %th language
-        %th Points
-        %th comment
-        %th IP
+        %th Language
+        %th Submitted at
+        %th Result
+        %th Score
+        - if session[:admin]
+          %th IP
     %tbody
       - row_odd,curr = true,''
       - @submissions.each do |sub|
@@ -57,10 +56,12 @@
           %td= link_to sub.id, submission_path(sub)
           %td= link_to sub.user.login, stat_user_path(sub.user)
           %td= sub.user.full_name
-          %td{data: {order: sub.submitted_at}}= time_ago_in_words(sub.submitted_at) + " ago"
-          %td= sub.language.name
-          %td.text-end= sub.points
+          %td= sub.language.pretty_name
+          %td{data: {order: sub.submitted_at}}
+            #{sub.submitted_at.strftime('%Y-%m-%d %H:%M')}
+            %span.text-secondary (#{time_ago_in_words(sub.submitted_at)} ago)
           %td.grader-comment= sub.grader_comment
+          %td.text-end= sub.points
           %td= sub.ip_address
 - else
   No submission

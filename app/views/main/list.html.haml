@@ -1,20 +1,17 @@
 - content_for :head do
   = javascript_include_tag "announcement_refresh"
 
--# Submission Box and Contest Box
 .row
+  -# Left pane: (Contest Card, Submission Card and problem list)
   .col-lg-7
     - if (GraderConfiguration.contest_mode?)
       = render 'contest_box'
     - if GraderConfiguration.show_submitbox_to?(@user)
-      .card.border-primary
-        .card-header.text-bg-primary
-          Submission
-        .card-body
-          = render 'submission_box'
+      = render 'submission_box'
     - if GraderConfiguration.show_tasks_to?(@user)
       %h2.mt-3 Problems
       = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
+  -# right pane (Announcements)
   .col-lg-5
     .card
       .card-header

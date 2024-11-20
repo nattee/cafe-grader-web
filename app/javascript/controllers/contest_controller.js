@@ -8,6 +8,8 @@ export default class extends Controller {
                    ]
 
   connect() {
+    window.user_table_init = false
+    window.problem_table_init = false
   }
 
   setUsersCommand(event) {
@@ -50,6 +52,7 @@ export default class extends Controller {
   }
 
   postProblemAction(event) {
+    event.preventDefault()
     const form = this.problemFormTarget
     const problem_id = this.problemFormProblemIDTarget
     const command = this.problemFormCommandTarget
@@ -91,4 +94,11 @@ export default class extends Controller {
     $("#contest_table").DataTable().ajax.reload()
   }
 
+  tabChange(event) {
+    const tabButton = event.target
+    if (tabButton.dataset.tableInit == "no") {
+      $(`#${tabButton.dataset.tableId}`).DataTable().columns.adjust().draw()
+      tabButton.dataset.tableInit == "yes"
+    }
+  }
 }

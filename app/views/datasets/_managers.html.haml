@@ -1,81 +1,80 @@
-= turbo_frame_tag dom_id(ds, :manager), data: {turbo: true} do
-  = simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
-    -# --- managers ---
-    %h5.my-2 
-      %span.mi.mi-bs clinical_notes
-      Managers
-    - ds.managers.each do |mg|
-      .row
+= simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
+  -# --- managers ---
+  %h5.my-2 
+    %span.mi.mi-bs clinical_notes
+    Managers
+  - ds.managers.each do |mg|
+    .row
+      .col-md-6
+        %span.bg-success-subtle.rounded.p-1.font-monospace= mg.filename
+      .col-md-6
+        [
+        %span= link_to 'view', file_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
+        |
+        %span= link_to 'delete', file_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+        ]
+  - if ds.managers.count == 0
+    %i -- none --
+  .my-2
+    = f.input :managers, label: 'Add manager', wrapper: :horizontal_file
+
+  -# --- checker ---
+  - if ['custom_cafe','custom_cms'].include? ds.evaluation_type
+    %h5.my-2
+      %span.mi.mi-bs checkbook
+      Checker
+    - if ds.checker.attached?
+      .row.mb-2
         .col-md-6
-          %span.bg-success-subtle.rounded.p-1.font-monospace= mg.filename
+          %span.bg-warning-subtle.rounded.p-1.font-monospace= ds.checker.filename
         .col-md-6
           [
-          %span= link_to 'view', file_view_dataset_path(ds,mg), data: {turbo: true, turbo_method: :post}
+          %span= link_to 'view', file_view_dataset_path(ds,ds.checker.attachment), data: {turbo: true, 'turbo-method': 'post' }
           |
-          %span= link_to 'delete', file_delete_dataset_path(ds,mg), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
-          ]
-    - if ds.managers.count == 0
-      %i -- none --
-    .my-2
-      = f.input :managers, label: 'Add manager', wrapper: :horizontal_file
-
-    -# --- checker ---
-    - if ['custom_cafe','custom_cms'].include? ds.evaluation_type
-      %h5.my-2
-        %span.mi.mi-bs checkbook
-        Checker
-      - if ds.checker.attached?
-        .row.mb-2
-          .col-md-6
-            %span.bg-warning-subtle.rounded.p-1.font-monospace= ds.checker.filename
-          .col-md-6
-            [
-            %span= link_to 'view', file_view_dataset_path(ds,ds.checker.attachment), data: {turbo: true, 'turbo-method': 'post' }
-            |
-            %span= link_to 'download', file_download_dataset_path(ds,ds.checker.attachment), method: 'post'
-            |
-            %span= link_to 'delete', file_delete_dataset_path(ds,ds.checker.attachment), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
-            ]
-      - else
-        .alert.alert-danger
-          Evaluation type of "#{ds.evaluation_type}" requires a custom checker but none is added to this dataset.
-      = f.input :checker, label: 'Set checker', wrapper: :horizontal_file
-
-    -# --- Initializer ---
-    %h5.my-2 
-      %span.mi.mi-bs video_settings
-      Initializers
-    - ds.initializers.each do |init|
-      .row
-        .col-md-6
-          %span.bg-info-subtle.rounded.p-1.font-monospace= init.filename
-        .col-md-6
-          [
-          %span= link_to 'view', file_view_dataset_path(ds,init), data: {turbo: true, turbo_method: :post}
+          %span= link_to 'download', file_download_dataset_path(ds,ds.checker.attachment), method: 'post'
           |
-          %span= link_to 'delete', file_delete_dataset_path(ds,init), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+          %span= link_to 'delete', file_delete_dataset_path(ds,ds.checker.attachment), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
           ]
-    - if ds.initializers.count == 0
-      %i -- none --
-    .my-2
-      = f.input :initializers, label: 'Add initializers', wrapper: :horizontal_file
+    - else
+      .alert.alert-danger
+        Evaluation type of "#{ds.evaluation_type}" requires a custom checker but none is added to this dataset.
+    = f.input :checker, label: 'Set checker', wrapper: :horizontal_file
 
-    -# --- Data File ---
-    %h5.my-2 
-      %span.mi.mi-bs database
-      Data Files
-    - ds.data_files.each do |data_file|
-      .row
-        .col-md-6
-          %span.bg-danger-subtle.rounded.p-1.font-monospace= data_file.filename
-        .col-md-6
-          [
-          %span= link_to 'view', file_view_dataset_path(ds,data_file), data: {turbo: true, turbo_method: :post}
-          |
-          %span= link_to 'delete', file_delete_dataset_path(ds,data_file), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
-          ]
-    - if ds.data_files.count == 0
-      %i -- none --
-    .my-2
-      = f.input :data_files, label: 'Add Data Files', wrapper: :horizontal_file
-    = f.submit class: 'btn btn-primary'
+  -# --- Initializer ---
+  %h5.my-2 
+    %span.mi.mi-bs video_settings
+    Initializers
+  - ds.initializers.each do |init|
+    .row
+      .col-md-6
+        %span.bg-info-subtle.rounded.p-1.font-monospace= init.filename
+      .col-md-6
+        [
+        %span= link_to 'view', file_view_dataset_path(ds,init), data: {turbo: true, turbo_method: :post}
+        |
+        %span= link_to 'delete', file_delete_dataset_path(ds,init), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+        ]
+  - if ds.initializers.count == 0
+    %i -- none --
+  .my-2
+    = f.input :initializers, label: 'Add initializers', wrapper: :horizontal_file
+
+  -# --- Data File ---
+  %h5.my-2 
+    %span.mi.mi-bs database
+    Data Files
+  - ds.data_files.each do |data_file|
+    .row
+      .col-md-6
+        %span.bg-danger-subtle.rounded.p-1.font-monospace= data_file.filename
+      .col-md-6
+        [
+        %span= link_to 'view', file_view_dataset_path(ds,data_file), data: {turbo: true, turbo_method: :post}
+        |
+        %span= link_to 'delete', file_delete_dataset_path(ds,data_file), data: {turbo: true, 'turbo-method': 'post', turbo_confirm: 'Really delete? This is very hard to undo' }
+        ]
+  - if ds.data_files.count == 0
+    %i -- none --
+  .my-2
+    = f.input :data_files, label: 'Add Data Files', wrapper: :horizontal_file
+  = f.submit class: 'btn btn-primary'

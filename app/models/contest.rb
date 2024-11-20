@@ -1,9 +1,9 @@
 class Contest < ApplicationRecord
 
-  has_many :contests_users, class_name: 'ContestUser'
-  has_many :contests_problems, class_name: 'ContestProblem'
-  has_many :users, through: :contests_users
+  has_many :contests_problems, class_name: 'ContestProblem', dependent: :destroy
+  has_many :contests_users, class_name: 'ContestUser', dependent: :destroy
   has_many :problems, through: :contests_problems
+  has_many :users, through: :contests_users
 
   scope :enabled, -> { where(enabled: true) }
   scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
@@ -13,6 +13,11 @@ class Contest < ApplicationRecord
 
   # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
+
+  def active?
+    now = Time.zone.now
+    return enabled? && start <= now && stop >= now
+  end
 
   def add_users(new_users)
     return {title: 'Contest users are NOT changed', body: 'No new users given.'} if new_users.count == 0
@@ -133,12 +138,10 @@ class Contest < ApplicationRecord
   
   def score_report
     # calculate submission with max score
-    max_records = Submission.in_range(:time,start,stop)
+    Submission.in_range(:time,start,stop)
       .where(user: users, problem: problems)
       .group('user_id,problem_id')
       .select('MAX(submissions.points) as max_score, user_id, problem_id')
-
-    # convert to score hash
   end
 
   protected

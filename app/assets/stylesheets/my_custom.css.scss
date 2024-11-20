@@ -39,7 +39,6 @@
 
 .mi.fill {
   font-variation-settings: 'FILL' 1
-
 }
 
 //for use google material icon with Tempus Dominus
@@ -423,6 +422,12 @@ h2.contest-title {
 .grader-comment {
   word-wrap: break-word;
   font-family: consolas;
+}
+
+// bring back bootstrap btn-xs
+.btn-xs {
+  font-size: 0.75rem;  /* Smaller font size */
+  padding: 0.25rem 0.5rem;  /* Smaller padding */
 }
 
 
