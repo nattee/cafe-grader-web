@@ -2,7 +2,7 @@
 
 = link_to 'New Tag', new_tag_path, class: 'btn btn-success'
 
-%table.table.table-hover
+%table#tag_table.table.table-hover
   %thead
     %tr
       %th Name
@@ -25,4 +25,20 @@
         %td= button_to 'Destroy', tag, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-sm btn-danger'
 
 %br
+
+:javascript
+  tag_table_config = {
+    columnDefs: [
+      { targets: [3,4], sortable: false },
+    ],
+    paging: false,
+    responsive: true,
+  }
+
+  function page_init() {
+    $("#tag_table").DataTable(tag_table_config)
+  }
+
+  document.addEventListener("turbo:load", page_init);
+
 
