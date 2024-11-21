@@ -1,5 +1,11 @@
 Rails.application.routes.draw do
-  resources :tags
+
+  resources :tags do
+    post :toggle_public, on: :member
+    post :toggle_primary, on: :member
+    post :index_query, on: :collection
+  end
+
   get "sources/direct_edit"
 
   root :to => 'main#login'

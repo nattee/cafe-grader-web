@@ -13,6 +13,9 @@ export const rowFieldToggle = (superclass) => class extends superclass {
   resetToggleForm(event) {
     const form = event.target
     form.action = form.dataset.orig_action
+    if (form.dataset.tableReloadId) {
+      $(`#${form.dataset.tableReloadId}`).DataTable().ajax.reload()
+    }
   }
 
   //this function is for submitting a form

@@ -29,10 +29,10 @@
       %td= h announcement.author
       %td
         .form-check.form-switch
-          %input.form-check-input{id: "ann-#{announcement.id}-published-switch", checked: announcement.published, type: "checkbox", data: {action: 'announcement#toggle', id: announcement.id, field: 'published'}}
+          %input.form-check-input{id: "ann-#{announcement.id}-published-switch", checked: announcement.published, type: "checkbox", data: {action: 'announcement#toggle', 'row-id': announcement.id, field: 'published'}}
       %td
         .form-check.form-switch
-          %input.form-check-input{id: "ann-#{announcement.id}-front-switch", checked: announcement.frontpage, type: "checkbox", data: {action: 'announcement#toggle', id: announcement.id, field: 'front'}}
+          %input.form-check-input{id: "ann-#{announcement.id}-front-switch", checked: announcement.frontpage, type: "checkbox", data: {action: 'announcement#toggle', 'row-id': announcement.id, field: 'front'}}
       %td= link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-block btn-sm btn-info'
       %td= link_to 'Destroy', announcement, :confirm => 'Are you sure?', :method => :delete, class: "btn btn-block btn-sm btn-danger"
 %br

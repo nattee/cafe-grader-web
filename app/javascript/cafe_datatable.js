@@ -23,6 +23,7 @@ function dt_button_renderer(label,{element_type = 'button',
     const dataCommand = data_tag_unless_null(command,'command')
     const dataConfirm = data_tag_unless_null(confirm,'form-confirm')
     const dataMethod = data_tag_unless_null(method,'turbo-method') // for link only
+    const dataField = data_tag_unless_null(checked_data_field,'field') // for switch only
 
 
     if (element_type == 'switch') {
@@ -31,7 +32,7 @@ function dt_button_renderer(label,{element_type = 'button',
       return `
         <div class="form-check form-switch">
           <input type="checkbox" class="form-check-input" data-row-id="${data}"
-          ${dataAction} ${dataCommand} ${dataConfirm} ${checked_text}>
+          ${dataAction} ${dataCommand} ${dataConfirm} ${checked_text} ${dataField}>
         </div>
       `
     } else if (element_type == 'button') {
