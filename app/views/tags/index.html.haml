@@ -42,7 +42,7 @@
 
   function tag_render(data, type, row, meta) {
     if (type == 'data' || type == 'display') {
-      if (row['color']) {
+      if (row['color'] && row['primary'] == false) {
         return `<div class="badge" style="background-color: ${row['color']}"}>${data}</div>`
       } else {
         return `<div class="badge text-bg-secondary">${data}</div>`

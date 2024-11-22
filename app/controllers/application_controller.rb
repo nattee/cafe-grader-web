@@ -15,6 +15,21 @@ class ApplicationController < ActionController::Base
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
+  # by default, we DON'T set any stimulus controller
+  # To connect a stimulus controllers to a <body> element, just simply set
+  # @stimulus_controller = 'xxx' and <body data-controller="xxx"> will be generated
+  #
+  # Since most rails controller wants to connect to the same stimulus controller
+  # for all of its full page rendering action, we can simply use
+  #
+  #   before_action :default_stimulus_controller
+  #
+  # to include the stimulus controller that have the same name as the rails controller
+  # or we can do any before_action to set the @stimulus_controller manually.
+  def default_stimulus_controller
+    @stimulus_controller = controller_name
+  end
+
   # report and redirect for unauthorized activities
   def unauthorized_redirect(logout: false, msg: 'You are not authorized to view the page you requested')
     if logout || @current_user.nil?
