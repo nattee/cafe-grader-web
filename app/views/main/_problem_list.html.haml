@@ -1,6 +1,11 @@
-- @primary_tags.each do |tag|
-  - data_hash = tag.description.present? ? {bs: {toggle: 'tooltip', title: tag.description }} : nil
-  %span.badge.text-bg-light.border.border-dark-subtle.text-body-tertiary.me-1{data: data_hash}= tag.name
+-# topic filter badge
+.row
+  .col-auto
+    Topic:
+  .col-auto
+    - @primary_tags.each do |tag|
+      - data_hash = { action: 'click->main#setActiveTopic',  bs: tag.description.present? ?  { toggle: 'tooltip', title: tag.description } : nil }
+      %span.badge.topic-badge.text-bg-light.border.border-dark-subtle.text-body-tertiary.me-1{data: data_hash, style: 'cursor: pointer'}= tag.name
 
 %table#main_table.table.table-striped.table-condensed{width: '100%'}
   %thead

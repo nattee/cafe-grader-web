@@ -12,21 +12,26 @@ export default class extends rowFieldToggle(Controller) {
   }
 
   setActiveTopic(event) {
-    const badge = event.target
-
-    const targetElement = event.currentTarget;
+    const clickedBadge = event.currentTarget;
 
     // Iterate over all .topic-badge elements
+    const activeClass = ["text-bg-secondary"]
+    const backgroundClass = ["text-bg-light","border","border-dark-subtle","text-body-tertiary"]
     this.element.querySelectorAll(".topic-badge").forEach((badge) => {
-      if (badge === targetElement) {
-        badge.classList.add("text-bg-secondary");
-        badge.classList.remove("text-bg-light", "border", "border-");
+      if (clickedBadge === badge && clickedBadge.classList.contains(activeClass[0]) == false ) {
+        badge.classList.add(...activeClass)
+        badge.classList.remove(...backgroundClass)
       } else {
-        badge.classList.remove("text-bg-secondary");
-        badge.classList.add("y1", "y2");
+        badge.classList.remove(...activeClass)
+        badge.classList.add(...backgroundClass)
       }
     });
 
+    //set filter
+    const selectedBadge = document.querySelector('.topic-badge.text-bg-secondary')
+    const badge_name = (selectedBadge) ? selectedBadge.textContent : ''
+    console.log('filter = '+badge_name)
+    table.column(5).search(badge_name).draw()
   }
 
 
