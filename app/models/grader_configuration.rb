@@ -155,6 +155,16 @@ class GraderConfiguration < ApplicationRecord
     return GraderConfiguration.contest_time
   end
 
+  def self.set_exam_mode(exam = true)
+    value = exam ? 'false' : 'true'
+
+    GraderConfiguration.where(key: "right.bypass_agreement").update(value: value);
+    GraderConfiguration.where(key: "right.multiple_ip_login").update(value: value);
+    GraderConfiguration.where(key: "right.user_hall_of_fame").update(value: value);
+    GraderConfiguration.where(key: "right.user_view_submission").update(value: value);
+    GraderConfiguration.where(key: "right.view_testcase").update(value: value);
+  end
+
   protected
 
   def self.convert_type(val,type)
