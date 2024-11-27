@@ -74,6 +74,8 @@ class DatasetsController < ApplicationController
               body: "#{att.name.capitalize} file [#{att.filename}] is deleted."}
   end
 
+  #POST /dataset/1/file/view/1
+  #turbo
   def file_view
     att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
     render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: att.download}

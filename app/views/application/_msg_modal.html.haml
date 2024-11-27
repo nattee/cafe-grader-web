@@ -17,7 +17,8 @@
         %h4= header_msg
         %button.btn-close{type: 'button', data: {bs: {dismiss: :modal}}, aria: {label: 'Close'}}
       .modal-body
-        = body_msg
+        %pre
+          = body_msg
       .modal-footer
         %button.btn.btn-secondary{type: 'button', data: {bs: {dismiss: 'modal'}}} Close
 - if do_popup

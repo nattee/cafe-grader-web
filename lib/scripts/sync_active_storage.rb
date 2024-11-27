@@ -35,8 +35,8 @@ def sync_collection(attachments)
 end
 
 def sync_problem(problem) 
-  puts "statement #{problem.statement.blob.key}" if sync_single_attachment(problem.statement)
-  puts "attachment #{problem.attachment.blob.key}" if sync_single_attachment(problem.attachment)
+  puts "statement #{problem.statement.blob.key}" if problem.statement.attached? && sync_single_attachment(problem.statement)
+  puts "attachment #{problem.attachment.blob.key}" if problem.attachment.attached? && sync_single_attachment(problem.attachment)
 
   problem.datasets.each do |ds|
     # checker
@@ -58,6 +58,6 @@ end
 # attachments = ActiveStorage::Attachment.where.not(name: 'compiled_files').includes(:blob)
 # sync_collection(attachments)
 
-sync_problem(Problem.find(1579))
+sync_problem(Problem.find(1585))
 
 

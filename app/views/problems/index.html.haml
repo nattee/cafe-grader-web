@@ -71,12 +71,14 @@
           = link_to_description_if_any "[Read <span class='mi mi-bs md-18'>description</span>]".html_safe, problem
           = link_to "[Files <span class='mi mi-bs md-18'>archive</span>]".html_safe, get_attachment_problem_path(problem) if problem.attachment.attached?
         %td= render_star(problem.difficulty)
-        %td.text-end= "#{problem.attachment.attached? ? 1 : 0} - #{problem.dataset_count}(#{problem.tc_count})"
+        %td.text-end
+          = problem.live_dataset.checker.attached? ? mdi(:checkbook) : ''
+          = "#{problem.attachment.attached? ? 1 : 0} - #{problem.dataset_count}(#{problem.tc_count})"
         %td.text-end= "#{problem.ms_count}"
         %td
           - problem.tags.each do |t|
             %span.badge.text-bg-secondary.bg-opacity-100= t.name
-        %td= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
+        %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
         %td= problem.date_added
         - if @current_user.admin?
           %td
@@ -89,9 +91,9 @@
           -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
           .form-check.form-switch
             %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
-        %td= link_to 'Stat', {:action => 'stat', :id => problem.id}
+        %td= link_to "#{mdi(:finance)}Stat".html_safe, {:action => 'stat', :id => problem.id}
         %td= link_to 'Edit', {:action => 'edit', :id => problem}
-        %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'
+        %td.py-1.align-middle= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block py-1'
 
 -# hidden form for problem toggle
 = form_with url: toggle_view_testcase_problem_path(-123), html: {data: {turbo: true, 'problem-target': 'toggleViewTestcaseForm', action: 'turbo:submit-end->problem#resetToggleForm'}} do
