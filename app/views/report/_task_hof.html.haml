@@ -24,30 +24,41 @@
   }
 
 
-.row.my-4
+.row
+  -# submission history graph
   .col-md-8
-    .card
+    .card.mb-3
       .card-body
         %h2.card-title Submission History
         %canvas#chart{height: '50px'}
 
+  -# submission stat card
   .col-md-4
-    .card
+    .card.mb-3
       .card-body
         %h2.card-title General Info
-        .row
+        .row.my-2
+          .col-sm-6.text-md-end.text-secondary
+            Name
           .col-sm-6
+            = render partial: 'problems/problem_name', locals: {problem: @problem}
+            - if @current_user.admin?
+              = link_to 'Edit', edit_problem_path(@problem)
+              |
+              = link_to 'Stat', stat_problem_path(@problem)
+        .row.mb-2
+          .col-sm-6.text-md-end.text-secondary
             Subs
           .col-sm-6
             = @summary[:count]
-        .row
-          .col-sm-6
+        .row.mb-2
+          .col-sm-6.text-md-end.text-secondary
             Solved/Attempted User
           .col-sm-6
             #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
-.row.mb-3
+.row
   .col-md-4
-    .card
+    .card.mb-3
       .card-body
         %h2.card-title Model Submission
         %table.table.table-hover
@@ -64,7 +75,7 @@
                 %td= sub.user.full_name
   .col-md-8
     - if @best
-      .card
+      .card.mb-3
         .card-body
           %h2.card-title Top Submissions
           %table.table.table-hover
@@ -100,7 +111,7 @@
                   %br
                   = link_to "##{@best[:memory][:sub_id].to_s}", submission_path(@best[:memory][:sub_id])
                 %td
-                  by #{link_to @best[:length][:user], stat_user_path(@best[:length][:user_id])} 
+                  #{link_to @best[:length][:user], stat_user_path(@best[:length][:user_id])} 
                   %br
                   using
                   %span.text-success #{@best[:length][:lang]} 

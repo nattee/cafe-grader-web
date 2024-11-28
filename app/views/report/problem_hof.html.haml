@@ -3,7 +3,7 @@
     = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_hof_report_path}
 
 - unless params[:id]
-  Please select a problem.
+  Please select a problem from the list above.
 - else
   .my-3
     %h1= @problem.full_name
