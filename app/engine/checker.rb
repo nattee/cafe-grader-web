@@ -17,7 +17,7 @@ class Checker
       prog = Rails.root.join 'lib', 'checker', (evaluation_type + ".rb")
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cms'
-      return "#{prog} #{input_file} #{output_file} #{ans_file}"
+      return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
     end

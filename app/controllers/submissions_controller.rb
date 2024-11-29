@@ -43,7 +43,7 @@ class SubmissionsController < ApplicationController
   end
 
   def compiler_msg
-    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: @submission.compiler_message}
+    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
   end
 
   #on-site new submission on specific problem

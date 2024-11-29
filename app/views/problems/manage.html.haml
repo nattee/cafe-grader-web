@@ -92,7 +92,11 @@
           %td
             - problem.tags.each do |t|
               %span.badge.text-bg-secondary= t.name
-          %td= problem.available
+          %td 
+            - if problem.available
+              %span.badge.text-bg-success Yes
+            - else
+              %span.badge.text-bg-danger No
           %td= problem.date_added
 
 :javascript

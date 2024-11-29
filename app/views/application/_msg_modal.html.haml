@@ -10,6 +10,7 @@
 - do_popup = local_assigns.fetch(:do_popup, false)
 - id = local_assigns.fetch(:id, 'msg_modal')
 - header_class = local_assigns.fetch(:header_class, '')
+- pre = local_assigns.fetch(:pre,false)
 .modal.fade{id: id, tabindex: -1,role: 'dialog'}
   .modal-dialog.modal-lg{role:'document'}
     .modal-content
