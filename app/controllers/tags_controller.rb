@@ -1,10 +1,16 @@
 class TagsController < ApplicationController
+  before_action :stimulus_controller
   before_action :admin_authorization
-  before_action :set_tag, only: [:show, :edit, :update, :destroy]
+  before_action :set_tag, only: [:show, :edit, :update, :destroy,
+                                 :toggle_public, :toggle_primary]
 
   # GET /tags
   def index
     @tags = Tag.all
+  end
+
+  def index_query
+    render json: {data: Tag.all}
   end
 
   # GET /tags/1
@@ -40,6 +46,20 @@ class TagsController < ApplicationController
     end
   end
 
+  # POST /tags/1/toggle_public
+  def toggle_public
+    @tag.update(public: !@tag.public)
+    @toast = {title: "Tag #{@tag.name}",body: "public updated"}
+    render 'turbo_toast'
+  end
+
+  # POST /tags/1/toggle_public
+  def toggle_primary
+    @tag.update(primary: !@tag.primary)
+    @toast = {title: "Tag #{@tag.name}",body: "primary updated"}
+    render 'turbo_toast'
+  end
+
   # DELETE /tags/1
   def destroy
     #remove any association
@@ -48,7 +68,13 @@ class TagsController < ApplicationController
     redirect_to tags_url, notice: 'Tag was successfully destroyed.'
   end
 
+  protected
+
   private
+    def stimulus_controller
+      @stimulus_controller = 'tag'
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_tag
       @tag = Tag.find(params[:id])

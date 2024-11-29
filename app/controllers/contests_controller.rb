@@ -300,6 +300,13 @@ class ContestsController < ApplicationController
   def set_system_mode
     if ['standard','contest','indv-contest','analysis'].include? params[:mode]
       GraderConfiguration.where(key: 'system.mode').update(value: params[:mode])
+
+      if ['contest','indv-contest'].include? params[:mode]
+        # contest || indv-contest
+        GraderConfiguration.set_exam_mode(true)
+      else  # standard || analysis
+        GraderConfiguration.set_exam_mode(false)
+      end
       redirect_to contests_path, notice: 'Mode changed succesfully'
     else
       redirect_to contests_path, notice: 'Unrecognized mode'

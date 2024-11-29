@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_17_084758) do
+ActiveRecord::Schema[7.0].define(version: 2024_11_21_143036) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -165,6 +165,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_17_084758) do
     t.string "name"
     t.string "description"
     t.boolean "enabled", default: true
+    t.boolean "hidden", default: false
   end
 
   create_table "groups_problems", charset: "latin1", force: :cascade do |t|
@@ -345,7 +346,8 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_17_084758) do
     t.boolean "public"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.string "color"
+    t.string "color", default: "#6C757D"
+    t.boolean "primary", default: false
   end
 
   create_table "tasks", id: :integer, charset: "utf8mb3", force: :cascade do |t|

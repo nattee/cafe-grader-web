@@ -21,7 +21,7 @@
         %td= group.description
         %td
           .form-check.form-switch
-            %input.form-check-input{id: "group-#{group.id}-enabled-switch", checked: group.enabled, type: "checkbox", data: {action: 'group#toggle', id: group.id}}
+            %input.form-check-input{id: "group-#{group.id}-enabled-switch", checked: group.enabled, type: "checkbox", data: {action: 'group#toggle', 'row-id': group.id}}
         %td
           = link_to 'Manage', group
         %td

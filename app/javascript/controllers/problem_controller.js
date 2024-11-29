@@ -13,7 +13,7 @@ export default class extends rowFieldToggle(Controller) {
 
   toggle(event) {
     event.target.disabled = true
-    const recId = event.target.dataset.id
+    const recId = event.target.dataset.rowId
     const field = event.target.dataset.field
     const form = field === 'available'     ? this.toggleAvailableFormTarget :
                  field === 'view_testcase' ? this.toggleViewTestcaseFormTarget :

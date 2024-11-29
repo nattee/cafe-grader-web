@@ -1,16 +1,22 @@
-%h1 Tags
+.row.mb-3
+  .col-md-4
+    %h1 Tags
+    = link_to 'New Tag', new_tag_path, class: 'btn btn-success'
+  .col-md-8
+    = render partial: 'tag_help'
 
-= link_to 'New Tag', new_tag_path, class: 'btn btn-success'
 
-%table.table.table-hover
+%table#tag_table.table.table-hover
   %thead
     %tr
       %th Name
       %th Description
       %th Public
+      %th Primary
       %th
       %th
 
+-#
   %tbody
     - @tags.each do |tag|
       %tr
@@ -24,5 +30,60 @@
         %td= link_to 'Edit', edit_tag_path(tag)
         %td= button_to 'Destroy', tag, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-sm btn-danger'
 
+-# hidden form for tag toggle
+= form_with url: toggle_public_tag_path(-123), html: {data: {turbo: true, 'tag-target': 'togglePublicForm', action: 'turbo:submit-end->tag#resetToggleForm', 'table-reload-id': 'tag_table'}} do
+  /
+= form_with url: toggle_primary_tag_path(-123), html: {data: {turbo: true, 'tag-target': 'togglePrimaryForm', action: 'turbo:submit-end->tag#resetToggleForm', 'table-reload-id': 'tag_table'}} do
+  /
+
 %br
+
+:javascript
+
+  function tag_render(data, type, row, meta) {
+    if (type == 'data' || type == 'display') {
+      if (row['color'] && row['primary'] == false) {
+        return `<div class="badge" style="background-color: ${row['color']}"}>${data}</div>`
+      } else {
+        return `<div class="badge text-bg-secondary">${data}</div>`
+      }
+    }
+
+    return data;
+
+  }
+
+  function page_init() {
+    tag_table_config = {
+      paging: false,
+      responsive: true,
+      destroy: true,
+      ajax: {
+        url: "#{index_query_tags_path}",
+        type: 'POST',
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        },
+      },
+      rowId: 'id',
+      columns: [ 
+        {data: 'name', render: tag_render},
+        {data: 'description'},
+        {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'tag#toggle', checked_data_field: 'public'})},
+        {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'tag#toggle', checked_data_field: 'primary'})},
+        {data: null, render: cafe.dt.render.link(`Edit`, {path: '#{edit_tag_path(-123)}'})},
+        {data: null, render: cafe.dt.render.link(`Delete`, {path: '#{tag_path(-123)}', className: 'btn btn-danger btn-sm', confirm: 'Really delete the tag?', method: 'delete'}), className: 'align-middle py-1'},
+      ],
+      columnDefs: [{orderable: false, targets: [2,3]} ],
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+      },
+    }
+
+    tag_table = $("#tag_table").DataTable(tag_table_config)
+  }
+
+  document.addEventListener("turbo:load", page_init);
+
 

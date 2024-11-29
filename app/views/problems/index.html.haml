@@ -82,13 +82,13 @@
           %td
             -#= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
             .form-check.form-switch
-              %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', id: problem.id, field: 'available'}}
+              %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available'}}
         - else
           %td= @problem.available?
         %td 
           -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
           .form-check.form-switch
-            %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', id: problem.id, field: 'view_testcase'}}
+            %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
         %td= link_to 'Stat', {:action => 'stat', :id => problem.id}
         %td= link_to 'Edit', {:action => 'edit', :id => problem}
         %td= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block'

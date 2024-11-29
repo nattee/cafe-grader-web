@@ -3,6 +3,8 @@ class MainController < ApplicationController
   before_action :check_valid_login, :except => [:login]
   before_action :check_viewability, :except => [:index, :login]
 
+  before_action :default_stimulus_controller
+
   append_before_action :confirm_and_update_start_time,
                        :except => [:index,
                                    :login,
@@ -41,6 +43,7 @@ class MainController < ApplicationController
 
 
     @groups = [['All',-1]] + @current_user.groups.pluck(:name,:id)
+    @primary_tags = Tag.where(primary: true)
   end
 
   def prob_group
