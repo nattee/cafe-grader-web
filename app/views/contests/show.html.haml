@@ -2,6 +2,8 @@
 .mb-3
   [
   = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1'
+  |
+  = link_to "#{mdi(:summarize)} Watch".html_safe, view_contest_path(@contest), class: 'mx-1'
   ]
 .row.my-3.gx-3
   .col-md-6
@@ -15,20 +17,16 @@
           = key_pair(obj: @contest, field: :enabled, as: :yes_no)
           = key_pair(label: 'Start Time', value: @contest&.start&.strftime("%Y-%b-%d %H:%M"))
           = key_pair(label: 'Finish Time', value: @contest&.stop&.strftime("%Y-%b-%d %H:%M"))
-          = key_pair(obj: @contest, field: :freeze, as: :yes_no)
+          = key_pair(obj: @contest, field: :finalized, as: :yes_no)
         = link_to 'Edit', edit_contest_path(@contest), class: 'btn btn-primary me-2'
   .col-md-6
     .card.bg-warning-subtle.shadow-sm.my-1
       .card-body
         %h4 Tips
-        %ul
-          %li
-            A contest is shown to a user when the site is in
-            %strong Contest Mode.
-          %li 
-            Only enabled contest that has the current time is during its start and stop time is shown to the user.
-          %li 
-            When a contest is frozen, the user cannot submit to the contest and contest's users and problem cannot be modified.
+        :markdown
+          * The site must be in the **Contest Mode** for a contest to be displayed to users
+          * A contest is shown to users only if it is enabled and the current time falls within its start and stop time range.
+          * When a contest is **finalized**, users cannot submit to the contest and the contests can no longer be modified.
 .row.my-3{data: {controller: 'contest'}}
   .col-12
     .card.shadow-sm
@@ -100,11 +98,9 @@
                 -# help for GroupUser
                 .card.bg-warning-subtle.shadow-sm
                   .card-body
-                    %ul
-                      %li
-                        If you want to add several users to a contest, use the Import tab.
-                      %li
-                        Only enabled problems are shown to the enabled users of the group.
+                    :markdown
+                      * If you want to add several users to a contest, use the #{mdi("upload")} Import tab.
+                      * Only enabled users may access the contest.
             %table#user_table.table.datatable.table-hover
               %thead
                 %tr
@@ -187,25 +183,22 @@
                 .card.bg-warning-subtle.shadow-sm
                   .card-body
                     .card-title
-                      %h4
-                        .mi.mi-bs.fill help
-                        Usage
                     Add users to the contest from a csv text. One user per line.
                     %ul
                       %li
                         Each line must be in the following format. A square bracket indicates that the parameter is optional.
-                        %span.rounded.bg-light.p-1.font-monospace user_id[,remark[,seat]]]
+                        %span.rounded.bg-light.p-1.font-monospace user_id[,seat[,remark]]]
                       %li
                         If the users with the same user_id already exists, existing information will be overwritten.
                       %li
                         The columns
-                        %span.rounded.bg-light.p-1.font-monospace remark
+                        %span.rounded.bg-light.p-1.font-monospace seat
                         and
-                        %span.rounded.bg-light.p-1.font-monospace seat
+                        %span.rounded.bg-light.p-1.font-monospace remark
                         are optional. When
-                        %span.rounded.bg-light.p-1.font-monospace  remark
+                        %span.rounded.bg-light.p-1.font-monospace  seat
                         or
-                        %span.rounded.bg-light.p-1.font-monospace seat
+                        %span.rounded.bg-light.p-1.font-monospace remark
                         is empty (but not missing), the original value will be used.
                     .card-title
                       %h5 Example

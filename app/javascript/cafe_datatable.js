@@ -68,6 +68,8 @@ function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '
   }
 }
 
+// render a yes/no pill
+// display a "yes" pill when data is '1', 'true', 1, or true
 function dt_yes_no_pill_renderer() {
   return function(data,type,row,meta) {
     if (data == '1' || data == 'true' || data == 1 || data == true)
