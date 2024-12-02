@@ -41,9 +41,9 @@ def sync_problem(problem)
   problem.datasets.each do |ds|
     # checker
     puts "  checker #{ds.checker.attachment.blob.filename}" if sync_single_attachment(ds.checker.attachment)
-    ds.managers.each { |m| puts "  managers [#{m.attachment.blob.filename}]" if sync_single_attachment(m.attachment) }
-    ds.initializers.each { |m| puts "  initializer [#{m.attachment.blob.filename}]" if sync_single_attachment(m.attachment) }
-    ds.data_files.each { |m| puts "  data files [#{m.attachment.blob.filename}]" if sync_single_attachment(m.attachment) }
+    ds.managers.each { |m| puts "  managers [#{m.blob.filename}]" if sync_single_attachment(m) }
+    ds.initializers.each { |m| puts "  initializer [#{m.blob.filename}]" if sync_single_attachment(m) }
+    ds.data_files.each { |m| puts "  data files [#{m.blob.filename}]" if sync_single_attachment(m) }
     ds.testcases.each do |tc|
       puts "  input #{tc.code_name} #{tc.inp_file.blob.key}" if sync_single_attachment tc.inp_file
       puts "  ans   #{tc.code_name} #{tc.inp_file.blob.key}" if sync_single_attachment tc.ans_file
@@ -58,6 +58,6 @@ end
 # attachments = ActiveStorage::Attachment.where.not(name: 'compiled_files').includes(:blob)
 # sync_collection(attachments)
 
-sync_problem(Problem.find(1585))
+sync_problem(Problem.find(1590))
 
 
