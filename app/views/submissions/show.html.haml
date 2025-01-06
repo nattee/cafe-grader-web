@@ -124,6 +124,7 @@
                 No
                 - if @current_user.has_role?('ta')
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
+      -# evaluation result
       - if @submission.evaluations.count > 0
         %h4 Evaluations
         %table.table

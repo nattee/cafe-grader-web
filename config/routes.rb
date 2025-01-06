@@ -85,6 +85,7 @@ Rails.application.routes.draw do
       get 'turn_all_on'
       get 'import'
       get 'manage'
+      post 'manage_query'
       get 'quick_create'
       post 'manage', action: 'do_manage'
       post 'do_import'

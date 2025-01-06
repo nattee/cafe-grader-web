@@ -13,7 +13,8 @@
       - @error.each do |r|
         %li= r
 
-= form_with url: manage_problems_path, class: 'align-items-center' do |f|
+= form_with url: manage_problems_path, class: 'align-items-center',
+  data: {turbo: true, action: 'turbo:submit-end->problem#bulkManageSubmitEnd' } do |f|
   .card.border-primary.mb-2
     .card-header.text-bg-primary.border-primary
       Action
@@ -27,138 +28,197 @@
             .col-md-auto
               .form-check
                 = f.label :change_date_added, 'Change "Date added" to'
-                = f.check_box :change_date_added, class: 'form-check-input'
+                = f.check_box :change_date_added, class: 'form-check-input manage-action'
             .col-md-auto
               = f.text_field :date_added, class: 'form-control'
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
                 = f.label :change_enable, 'Set "Available" to'
-                = f.check_box :change_enable, class: 'form-check-input'
+                = f.check_box :change_enable, class: 'form-check-input manage-action'
             .col-md-auto
-              = f.radio_button :enable, "yes", class: 'form-check-input'
+              = f.radio_button :enable, "yes", class: 'form-check-input manage-action'
               = f.label :enable_yes, "yes"
             .col-md-auto
-              = f.radio_button :enable, "no", class: 'form-check-input'
+              = f.radio_button :enable, "no", class: 'form-check-input manage-action'
               = f.label :enable_no, "no"
         .col-md-6
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
                 = f.label :add_group, 'Add to groups'
-                = f.check_box :add_group, class: 'form-check-input'
+                = f.check_box :add_group, class: 'form-check-input manage-action'
             .col-md-auto
               = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select groups'}
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
                 = f.label :add_tags, 'Add tags'
-                = f.check_box :add_tags, class: 'form-check-input'
+                = f.check_box :add_tags, class: 'form-check-input manage-action'
             .col-md-auto
               = f.select "tag_ids", options_from_collection_for_select( Tag.all, 'id','name'), {},class: 'select2', multiple: true, data: {placeholder: 'Select tags by clicking', width: "400px"}
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
                 = f.label :set_languages, 'Set permitted languages'
-                = f.check_box :set_languages, class: 'form-check-input'
+                = f.check_box :set_languages, class: 'form-check-input manage-action'
             .col-md-auto
               = f.select "lang_ids", options_from_collection_for_select( Language.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select languages'}
       .row.mb-3
         .col-auto
           = f.submit :go, class: 'btn btn-primary'
 
-  %table.table.table-hover.datatable
+  %table#main-table.table.table-hover.datatable
     %thead
-      %tr{style: "text-align: left;"}
-        %th= check_box_tag 'select_all'
+      %tr
+        %th
+          .form-check
+            %input#select_all.form-check-input.form-check-thick{type: :checkbox}
         %th Name
         %th Full name
+        %th Difficulty
         %th Permitted Languages
         %th Tags
-        %th Available
         %th Date added
+        %th Available
 
-    %tbody
-      - num = 0
-      - for problem in @problems
-        - num += 1
-        %tr{:id => "row-prob-#{problem.id}", :name=> "prob-#{problem.id}"}
-          %td= check_box_tag "prob-#{problem.id}-#{num}"
-          %td= problem.name
-          %td= problem.full_name
-          %td
-            - (problem.permitted_lang || '').split(' ').each do |l_name|
-              %span.badge.text-bg-secondary= l_name
-          %td
-            - problem.tags.each do |t|
-              %span.badge.text-bg-secondary= t.name
-          %td 
-            - if problem.available
-              %span.badge.text-bg-success Yes
-            - else
-              %span.badge.text-bg-danger No
-          %td= problem.date_added
+    -#
+      %tbody
+        - num = 0
+        - for problem in @problems
+          - num += 1
+          %tr{:id => "row-prob-#{problem.id}", :name=> "prob-#{problem.id}"}
+            %td= check_box_tag "prob-#{problem.id}-#{num}"
+            %td= problem.name
+            %td= problem.full_name
+            %td
+              - (problem.permitted_lang || '').split(' ').each do |l_name|
+                %span.badge.text-bg-secondary= l_name
+            %td
+              - problem.tags.each do |t|
+                %span.badge.text-bg-secondary= t.name
+            %td 
+              - if problem.available
+                %span.badge.text-bg-success Yes
+              - else
+                %span.badge.text-bg-danger No
+            %td= problem.date_added
 
 :javascript
 
   $(function() {
-    function shiftclick(start,stop,value) {
-      $('tr input').each( function(id,input) { 
-        var $input=$(input);
-        var iid=parseInt($input.attr('id').split('-')[2]);
-        if(iid>=start&&iid<=stop){
-        $input.prop('checked',value)
-        }
-      });
+
+
+    badge_renderer = cafe.dt.render_factory.badge()
+
+    function permitted_langs_render(data,type,row,meta) {
+      // check if null or undefined
+      if (data == null) return ''
+
+      if (type == 'display') {
+        // call the badge render
+        return badge_renderer(JSON.stringify(data.split(' ')),type,row,meta)
+      }
+
+      return data
     }
 
-    $('tr input').click( function(e)  {
-      if (e.shiftKey) {
-        stop = parseInt($(this).attr('id').split('-')[2]);
-        var orig_stop = stop
-        if (typeof start !== 'undefined') {
-          if (start > stop) {
-            var tmp = start;
-            start = stop;
-            stop = tmp;
-          }
-          shiftclick(start,stop,$(this).is(':checked') )
-        }
-        start = orig_stop
-      } else {
-        start = parseInt($(this).attr('id').split('-')[2]);
+    function check_box_render(data,type,row,meta) {
+      if (type == 'display') {
+        return `<div class="form-check"><input class="form-check-input form-check-thick prob-select-check" type="checkbox" id="prob-${data}" name="prob-${data}"> </div>`
       }
-    });
 
-    $('.datatable').DataTable({
-      paging: false
-    });
+      return data;
+    }
 
+    function difficulty_render(data,type,row,meta) {
+      if (type == 'display') {
+        count = data || 0
 
-    td = new TempusDominus(document.getElementById('date_added'), {
-      display: {
-        icons: {
-          time: 'mi mi-td-time',
-          date: 'mi mi-td-date',
-          up: 'mi mi-td-up',
-          down: 'mi mi-td-down',
-          previous: 'mi mi-td-previous',
-          next: 'mi mi-td-next',
-          today: 'mi mi-td-today',
-          clear: 'mi mi-td-clear',
-          close: 'mi mi-td-close',
+        html = "<i class=\"mi mi-bs md-18\" style=\"font-variation-settings: 'FILL' 1\">star</i>".repeat(count/2)
+        if (count % 2 == 1)
+          html += "<i class=\"mi mi-bs md-18\" > star_half </i>"
+        return `<span style='display: inline-block;'>${html}</span>`
+      }
+
+      return data
+    }
+
+    function full_name_render(data,type,row,meta) {
+      return data
+    }
+
+    table = $('.datatable').DataTable({
+      paging: false,
+      ajax: {
+        url: '#{manage_query_problems_path}',
+        type: 'POST',
+        dataType: 'json',
+        beforeSend: (request) => {
+          request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
         },
-        components: {
-          hours: false,
-          minutes: false,
-          seconds: false
-        }
-      },
-      localization: {
-        locale: 'en-uk',
-        format: 'dd/MMM/yyyy'
-        //dateFormats: 'dd-MM-yyyy',
+      }, //end ajax
+      columns: [ 
+        {data: 'id', name: 'checkbox', render: check_box_render, className: 'd-flex justify-content-center'},
+        {data: 'name'},
+        {data: 'full_name', render: full_name_render},
+        {data: 'difficulty', render: difficulty_render, className: 'text-start'},
+        {data: 'permitted_lang', render: permitted_langs_render},
+        {data: 'tags', render: cafe.dt.render_factory.badge()},
+        {data: 'date_added', render: cafe.dt.render.datetime("Y-MM-DD")},
+        {data: 'available', render: cafe.dt.render.yes_no_pill()},
+      ],
+      columnDefs: [{orderable: false, targets: [0]} ],
+      order: [[0]],
+    });
+
+
+    td = new TempusDominus(document.getElementById('date_added'), cafe.config.td.date);
+
+    // new shift-click logic
+    let firstRowIndex = null; // row index may change during interaction
+    const checkboxColumnIndex = table.column('checkbox:name').index(); // column index doesn't change
+
+    // Event listener for clicking a cell in the "checkbox" column
+    $('#main-table tbody').on('click', 'td', function(e) {
+      let cell = table.cell(this).index()
+      if (cell.column != checkboxColumnIndex) return
+      console.log(cell)
+      if (e.shiftKey && firstRowIndex !== null) {
+          const lastRowIndex = table.cell(this).index().row;
+
+          // find first,last rows in rowLoop
+          let start = table.rows().count()  + 1
+          let end = -1
+          table.rows().every( function(rowIdx, tableLoop, rowLoop) {
+            if (rowIdx == firstRowIndex || rowIdx == lastRowIndex) {
+              start = Math.min(start,rowLoop)
+              end = Math.max(end,rowLoop)
+            }
+          })
+
+          //mark selection the same as the lastRowIdx going to be
+          const target_checked = document.getElementById(`prob-${table.row(lastRowIndex).data().id}`).checked
+          table.rows().every( function(rowIdx, tableLoop, rowLoop) {
+            if (rowLoop >= start && rowLoop <= end) {
+              document.getElementById(`prob-${table.row(rowIdx).data().id}`).checked = target_checked
+            }
+          })
+
+          // Select all rows between the first clicked row and the current clicked row
+          //for (let i = start; i <= end; i++) {
+          //    table.row(i).select();  // Select the row
+          // }
+      } else {
+          // If Shift isn't pressed, store the first clicked row index
+          firstRowIndex = table.cell(this).index().row;
       }
     });
+
+    // select all button
+    $('#select_all').on('click', function(e) {
+      $('.prob-select-check').prop('checked',e.target.checked)
+
+    })
 
   });
