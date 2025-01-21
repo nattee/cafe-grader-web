@@ -20,6 +20,8 @@ class Checker
       return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
+    when 'no_check'
+      return ""
     end
   end
 
@@ -65,11 +67,12 @@ class Checker
         comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
         return report_check_error(comment)
       end
+    when 'no_check'
+      return report_check_partial(0)
     else
       return report_check_error('unknown evaluation type')
     end
   end
-
 
   # check if required files, that are, output from submttion, answer from problem
   # and any other file is there
