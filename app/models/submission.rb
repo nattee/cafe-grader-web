@@ -13,7 +13,6 @@ class Submission < ApplicationRecord
   before_validation :assign_language
   before_save :assign_latest_number_if_new_recond
 
-  validates_presence_of :source
   validates_length_of :source, :maximum => 1_000_000, :allow_blank => true, :message => 'code too long, the limit is 1,000,000 bytes'
   validates_length_of :source, :minimum => 1, :allow_blank => true, :message => 'too short'
   validate :must_have_valid_problem
@@ -98,10 +97,9 @@ class Submission < ApplicationRecord
 
   def download_filename
     if self.problem.output_only
-      return self.source_filename
+      return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
     else
-      timestamp = self.submitted_at.localtime.strftime("%H%M%S")
-      return "#{self.problem.name}-#{timestamp}.#{self.language.ext}"
+      return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
     end
   end
 
