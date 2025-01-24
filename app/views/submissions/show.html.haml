@@ -11,7 +11,9 @@
       %h4 Source Code
       - if @submission.language.binary?
         .alert.alert-warning
-          The file is marked as a binary, viewing is impossible. Please download instead
+          The file is marked as a binary, viewing is impossible. Please
+          = link_to 'download', download_submission_path(@submission)
+          instead
       - else
         %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;" }
         :javascript

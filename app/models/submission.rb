@@ -14,7 +14,6 @@ class Submission < ApplicationRecord
   before_save :assign_latest_number_if_new_recond
 
   validates_length_of :source, :maximum => 1_000_000, :allow_blank => true, :message => 'code too long, the limit is 1,000,000 bytes'
-  validates_length_of :source, :minimum => 1, :allow_blank => true, :message => 'too short'
   validate :must_have_valid_problem
   validate :must_specify_language
 

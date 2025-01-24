@@ -26,9 +26,16 @@
           - @problems.each do |p|
             - this_prob_score = score['prob_'+p.name] || 0; sum += this_prob_score
             - pass += 1 if this_prob_score >= 100
-            %td.text-end= number_with_precision(score['prob_'+p.name], precision: 0)
+            -# show the score and a link to that submission
+            %td.text-end
+              = number_with_precision(score['prob_'+p.name], precision: 0)
             - if @show_time
-              %td.text-end= score['time'+p.name].strftime('%Y/%m/%d %T') rescue nil
+              %td.text-end
+                - if score['time'+p.name]
+                  = link_to score['time'+p.name].strftime('%Y/%m/%d %T'), submission_path(score['sub_'+p.name])
+                  = ' | '
+                  = link_to "[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(score['sub_'+p.name])
+
           - super_sum += sum
           - super_pass += pass
           %td.text-end= number_with_precision(sum, precision: 0)

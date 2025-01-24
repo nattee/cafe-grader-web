@@ -32,6 +32,7 @@ class ReportController < ApplicationController
       .select('problems.name')
       .select('max_score')
       .select('submitted_at')
+      .select('submissions.id as sub_id')
 
     @show_time = params['show-time'] == 'on'
 
@@ -484,7 +485,7 @@ ORDER BY submitted_at
     # xx is {
     #   #{user.login}: {
     #     id:, full_name:, remark:,
-    #     prob_#{prob.name}:, time_#{prob.name}
+    #     prob_#{prob.name}:, time_#{prob.name}, sub_#{prob.name}
     #     ...
     # }
     def calculate_max_score(records,problems,users)
@@ -498,8 +499,11 @@ ORDER BY submitted_at
         #result[:score][score.login]['id'] = score.id
         #result[:score][score.login]['full_name'] = score.full_name
         result[:score][score.login]['prob_'+score.name] = score.max_score || 0
+
+        # we pick the latest
         unless (result[:score][score.login]['time'+score.name] || Date.new) > score.submitted_at
           result[:score][score.login]['time'+score.name] = score.submitted_at
+          result[:score][score.login]['sub_'+score.name] = score.sub_id
         end
       end
 
