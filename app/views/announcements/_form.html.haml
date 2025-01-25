@@ -15,6 +15,14 @@
   = f.input :on_nav_bar, label: 'Show on menu bar?'
   = f.input :contest_only, label: 'Display in contest only?'
   = f.input :file
+  .row.mb-3
+    .col
+      - if @announcement.file.attached?
+        = link_to "<span class='mi mi-bs md-18'>description</span> Read (#{@announcement.file.filename})".html_safe, url_for(@announcement.file)
+        = " | "
+        = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, delete_file_announcement_path(@announcement), method: :delete, class: 'link-danger', data: {confirm: 'Are you sure?'}
+      - else
+        This announcement has no attached file.
   = f.submit class: 'btn btn-primary'
   = link_to 'Back', announcements_path, class: 'btn btn-outline-secondary mx-2'
 

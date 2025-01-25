@@ -1,6 +1,6 @@
 class AnnouncementsController < ApplicationController
 
-  before_action :set_announcement, only: [:show, :edit, :create, :edit, :destroy, :update,
+  before_action :set_announcement, only: [:show, :edit, :destroy, :update, :delete_file,
                                           :toggle_published, :toggle_front]
 
   before_action :admin_authorization
@@ -40,6 +40,11 @@ class AnnouncementsController < ApplicationController
 
   # GET /announcements/1/edit
   def edit
+  end
+
+  def delete_file
+    @announcement.file.purge
+    redirect_to(@announcement)
   end
 
   # POST /announcements
