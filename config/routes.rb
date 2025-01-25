@@ -64,6 +64,7 @@ Rails.application.routes.draw do
   resources :announcements do
     member do
       post 'toggle_published','toggle_front'
+      delete 'delete_file'
     end
   end
 
