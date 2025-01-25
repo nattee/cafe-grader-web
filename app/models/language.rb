@@ -4,7 +4,7 @@ class Language < ApplicationRecord
   @@languages_by_ext = {}
 
   def default_submission_filename
-    "submission." + self.ext
+    "submission." + (self.ext || '')
   end
 
   def self.seed

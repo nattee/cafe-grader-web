@@ -1,6 +1,6 @@
 class AnnouncementsController < ApplicationController
 
-  before_action :set_announcement, only: [:show, :edit, :create, :edit, :destroy, :update,
+  before_action :set_announcement, only: [:show, :edit, :destroy, :update,
                                           :toggle_published, :toggle_front]
 
   before_action :admin_authorization

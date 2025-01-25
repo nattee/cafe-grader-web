@@ -226,8 +226,8 @@ class Compiler
       return Compiler::Go
     when 'postgres'
       return Compiler::Postgres
-    when 'blank'
-      return Compiler::Blank
+    when 'archive'
+      return Compiler::Archive
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)
