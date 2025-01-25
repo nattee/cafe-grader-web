@@ -68,12 +68,20 @@ function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '
   }
 }
 
+// render a yes/no pill
+// display a "yes" pill when data is '1', 'true', 1, or true
 function dt_yes_no_pill_renderer() {
   return function(data,type,row,meta) {
     if (data == '1' || data == 'true' || data == 1 || data == true)
-      return '<span class="badge text-bg-success">Yes</span>'
+      if (type == 'display' || type == 'filter')
+        return '<span class="badge text-bg-success">Yes</span>'
+      else
+        return 'Yes'
     else if (data == '0' || data == 'false' || data == 0 || data == false)
-      return '<span class="badge text-bg-danger">No</span>'
+      if (type == 'display' || type == 'filter')
+        return '<span class="badge text-bg-danger">No</span>'
+      else
+        return 'No'
     return ''
   }
 }
@@ -84,12 +92,44 @@ function dt_datetime_renderer(format = "Y-MM-DD HH:mm") {
   }
 }
 
+// renderer for json string 
+// we assume that "data" is a JSON Array or its string representation
+function dt_array_render_factory({format = '${result}', item_format = '${item}', join = ''}) {
+  return function(data,type,row,meta) {
+    let arr = data
+
+    //check and convert string to array
+    if (!Array.isArray(arr)) {
+      try {
+        arr = JSON.parse(arr)
+      } catch { return ''}
+    }
+
+
+    if (type == 'display' || type == 'filter') {
+      let item_formatted_arr = arr.map( x => item_format.replace("${item}",x))
+      return format.replace('${result}', item_formatted_arr.join(join))
+    }
+
+    return arr.join(" ")
+  }
+}
+
+function dt_array_badge_render_factory(className = 'text-bg-secondary') {
+  let item_format = `<span class="badge ${className}">\${item}</span>`
+  return dt_array_render_factory({item_format: item_format,join: ' ' })
+}
+
 const dt = {
   render: {
     button: dt_button_renderer,
     link: dt_link_renderer,
     yes_no_pill: dt_yes_no_pill_renderer,
     datetime: dt_datetime_renderer,
+  },
+  render_factory: {
+    array: dt_array_render_factory,
+    badge: dt_array_badge_render_factory,
   }
 }
 

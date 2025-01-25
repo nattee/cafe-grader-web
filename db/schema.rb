@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2024_11_21_143036) do
+ActiveRecord::Schema[7.0].define(version: 2025_01_23_021657) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -212,6 +212,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_21_143036) do
     t.string "pretty_name"
     t.string "ext", limit: 10
     t.string "common_ext"
+    t.boolean "binary", default: false
   end
 
   create_table "logins", id: :integer, charset: "latin1", force: :cascade do |t|
@@ -317,7 +318,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_21_143036) do
     t.integer "problem_id"
     t.integer "language_id"
     t.text "source", size: :long
-    t.binary "binary"
+    t.binary "binary", size: :long
     t.datetime "submitted_at", precision: nil
     t.datetime "compiled_at", precision: nil
     t.text "compiler_message", size: :long
@@ -333,6 +334,7 @@ ActiveRecord::Schema[7.0].define(version: 2024_11_21_143036) do
     t.integer "tag", default: 0
     t.integer "status", limit: 1, default: 0
     t.string "cookie"
+    t.string "content_type"
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"

@@ -82,6 +82,12 @@ body {
   padding-top: 65px;
 }
 
+.form-check-thick {
+  border-width: 1.5px;
+  border-color: #ccc;
+
+}
+
 // ------------------ bootstrap sortable --------------------
 table.sortable th {
   padding-right: 20px !important;

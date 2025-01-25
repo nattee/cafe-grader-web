@@ -39,6 +39,12 @@ class SubmissionsController < ApplicationController
   end
 
   def download
+    if @submission.language.binary? && @submission.binary
+      send_data @submission.binary, filename: @submission.download_filename, type: @submission.content_type || 'application/octet-stream', disposition: 'attachment'
+      return 
+    end
+
+    # no binary, send the source
     send_data(@submission.source, {:filename => @submission.download_filename, :type => 'text/plain'})
   end
 
@@ -54,11 +60,16 @@ class SubmissionsController < ApplicationController
       return
     end
     @source = ''
-    if (params[:view_latest])
-      sub = Submission.find_last_by_user_and_problem(@current_user.id,@problem.id)
-      @source = @submission.source.to_s if @submission and @submission.source
+
+    if @problem.get_permitted_lang_as_ids.count == 1
+      @language = Language.find(@problem.get_permitted_lang_as_ids[0])
+      @as_binary = true
+    else
+      @language = @current_user.default_language || @problem.get_permitted_lang_as_ids[0] || Language.first
+      @as_binary = @language.binary?
     end
-    @lang_id = @current_user.default_language || Language.first.id
+
+
     render 'edit'
   end
 
@@ -66,7 +77,8 @@ class SubmissionsController < ApplicationController
   def edit
     @source = @submission.source.to_s
     @problem = @submission.problem
-    @lang_id = @submission.language_id || @current_user.default_language || Language.first.id
+    @language = @submission.language || @current_user.default_language || Language.first
+    @as_binary = @language.binary
   end
 
 

@@ -4,12 +4,14 @@
   .row
     .col-lg-4
       = render partial: 'problem_select'
-      %input#show-time.form-check-input{type: 'checkbox', name: 'show-time'}
-      %label.form-check-label{for: 'show-time'} Show time column
     .col-lg-4
       = render partial: 'submission_range'
     .col-lg-4
       = render partial: 'user_select'
+  .row.mb-2
+    .col-auto
+      %input#show-time.form-check-input{type: 'checkbox', name: 'show-time'}
+      %label.form-check-label{for: 'show-time'} Show time column
   .row
     .col-lg-1
       = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"

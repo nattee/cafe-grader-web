@@ -4,7 +4,7 @@ class Language < ApplicationRecord
   @@languages_by_ext = {}
 
   def default_submission_filename
-    "submission." + self.ext
+    "submission." + (self.ext || '')
   end
 
   def self.seed
@@ -25,6 +25,7 @@ class Language < ApplicationRecord
   def self.cache_ext_hash
     @@languages_by_ext = {}
     Language.all.each do |language|
+      next if language.common_ext.blank?
       language.common_ext.split(',').each do |ext|
         @@languages_by_ext[ext] = language
       end

@@ -6,11 +6,25 @@
 
   .row
     .col-md-12
-      .alert.alert-info
-        Write your code in the following box, choose language, and click submit button when finished
+      - unless @as_binary
+        .alert.alert-info
+          Write your code in the following box, choose language, and click submit button when finished
   .row
     .col-lg-8
-      %div.mb-3#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
+      - unless @as_binary
+        %div.mb-3#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
+      - else
+        .alert.alert-success
+          The problem only accept upload of an archive file. Select a file using the button
+          %strong "Browse"
+          and click submit.
+        - if @submission && @submission.binary
+          %ul
+            %li You have already submitted a file.
+            %li
+              The submitted file can be 
+              = link_to 'download', download_submission_path(@submission)
+              here.
     .col-lg-4
       -# submission form
       .card.mb-3
@@ -48,11 +62,11 @@
               .col-md-4
                 = form.label :language_id, 'Language', class: 'col-form-label text-secondary'
               .col-md-8
-                - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @lang_id )
+                - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
                 = form.select :language_id, options, {},  class: 'form-select', style: "width: 100px", id: 'language_id'
             .row.mb-2
               .col-12
-                = form.file_field :load_file, class: 'form-control', id: 'load_file'
+                = form.file_field :file, class: 'form-control', id: 'load_file'
             .row.mb-2
               .col-12
                 = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
@@ -74,7 +88,7 @@
     e.gotoLine(1);
     $("#language_id").trigger('change');
 
-    $("#load_file").on('change',function(evt) {
+    $("#file").on('change',function(evt) {
       var file = evt.target.files[0];
       var reader = new FileReader();
       reader.onload =  function(theFile) {

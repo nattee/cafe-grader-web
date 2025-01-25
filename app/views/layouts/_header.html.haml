@@ -4,7 +4,24 @@
       %a.navbar-brand{href: list_main_path}
         %span.mi.mi-bs home
         MAIN
-      %button.navbar-toggler.collapsed{ type: :button, data: {bs: {toggle: 'collapse', target: '#navbar-collapse'}} }
+      .navbar-expand
+        / display MODE button (with countdown in contest mode)
+        - if GraderConfiguration.analysis_mode?
+          %div.btn.btn-success#countdown= "ANALYSIS MODE"
+        - elsif GraderConfiguration.time_limit_mode?
+          - if @current_contest&.contest_status == :ended
+            %div.btn.btn-danger#countdown= "Contest is over"
+          - elsif !@current_contest&.contest_status == :later
+            %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
+          - elsif @current_contest
+            %div.btn.btn-dark#countdown
+            :javascript
+              $(() => {
+                too_early_count = 0
+                setInterval(updateRemainingTime,500)
+                setTimeout(checkInLoop,1000)
+              })
+      %button.navbar-toggler{ type: :button, data: {bs: {toggle: 'collapse', target: '#navbar-collapse'}} }
         %span.navbar-toggler-icon
       .collapse.navbar-collapse#navbar-collapse
         %ul.navbar-nav.me-auto.mb-2.mb-lg-0
@@ -18,22 +35,6 @@
           / hall of fame
           - if GraderConfiguration['right.user_hall_of_fame']
             %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :problem_hof)
-          / display MODE button (with countdown in contest mode)
-          - if GraderConfiguration.analysis_mode?
-            %div.btn.btn-success#countdown= "ANALYSIS MODE"
-          - elsif GraderConfiguration.time_limit_mode?
-            - if @current_contest&.contest_status == :ended
-              %div.btn.btn-danger#countdown= "Contest is over"
-            - elsif !@current_contest&.contest_status == :later
-              %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
-            - elsif @current_contest
-              %div.btn.btn-dark#countdown
-              :javascript
-                $(() => {
-                  too_early_count = 0
-                  setInterval(updateRemainingTime,500)
-                  setTimeout(checkInLoop,1000)
-                })
           / admin section
           - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:edit).any?)
             / management

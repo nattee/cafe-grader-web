@@ -281,6 +281,9 @@ class ContestsController < ApplicationController
     ms_since_last_check_in = ((current - last) * 1000).to_i
     if (@current_contest)
       ms_until_contest_end = ((@current_contest.stop - current) * 1000).to_i
+
+      cu = ContestUser.where(contest: @current_contest, user: @current_user)
+      cu.update(last_heartbeat: current) if (cu)
     end
     render json: {ms_since_last_check_in: ms_since_last_check_in, ms_until_contest_end: ms_until_contest_end, current_time: current}
   end
@@ -328,7 +331,8 @@ class ContestsController < ApplicationController
     end
 
     def contests_params
-      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop)
+      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop, :finalized)
+
     end
 
 end

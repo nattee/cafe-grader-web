@@ -60,6 +60,7 @@ class MainController < ApplicationController
   #   4. submit vis "edit" button
   def submit
     
+    # parameter validation
     problem = Problem.where(id: params[:submission][:problem_id]).first
     unless problem
       redirect_to list_main_path, alert: 'You must specify a problem' and return
@@ -71,26 +72,43 @@ class MainController < ApplicationController
       redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available for you" and return
     end
 
+    # set language
+    if params['file'] && params['file']!=''
+      language = Language.find_by_extension params['file'].original_filename.ext
+    end
+    language = Language.find(params[:language_id]) rescue nil
+    language = Language.find(problem.get_permitted_lang_as_ids[0]) rescue nil if problem.get_permitted_lang_as_ids.count == 1   # if permitted only 1 language, we will use it
+    language = Language.where(name: 'cpp').first if language.nil?
+
     @submission = Submission.new(user: @current_user,
-                                 language: Language.where(name: 'cpp').first,
+                                 language: language,
                                  problem: problem,
                                  submitted_at: Time.zone.now,
                                  cookie: cookies.encrypted[:uuid],
                                  ip_address: request.remote_ip)
-    if (params['file']) and (params['file']!='')
-      @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
-      @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
-      @submission.source_filename = params['file'].original_filename
+    # if a file is submitted, without editor_text
+    if params['file'] && params['file']!='' && params[:editor_text].blank?
+      if language.binary?
+        @submission.binary = params['file'].read
+        @submission.content_type = params['file'].content_type
+      else
+        @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
+        @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
+        @submission.source_filename = params['file'].original_filename
+      end
     end
 
-    if (params[:editor_text])
-      language = Language.find params[:language_id]
+    # this will overwrite @sub.source by th editor_text (if exsists)
+    # we prioritize editor_text if it exists
+    # because a user might choose a file and it is loaded to the editor_text and then
+    # the user might edit the editor text later
+    if (params[:editor_text] && !language.binary?)
       @submission.language = language
       @submission.source = params[:editor_text]
       @submission.source_filename = "live_edit.#{language.ext}"
     end
 
-    if @submission.source.blank?
+    if @submission.source.blank? && @submission.binary.blank?
       redirect_to list_main_path, alert: 'You must add a source code' and return
     end
 

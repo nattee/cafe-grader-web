@@ -9,19 +9,22 @@
   .row
     .col-md-7
       %h4 Source Code
+      - if @submission.language.binary?
+        .alert.alert-warning
+          The file is marked as a binary, viewing is impossible. Please
+          = link_to 'download', download_submission_path(@submission)
+          instead
+      - else
+        %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;" }
+        :javascript
+          e = ace.edit("editor")
+          e.setOptions({ maxLines: Infinity })
+          e.setValue($("#data").text())
+          e.gotoLine(1)
+          e.getSession().setMode("#{get_ace_mode(@submission.language)}")
+          e.setReadOnly(true)
     .col-md-5
       %h4 Stat
-  .row
-    .col-md-7
-      %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;" }
-      :javascript
-        e = ace.edit("editor")
-        e.setOptions({ maxLines: Infinity })
-        e.setValue($("#data").text())
-        e.gotoLine(1)
-        e.getSession().setMode("#{get_ace_mode(@submission.language)}")
-        e.setReadOnly(true)
-    .col-md-5
       %table.table
         %tr
           %td.text-end.text-secondary
@@ -101,6 +104,11 @@
             = @submission.status
             - if @current_user.admin?
               = link_to "Rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-warning btn-sm'
+        %tr
+          %td.text-end.text-secondary
+            Download
+          %td
+            = link_to "Download", download_submission_path(@submission), class: 'btn btn-primary btn-sm'
         - if @current_user.can_view_testcase?(@submission.problem)
           %tr
             %td.text-end.text-secondary
@@ -124,6 +132,7 @@
                 No
                 - if @current_user.has_role?('ta')
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
+      -# evaluation result
       - if @submission.evaluations.count > 0
         %h4 Evaluations
         %table.table
