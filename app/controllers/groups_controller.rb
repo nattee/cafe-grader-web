@@ -149,9 +149,8 @@ class GroupsController < ApplicationController
 
   def add_user
     begin
-      users = User.find(params[:user_ids]) #this find multiple users
-      @group.users << users
-      @toast = {title: "Group #{@group.name}", body: "#{users.count} users were added."}
+      users = User.where(id: params[:user_ids]) #this find multiple users
+      @toast = @group.add_users_skip_existing(users)
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
@@ -160,9 +159,8 @@ class GroupsController < ApplicationController
 
   def add_user_by_group
     begin
-      user_ids = GroupUser.where(group_id: params[:user_group_ids]).where.not(user_id: @group.users.ids).pluck :user_id
-      @group.users << User.where(id: user_ids)
-      @toast = {title: "Group #{@group.name}", body: "#{user_ids.count} users were added."}
+      user_ids = GroupUser.where(group_id: params[:user_group_ids]).pluck :user_id
+      @toast = @group.add_users_skip_existing(User.where(id: user_ids))
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
