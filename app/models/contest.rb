@@ -132,19 +132,43 @@ class Contest < ApplicationRecord
     return 60
   end
 
+  # return a submissions of this contests
+  # this includes extra_time_second and start_offset_second as well
+  def submissions
+    Submission.joins(user: :contests_users)
+      .where('contest_id = ?',self.id)
+      .where(user: users, problem: problems)
+      .where('submitted_at >= DATE_SUB(?,INTERVAL start_offset_second SECOND)',start)
+      .where('submitted_at <= DATE_ADD(?,INTERVAL extra_time_second SECOND)',stop)
+  end
+
   #
   # -------- report ---------------
   #
-  
   def score_report
     # calculate submission with max score
-    Submission.in_range(:time,start,stop)
-      .where(user: users, problem: problems)
-      .group('user_id,problem_id')
-      .select('MAX(submissions.points) as max_score, user_id, problem_id')
+    max_records = self.submissions
+      .group('submissions.user_id,submissions.problem_id')
+      .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
+
+    # records having the same score as the max record
+    records = self.submissions.joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+                               'submissions.points = MAX_RECORD.max_score AND ' +
+                               'submissions.user_id = MAX_RECORD.user_id AND ' +
+                               'submissions.problem_id = MAX_RECORD.problem_id ').joins(:problem)
+      .select('submissions.user_id,users_submissions.login,users_submissions.full_name,users_submissions.remark')
+      .select('problems.name')
+      .select('max_score')
+      .select('submitted_at')
+      .select('submissions.id as sub_id')
+      .select('submissions.problem_id,submissions.user_id')
+
+
+    return Submission.calculate_max_score(records,users,problems)
   end
 
   protected
+
   # this is refactored from the report controller
   #  *records* is a result from Contest.score_report
   #  *users* is the User relation that is used to build *records*

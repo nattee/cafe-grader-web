@@ -102,6 +102,76 @@ class Submission < ApplicationRecord
     end
   end
 
+  #
+  # ---- service ----
+  #
+
+  # records should be a submissions record WITH MAX SCORE only
+  #   and it should have following additional columns: sub_id, login, max_score,
+  # return  a hash {score: xx, stat: yy}
+  # xx is {
+  #   #{user.login}: {
+  #     id:, full_name:, remark:,
+  #     prob_#{prob.id}:     # score
+  #     time_#{prob.id}:     # the latest time of that score
+  #     sub_#{prob.id}:      # the sub_id of that score
+  #     ...
+  # }
+  def self.calculate_max_score(records,users,problems)
+    result = {score: Hash.new { |h,k| h[k] = {} }, 
+              stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+
+    # build users
+    users.each do |u|
+      result[:score][u.login]['id'] = u.id;
+      result[:score][u.login]['full_name'] = u.full_name;
+      result[:score][u.login]['remark'] = u.remark;
+    end
+
+
+    records.each do |sub|
+      result[:score][sub.login]["prob_#{sub.problem_id}"] = sub.max_score || 0
+
+      # we pick the latest
+      unless (result[:score][sub.login]["time_#{sub.problem_id}"] || Date.new) > sub.submitted_at
+        result[:score][sub.login]["time_#{sub.problem_id}"] = sub.submitted_at
+        result[:score][sub.login]["sub_#{sub.problem_id}"] = sub.sub_id
+      end
+    end
+
+    # calculate stats (min, max, zero, partial)
+    result[:score].each do |k,v|
+      sum = 0
+      v.each do |k2,v2|
+        if k2[0..4] == 'prob_'
+          #v2 is the score
+          prob_name = k2[5...]
+          result[:stat][prob_name][:score] << v2
+          result[:stat][prob_name][:sum] += v2 || 0
+          sum += v2 || 0;
+          if v2 == 0
+            result[:stat][prob_name][:zero] += 1
+          elsif v2 == 100
+            result[:stat][prob_name][:full] += 1
+          else
+            result[:stat][prob_name][:partial] += 1
+          end
+        end
+      end
+      v[:user_sum] = sum
+    end
+
+    # summary graph result
+    count = {zero: [], partial: [], full: []}
+    problems.each do |p|
+      count[:zero] << result[:stat][p.name][:zero]
+      count[:full] << result[:stat][p.name][:full]
+      count[:partial] << result[:stat][p.name][:partial]
+    end
+    result[:count] = count
+    return result
+  end
+
 
   protected
 

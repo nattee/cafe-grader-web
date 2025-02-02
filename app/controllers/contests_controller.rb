@@ -58,7 +58,8 @@ class ContestsController < ApplicationController
   end
 
   def view_query
-    @result = Contest.build_score_result(@contest.score_report,@contest.users)
+    #@result = Contest.build_score_result(@contest.score_report,@contest.users)
+    @result = @contest.score_report
 
     render json: {
       data: @contest.contests_users.joins(:user)
