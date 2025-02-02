@@ -23,7 +23,9 @@
 
 
 :javascript
-
+  let show_detail = true
+  const sub_download_link = '#{j link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))}'
+  const sub_path = '#{submission_path(-123)}'
   $(function() {
     humanize_time_renderer = function(data,type,row,meta) {
       if (!data) return ''
@@ -34,11 +36,33 @@
       return data
     }
 
+    // generate a renderer function for rendering score / time / link for problem prob_id
+    function score_renderer_factory(prob_id) {
+      return function(data,type,row,meta) {
+        if (!data) return ''
+        if (type == 'display' || type == 'filter') {
+          if (show_detail) {
+            // render the score, along with the time and link to the sub
+            sub_col = `sub_${prob_id}`
+            time_col = `time_${prob_id}`
+            sub_link = `<a href=${sub_path.replace(-123,row[sub_col])}>[ ${moment(row[time_col]).format('HH:mm:ss')} ]</a>`
+            st = `${data} </br> ${sub_link} | ${sub_download_link.replace(-123,row[sub_col])}`
+            return st
+          } else {
+            return data
+          }
+        }
+
+        //for sort, we just return the data which is supposed to be iso8601
+        return data
+      }
+    }
+
     // build columns
     problem_ids = [#{@problems.pluck(:id).join(',')}]
 
     problem_columns = problem_ids.map( id => {
-      return {data: `prob_${id}`,className: 'text-end'}
+      return {data: `prob_${id}`,className: 'text-end',render: score_renderer_factory(id) }
     })
     columns = [
       {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_user_path(-123)}', replace_field: 'user_id' })},
@@ -57,18 +81,24 @@
     function score_display(json) {
       //combine score into user record
       // at start json.data[i] is a user data (id,login,name,remark,seat, etc)
+      show_detail = document.getElementById("show-load").checked
       for (let i = 0, ien = json.data.length; i < ien; i++) {
-        user_id = json.data[i].user_id
+        login = json.data[i].login
 
         //we loop over each problems (in json.problems)
         sum_score = 0.0
         json.problem.forEach ( (prob) => {
-          prob_id = prob.id
 
           //and pluck the score of that user from the "score_table" (json.result)
-          score_result = json.result.score[user_id]
+          score_result = json.result.score[login]
+
+          prob_id = `prob_${prob.id}`
           prob_score = (score_result) ? score_result[prob_id] || '' : ''
-          if (prob_score.length > 0) prob_score = parseFloat(prob_score).toFixed(1)
+          if (prob_score.length > 0) {
+            prob_score = parseFloat(prob_score).toFixed(1)
+            json.data[i][`sub_${prob.id}`] = score_result[`sub_${prob.id}`]
+            json.data[i][`time_${prob.id}`] = score_result[`time_${prob.id}`]
+          }
           json.data[i][`prob_${prob.id}`] = prob_score
 
           //also sum the score
@@ -88,8 +118,15 @@
       paging: false,
       order: [[0,'asc']],
       layout: {
-         topStart: 'buttons',
-         topEnd: 'search'
+        topStart: [
+          'buttons',
+          {
+            div: {
+              html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox"> <label class="form-check-label" for="show-load">Show submission time & download button</label>'
+            }
+          }
+        ],
+        topEnd: 'search'
       },
       buttons: [
           { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()}},
@@ -108,11 +145,21 @@
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()
+
       },
+      initComplete: function() {
+        //we have to put it here because #show-load is dynamically generated
+        $('#show-load').on('click', function() {
+          table.ajax.reload()
+        })
+
+      }
     }
 
     //initialize the table
-    $('#table').DataTable(table_config)
+    table = $('#table').DataTable(table_config)
+
+    // handle click on "show" checkbox
   });
 
     //
