@@ -32,7 +32,7 @@
           %td
             - if @current_user.admin? ||@current_user == @submission.user
               - if @submission.user
-                = link_to "#{@submission.user.login}", stat_user_path(@submission.user)
+                = link_to "#{@submission.user.login}", stat_user_admin_path(@submission.user)
                 = @submission.user.full_name
               - else
                 = "(n/a)"

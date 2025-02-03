@@ -65,7 +65,7 @@
       return {data: `prob_${id}`,className: 'text-end',render: score_renderer_factory(id) }
     })
     columns = [
-      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_user_path(-123)}', replace_field: 'user_id' })},
+      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
       {data: 'full_name'},
       {data: 'remark'},
       {data: 'seat'},

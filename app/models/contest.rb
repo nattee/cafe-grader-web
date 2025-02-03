@@ -142,6 +142,15 @@ class Contest < ApplicationRecord
       .where('submitted_at <= DATE_ADD(?,INTERVAL extra_time_second SECOND)',stop)
   end
 
+  def user_submissions(user)
+    cu = contests_users.where(user: user).take
+    actual_start = start - cu.start_offset_second.second
+    actual_stop = stop + cu.extra_time_second.second
+    Submission.where(user: user, problem: problems)
+      .where('submitted_at >= ?',actual_start)
+      .where('submitted_at <= ?',actual_stop)
+  end
+
   #
   # -------- report ---------------
   #

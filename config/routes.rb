@@ -159,17 +159,35 @@ Rails.application.routes.draw do
     end
   end
 
-  #for each user editing their own
   resources :users, only: [:new] do
-    member do
-      get 'toggle_activate', 'toggle_enable'
-      get 'stat'
-    end
+    # these are for each user editing their own properties
     collection do
       get 'profile'
       post 'chg_passwd'
       post 'chg_default_language'
       patch 'update_self'
+    end
+  end
+
+  #user admin
+  resources :user_admin  do
+    collection do
+      match 'bulk_manage', via: [:get, :post]
+      get 'bulk_mail'
+      get 'import'
+      get 'new_list'
+      get 'admin'
+      get 'active'
+      get 'mass_mailing'
+      match 'modify_role', via: [:get, :post]
+      match 'create_from_list', via: [:get, :post]
+      match 'random_all_passwords', via: [:get, :post]
+    end
+    member do
+      get 'clear_last_ip'
+      get 'toggle_activate', 'toggle_enable'
+      get 'stat'
+      get 'stat/contest/:contest_id', to: 'user_admin#stat_contest', as: 'stat_contest'
     end
   end
 
@@ -188,24 +206,6 @@ Rails.application.routes.draw do
   end
 
 
-  #user admin
-  resources :user_admin  do
-    collection do
-      match 'bulk_manage', via: [:get, :post]
-      get 'bulk_mail'
-      get 'import'
-      get 'new_list'
-      get 'admin'
-      get 'active'
-      get 'mass_mailing'
-      match 'modify_role', via: [:get, :post]
-      match 'create_from_list', via: [:get, :post]
-      match 'random_all_passwords', via: [:get, :post]
-    end
-    member do
-      get 'clear_last_ip'
-    end
-  end
 
   resources :contest_management, only: [:index] do
     collection do

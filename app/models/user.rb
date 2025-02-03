@@ -315,7 +315,9 @@ class User < ApplicationRecord
     return true
   end
 
-  #get a list of available problem for submission
+  # get a list of available problem for submission
+  # this works with both contest and normal mode
+  #   and for both group and non-group mode
   def available_problems
     # first, we check if this is normal mode
     unless GraderConfiguration.contest_mode?
@@ -359,6 +361,40 @@ class User < ApplicationRecord
       label << (start_date+i).strftime("%d-%b")
       value << (count[start_date+i] || 0)
       i+=1
+    end
+    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+  end
+
+  def get_jschart_user_contest_history(contest)
+    cu = contest.contests_users.where(user: self).take
+    start = contest.start - cu.start_offset_second.second
+    stop = [Time.zone.now,contest.stop + cu.extra_time_second.second].min
+
+    # divide into 120 step
+    step = (stop - start) / 120
+
+    # adjust
+    step = [60,step].max
+    step = (step / 60).to_i * 60
+
+    submitted_at = contest.user_submissions(self).order(:submitted_at).pluck :submitted_at
+
+
+    now = start
+    i = 0
+    label = []
+    value = []
+    while (now < stop)
+      count = 0;
+      while (i < submitted_at.count && submitted_at[i] < now + step.second)
+        count += 1
+        i += 1
+        puts "got #{submitted_at[i]} for #{now.strftime("%H:%M")}"
+      end
+      label << now.strftime("%H:%M")  # hours / minute
+      value << count
+
+      now += step.second
     end
     return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
   end

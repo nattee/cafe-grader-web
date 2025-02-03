@@ -36,12 +36,60 @@ class UserAdminController < ApplicationController
     end
   end
 
+  #
+  # --- member function
+  #
   def clear_last_ip
     @user = User.find(params[:id])
     @user.last_ip = nil
     @user.save
     redirect_to action: 'index', page: params[:page]
   end
+
+  def toggle_activate
+    @user = User.find(params[:id])
+    @user.update( activated:  !@user.activated? )
+    respond_to do |format|
+      format.js { render partial: 'toggle_button',
+                  locals: {button_id: "#toggle_activate_user_#{@user.id}",button_on: @user.activated? } }
+    end
+  end
+
+  def toggle_enable
+    @user = User.find(params[:id])
+    @user.update( enabled:  !@user.enabled? )
+    respond_to do |format|
+      format.js { render partial: 'toggle_button',
+                  locals: {button_id: "#toggle_enable_user_#{@user.id}",button_on: @user.enabled? } }
+    end
+  end
+
+  def stat
+    @user = User.find(params[:id])
+    @submission = Submission.joins(:problem).includes(:problem).includes(:language).where(user_id: params[:id])
+
+    max_score = Submission.where(user_id: params[:id]).group(:problem_id).pluck('problem_id, max(points) as max_point')
+    @summary = {count: max_score.count,
+                solve: max_score.select{ |x| x[1] == 100}.count}
+
+    @chart_dataset = @user.get_jschart_user_sub_history.to_json.html_safe
+  end
+
+  def stat_contest
+    @user = User.find(params[:id])
+    @contest = Contest.find(params[:contest_id])
+
+    @submission = @contest.user_submissions(@user)
+
+    max_score = @submission.group(:problem_id).pluck('problem_id, max(points) as max_point')
+    @summary = {count: max_score.count,
+                solve: max_score.select{ |x| x[1] == 100}.count}
+
+    @chart_dataset = @user.get_jschart_user_contest_history(@contest).to_json.html_safe
+
+    render 'stat'
+  end
+
 
   def create_from_list
     lines = params[:user_list]
