@@ -88,7 +88,7 @@
     e.gotoLine(1);
     $("#language_id").trigger('change');
 
-    $("#file").on('change',function(evt) {
+    $("#load_file").on('change',function(evt) {
       var file = evt.target.files[0];
       var reader = new FileReader();
       reader.onload =  function(theFile) {

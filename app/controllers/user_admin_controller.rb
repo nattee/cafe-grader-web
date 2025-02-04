@@ -55,7 +55,7 @@ class UserAdminController < ApplicationController
 
     #add to group
     if params[:add_to_group] == '1'
-      group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(ok_user)
+      group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(User.where(id: ok_user.map{ |x| x.id}))
     end
 
     # show flash
