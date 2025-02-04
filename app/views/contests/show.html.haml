@@ -108,8 +108,9 @@
                   %th Full name
                   %th Seat
                   %th Remark
+                  %th Start:End Offset
                   %th Enable
-                  %th Remove
+                  %th Action
           -# ==========================================
           -# ---------- problem pane ------------------
           -# ==========================================
@@ -222,6 +223,10 @@
     $('#problem_id').val(null).trigger('change')
   }
 
+  function start_stop_offset_render(data,type,row,meta) {
+    return `${row['start_offset_second']} : ${row['extra_time_second']}`
+  }
+
   $(function() {
     //user table
     user_table_config = {
@@ -245,6 +250,7 @@
         {data: 'full_name'},
         {data: 'remark'},
         {data: 'seat'},
+        {data: null, render: start_stop_offset_render},
         {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
       ],
