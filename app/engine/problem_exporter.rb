@@ -91,6 +91,15 @@ class ProblemExporter
     end
   end
 
+  def export_initializers
+    @initializer_dir = @main_dir + OptionConst::DEFAULT[:dir][:initializers]
+    @initializer_dir.mkpath
+    @ds.initializers.each do |mng|
+      filename = @initializer_dir + mng.filename.to_s
+      File.open(filename,'w:ASCII-8BIT') { |f| mng.download { |chunk| f.write chunk } }
+    end
+  end
+
   # save the @options hash into a YAML file
   def export_options
     #problem fields
@@ -112,6 +121,7 @@ class ProblemExporter
     @options[OptionConst::YAML_KEY[:dir][:managers]] = OptionConst::DEFAULT[:dir][:managers]
     @options[OptionConst::YAML_KEY[:dir][:checker]] = OptionConst::DEFAULT[:dir][:checker]
     @options[OptionConst::YAML_KEY[:dir][:model_sols]] = OptionConst::DEFAULT[:dir][:model_sols]
+    @options[OptionConst::YAML_KEY[:dir][:initializers]] = OptionConst::DEFAULT[:dir][:initializers]
 
     # tags
     @options[OptionConst::YAML_KEY[:tags]] = @problem.tags.pluck :name if @problem.tags.count > 0

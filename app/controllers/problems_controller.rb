@@ -261,12 +261,12 @@ class ProblemsController < ApplicationController
     uploaded_file_path = params[:problem][:file].to_path
 
     #chekc valid group
-    group = Group.find(params[:problem][:group]) rescue nil
+    debugger
+    group = Group.find(params[:problem][:groups]) rescue nil
     unless @current_user.admin? || @current_user.groups_for_action(:edit).where(id: group).any?
       @errors = ['You can only upload a problem into a group that you are editor']
       render :import and return
     end
-
 
     pi = ProblemImporter.new
 
