@@ -2,12 +2,12 @@
   .row
     .col-md-6
       %h1 Adding list of users
-  .row.my-3
+  .row
     .col-md-6
       = form_with url: create_from_list_user_admin_index_path do |f|
-        .row.align-items-center.mb-3
+        .row.align-items-center.my-3
           .col-auto
-            = f.submit 'Create following users',class: 'btn btn-success'
+            = f.submit 'Create following users',class: 'btn btn-success my-3'
           .col-auto
             .form-check
               = f.check_box :add_to_group, class: 'form-check-input'

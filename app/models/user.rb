@@ -31,6 +31,8 @@ class User < ApplicationRecord
   belongs_to :site, optional: true
   belongs_to :country, optional: true
 
+  belongs_to :default_language, class_name: 'Language', foreign_key: 'default_language_id', optional: true
+
   # contest
   has_many :contests_users, class_name: 'ContestUser'
   has_many :contests, :through => :contests_users
@@ -357,7 +359,9 @@ class User < ApplicationRecord
     return true
   end
 
-  #get a list of available problem for submission
+  # get a list of available problem for submission
+  # this works with both contest and normal mode
+  #   and for both group and non-group mode
   def available_problems
     # first, we check if this is normal mode
     unless GraderConfiguration.contest_mode?
@@ -405,11 +409,46 @@ class User < ApplicationRecord
     return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
   end
 
+  def get_jschart_user_contest_history(contest)
+    cu = contest.contests_users.where(user: self).take
+    start = contest.start - cu.start_offset_second.second
+    stop = [Time.zone.now,contest.stop + cu.extra_time_second.second].min
+
+    # divide into 120 step
+    step = (stop - start) / 120
+
+    # adjust
+    step = [60,step].max
+    step = (step / 60).to_i * 60
+
+    submitted_at = contest.user_submissions(self).order(:submitted_at).pluck :submitted_at
+
+
+    now = start
+    i = 0
+    label = []
+    value = []
+    while (now < stop)
+      count = 0;
+      while (i < submitted_at.count && submitted_at[i] < now + step.second)
+        count += 1
+        i += 1
+        puts "got #{submitted_at[i]} for #{now.strftime("%H:%M")}"
+      end
+      label << now.strftime("%H:%M")  # hours / minute
+      value << count
+
+      now += step.second
+    end
+    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+  end
+
   #create multiple user, one per lines of input
   def self.create_from_list(lines)
     error_logins = []
     first_error = nil
-    created_users = []
+    created_user_ids = []
+    updated_user_ids = []
 
     lines.split("\n").each do |line|
       #split with large limit, this will cause consecutive ',' to be result in a blank
@@ -449,6 +488,7 @@ class User < ApplicationRecord
         end
 
         user = User.find_by_login(login)
+        created = false
         if (user)
           user.full_name = full_name
           user.remark = remark if has_remark
@@ -462,11 +502,16 @@ class User < ApplicationRecord
                            :password_confirmation => password,
                            :alias => user_alias,
                            :remark => remark})
+          created = true
         end
         user.activated = true
 
         if user.save
-          created_users << user
+          if created
+            created_user_ids << user.id
+          else
+            updated_user_ids << user.id
+          end
         else
           error_logins << "'#{login}'"
           first_error = user.errors.full_messages.to_sentence unless first_error
@@ -474,7 +519,8 @@ class User < ApplicationRecord
       end
     end
 
-    return {error_logins: error_logins, first_error: first_error, created_users: created_users}
+    return {error_logins: error_logins, first_error: first_error,
+            created_users: User.where(id: created_user_ids), updated_users: User.where(id: updated_user_ids)}
 
   end
 

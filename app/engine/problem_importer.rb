@@ -244,7 +244,6 @@ class ProblemImporter
     pattern = build_glob(initializers,path: path)
     initializers_fn = {}
     Dir.glob(pattern).each do |fn|
-      puts "doing #{fn} path = #{path}"
       @log << "Found an additional initializers file [#{fn}]"
       @got << fn
       basename = Pathname.new(fn).basename
@@ -264,6 +263,7 @@ class ProblemImporter
     initializer_filename = @options[OptionConst::YAML_KEY[:initializer]]
     if initializer_filename
       @dataset.initializer_filename = initializer_filename
+      @log << "  main initializer is set to #{initializer_filename}"
     end
     @dataset.save
   end

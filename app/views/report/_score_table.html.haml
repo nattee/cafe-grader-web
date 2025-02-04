@@ -19,7 +19,7 @@
       - @result[:score].each do |login,score|
         %tr
           %td
-          %td= link_to login, stat_user_path(score['id'])
+          %td= link_to login, stat_user_admin_path(score['id'])
           %td= score['full_name']
           %td= score['remark']
           - sum,pass = 0,0

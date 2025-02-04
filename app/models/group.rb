@@ -1,4 +1,7 @@
 class Group < ApplicationRecord
+  # need pluralize helper function
+  delegate :pluralize, to: 'ActionController::Base.helpers'
+
   has_many :groups_problems, class_name: 'GroupProblem'
   has_many :problems, :through => :groups_problems
 

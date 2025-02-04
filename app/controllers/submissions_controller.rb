@@ -15,13 +15,13 @@ class SubmissionsController < ApplicationController
       @problem = nil
       @submissions = nil
     else
-      @problem = Problem.find_by_id(params[:problem_id])
-      if (@problem == nil) or (not @problem.available)
+      @problem = Problem.find(params[:problem_id]) rescue nil
+      if (@problem == nil) || (! @user.can_view_problem?(@problem))
         redirect_to list_main_path
         flash[:error] = 'Authorization error: You have no right to view submissions for this problem'
         return
       end
-      @submissions = Submission.find_all_by_user_problem(@user.id, @problem.id).order(id: :desc)
+      @submissions = Submission.where(user: @user, problem: @problem).order(id: :desc)
     end
   end
 

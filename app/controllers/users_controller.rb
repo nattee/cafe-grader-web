@@ -48,7 +48,7 @@ class UsersController < ApplicationController
 
   def chg_default_language
     user = User.find(session[:user_id])
-    user.default_language = params[:default_language]
+    user.default_language_id = params[:default_language]
     if user.save
       flash[:notice] = 'default language changed'
     else
@@ -133,43 +133,6 @@ class UsersController < ApplicationController
     redirect_to :action => 'forget'
   end
 
-  def stat
-    @user = User.find(params[:id])
-    @submission = Submission.joins(:problem).includes(:problem).includes(:language).where(user_id: params[:id])
-    @submission = @submission.where('problems.available = true') unless current_user.admin?
-
-    @summary = {count: 0, solve: 0, attempt: 0}
-    problem = Hash.new(0)
-
-    @submission.find_each do |sub|
-      @summary[:count] += 1
-      next unless sub.problem
-      problem[sub.problem] = [problem[sub.problem], (sub&.points || 0) >= 100 ? 1 : 0].max
-    end
-
-    @summary[:attempt] = problem.count
-    problem.each_value { |v| @summary[:solve] += 1 if v == 1 }
-    @chart_dataset = @user.get_jschart_user_sub_history.to_json.html_safe
-  end
-
-  def toggle_activate
-    @user = User.find(params[:id])
-    @user.update( activated:  !@user.activated? )
-    respond_to do |format|
-      format.js { render partial: 'toggle_button',
-                  locals: {button_id: "#toggle_activate_user_#{@user.id}",button_on: @user.activated? } }
-    end
-  end
-
-  def toggle_enable
-    @user = User.find(params[:id])
-    @user.update( enabled:  !@user.enabled? )
-    respond_to do |format|
-      format.js { render partial: 'toggle_button',
-                  locals: {button_id: "#toggle_enable_user_#{@user.id}",button_on: @user.enabled? } }
-    end
-  end
-
   protected
 
   def verify_online_registration
@@ -235,6 +198,6 @@ class UsersController < ApplicationController
     end
 
     def user_update_params
-      params.require(:user).permit(:default_language, :password, :password_confirmation)
+      params.require(:user).permit(:default_language_id, :password, :password_confirmation)
     end
 end

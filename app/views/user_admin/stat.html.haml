@@ -35,7 +35,27 @@
           .col-sm-6.text-secondary.text-end
             Solved/Attempted Problem
           .col-sm-6
-            #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
+            #{@summary[:solve]}/#{@summary[:count]} (#{(@summary[:solve]*100.0/@summary[:count]).round(1)}%)
+        -# contest info (if exists)
+        - if @contest
+          .row
+            .col
+              %hr
+          .row
+            .col-sm-6.text-secondary.text-end
+              Contest
+            .col-sm-6
+              = @contest.name
+          .row
+            .col-sm-6.text-secondary.text-end
+              Start
+            .col-sm-6
+              = @contest.start.strftime("%Y-%m-%d %H:%M")
+          .row
+            .col-sm-6.text-secondary.text-end
+              Stop
+            .col-sm-6
+              = @contest.stop.strftime("%Y-%m-%d %H:%M")
 
 
 %table#main_table.table.table-striped

@@ -90,10 +90,6 @@ class Submission < ApplicationRecord
     where("user_id = ? AND problem_id = ? AND number = ?",user_id,problem_id,number).first
   end
 
-  def self.find_all_by_user_problem(user_id, problem_id)
-    where("user_id = ? AND problem_id = ?",user_id,problem_id)
-  end
-
   def download_filename
     if self.problem.output_only
       return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
