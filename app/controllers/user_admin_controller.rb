@@ -98,20 +98,22 @@ class UserAdminController < ApplicationController
     res = User.create_from_list(lines)
     error_logins = res[:error_logins]
     error_msg = res[:first_error]
-    ok_user = res[:created_users]
-
+    created_users = res[:created_users]
+    updated_users = res[:updated_users]
 
     #add to group
     if params[:add_to_group] == '1'
-      group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(ok_user)
+      group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(created_users)
+      group = Group.find_by(id: params[:group_id])&.add_users_skip_existing(updated_users)
     end
 
     # show flash
-    if ok_user.count > 0
-      flash[:success] = "#{ok_user.count} user(s) was created or updated successfully"
-    end
+    ok_text = ''
+    ok_text += "#{created_users.count} user(s) were created successfully. " if created_users.count > 0
+    ok_text += "#{updated_users.count} user(s) were updated successfully." if updated_users.count > 0
+    flash[:success] = ok_text unless ok_text.blank?
     if error_logins.size > 0
-      flash[:error] = "Following user(s) failed to be created: " + error_logins.join(', ') + ". The error of the first failed one are: " + error_msg;
+      flash[:error] = "Following user(s) failed to be created: " + error_logins.join(', ') + ". The errors of the first failed one are: " + error_msg;
     end
     redirect_to :action => 'index'
   end

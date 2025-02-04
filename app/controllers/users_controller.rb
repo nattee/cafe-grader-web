@@ -48,7 +48,7 @@ class UsersController < ApplicationController
 
   def chg_default_language
     user = User.find(session[:user_id])
-    user.default_language = params[:default_language]
+    user.default_language_id = params[:default_language]
     if user.save
       flash[:notice] = 'default language changed'
     else
@@ -198,6 +198,6 @@ class UsersController < ApplicationController
     end
 
     def user_update_params
-      params.require(:user).permit(:default_language, :password, :password_confirmation)
+      params.require(:user).permit(:default_language_id, :password, :password_confirmation)
     end
 end

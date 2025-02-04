@@ -2,7 +2,7 @@
 .row
   .col-md-6
     = simple_form_for @current_user, url: update_self_users_path do |f|
-      = f.input :default_language, collection: Language.all
+      = f.association :default_language, collection: Language.all
       = f.input :password
       = f.input :password_confirmation
       = f.button :submit, class: 'btn btn-primary'
