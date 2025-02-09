@@ -61,11 +61,13 @@ class SubmissionsController < ApplicationController
     end
     @source = ''
 
+    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
+
     if @problem.get_permitted_lang_as_ids.count == 1
-      @language = Language.find(@problem.get_permitted_lang_as_ids[0])
+      @language = problem_lang
       @as_binary = @language.binary?
     else
-      @language = (Language.find(@current_user.default_language) rescue nil) || (Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil) || Language.first
+      @language = @current_user.default_language || problem_lang || Language.first
       @as_binary = @language.binary?
     end
 

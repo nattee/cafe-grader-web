@@ -440,7 +440,7 @@ class User < ApplicationRecord
 
       now += step.second
     end
-    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+    return {labels: label,datasets: [ {label:'sub',data: value, backgroundColor: 'rgba(255, 99, 132,0.8)', borderColor: 'rgb(255, 99, 132)'}]}
   end
 
   #create multiple user, one per lines of input

@@ -1,9 +1,8 @@
-:css
-  .fix-width {
-    font-family: Droid Sans Mono,Consolas, monospace, mono, Courier New, Courier;
-  }
-
-%h1 User stats
+%h1
+  User stats
+  - if @contest
+    %span.text-body-tertiary.fs-2
+      %i (for Contest #{@contest.name})
 
 .row.my-3
   .col-md-8
@@ -21,6 +20,8 @@
             Login
           .col-sm-6
             = @user.login
+            - if @contest
+              = link_to "(view full stat)", stat_user_admin_path(@user)
         .row
           .col-sm-6.text-secondary.text-end
             Full name

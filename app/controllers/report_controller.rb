@@ -488,6 +488,7 @@ ORDER BY submitted_at
     #     prob_#{prob.name}:, time_#{prob.name}, sub_#{prob.name}
     #     ...
     # }
+    # TODO: should be moved to Submission.calculate_max_score
     def calculate_max_score(records,problems,users)
       result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
       users.each do |u|

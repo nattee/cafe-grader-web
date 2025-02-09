@@ -7,8 +7,12 @@ pin "prepend_jquery"
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin_all_from "app/javascript/mixins", under: "mixins"
 
-#we don't need jquery in importmap because we use sprocket version
-#pin "jquery", to: 'my_jquery.js', preload: true
+#we don't really need jquery in importmap because we use sprocket version
+#but... bootbox tries to import jquery, so... we have to pin it here
+pin "jquery", to: 'my_jquery.js', preload: true
+# this is pinned but not import by other
+
+
 #pin "bootstrap", to: "bootstrap.bundle.min.js", preload: true
 #no need popper, because bundled already in bootstrap
 #pin "@popperjs/core", to: "https://ga.jspm.io/npm:@popperjs/core@2.11.6/lib/index.js"
@@ -40,3 +44,4 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 
 # rails usj (should be removed soon)
 pin "rails-ujs", to: 'rails-ujs.esm.js'
+pin "bootbox" # @6.0.0

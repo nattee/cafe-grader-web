@@ -57,7 +57,7 @@ class ProblemImporter
     group_hash = {}
 
     # we sort the filename by their natural sort order
-    natural_order_sorted = @tc.keys.sort_by{ |s| s.split(/[^\d]+/).map{ |e| Integer(e,10) rescue e}}
+    natural_order_sorted = @tc.keys.sort_by{ |s| s.split(/[^\d]+/).map{ |e| Integer(e,10) rescue 0}}
     natural_order_sorted.each do |codename|
       if @tc[codename].count >= 2
         # we found both the input and sol

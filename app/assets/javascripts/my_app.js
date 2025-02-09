@@ -19,6 +19,7 @@
 
 //TODO: should move this one into another .js that is loaded via sprocket
 
+window.jquery = jQuery
 function sleep(ms) {
   return (new Promise(resolve => setTimeout(resolve, ms))).then( () => {} );
 }

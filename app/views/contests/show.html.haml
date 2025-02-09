@@ -106,11 +106,13 @@
                 %tr
                   %th Login
                   %th Full name
+                  %th Role (hidden)
                   %th Seat
                   %th Remark
-                  %th Start:End Offset
+                  %th Extra Time (s)
                   %th Enable
-                  %th Action
+                  %th Remove
+                  %th Set Role
           -# ==========================================
           -# ---------- problem pane ------------------
           -# ==========================================
@@ -197,7 +199,7 @@
                         and
                         %span.rounded.bg-light.p-1.font-monospace remark
                         are optional. When
-                        %span.rounded.bg-light.p-1.font-monospace  seat
+                        %span.rounded.bg-light.p-1.font-monospace seat
                         or
                         %span.rounded.bg-light.p-1.font-monospace remark
                         is empty (but not missing), the original value will be used.
@@ -208,8 +210,8 @@
                         .rounded.bg-light.p-1.font-monospace user1
                         will add the user with login "user1" to the contest. If the user already exists, no change is made to the contest user
                       %li.mb-2
-                        .rounded.bg-light.p-1.font-monospace user1,room 403,
-                        will add the user with login "user1" and and set the remark to "room 403" and set the seating to an empty string. If the user already exists, the remark and seat fields are updated.
+                        .rounded.bg-light.p-1.font-monospace user1,room 403-8,
+                        will add the user with login "user1" and and set the seating to "room 403" and set the remark to an empty string. If the user is already in the contest, the seat and remark fields updated.
 
 
 :javascript
@@ -227,8 +229,23 @@
     return `${row['start_offset_second']} : ${row['extra_time_second']}`
   }
 
+  function role_action_button(data,type,row,meta) {
+    result = ''
+    if (row['role'] != 'editor') 
+      result += cafe.dt.render.button('as editor',{element_type: 'link', className: 'link-success', action: 'contest#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
+    if (row['role'] != 'user') {
+      if (result != '') result += ' | '
+      result += cafe.dt.render.button('as user',{element_type: 'link', className: 'link-info', action: 'contest#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
+    }
+    return result
+
+  }
+
+
+
   $(function() {
     //user table
+    user_role_column = 2
     user_table_config = {
       responsive: true,
       processing: true,
@@ -248,15 +265,41 @@
       columns: [ 
         {data: 'login'},
         {data: 'full_name'},
+        {data: 'role'},
         {data: 'remark'},
         {data: 'seat'},
         {data: null, render: start_stop_offset_render},
         {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
+        {data: 'user_id', render: role_action_button},
       ],
-      columnDefs: [{orderable: false, targets: [4,5]} ],
+      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [5,6]} ],
+      orderFixed: [user_role_column,'asc'],
       drawCallback: function (settings) {
+        // we assume that the row are sorted by users' role (by 'orderFixed' and 'order' options)
+        // this render a header rows when two adjacent rows has their roles differ
         var api = this.api();
+        var rows = api.rows({ page: 'current' }).nodes();
+        var last_role = null;
+        api.column(user_role_column, { page: 'current' })
+          .data()
+          .each(function (role, i) {
+              if (last_role !== role) {
+
+                // set text for role row
+                if (role == 'editor') {
+                  role_text = '<tr class="table-success"><td colspan="8"> Editors (Can edit the contest) </td></tr>'
+                } else {
+                  role_text = '<tr class="table-info"><td colspan="8"> Users (Can only submit to the contest) </td></tr>'
+                }
+
+                //prepend row
+                $(rows).eq(i).before(role_text);
+                last_role = role;
+              }
+          });
+        //since columns size changed, we call adjust
+        //but not .draw() !!! else, infinite recursion
         api.columns.adjust()
       },
     }
