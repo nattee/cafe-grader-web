@@ -6,7 +6,7 @@ class Contest < ApplicationRecord
   has_many :users, through: :contests_users
 
   scope :enabled, -> { where(enabled: true) }
-  scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
+  # scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
 
   # new_users are active record relation
   # return a toast reaponse hash
@@ -14,9 +14,11 @@ class Contest < ApplicationRecord
   # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
-  def active?
-    now = Time.zone.now
-    return enabled? && start <= now && stop >= now
+  # return an ActiveRecord relation of users that is submittable for this con
+  def submittable_users(current_time = Time.zone.now)
+    return User.none unless enabled?
+    user_ids = contests_users.where(enabled: true).where('IFNULL(extra_time_second) >= ?', current_time - self.stop).pluck :user_id
+    Users.where(id: user_ids, enabled: true)
   end
 
   def add_users(new_users)
