@@ -16,6 +16,9 @@ class Checker
     when 'relative'
       prog = Rails.root.join 'lib', 'checker', (evaluation_type + ".rb")
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
+    when 'postgres'
+      prog = Rails.root.join 'lib', 'checker', 'postgres_checker.rb'
+      return "#{prog} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cms'
       return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
@@ -56,6 +59,8 @@ class Checker
       else
         return report_check_wrong
       end
+    when 'postgres'
+      return process_result_cms(out,err)
     when 'custom_cms', 'custom_cafe'
       if status.exitstatus == 0
         if evaluation_type == 'custom_cms'

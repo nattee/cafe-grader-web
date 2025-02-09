@@ -8,7 +8,8 @@ class Dataset < ApplicationRecord
                          exact: 1, #diff ignore nothing
                          relative: 2, #token match float relate
                          custom_cafe: 3,
-                         custom_cms: 4}
+                         custom_cms: 4,
+                         postgres: 5}
 
   enum score_type:        {sum: 0,      # summation of all testcase, default
                            group_min: 1,

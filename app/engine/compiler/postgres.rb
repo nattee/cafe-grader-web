@@ -68,7 +68,6 @@ class Compiler::Postgres < Compiler
 
     out,err,status = Open3.capture3(cmd, stdin_data: sql)
     puts out
-    STDERR.puts err
     BINARY
 
     File.write(@exec_file,bin_text)
