@@ -131,9 +131,9 @@ class Checker
 
   def report_check(score,comment)
     x = {score: score, comment: comment}
-    if score == 1
+    if score.to_f == 1
       x[:result] = :correct
-    elsif score == 0
+    elsif score.to_f == 0
       x[:result] = :wrong
     else
       x[:result] = :partial
