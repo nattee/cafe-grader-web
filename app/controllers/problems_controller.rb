@@ -302,7 +302,10 @@ class ProblemsController < ApplicationController
     else
       @log = pi.log
       @problem = pi.problem
-      group.problems << @problem if group
+      if group && !group.problems.include?(@problem)
+        group.problems << @problem
+        @log << "The problem was added to the group '#{group.name}'"
+      end
 
       # when non-admin (editor) import a problem, we set available to true
       # (because they cannot set the available) but set the enabled to false

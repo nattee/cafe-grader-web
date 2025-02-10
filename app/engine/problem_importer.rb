@@ -371,14 +371,18 @@ class ProblemImporter
 
     # init problem and dataset
     @problem = Problem.find_or_create_by(name: name)
+
+    @log << "Found existing problem with the same name ('#{name}') !!! This import will UPDATE the existing problem." if @problem.id
     @problem.date_added = Time.zone.now unless @problem.date_added
     @problem.available = false if @problem.available.nil?
     @problem.full_name = full_name
     @problem.set_default_value unless @problem.id
     if dataset && dataset.problem == @problem
       @dataset = dataset
+      @log << "This import will REMOVE any existing dataset!!!"
     else
       @dataset = Dataset.new(name: @problem.get_next_dataset_name, problem: @problem)
+      @log << "This import will create a new Dataset named '#{@dataset.name}'"
     end
     @problem.datasets.where.not(id: @dataset.id).each { |ds| ds.destroy } if delete_existing
     @problem.datasets.reload
@@ -393,7 +397,7 @@ class ProblemImporter
       return nil
     end
 
-    @log << "Importing dataset for #{@problem.name} (#{@problem.id})"
+    @log << "Importing dataset for problem '#{@problem.name}' (#{@problem.id})"
 
     read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
     read_statement if do_statement
