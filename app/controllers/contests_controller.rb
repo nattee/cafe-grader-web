@@ -82,7 +82,7 @@ class ContestsController < ApplicationController
   end
 
   def clone
-    new_contest = Contest.new(name: @contest.name + ' Copy', start: Time.zone.now, stop: Time.zone.now+3.hour)
+    new_contest = Contest.new(name: @contest.name + ' Copy', description: @contest.description, start: Time.zone.now, stop: Time.zone.now+3.hour)
     new_contest.save
     @contest.contests_users.each { |cu| new_contest.contests_users.create(user_id: cu.user_id, role: cu.role)}
     @contest.contests_problems.each { |cp| new_contest.contests_problems.create(problem_id: cp.problem_id)}
