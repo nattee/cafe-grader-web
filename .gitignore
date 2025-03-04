@@ -44,7 +44,3 @@
 /config/master.key
 
 /.hg/
-
-/config/credentials/development.key
-
-/config/credentials/production.key

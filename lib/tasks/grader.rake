@@ -16,16 +16,4 @@ namespace :grader do
     Grader.watchdog;
   end
 
-  task setup_chula: :environment do
-    desc 'Setup authentication for cu.net'
-
-    conf = GraderConfiguration.find_or_create_by(key: 'chula.allow_cu_net_password')
-    conf.description = 'Allow users to use Chula password to login'
-    conf.value_type = 'boolean'
-    conf.value = 'true'
-
-    conf.save
-    puts "Setting up chula.allow_cu_net_password config"
-  end
-
 end
