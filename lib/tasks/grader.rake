@@ -26,6 +26,8 @@ namespace :grader do
 
     conf.save
     puts "Setting up chula.allow_cu_net_password config"
+    puts "You must set the api key for cucas in credentials.yml.enc"
+    puts "(see credentials.yml.SAMPLE)"
   end
 
 end
