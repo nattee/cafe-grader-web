@@ -9,7 +9,7 @@ pin_all_from "app/javascript/mixins", under: "mixins"
 
 #we don't really need jquery in importmap because we use sprocket version
 #but... bootbox tries to import jquery, so... we have to pin it here
-pin "jquery", to: 'my_jquery.js', preload: true
+# pin "jquery", to: 'my_jquery.js', preload: true
 # this is pinned but not import by other
 
 

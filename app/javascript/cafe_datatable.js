@@ -130,7 +130,7 @@ const dt = {
   render_factory: {
     array: dt_array_render_factory,
     badge: dt_array_badge_render_factory,
-  }
+  },
 }
 
 export { dt }

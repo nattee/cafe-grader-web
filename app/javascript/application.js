@@ -10,7 +10,6 @@ import "controllers"
 
 import "select2"
 import "chart"
-import "bootbox"
 
 
 // TempusDominus
@@ -26,7 +25,7 @@ window.TempusDominus = tempusDominus.TempusDominus
 
 
 // running rails ujs
-// this should be phase out??? and replace by turbo / stimulus
+// this should be phased out??? and replace by turbo / stimulus
 import Rails from 'rails-ujs';
 Rails.start()
 
@@ -46,3 +45,4 @@ Turbo.session.drive = false
 //Import cafe-grader global functions into *cafe* object
 import * as cafe from 'cafe_bundle'
 window.cafe = cafe
+

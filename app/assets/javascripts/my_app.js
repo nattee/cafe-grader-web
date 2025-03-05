@@ -1,6 +1,6 @@
 //main entry point for sprocket
+// following lines are very important, it loads several javascript files BEFORE import map
 //= require jquery3
-// = req uire jque  ry_ujs
 //= require popper
 //= require bootstrap-sprockets
 //= require moment
@@ -14,7 +14,7 @@
 //= require ace/mode-java
 //= require ace/theme-merbivore
 
-// this javascrip is loaded first, before any import map
+// -- AGAIN -- this javascript is loaded first, before any import_map
 // because it is loaded via javascript_include_tag (which is sprocket)
 
 //TODO: should move this one into another .js that is loaded via sprocket

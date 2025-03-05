@@ -42,9 +42,14 @@ class ProblemsController < ApplicationController
 
   #get statement download link
   def get_statement
-    filename = @problem.name
-    data = @problem.statement.download
-    send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
+    begin
+      filename = @problem.name
+      data = @problem.statement.download
+      send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
+    rescue  ActiveStorage::FileNotFoundError => e
+      puts e
+
+    end
   end
 
   #delete attachment
