@@ -46,3 +46,8 @@ Turbo.session.drive = false
 import * as cafe from 'cafe_bundle'
 window.cafe = cafe
 
+
+
+// this bootbox is non-minified version and is edited by dae
+// since that version does not support importmap, I have to add 'root = root || window'
+import 'bootbox'
