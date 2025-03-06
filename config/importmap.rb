@@ -31,6 +31,7 @@ pin "cafe_bundle", to: "cafe_bundle.js"
 pin "cafe", to: "cafe.js"
 pin "cafe_event", to: "cafe_event.js"
 pin "cafe_datatable", to: 'cafe_datatable.js'
+pin "cafe_turbo", to: "cafe_turbo.js"
 
 #pin "ace-rails-ap"
 pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js

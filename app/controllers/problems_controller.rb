@@ -40,15 +40,15 @@ class ProblemsController < ApplicationController
     render 'datasets/update'
   end
 
-  #get statement download link
+  #get statement download link handler
   def get_statement
     begin
       filename = @problem.name
       data = @problem.statement.download
-      send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
-    rescue  ActiveStorage::FileNotFoundError => e
-      puts e
-
+      send_data data, type: 'application/pdf',  disposition: 'attachment', filename: filename
+    rescue  ActiveStorage::FileNotFoundError
+      @error_message = "File is not found in the server."
+      render 'error'
     end
   end
 

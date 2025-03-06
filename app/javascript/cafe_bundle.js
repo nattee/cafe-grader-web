@@ -5,6 +5,7 @@
 
 export * from 'cafe'
 export * from 'cafe_datatable'
+export * from 'cafe_turbo'
 
 
 // setup the event listener
