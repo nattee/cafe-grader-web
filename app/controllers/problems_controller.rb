@@ -316,7 +316,7 @@ class ProblemsController < ApplicationController
       # (because they cannot set the available) but set the enabled to false
       unless @current_user.admin?
         @problem.update(available: true)
-        GroupProblem.where(group: group, problem: problem).first.update(enabled: false)
+        GroupProblem.where(group: group, problem: @problem).first.update(enabled: false)
       end
     end
   end
