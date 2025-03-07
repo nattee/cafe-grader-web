@@ -54,7 +54,7 @@
       %th Date added
       %th.text-center
         Avail?
-        = render partial: 'tooltip', locals: {title: 'Let user submits to this problem?'}
+        = render partial: 'tooltip', locals: {title: 'If "Avail?" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.'}
       %th.text-center
         View Data?
         = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
@@ -80,13 +80,9 @@
             %span.badge.text-bg-secondary.bg-opacity-100= t.name
         %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
         %td= problem.date_added
-        - if @current_user.admin?
-          %td
-            -#= toggle_button(@problem.available?, toggle_problem_path(@problem), "problem-avail-#{@problem.id}")
-            .form-check.form-switch
-              %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available'}}
-        - else
-          %td= @problem.available?
+        %td
+          .form-check.form-switch
+            %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available', readonly: @current_user.admin? ? 'false' : 'true'}, disabled: @current_user.admin? == false}
         %td 
           -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
           .form-check.form-switch
@@ -116,16 +112,18 @@
     })
   }
 
+  // this function is called by the 
   function set_problem_switch(problem_id,available,view_testcase) {
-    document.getElementById(`prob-${problem_id}-available-switch`).checked = available
-    document.getElementById(`prob-${problem_id}-available-switch`).disabled = false
+    let avail_button = document.getElementById(`prob-${problem_id}-available-switch`)
+    avail_button.checked = available
+    avail_button.disabled = avail_button.dataset.readonly == 'true'
 
     row = document.getElementById(`prob-${problem_id}`)
     if (available) { row.classList.add('table-success')} else { row.classList.remove('table-success')}
 
-    document.getElementById(`prob-${problem_id}-view-testcase-switch`).checked = view_testcase
-    document.getElementById(`prob-${problem_id}-view-testcase-switch`).disabled = false
-
+    let view_testcase_button = document.getElementById(`prob-${problem_id}-view-testcase-switch`)
+    view_testcase_button.checked = view_testcase
+    view_testcase_button.disabled = false
   }
 
   $(function() {

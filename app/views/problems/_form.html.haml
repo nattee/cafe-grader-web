@@ -7,7 +7,8 @@
     = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
     = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: 'Blank value means any language can be used'
     = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%m/%Y")}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
-    = form.input :available, wrapper: :horizontal_boolean
+    = form.input :available, wrapper: :horizontal_boolean, label: 'Globally Available', tooltip: 'If "Globally available" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.' , disabled: @current_user.admin? == false
+    = form.input :view_testcase, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false
     = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
     = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers']], wrapper: :horizontal_select
     = form.input :submission_filename

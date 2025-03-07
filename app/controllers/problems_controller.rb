@@ -26,6 +26,7 @@ class ProblemsController < ApplicationController
   before_action :can_report_problem, only: [:stat]
   before_action :stimulus_controller
 
+
   def index
     @problem = problem_for_manage(@current_user)
   end
@@ -189,6 +190,7 @@ class ProblemsController < ApplicationController
 
     #for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
+    @can_view_ip =  true
   end
 
   def manage

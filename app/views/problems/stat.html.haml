@@ -45,7 +45,7 @@
         %th Submitted at
         %th Result
         %th Score
-        - if session[:admin]
+        - if @can_view_ip
           %th IP
     %tbody
       - row_odd,curr = true,''

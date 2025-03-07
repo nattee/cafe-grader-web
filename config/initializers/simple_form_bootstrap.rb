@@ -204,6 +204,7 @@ SimpleForm.setup do |config|
   # horizontal input for boolean
   config.wrappers :horizontal_boolean, class: 'row mb-3' do |b|
     b.use :html5
+    b.use :tooltip
     b.optional :readonly
     b.wrapper :grid_wrapper, class: 'col-sm-9 offset-sm-3' do |wr|
       wr.wrapper :form_check_wrapper, class: 'form-check' do |bb|
