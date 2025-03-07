@@ -114,14 +114,26 @@ class DatasetsController < ApplicationController
 
   # as turbo
   def testcase_input
-    tc = Testcase.find(params[:tc_id])
-    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: "<pre>#{tc.inp_file.download}</pre>".html_safe }
+    begin
+      tc = Testcase.find(params[:tc_id])
+      text = tc.inp_file.download
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Input', body_msg: "<pre>#{text}</pre>".html_safe }
+    rescue  ActiveStorage::FileNotFoundError
+      text = "<div class='alert alert-danger'>File NOT Found on the server!!!</div>".html_safe
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Input ERROR', body_msg: text }
+    end
   end
 
   # as turbo
   def testcase_sol
-    tc = Testcase.find(params[:tc_id])
-    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: "<pre>#{tc.ans_file.download}</pre>".html_safe }
+    begin
+      tc = Testcase.find(params[:tc_id])
+      text = tc.ans_file.download
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Answer', body_msg: "<pre>#{text}</pre>".html_safe }
+    rescue  ActiveStorage::FileNotFoundError
+      text = "<div class='alert alert-danger'>File NOT Found on the server!!!</div>".html_safe
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Answer ERROR', body_msg: text }
+    end
   end
 
   # as turbo
