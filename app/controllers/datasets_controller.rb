@@ -1,20 +1,31 @@
 class DatasetsController < ApplicationController
+  include ProblemAuthorization
+
+  # list of methods that are for viewing which requires viewable permission
+  # (all others methods except this one are considered UPDATE_METHOD which require editable permission)
+  VIEW_METHOD = %i[ view setting testcases files
+                    testcase_input testcase_sol]
+
   before_action :set_dataset, only: %i[ show edit update destroy
                                         file_delete file_view file_download
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
                                         settings files testcases
                                       ]
-  before_action :admin_authorization
   before_action :check_valid_login
+  before_action :is_group_editor_authorization
+  before_action :can_view_problem, only: VIEW_METHOD
+  before_action :can_edit_problem, except: VIEW_METHOD
 
   # GET /datasets/new
   def new
     @dataset = Dataset.new
   end
 
-  #
-  def show
+  def view
+    @dataset = Dataset.find(params[:null][:dsid])
+    @active_tab = params[:null][:active_tab]
+    render :update
   end
 
   # GET /datasets/1/edit
@@ -140,11 +151,6 @@ class DatasetsController < ApplicationController
     render :update
   end
 
-  def view
-    @dataset = Dataset.find(params[:null][:dsid])
-    @active_tab = params[:null][:active_tab]
-    render :update
-  end
 
   def set_as_live
     @dataset.problem.update(live_dataset: @dataset)
@@ -192,6 +198,7 @@ class DatasetsController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_dataset
       @dataset = Dataset.find(params[:id])
+      @problem = @dataset.problem
     end
 
     # Only allow a list of trusted parameters through.

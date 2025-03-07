@@ -1,6 +1,7 @@
 class ProblemsController < ApplicationController
 
-  include ActiveStorage::SetCurrent
+  # concern for problem authorization
+  include ProblemAuthorization
 
   MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
                    :delete_statement, :delete_attachment,
@@ -386,33 +387,6 @@ class ProblemsController < ApplicationController
 
     def description_params
       params.require(:description).permit(:body, :markdowned)
-    end
-
-    def can_edit_problem
-      return true if @current_user.admin?
-      return true if @current_user.problems_for_action(:edit).where(id: @problem).any?
-      unauthorized_redirect(msg: 'You are not authorized to edit this problem')
-    end
-
-    def can_report_problem
-      return true if @current_user.admin?
-      return true if @current_user.problems_for_action(:report).where(id: @problem).any?
-      unauthorized_redirect(msg: 'You are not authorized to analyze this problem')
-    end
-
-    def can_view_problem
-      return true if @current_user.admin?
-
-      #if a user is a reporter or an editor, they can access disabled problem, which is not allowed in problems_for_action(:submit)
-      return true if @current_user.problems_for_action(:report).where(id: @problem).any? 
-      return true if @current_user.problems_for_action(:submit).where(id: @problem).any?
-      unauthorized_redirect(msg: 'You are not authorized to access this problem')
-    end
-
-    def is_group_editor_authorization
-      return true if @current_user.admin?
-      return true if @current_user.groups_for_action(:edit).any?
-      unauthorized_redirect(msg: "You cannot manage any problem");
     end
 
     def allow_test_pair_import?

@@ -11,6 +11,8 @@ class ApplicationController < ActionController::Base
   before_action :unique_visitor_id
   before_action :active_controller_action
 
+  include ActiveStorage::SetCurrent
+
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'

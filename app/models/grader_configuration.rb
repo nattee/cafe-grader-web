@@ -15,7 +15,7 @@ class GraderConfiguration < ApplicationRecord
   SYSTEM_USE_PROBLEM_GROUP = 'system.use_problem_group'
   SYSTEM_MINIMUM_LAST_LOGIN_TIME = 'system.min_last_login_time'
 
-  cattr_accessor :config_cache
+  class_attribute :config_cache
   cattr_accessor :task_grading_info_cache
   cattr_accessor :contest_time_str
   cattr_accessor :contest_time
