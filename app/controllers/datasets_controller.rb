@@ -13,7 +13,7 @@ class DatasetsController < ApplicationController
                                         settings files testcases
                                       ]
   before_action :check_valid_login
-  before_action :is_group_editor_authorization
+  before_action :group_editor_authorization
   before_action :can_view_problem, only: VIEW_METHOD
   before_action :can_edit_problem, except: VIEW_METHOD
 

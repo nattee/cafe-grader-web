@@ -14,7 +14,7 @@ class ProblemsController < ApplicationController
   before_action :check_valid_login
 
   #permission
-  before_action :is_group_editor_authorization, except: [:get_statement, :get_attachment]
+  before_action :group_editor_authorization, except: [:get_statement, :get_attachment]
   before_action :can_view_problem, only: [:get_statement, :get_attachment]
 
   before_action :admin_authorization, only: [:toggle_available, :turn_all_on, :turn_all_off, :download_archive]

@@ -1,9 +1,12 @@
 class AnnouncementsController < ApplicationController
+  MEMBER_METHOD = %i[show edit destroy update delete_file
+                     toggle_front toggle_published
+                    ]
 
-  before_action :set_announcement, only: [:show, :edit, :destroy, :update, :delete_file,
-                                          :toggle_published, :toggle_front]
+  before_action :set_announcement, only: MEMBER_METHOD
 
-  before_action :admin_authorization
+  before_action :group_editor_authorization
+  before_action :can_edit_announcement, only: MEMBER_METHOD
   before_action :stimulus_controller
 
   # GET /announcements
@@ -51,6 +54,14 @@ class AnnouncementsController < ApplicationController
   # POST /announcements.xml
   def create
     @announcement = Announcement.new(announcement_params)
+
+    # check if the user can, and has, set group
+    unless @current_user.admin?
+      editor_groups = @current_user.groups_for_action(:edit)
+      unless (!@announcement.nil? || editor_groups.include?(@announcement.group))
+        @announcement.group = editor_groups.take
+      end
+    end
     respond_to do |format|
       if @announcement.save
         flash[:notice] = 'Announcement was successfully created.'
@@ -109,7 +120,13 @@ class AnnouncementsController < ApplicationController
     end
 
     def announcement_params
-      params.require(:announcement).permit(:author, :body, :published, :frontpage, :contest_only, :title, :on_nav_bar, :file)
+      params.require(:announcement).permit(:author, :body, :published, :frontpage, :contest_only, :title, :on_nav_bar, :file, :group_id)
+    end
+
+    def can_edit_announcement
+      return true if @current_user.admin?
+      return true if @current_user.groups_for_action(:edit).where(id: @announcement.group).any?
+      unauthorized_redirect(msg: 'You are not authorized to edit this announcement')
     end
 
     def stimulus_controller

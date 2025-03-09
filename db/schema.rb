@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
+ActiveRecord::Schema[7.0].define(version: 2025_03_08_164629) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -41,7 +41,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
 
   create_table "announcements", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "author"
-    t.text "body", size: :medium
+    t.text "body", size: :long
     t.boolean "published"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
@@ -50,6 +50,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.string "title"
     t.string "notes"
     t.boolean "on_nav_bar", default: false
+    t.bigint "group_id"
+    t.index ["group_id"], name: "index_announcements_on_group_id"
   end
 
   create_table "contests", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -87,6 +89,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.string "seat"
     t.boolean "enabled", default: true
     t.datetime "last_heartbeat"
+    t.integer "role", default: 0
     t.index ["contest_id"], name: "index_contests_users_on_contest_id"
     t.index ["user_id"], name: "index_contests_users_on_user_id"
   end
@@ -113,7 +116,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
   end
 
   create_table "descriptions", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.text "body", size: :medium
+    t.text "body", size: :long
     t.boolean "markdowned"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
@@ -139,7 +142,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.string "value"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.text "description", size: :medium
+    t.text "description", size: :long
   end
 
   create_table "grader_processes", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -183,7 +186,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.index ["user_id", "group_id"], name: "index_groups_users_on_user_id_and_group_id"
   end
 
-  create_table "heart_beats", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "heart_beats", id: :integer, charset: "latin1", force: :cascade do |t|
     t.integer "user_id"
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
@@ -215,7 +218,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.boolean "binary", default: false
   end
 
-  create_table "logins", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "logins", id: :integer, charset: "latin1", force: :cascade do |t|
     t.integer "user_id"
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
@@ -228,14 +231,14 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.integer "sender_id"
     t.integer "receiver_id"
     t.integer "replying_message_id"
-    t.text "body", size: :medium
+    t.text "body", size: :long
     t.boolean "replied"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
   end
 
   create_table "problems", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "name", limit: 30
+    t.string "name", limit: 100
     t.string "full_name"
     t.integer "full_score"
     t.date "date_added"
@@ -272,7 +275,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.string "action"
   end
 
-  create_table "rights_roles", id: false, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "rights_roles", id: false, charset: "utf8mb3", force: :cascade do |t|
     t.integer "right_id"
     t.integer "role_id"
     t.index ["role_id"], name: "index_rights_roles_on_role_id"
@@ -282,7 +285,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.string "name"
   end
 
-  create_table "roles_users", id: false, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "roles_users", id: false, charset: "utf8mb3", force: :cascade do |t|
     t.integer "role_id"
     t.integer "user_id"
     t.index ["user_id"], name: "index_roles_users_on_user_id"
@@ -290,7 +293,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
 
   create_table "sessions", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "session_id"
-    t.text "data", size: :medium
+    t.text "data", size: :long
     t.datetime "updated_at", precision: nil
     t.index ["session_id"], name: "index_sessions_on_session_id"
     t.index ["updated_at"], name: "index_sessions_on_updated_at"
@@ -306,7 +309,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.string "password"
   end
 
-  create_table "submission_view_logs", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "submission_view_logs", id: :integer, charset: "latin1", force: :cascade do |t|
     t.integer "user_id"
     t.integer "submission_id"
     t.datetime "created_at", precision: nil, null: false
@@ -321,10 +324,10 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.binary "binary", size: :long
     t.datetime "submitted_at", precision: nil
     t.datetime "compiled_at", precision: nil
-    t.text "compiler_message", size: :medium
+    t.text "compiler_message", size: :long
     t.datetime "graded_at", precision: nil
     t.decimal "points", precision: 8, scale: 4
-    t.text "grader_comment", size: :medium
+    t.text "grader_comment", size: :long
     t.integer "number"
     t.string "source_filename"
     t.float "max_runtime"
@@ -352,7 +355,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.boolean "primary", default: false
   end
 
-  create_table "tasks", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "tasks", id: :integer, charset: "utf8mb3", force: :cascade do |t|
     t.integer "submission_id"
     t.datetime "created_at", precision: nil
     t.integer "status"
@@ -380,7 +383,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.datetime "updated_at", precision: nil, null: false
     t.datetime "submitted_at", precision: nil
     t.datetime "compiled_at", precision: nil
-    t.text "compiler_message", size: :medium
+    t.text "compiler_message", size: :long
     t.datetime "graded_at", precision: nil
     t.string "grader_comment"
     t.datetime "created_at", precision: nil, null: false
@@ -397,8 +400,8 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.integer "weight"
     t.text "input", size: :long
     t.text "sol", size: :long
-    t.datetime "created_at", precision: nil
-    t.datetime "updated_at", precision: nil
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.bigint "dataset_id"
     t.string "group_name"
     t.string "code_name"
@@ -406,7 +409,7 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.index ["problem_id"], name: "index_testcases_on_problem_id"
   end
 
-  create_table "user_contest_stats", id: :integer, charset: "utf8mb3", collation: "utf8mb3_unicode_ci", force: :cascade do |t|
+  create_table "user_contest_stats", id: :integer, charset: "utf8mb3", force: :cascade do |t|
     t.integer "user_id"
     t.datetime "started_at", precision: nil
     t.datetime "created_at", precision: nil, null: false
@@ -426,10 +429,10 @@ ActiveRecord::Schema[7.0].define(version: 2025_02_04_091008) do
     t.boolean "activated", default: false
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
+    t.string "section"
     t.boolean "enabled", default: true
     t.string "remark"
     t.string "last_ip"
-    t.string "section"
     t.integer "default_language_id"
     t.datetime "last_heartbeat"
     t.index ["login"], name: "index_users_on_login", unique: true

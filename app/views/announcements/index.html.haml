@@ -1,7 +1,16 @@
 %h1 Announcements
-
-= link_to '+ Add announcement', new_announcement_path, class: 'btn btn-success'
-%br
+.row.mb-3
+  .col-md-5
+    = link_to '+ Add announcement', new_announcement_path, class: 'btn btn-success'
+  .col-md-7
+    .card.bg-warning-subtle.shadow-sm.mb-3
+      .card-body
+        %ul.mb-0
+          %li 
+            Announcement can be written using #{link_to 'markdown syntax', 'https://www.markdownguide.org/basic-syntax/'}.
+          %li Public announcement is shown to everyone.
+          %li If a group is specified, the announcements will be shown to the users of that group only.
+          %li Only site admins can create public announcement.
 
 %table.table.table-striped
   %thead
@@ -9,7 +18,8 @@
     %th Announcement
     %th Author
     %th{style: 'width: 100px'} Published?
-    %th{style: 'width: 100px'}Front?
+    %th{style: 'width: 100px'} Front?
+    %th Group
     %th
     %th
   - for announcement in @announcements
@@ -33,7 +43,13 @@
       %td
         .form-check.form-switch
           %input.form-check-input{id: "ann-#{announcement.id}-front-switch", checked: announcement.frontpage, type: "checkbox", data: {action: 'announcement#toggle', 'row-id': announcement.id, field: 'front'}}
-      %td= link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-block btn-sm btn-info'
+      %td
+        - if announcement.group.nil?
+          .badge.text-bg-success Public
+          
+        - else
+          = announcement.group.name
+      %td= link_to 'Edit', edit_announcement_path(announcement)
       %td= link_to 'Destroy', announcement, :confirm => 'Are you sure?', :method => :delete, class: "btn btn-block btn-sm btn-danger"
 %br
 

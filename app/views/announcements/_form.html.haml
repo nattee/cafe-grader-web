@@ -10,6 +10,7 @@
   = f.input :notes, label: 'Notes (shown internally, used to organize announcements)'
   = f.input :body, input_html: {style: 'height: 10rem'}
   = f.input :author
+  = f.input :group_id, collection: @current_user.groups_for_action(:edit), include_blank: @current_user.admin?
   = f.input :published
   = f.input :frontpage, label: 'Display in the front page only?'
   = f.input :on_nav_bar, label: 'Show on menu bar?'

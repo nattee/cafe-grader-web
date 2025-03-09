@@ -28,11 +28,6 @@ module ProblemAuthorization
       unauthorized_redirect(msg: 'You are not authorized to access this problem')
     end
 
-    def is_group_editor_authorization
-      return true if @current_user.admin?
-      return true if @current_user.groups_for_action(:edit).any?
-      unauthorized_redirect(msg: "You cannot manage any problem");
-    end
   end
 
 end

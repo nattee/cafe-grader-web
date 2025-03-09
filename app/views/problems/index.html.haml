@@ -14,13 +14,13 @@
             Setting
             %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
             is
-            %strong= "#{GraderConfiguration.use_problem_group?}."
+            %strong>= "#{GraderConfiguration.use_problem_group?}"
+            ="."
             - if GraderConfiguration.use_problem_group?
               Normal users will see only
               %strong enabled
               problems in the groups of which they are memebers.
-              You can manage groups at
-              = link_to 'Manage/Groups', groups_path
+              You can manage groups at #{link_to 'Manage/Groups', groups_path}.
             - else
               Normal users will see
               %strong every

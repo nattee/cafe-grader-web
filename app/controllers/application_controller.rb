@@ -98,6 +98,12 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  def group_editor_authorization
+    return true if @current_user.admin?
+    return true if @current_user.groups_for_action(:edit).any?
+    unauthorized_redirect(msg: "You cannot manage any problem");
+  end
+
   # redirect when user does not have specific roles in any group
   # allowed_roles should be :xxx
   def group_action_authorization(action)

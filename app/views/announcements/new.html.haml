@@ -3,7 +3,12 @@
 -content_for(:form_buttons) do
   = link_to t(:back), announcements_path, class: 'card-link btn btn-secondary'
 
-= render 'form'
+.row
+  .col-md-6
+    .card.shadow-sm
+      .card-body
+
+        = render 'form'
 
 -# old style
   = error_messages_for :announcement
