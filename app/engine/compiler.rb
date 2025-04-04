@@ -130,13 +130,13 @@ class Compiler
         raise GraderError.new("Error upload compiled file to server \"#{he}\"",submission_id: @sub.id )
       end
 
-      sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message].truncate(65000))
+      sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message].truncate(15000))
       judge_log rb_sub(@sub) + Rainbow(' compilation completed successfully').color(COLOR_COMPILE_SUCCESS)
       return {status: :success, result_description: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
       judge_log rb_sub(@sub) + Rainbow(' compilation completed with error').color(COLOR_COMPILE_ERROR)
-      sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(65000),
+      sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(15000),
                  points: 0, grader_comment: 'Compilation error',graded_at: Time.zone.now)
       return {status: :success, result_description: 'Compilation error', compile_result: :error}
     end

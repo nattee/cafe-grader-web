@@ -131,6 +131,28 @@ class User < ApplicationRecord
     end
   end
 
+  # ---- groups for the users for specific action ------
+  # * This includes logic of User.role where admin always has right to any group
+  # * This also includes logics of mode of the grader (normal, contest, analysis)
+  # * This also consider whether the user is enabled ---
+  # * This DOES NOT respect group_mode, it always performed as the group mode is enabled
+  #
+  # valid action is either :submit, :edit
+  def contests_for_action(action)
+    return Contest.all if admin?
+    return Contest.none unless enabled?
+    action = action.to_sym
+    
+    # normal mode
+    if action == :edit
+      return Contest.editable_by_user(self.id)
+    elsif action == :submit
+      return Contest.submittable_by_user(self.id)
+    else
+      raise ArgumentError.new('action must be one of :edit, :submit')
+    end
+  end
+
   def reportable_users
     return User.all if admin?
     User.where(id: groups_for_action(:report).joins(:users).pluck('groups_users.user_id'))

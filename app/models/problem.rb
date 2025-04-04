@@ -234,7 +234,7 @@ class Problem < ApplicationRecord
     when 'cpp'
       'a.out'
     when 'python'
-      'code.pyc'
+      'cafe_code.py'
     when 'java','digital'
       #for java, the compilation create a shell script that runs the file
       'run.sh'

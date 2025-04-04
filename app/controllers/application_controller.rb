@@ -98,6 +98,7 @@ class ApplicationController < ActionController::Base
     return true
   end
 
+  # check whether the user is an editor of any group
   def group_editor_authorization
     return true if @current_user.admin?
     return true if @current_user.groups_for_action(:edit).any?

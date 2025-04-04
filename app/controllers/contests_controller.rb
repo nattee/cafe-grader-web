@@ -9,37 +9,33 @@ class ContestsController < ApplicationController
   before_action :set_problem, only: [:do_problem]
 
   USER_ACTION = [:user_check_in, :set_active]
-  before_action :admin_authorization, except: USER_ACTION
+  EDITOR_ACTION = %i[show edit update destroy view view_query clone
+                     show_users_query show_problems_query
+                     add_users_from_csv add_user add_user_by_group
+                     add_problem add_problem_by_group
+                     toggle do_all_users do_user do_all_problems do_problem
+                    ]
   before_action :check_valid_login, only: USER_ACTION
+  before_action :group_editor_authorization, except: USER_ACTION
+  before_action :can_manage_contest, only: EDITOR_ACTION
 
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
   # GET /contests
   # GET /contests.xml
   def index
-    @contests = Contest.all
-
     respond_to do |format|
       format.html # index.html.erb
-      format.xml  { render :xml => @contests }
-    end
-  end
-
-  def set_active
-    #validate
-    unless @contest.users.include?(@current_user) && @contest.enabled?
-      redirect_to list_main_path, error: 'You are not part of the selected contest'
-    else
-      session[:contest_id] = @contest.id
-      redirect_to list_main_path
     end
   end
 
   def index_query
-    render json: {data: Contest.all,
-                  userCount: ContestUser.group('contest_id').count('user_id'),
-                  probCount: ContestProblem.group('contest_id').count('problem_id') }
+    @contests_for_manage = @current_user.contests_for_action(:edit)
+    render json: {data: @contests_for_manage,
+                  userCount: ContestUser.where(contest_id: @contests_for_manage.ids).group('contest_id').count('user_id'),
+                  probCount: ContestProblem.where(contest_id: @contests_for_manage.ids).group('contest_id').count('problem_id') }
   end
+
 
   # GET /contests/1
   # GET /contests/1.xml
@@ -265,12 +261,11 @@ class ContestsController < ApplicationController
   def add_problem
     #find return arrays of objecs
     begin
-      problems = Problem.where(id: params[:problem_ids]) #this find multiple problems
+      # this find multiple problems that matches the ID that is also editable by the user
+      problems = Problem.group_editable_by_user(@current_user).where(id: params[:problem_ids])
       @toast = @contest.add_problems_and_assign_number(problems)
       render 'turbo_toast'
-    rescue => e
-      puts e.message
-      puts e.backtrace
+    rescue
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
@@ -278,27 +273,14 @@ class ContestsController < ApplicationController
   def add_problem_by_group
     begin
       problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @contest.problems.ids).pluck :problem_id
-      @toast = @contest.add_problems_and_assign_number(Problem.where(id: problem_ids))
+      problems = Problem.group_editable_by_user(@current_user).where(id: problem_ids)
+      @toast = @contest.add_problems_and_assign_number(problems)
       render 'turbo_toast'
-    rescue => e
+    rescue
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
 
-  def user_check_in
-    #ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
-    current = Time.zone.now
-    last = @current_user.last_heartbeat || current
-    @current_user.update(last_heartbeat: current)
-    ms_since_last_check_in = ((current - last) * 1000).to_i
-    if (@current_contest)
-      ms_until_contest_end = ((@current_contest.stop - current) * 1000).to_i
-
-      cu = ContestUser.where(contest: @current_contest, user: @current_user)
-      cu.update(last_heartbeat: current) if (cu)
-    end
-    render json: {ms_since_last_check_in: ms_since_last_check_in, ms_until_contest_end: ms_until_contest_end, current_time: current}
-  end
 
 
   # DELETE /contests/1
@@ -328,6 +310,33 @@ class ContestsController < ApplicationController
     end
   end
 
+  # ---- useraction ----
+  def set_active
+    #validate
+    unless @contest.users.include?(@current_user) && @contest.enabled?
+      redirect_to list_main_path, error: 'You are not part of the selected contest'
+    else
+      session[:contest_id] = @contest.id
+      redirect_to list_main_path
+    end
+  end
+
+  def user_check_in
+    #ContestUser.where(id: Contest.active.joins(:contests_users).where(contests_users: {user_id: @current_user}).pluck('contests_users.id')).update_all(last_heartbeat: Time.zone.now)
+    current = Time.zone.now
+    last = @current_user.last_heartbeat || current
+    @current_user.update(last_heartbeat: current)
+    ms_since_last_check_in = ((current - last) * 1000).to_i
+    if (@current_contest)
+      ms_until_contest_end = ((@current_contest.stop - current) * 1000).to_i
+
+      cu = ContestUser.where(contest: @current_contest, user: @current_user)
+      cu.update(last_heartbeat: current) if (cu)
+    end
+    render json: {ms_since_last_check_in: ms_since_last_check_in, ms_until_contest_end: ms_until_contest_end, current_time: current}
+  end
+
+
   private
 
     def set_contest
@@ -342,9 +351,13 @@ class ContestsController < ApplicationController
       @problem = Problem.find(params[:problem_id]) rescue nil
     end
 
+    def can_manage_contest
+      @contests_for_manage = @current_user.contests_for_action(:edit)
+      unauthorized_redirect(msg: "You cannot manage this contest") if @contests_for_manage.where(id: @contest.id).none?
+    end
+
     def contests_params
       params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop, :finalized)
-
     end
 
 end
