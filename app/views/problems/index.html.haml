@@ -9,33 +9,38 @@
   .col-md-7
     .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body
+        %h4 
+          Configurations Status
+          .mi.mi-bs.fill settings
         %ul.mb-0
           %li
-            Setting
+            Since
             %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
             is
-            %strong>= "#{GraderConfiguration.use_problem_group?}"
-            ="."
+            %strong>= " #{GraderConfiguration.use_problem_group?}"
+            =","
             - if GraderConfiguration.use_problem_group?
-              Normal users will see only
+              normal users will only have access to
               %strong enabled
-              problems in the groups of which they are memebers.
-              You can manage groups at #{link_to 'Manage/Groups', groups_path}.
+              problems within their assigned groups.
+              To manage these groups, visit #{link_to 'Manage/Groups', groups_path}.
             - else
               Normal users will see
               %strong every
               problems that are
               %strong available.
-          - if GraderConfiguration.use_problem_group?
-            %li
-              %strong Available 
-              is a global setting. Problems that have their available set to
-              %strong false
-              will not be shown to a user even though the problem are enabled in a group. 
-              Only admin can change the availability of problems. 
-              For group editor, use the
-              %strong enabled
-              option in group management
+        %h4
+          Usage
+          .mi.mi-bs.fill help
+        %ul.mb-0
+          %li
+            %strong Available
+            is a global setting per problem. Problems that have their available set to
+            %strong false
+            won't appear to any user, even if the problem is enabled in their group. 
+            Only admin can change availability status, while group editor should use the
+            %strong enabled
+            option in group management to control visibility within groups.
 
 %table#main_table.table.table-condense.table-hover
   %thead

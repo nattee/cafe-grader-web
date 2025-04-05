@@ -255,6 +255,7 @@ class ProblemsController < ApplicationController
 
   def import
     @allow_test_pair_import = allow_test_pair_import?
+    @allow_blank_group = @current_user.admin?
   end
 
 
