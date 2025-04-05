@@ -47,7 +47,8 @@ class ProblemsController < ApplicationController
     begin
       filename = @problem.name
       data = @problem.statement.download
-      send_data data, type: 'application/pdf',  disposition: 'attachment', filename: filename
+      # we send as inline because we want it to be rendered on the browser instead of downloading
+      send_data data, type: 'application/pdf',  disposition: 'inline', filename: (filename+'.pdf')
     rescue  ActiveStorage::FileNotFoundError
       @error_message = "File is not found in the server."
       render 'error'

@@ -1,6 +1,7 @@
 %h1 Manage problems
 
-%p= link_to '[Back to problem list]', problems_path
+.mb-3
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1'
 
 - if @result && @result.count > 0
   .alert.alert-info
@@ -81,28 +82,6 @@
         %th Tags
         %th Date added
         %th Available
-
-    -#
-      %tbody
-        - num = 0
-        - for problem in @problems
-          - num += 1
-          %tr{:id => "row-prob-#{problem.id}", :name=> "prob-#{problem.id}"}
-            %td= check_box_tag "prob-#{problem.id}-#{num}"
-            %td= problem.name
-            %td= problem.full_name
-            %td
-              - (problem.permitted_lang || '').split(' ').each do |l_name|
-                %span.badge.text-bg-secondary= l_name
-            %td
-              - problem.tags.each do |t|
-                %span.badge.text-bg-secondary= t.name
-            %td 
-              - if problem.available
-                %span.badge.text-bg-success Yes
-              - else
-                %span.badge.text-bg-danger No
-            %td= problem.date_added
 
 :javascript
 
