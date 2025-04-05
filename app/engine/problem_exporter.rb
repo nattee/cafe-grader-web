@@ -103,6 +103,7 @@ class ProblemExporter
   # save the @options hash into a YAML file
   def export_options
     #problem fields
+    #MUST MATCH ONES IN problem_importer.rb + "name"
     p_options = %i(name full_name submission_filename task_type compilation_type permitted_lang)
     p_options.each do |opt| 
       @options[opt] = @problem.send(opt) unless @problem.send(opt).blank?
@@ -110,14 +111,15 @@ class ProblemExporter
     end
 
     #live dataset fields
-    d_options = %i(time_limit memory_limit score_type evaluation_type main_filename)
+    #MUST MATCH ONES IN problem_importer.rb
+    d_options = %i(time_limit memory_limit score_type evaluation_type main_filename initializer_filename)
     d_options.each do |opt|
       @options[opt] = @ds.send(opt) unless @ds.send(opt).blank?
       @options[opt] = @options[opt].to_f if @options[opt].is_a? BigDecimal
     end
     @options[OptionConst::YAML_KEY[:ds_name]] = @ds.name
 
-    #managers, checker
+    #managers, checker, initializers
     @options[OptionConst::YAML_KEY[:dir][:managers]] = OptionConst::DEFAULT[:dir][:managers]
     @options[OptionConst::YAML_KEY[:dir][:checker]] = OptionConst::DEFAULT[:dir][:checker]
     @options[OptionConst::YAML_KEY[:dir][:model_sols]] = OptionConst::DEFAULT[:dir][:model_sols]
@@ -152,6 +154,7 @@ class ProblemExporter
     export_attachment
     export_testcases
     export_managers_checker
+    export_initializers
     export_options
     export_solutions
     result[:status] = :ok
