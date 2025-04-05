@@ -152,6 +152,7 @@ class ProblemExporter
     export_attachment
     export_testcases
     export_managers_checker
+    export_initializers
     export_options
     export_solutions
     result[:status] = :ok
