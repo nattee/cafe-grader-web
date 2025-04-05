@@ -9,9 +9,10 @@
   .col-lg-6
     %div{style: 'height: 350px'}
       %canvas#chart_2
-%table#table.table.datatable
+%table#table.table.datatable.table-hover
   %thead
     %tr
+      %th #
       %th Login
       %th Name
       %th Remark
@@ -20,6 +21,17 @@
       - @problems.each do |p|
         %th= p.name.gsub('_',' ')
       %th Sum
+  %tfoot
+    %tr
+      %td
+      %td Summation
+      %td
+      %td
+      %td
+      %td
+      - @problems.each do |p|
+        %td.text-end{id: "sum_prob_#{p.id}"}
+      %td#grand_total.text-end
 
 
 :javascript
@@ -65,6 +77,7 @@
       return {data: `prob_${id}`,className: 'text-end',render: score_renderer_factory(id) }
     })
     columns = [
+      {data: 'row_number'},
       {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
       {data: 'full_name'},
       {data: 'remark'},
@@ -138,6 +151,21 @@
         type: 'POST',
         headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
         dataSrc: function (json) {
+          // add placeholder data for row numbering
+          json.data.forEach( (item,index) =>  { item.row_number = 1} )
+
+          // change the summation value
+          let grand_total = 0
+          Object.entries(json.result.stat).forEach( ([key,value]) => {
+            grand_total += Number(value.sum)
+            const formatted = Number(value.sum).toLocaleString(undefined, {minimumFractionDigits: 1})
+            $(`#sum_prob_${key}`).text(formatted)
+          })
+
+          $(`#grand_total`).text(grand_total.toLocaleString(undefined, {minimumFractionDigits: 1}))
+
+
+          // render the graph and also return the data
           return score_display(json)
         }
       },
@@ -159,7 +187,16 @@
     //initialize the table
     table = $('#table').DataTable(table_config)
 
-    // handle click on "show" checkbox
+    // add row numbering
+    table.on('order.dt search.dt', function () {
+      let i = 1;
+      let t = $('#table').DataTable()
+
+      // select columns 0 of every row, as search and order is applied
+      t.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+        this.data(i++);
+      });
+    }).draw();
   });
 
     //
@@ -169,7 +206,7 @@
       //build dataset
       users_count = json.data.length
       data = {
-        labels: Array.from(Array(users_count), (_, i) => i+1), //this build [1,2,3,4,....,N]
+        labels: Array.from(Array(users_count), (_, i) => i+1), //this builds [1,2,3,4,....,N]
         datasets:
           json.problem.map( (a) => {
             return {
