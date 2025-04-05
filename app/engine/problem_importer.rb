@@ -121,6 +121,7 @@ class ProblemImporter
 
   def read_options
     # process options for dataset
+    #MUST MATCH ONES IN problem_exporter.rb
     p_options = %i(full_name submission_filename task_type compilation_type permitted_lang)
     p_options.each do |opt|
       if @options.has_key? opt
@@ -129,7 +130,9 @@ class ProblemImporter
       end
     end
 
-    d_options = %i(time_limit memory_limit score_type evaluation_type main_filename)
+    #live dataset fields
+    #MUST MATCH ONES IN problem_exporter.rb
+    d_options = %i(time_limit memory_limit score_type evaluation_type main_filename initializer_filename)
     d_options.each do |opt|
       if @options.has_key? opt
         @log << "dataset.#{opt} is set to '#{@options[opt]}' by options file"
