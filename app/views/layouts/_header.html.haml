@@ -91,7 +91,7 @@
                 %span.mi.mi-bs.md-18 chat
           - if GraderConfiguration['system.user_setting_enabled']
             %li.nav-item
-              %a.nav-link{href: profile_users_path}
+              %a.nav-link{href: profile_users_path, 'data-user-id': @current_user.id}
                 %span.mi.mi-bs.md-18 settings
           %li.nav-item
             %a.nav-link{href: logout_main_path}
