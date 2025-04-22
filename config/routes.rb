@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       post 'add_user_by_group'
       post 'do_all_users'
       post 'do_user'
+      post 'extra_time_user'
 
       # contests_problems
       post 'show_problems_query'
