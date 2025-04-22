@@ -83,6 +83,11 @@
                   data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'placeholder'}} do |f|
                   = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
+                = form_with url: extra_time_user_contest_path, html: {'data-contest-target': 'userExtraTimeForm', id: 'extra-time-user-form',
+                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}} do |f|
+                  = f.hidden_field :row_id, 'data-contest-target': 'userExtraTimeFormRowID'
+                  = f.hidden_field :start_offset, 'data-contest-target': 'userExtraTimeFormStart'
+                  = f.hidden_field :end_offset, 'data-contest-target': 'userExtraTimeFormEnd'
                 -# actions affecting all users buttons
                 .row.mb-2
                   .col-md-3
@@ -226,7 +231,7 @@
   }
 
   function start_stop_offset_render(data,type,row,meta) {
-    return `${row['start_offset_second']} : ${row['extra_time_second']}`
+    return `${row['start_offset_second']} : ${row['extra_time_second']} <a href='#' data-row-id="${row['id']}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
   }
 
   function role_action_button(data,type,row,meta) {

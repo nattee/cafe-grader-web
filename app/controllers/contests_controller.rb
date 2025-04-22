@@ -3,7 +3,7 @@ class ContestsController < ApplicationController
                                      :add_users_from_csv,:clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
-                                     :toggle, :do_all_users, :do_user, :do_all_problems, :do_problem,
+                                     :toggle, :do_all_users, :do_user, :extra_time_user, :do_all_problems, :do_problem,
                                     ]
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
@@ -186,6 +186,16 @@ class ContestsController < ApplicationController
     else
       @toast[:body] = "Unknown command"
     end
+    render 'turbo_toast'
+  end
+
+  def extra_time_user
+
+    cu = ContestUser.find(params[:row_id])
+    end_offset = params[:end_offset]
+    start_offset = params[:start_offset]
+    cu.update(extra_time_second: params[:end_offset], start_offset_second: params[:start_offset])
+    @toast = {title: "Contest #{@contest.name}", body: "Set extra times of #{cu.user.login} to #{start_offset} : #{end_offset}"}
     render 'turbo_toast'
   end
 
