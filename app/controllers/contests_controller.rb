@@ -272,7 +272,7 @@ class ContestsController < ApplicationController
     #find return arrays of objecs
     begin
       # this find multiple problems that matches the ID that is also editable by the user
-      problems = Problem.group_editable_by_user(@current_user).where(id: params[:problem_ids])
+      problems = @current_user.problems_for_action(:edit).where(id: params[:problem_ids])
       @toast = @contest.add_problems_and_assign_number(problems)
       render 'turbo_toast'
     rescue
