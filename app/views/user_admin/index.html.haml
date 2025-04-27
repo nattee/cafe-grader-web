@@ -1,30 +1,11 @@
 %h1 Users
 
-.card.border-success.mb-3
-  .card-header.text-bg-success.border-success
-    Quick Add
-  .card-body
-    = form_with url: user_admin_index_path, scope: :user,  class: 'row row-cols-lg-auto g-3 align-items-center'  do |f|
-      .col-12
-        = f.text_field 'login', :size => 10,class: 'form-control', placeholder: 'login'
-      .form-group
-        = f.text_field 'full_name', :size => 10,class: 'form-control', placeholder: 'full name'
-      .form-group
-        = f.password_field 'password', :size => 10,class: 'form-control', placeholder: 'password'
-      .form-group
-        = f.password_field 'password_confirmation', :size => 10,class: 'form-control', placeholder: 'password confirmation'
-      .form-group
-        = f.text_field 'email', :size => 10,class: 'form-control', placeholder: 'email'
-      =submit_tag "Create", class: 'btn btn-success align-items-bottom'
-
 
 %p
   = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success m-1'}
   = link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success m-1'}
   = link_to 'Bulk Manage', { action: :bulk_manage} , { class: 'btn btn-secondary btn-info m-1'}
   = link_to 'View administrators',{ :action => 'admin'}, { class: 'btn btn-secondary m-1'}
-  = link_to 'View active users',{ :action => 'active'}, { class: 'btn btn-secondary m-1'}
-  = link_to 'Mass mailing',{ :action => 'mass_mailing'}, { class: 'btn btn-secondary m-1'}
 
 %table.table.table-hover.table-condense.datatable
   %thead
@@ -38,8 +19,6 @@
     %th 
       Enabled
       %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'Allow the user to login?' } [?]
-    %th Last IP
-    %th
     %th
     %th
     %th
@@ -51,19 +30,15 @@
       %td= user.remark
       %td.py-1.align-middle= toggle_button(user.activated?, toggle_activate_user_admin_path(user),"toggle_activate_user_#{user.id}")
       %td.py-1.align-middle= toggle_button(user.enabled?, toggle_enable_user_admin_path(user),"toggle_enable_user_#{user.id}")
-      %td= user.last_ip
       %td.py-1.align-middle= link_to 'Clear IP', {:action => 'clear_last_ip', :id => user, :page=>params[:page]}, :confirm => 'This will reset last logging in ip of the user, are you sure?', class: 'btn btn-secondary btn-sm btn-block'
-      %td= link_to 'Show', {:action => 'show', :id => user}
       %td= link_to 'Edit', {:action => 'edit', :id => user}
       %td.py-1.align-middle= link_to 'Destroy', {action: :destroy, id: user}, data: {confirm: 'Are you sure?'}, method: :delete, class: 'btn btn-danger btn-sm btn-block'
 %br/
-= link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success '}
-= link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success '}
 
 :javascript
   $(function() {
     $('.datatable').DataTable({
       'pageLength': 50,
-      columnDefs: [{orderable: false, targets: [4,5,7,8,9,10]} ],
+      columnDefs: [{orderable: false, targets: [4,5,7,8]} ],
     });
   })

@@ -1,7 +1,11 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
-//import "@hotwired/turbo-rails"
-import "controllers"
-//
+
+
+// import Turbo and Stimulus Controller
+// Disable Turbo by default
+import "./controllers"
+import { Turbo } from "@hotwired/turbo-rails"
+Turbo.session.drive = false
 
 
 //bootstrap
@@ -33,9 +37,6 @@ Rails.start()
 //my own customization
 //import 'custom'
 
-//import turbo but disable it by default
-import { Turbo } from "@hotwired/turbo-rails"
-Turbo.session.drive = false
 
 //trigger import map ready (no longer used)
 //window.importmapScriptsLoaded = true

@@ -6,6 +6,9 @@ class UserAdminController < ApplicationController
 
   before_action :admin_authorization
 
+  # Stimulus controller connection
+  before_action :page_stimulus_controller, only: %w[admin]
+
   def index
     @user_count = User.count
     @users = User.all
@@ -15,10 +18,6 @@ class UserAdminController < ApplicationController
   end
 
   def active
-  end
-
-  def show
-    @user = User.find(params[:id])
   end
 
   def new
@@ -272,6 +271,11 @@ class UserAdminController < ApplicationController
       #revoke role
       if user.login == 'root' && role.name == 'admin'
         flash[:error] = 'You cannot revoke admisnistrator permission from root.'
+        redirect_to admin_user_admin_index_path
+        return
+      end
+      if user == @current_user && role.name == 'admin'
+        flash[:error] = 'You cannot revoke your own admisnistrator role'
         redirect_to admin_user_admin_index_path
         return
       end
