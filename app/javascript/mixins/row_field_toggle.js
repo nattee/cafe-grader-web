@@ -19,9 +19,13 @@ export const rowFieldToggle = (superclass) => class extends superclass {
   }
 
   //this function is for submitting a form
-  //
-  setFieldAndSubmit(form,field,value,confirm) {
-
+  confirmSubmit(form,event) {
+    if ('formConfirm' in event.target.dataset) {
+      form.dataset.turboConfirm = event.target.dataset.formConfirm
+    } else {
+      form.removeAttribute('data-turbo-confirm')
+    }
+    form.requestSubmit()
   }
 
 

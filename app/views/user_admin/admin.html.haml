@@ -8,38 +8,38 @@
     .card
       .card-body
         %h4 Administrators
-        = form_tag modify_role_user_admin_index_path, method: 'post', class: 'form-inline' do
+        = form_tag modify_role_user_admin_index_path, 'data-user-admin--admin-target': 'userForm', class: 'form-inline', data: {turbo: true, action: 'turbo:submit-end->user-admin--admin#afterUserAction'}  do
           = hidden_field_tag :role, 'admin'
+          = hidden_field_tag :command, 'grant', 'data-user-admin--admin-target': 'userFormCommand'
           .row.row-cols-lg-auto.g-3.align-items-center
             .col
               .form-check
                 %label.form-check-label Grant admin role to
             .col
-              = text_field_tag 'login',nil, class: 'form-control'
+              = select_tag :id, options_from_collection_for_select(User.all,'id','login_with_name'), id: :user_id, class: 'select2', 'data-user-admin--admin-target': 'userFormUserID', multiple: false, style: 'width: 20rem';
             .col
-              = submit_tag 'Grant', class: 'btn btn-primary'
-
-          -#
-            .form-group
-              = label_tag :login, 'Grant admin role to:'
-              = text_field_tag 'login',nil, class: 'form-control'
-            .form-group
               = submit_tag 'Grant', class: 'btn btn-primary'
         %br
         %table#main-table.table.table-condense.table-hover.table-striped
           %thead{:class => 'info-head'}
-            %th #
             %th Login
             %th Full name
-            %th 
-          - @admins.each_with_index do |user, i|
-            %tr
-              %td= i+1
-              %td= user.login
-              %td= user.full_name
-              %td
-                - if user.login!='root'
-                  = link_to '[revoke]', modify_role_user_admin_index_path( login: user.login, role: 'admin', commit: 'revoke')
+            %th
+        -#
+          %table#main-table.table.table-condense.table-hover.table-striped
+            %thead{:class => 'info-head'}
+              %th #
+              %th Login
+              %th Full name
+              %th 
+            - @admins.each_with_index do |user, i|
+              %tr
+                %td= i+1
+                %td= user.login
+                %td= user.full_name
+                %td
+                  - if user.login!='root'
+                    = link_to '[revoke]', modify_role_user_admin_index_path( id: user.id, role: 'admin', commit: 'revoke')
   .col-md-6
     .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body

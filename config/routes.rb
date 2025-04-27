@@ -171,13 +171,17 @@ Rails.application.routes.draw do
   end
 
   #user admin
-  resources :user_admin  do
+  # ** since :user_admin is SINGULAR, the helper functions will be xxx_user_admin_index_path <-- NOTICE THE *_index*
+  resources :user_admin do
     collection do
+      post 'index_query'
+      post 'user_action'
       match 'bulk_manage', via: [:get, :post]
       get 'bulk_mail'
       get 'import'
       get 'new_list'
       get 'admin'
+      post 'admin_query'
       get 'active'
       get 'mass_mailing'
       match 'modify_role', via: [:get, :post]
@@ -216,11 +220,6 @@ Rails.application.routes.draw do
       get 'change_contest_mode'
     end
   end
-
-  #get 'user_admin', to: 'user_admin#index'
-  #get 'user_admin/bulk_manage', to: 'user_admin#bulk_manage', as: 'bulk_manage_user_admin'
-  #post 'user_admin', to: 'user_admin#create'
-  #delete 'user_admin/:id', to: 'user_admin#destroy', as: 'user_admin_destroy'
 
   #singular resource
   #---- BEWARE ---- singular resource maps to plural controller by default, we can override by provide controller name directly

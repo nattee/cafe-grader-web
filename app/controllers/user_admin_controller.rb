@@ -7,7 +7,7 @@ class UserAdminController < ApplicationController
   before_action :admin_authorization
 
   # Stimulus controller connection
-  before_action :page_stimulus_controller, only: %w[admin]
+  before_action :page_stimulus_controller, only: %w[admin index]
 
   def index
     @user_count = User.count
@@ -15,6 +15,10 @@ class UserAdminController < ApplicationController
     @hidden_columns = ['hashed_password', 'salt', 'created_at', 'updated_at']
     @contests = Contest.enabled
     @user = User.new
+  end
+
+  def index_query
+    render json: {data: User.all}
   end
 
   def active
@@ -33,6 +37,23 @@ class UserAdminController < ApplicationController
     else
       render :action => 'new'
     end
+  end
+
+  def user_action
+    @user = User.find(params[:user_id])
+    @toast = {title: "User #{@user.full_name} (#{@user.login})"}
+
+    case params[:command]
+    when 'clear_ip'
+      @user.update(last_ip: nil)
+      @toast[:body] = "Session lock is reset"
+    when 'toggle'
+      @user.update(enabled: !@user.enabled)
+      @toast[:body] = "User enabled set to #{@user.enabled}"
+    else
+      @toast[:body] = "Unknown command"
+    end
+    render 'turbo_toast'
   end
 
   #
@@ -255,34 +276,41 @@ class UserAdminController < ApplicationController
     @tas = Role.where(name: 'ta').take.users
   end
 
+  def admin_query
+    render json: {data: Role.where(name: 'admin').take.users}
+  end
+
+  # TURBO_STREAM
   def modify_role
-    user = User.find_by_login(params[:login])
+    @toast = {title: "Modify admin"}
+
+    user = User.find(params[:id])
     role = Role.find_by_name(params[:role])
     unless user && role
-      flash[:error] = 'Unknown user or role'
-      redirect_to admin_user_admin_index_path
-      return
+      @toast[:body] = 'Unknown user or role'
+      @toast[:type] = :alert
+      render 'turbo_toast' and return
     end
     if params[:commit] == 'Grant'
       #grant role
       user.roles << role
-      flash[:notice] = "User '#{user.login}' has been granted the role '#{role.name}'"
+      @toast[:body] = "User '#{user.login}' has been granted the role '#{role.name}'"
     else
       #revoke role
       if user.login == 'root' && role.name == 'admin'
-        flash[:error] = 'You cannot revoke admisnistrator permission from root.'
-        redirect_to admin_user_admin_index_path
-        return
+        @toast[:body] = 'You cannot revoke admisnistrator permission from root.'
+        @toast[:type] = :alert
+        render 'turbo_toast' and return
       end
       if user == @current_user && role.name == 'admin'
-        flash[:error] = 'You cannot revoke your own admisnistrator role'
-        redirect_to admin_user_admin_index_path
-        return
+        @toast[:body] = 'You cannot revoke your own admisnistrator role'
+        @toast[:type] = :alert
+        render 'turbo_toast' and return
       end
       user.roles.delete(role)
-      flash[:notice] = "The role '#{role.name}' has been revoked from User '#{user.login}'"
+      @toast[:body] ="The role '#{role.name}' has been revoked from User '#{user.login}'"
     end
-    redirect_to admin_user_admin_index_path
+    render 'turbo_toast'
   end
 
   # mass mailing
