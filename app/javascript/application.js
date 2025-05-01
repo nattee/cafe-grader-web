@@ -3,7 +3,7 @@
 
 // import Turbo and Stimulus Controller
 // Disable Turbo by default
-import "./controllers"
+import "controllers"
 import { Turbo } from "@hotwired/turbo-rails"
 Turbo.session.drive = false
 
