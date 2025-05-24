@@ -18,7 +18,8 @@ class Evaluator
     @working_dataset = @testcase.dataset
 
     #init isolate
-    setup_isolate(@box_id, isolate_need_cg_by_lang(@sub.language.name))
+    need_cg = isolate_need_cg_by_lang(@sub.language.name)
+    setup_isolate(@box_id, need_cg)
 
     #prepare data files
     prepare_submission_directory(@sub)
@@ -47,10 +48,10 @@ class Evaluator
 
     out,err,status,meta = run_isolate(cmd_string,input: input, output: output, isolate_args: isolate_args,meta: meta_file,
                                   time_limit: @working_dataset.time_limit,mem_limit: @working_dataset.memory_limit,
-                                  cg: isolate_need_cg_by_lang(@sub.language.name))
+                                  cg: need_cg)
 
     # also run isolate to chmod the outputfile
-    run_isolate('/usr/bin/chmod 0777 '+@isolate_stdout_file.to_s,output: output, meta: nil)
+    run_isolate('/usr/bin/chmod 0777 '+@isolate_stdout_file.to_s,output: output, meta: nil, cg: need_cg)
 
     #clean up isolate
     cleanup_isolate
