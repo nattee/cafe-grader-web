@@ -51,7 +51,7 @@ class Evaluator
                                   cg: need_cg)
 
     # also run isolate to chmod the outputfile
-    run_isolate('/usr/bin/chmod 0777 '+@isolate_stdout_file.to_s,output: output, meta: nil, cg: need_cg)
+    run_isolate('/usr/bin/chmod 0666 '+@isolate_stdout_file.to_s,output: output, meta: nil, cg: need_cg)
 
     #clean up isolate
     cleanup_isolate
