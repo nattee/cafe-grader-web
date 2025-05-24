@@ -315,8 +315,8 @@ module JudgeBase
                 @prob_config_file.to_s.dump,
                 @prob_init_work_path.to_s.dump,
                ]
-    puts "init file = #{@prob_init_file}"
-    puts "init command = #{init_cmd.join ' '}"
+    judge_log "init file = #{@prob_init_file}"
+    judge_log "init command = #{init_cmd.join ' '}"
     system(init_cmd.join ' ')
   end
 

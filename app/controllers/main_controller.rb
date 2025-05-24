@@ -91,6 +91,7 @@ class MainController < ApplicationController
       if language.binary?
         @submission.binary = params['file'].read
         @submission.content_type = params['file'].content_type
+        @submission.source_filename = params['file'].original_filename
       else
         @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
         @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')

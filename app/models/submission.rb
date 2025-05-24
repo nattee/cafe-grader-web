@@ -94,7 +94,12 @@ class Submission < ApplicationRecord
     if self.problem.output_only
       return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
     else
-      return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
+      if self.language.binary?
+        # for binary langauge (such as archive), we extract the extension from the source filename
+        return "#{self.problem.name}-#{self.user.login}-#{self.id}#{Pathname.new(self.source_filename).extname rescue ''}"
+      else
+        return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
+      end
     end
   end
 
