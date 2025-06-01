@@ -218,6 +218,7 @@ GEM
     rb-inotify (0.10.1)
       ffi (~> 1.0)
     rdiscount (2.2.0.2)
+    redcarpet (3.6.1)
     regexp_parser (2.5.0)
     rexml (3.2.5)
     rouge (4.0.0)
@@ -312,6 +313,7 @@ DEPENDENCIES
   rails (~> 7.0)
   rainbow
   rdiscount
+  redcarpet
   rouge
   sassc-rails
   selenium-webdriver

@@ -1,11 +1,14 @@
 class Problem < ApplicationRecord
 
+  # -- fields --
   #how the submission should be compiled
   enum compilation_type:  {self_contained: 0,
                            with_managers: 1}
   enum task_type: { batch: 0 }
+
   #belongs_to :description
 
+  # -- association --
   has_and_belongs_to_many :contests, :uniq => true
 
   #has_and_belongs_to_many :groups
@@ -25,10 +28,16 @@ class Problem < ApplicationRecord
   has_many :datasets, :dependent => :destroy
   belongs_to :live_dataset, class_name: 'Dataset'
 
+  # -- validations --
   validates_presence_of :name
-  #validates_format_of :name, :with => /\A\w+\z/
+  validates_uniqueness_of :name
+  validates_format_of :name, 
+    with: /\A[a-zA-Z\d\-\_\[\]()]+\z/,
+    message: 'contains invalid characters. Only letters, numbers, <code>( )</code>, <code>[ ]</code>, <code>-</code> and <code>_</code> are allowed.'.html_safe
+
   validates_presence_of :full_name
 
+  # -- scope --
   scope :available, -> { where(available: true) }
 
   # return problems that is enabled and is in an enabled group that has the given user
@@ -225,6 +234,14 @@ class Problem < ApplicationRecord
 
     result << "end\n"
     return result.join "\n"
+  end
+
+  def self.check_name(replace: false, with: '')
+    Problem.find_each do |problem|
+      unless problem.valid?
+        puts "Problem #{problem.id}: [#{problem.name}] is invalid"
+      end
+    end
   end
 
 

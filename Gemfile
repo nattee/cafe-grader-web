@@ -87,6 +87,7 @@ gem 'ace-rails-ap'
 
 gem 'mail'
 gem 'rdiscount'  #markdown
+gem 'redcarpet'  # new markdown
 gem 'rainbow'
 
 gem 'whenever', require: false
