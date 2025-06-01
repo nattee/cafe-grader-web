@@ -7,7 +7,7 @@
       = simple_form_for :null, url: view_dataset_path(ds), data: {'problem-target': 'datasetSelectForm', turbo: 'true'},
         wrapper: :inline_form do |f|
         = f.input :dsid, collection: problem.datasets.reload, selected: ds.id, input_html: {class: 'form-select-sm form-select', data: {turbo: true, action: 'change->problem#viewDataset', 'problem-target': 'datasetSelect'}}, wrapper: :inline_form
-        = f.input :active_tab, as: :hidden, input_html: {data: {'problem-target': 'activeTab'}}
+        %input#dataset-select-active-tab{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput', 'problem-target': 'activeTabInput'}}
     .col-12
       .form-check
         %label.form-check-label Action

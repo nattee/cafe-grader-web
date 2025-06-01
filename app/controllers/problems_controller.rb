@@ -24,6 +24,7 @@ class ProblemsController < ApplicationController
                                           :add_dataset,:import_testcases,
                                          ]
   before_action :can_report_problem, only: [:stat]
+  before_action :set_active_tab, only: %i[update]
   before_action :stimulus_controller
 
 
@@ -443,6 +444,12 @@ class ProblemsController < ApplicationController
         .select("MIN(MS.ms_count) as ms_count")
         .with_attached_statement
         .with_attached_attachment
+    end
+
+    # our 'bs-tab' stimulus controller set the hidden input as the HTML id of the showing tab
+    # we set @dataset_active_tab to the id so that we render it, we can activate the correct tab
+    def set_active_tab
+      @active_problem_tab = params[:active_problem_tab]
     end
 
 end

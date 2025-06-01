@@ -1,6 +1,7 @@
 -# require *ds* as a dataset object
-%h4 Testcases
+%h5.my-2 Testcases
 = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
+  %input{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput'}}
   .col-12
     .form-check
       Testcase config
@@ -60,6 +61,7 @@
 .row
   .col-12
     = simple_form_for :import, url: import_testcases_problem_path(@dataset.problem), html: {multipart: true}, wrapper: :horizontal_form do |f|
+      %input{type: 'hidden', name: 'active_dataset_tab', data: {'bs-tab-target': 'activeTabInput'}}
       = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
       = f.input :input_pattern, input_html: { value: '*.in' }
       = f.input :sol_pattern, input_html: { value: '*.sol' }

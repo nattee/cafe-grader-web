@@ -176,7 +176,6 @@
     $('#main-table tbody').on('click', 'td', function(e) {
       let cell = table.cell(this).index()
       if (cell.column != checkboxColumnIndex) return
-      console.log(cell)
       if (e.shiftKey && firstRowIndex !== null) {
           const lastRowIndex = table.cell(this).index().row;
 

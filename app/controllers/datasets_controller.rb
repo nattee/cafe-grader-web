@@ -16,6 +16,8 @@ class DatasetsController < ApplicationController
   before_action :group_editor_authorization
   before_action :can_view_problem, only: VIEW_METHOD
   before_action :can_edit_problem, except: VIEW_METHOD
+  before_action :set_active_tab, only: %i[edit view testcase_delete set_weight set_as_live update
+                                          settings files testcases]
 
   # GET /datasets/new
   def new
@@ -24,7 +26,6 @@ class DatasetsController < ApplicationController
 
   def view
     @dataset = Dataset.find(params[:null][:dsid])
-    @active_tab = params[:null][:active_tab]
     render :update
   end
 
@@ -52,13 +53,13 @@ class DatasetsController < ApplicationController
   def update
     respond_to do |format|
       # file attachment
-      @dataset.managers.attach params[:dataset][:managers] if params[:dataset][:managers]
-      @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset][:data_files]
-      @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset][:initializers]
+      @dataset.managers.attach params[:dataset][:managers] if params[:dataset] && params[:dataset][:managers]
+      @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset] && params[:dataset][:data_files]
+      @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset] && params[:dataset][:initializers]
 
       # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
       # when it is updated
-      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files]
+      if params[:dataset] && (params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files])
         WorkerDataset.where(dataset_id: @dataset).delete_all
       end
 
@@ -83,6 +84,7 @@ class DatasetsController < ApplicationController
 
     @toast = {title: 'File deleted',
               body: "#{att.name.capitalize} file [#{att.filename}] is deleted."}
+    @active_dataset_tab = "#files"
   end
 
   #POST /dataset/1/file/view/1
@@ -218,6 +220,14 @@ class DatasetsController < ApplicationController
       params.fetch(:dataset, {})
       params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename, 
                                       :checker, :initializer_filename)
+    end
+
+    # our 'bs-tab' stimulus controller set the hidden input as the HTML id of the showing tab
+    # we set @dataset_active_tab to the id so that we render it, we can activate the correct tab
+    def set_active_tab
+      @active_dataset_tab = params[:active_dataset_tab]
+      puts "-------- action [#{action_name}] active tab is [#{@active_dataset_tab}] ----------------"
+      @active_dataset_tab = '#settings' if @active_dataset_tab.blank?
     end
 
 end

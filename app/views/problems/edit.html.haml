@@ -8,16 +8,17 @@
   |
   = link_to '<span class="mi mi-bs">download</span> Download'.html_safe, download_archive_problem_path(@problem), class: 'mx-1'
   ]
-.row{'data-controller': 'problem'}
+.row
   -# problem card
   .col-md-5
     .card.shadow-sm.my-2
       .card-body
+        %h4 Detail
         = render 'form', problem: @problem
   -# dataset card
   .col-md-7
     .card.shadow-sm.my-2
-      .card-body
+      .card-body{'data-controller': 'bs-tab'}
         %h4 Datasets
         -# dataset selector
         = turbo_frame_tag :dataset_select do

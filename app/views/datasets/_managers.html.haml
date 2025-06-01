@@ -1,4 +1,7 @@
 = simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
+  %input{type: 'hidden', value: @active_dataset_tab, name: 'active_dataset_tab', data: {'bs-tab-target': 'activeTabInput'}}
+  -# a place holder dataset
+  %input{type: 'hidden', name: 'dataset[placeholder]'}
   -# --- managers ---
   %h5.my-2 
     %span.mi.mi-bs clinical_notes
