@@ -1,0 +1,82 @@
+- content_for :head do
+  <meta http-equiv ="refresh" content="600"/>
+
+%h1 Grader information
+
+%p
+  = link_to 'Refresh', { :action => 'index' }, class: 'btn btn-info'
+
+.row
+  .col-md-6
+    %h4.mt-3 Queue Status
+    .row
+      .col-4
+        .alert.alert-info.text-center
+          %strong.h4.mx-2 #{@wait_count['compile'] || 0}
+          to be compiled
+      .col-4
+        .alert.alert-warning.text-center
+          %strong.h4.mx-2 #{@wait_count['evaluate'] || 0}
+          to be evaluated
+      .col-4
+        .alert.alert-success.text-center
+          %strong.h4.mx-2 #{@wait_count['score'] || 0}
+          to be scored
+    %h4.mt-3 Worker and Grader
+    %table.table
+      %thead
+        %tr
+          %th worker id
+          %th box id
+          %th Job Queue
+          %th Last Heartbeat
+          %th Status
+          %th Job
+          %th Action
+      %tbody
+        -#
+          - @graders.each do |grader|
+            = render partial: 'grader', locals: {grader: grader}
+        = render partial: 'grader', collection: @graders
+
+  .col-md-6
+    %h2 Last 20 submissions
+    %table.table.table-striped.table-condensed
+      %thead
+        %th ID
+        %th User
+        %th Problem
+        %th Submitted
+        %th Graded
+        %th Result
+      %tbody
+        - @submission.each do |sub|
+          %tr.inactive
+            %td= link_to sub.id, submission_path(sub.id)
+            %td= ("" unless sub.user) || link_to(sub.try(:user).try(:full_name), stat_user_admin_path(sub.user.id))
+            %td= ("" unless sub.problem) || link_to(sub.try(:problem).try(:full_name), stat_problem_path(sub.problem.id))
+            %td= "#{time_ago_in_words(sub.submitted_at)} ago"
+            %td= sub.graded_at ? "#{time_ago_in_words(sub.graded_at)} ago" : " "
+            %td
+              %tt.grader-comment= sub.grader_comment
+    %h2 Ungraded submission
+    %table.table.table-striped.table-condensed
+      %thead
+        %th ID
+        %th User
+        %th Problem
+        %th Submitted
+        %th Graded
+        %th Result
+      %tbody
+        - @backlog_submission.each do |sub|
+          %tr.inactive
+            %td= link_to sub.id, submission_path(sub.id)
+            %td= ("" unless sub.user) || link_to( sub.try(:user).try(:full_name), stat_user_admin_path(sub.user.id))
+            %td= ("" unless sub.problem) || link_to( sub.try(:problem).try(:full_name), stat_problem_path(sub.problem.id))
+            %td= "#{time_ago_in_words(sub.submitted_at)} ago"
+            %td= sub.graded_at ? "#{time_ago_in_words(sub.graded_at)} ago" : " "
+            %td= sub.grader_comment
+
+
+

@@ -1,0 +1,21 @@
+-# topic filter badge
+- if @primary_tags.count > 0
+  .row
+    .col-auto
+      Topic:
+    .col-auto
+      - @primary_tags.each do |tag|
+        - data_hash = { action: 'click->main#setActiveTopic',  bs: tag.description.present? ?  { toggle: 'tooltip', title: tag.description } : nil }
+        %span.badge.topic-badge.text-bg-light.border.border-dark-subtle.text-body-tertiary.me-1{data: data_hash, style: 'cursor: pointer'}= tag.name
+
+%table#main_table.table.table-striped.table-condensed{width: '100%'}
+  %thead
+    %tr
+      %th No.
+      %th.all Name
+      %th Best Score
+      %th.all Latest Results
+      %th.all
+  %tbody
+    - @numbering = 1
+    = render :partial => 'problem', collection: problems

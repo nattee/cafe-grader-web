@@ -1,69 +1,83 @@
-- content_for :head do
-  = stylesheet_link_tag 'problems'
+%h2 Import problems
 
-%h1 Import problems
+- if @errors
+  -# show errors
+  .alert.alert-danger
+    There are following errors
+    %ul
+      - @errors.each do |msg|
+        %li= msg
 
-%p= link_to '[Back to problem list]', problems_path
+.row
+  .col-md-6
+    = simple_form_for :problem, url: do_import_problems_path, html: {multipart: true}, wrapper: :horizontal_form do |f|
+      = f.input :name
+      = f.input :full_name
+      = f.input :time_limit, required: false
+      = f.input :memory_limit, required: false
+      = f.input :groups, collection: @current_user.groups_for_action(:edit), label_method: :name, value_method: :id, input_html: {class: 'select2'}, include_blank: @allow_blank_group, style: 'width: 100%', wrapper: :horizontal_select
+      .card.mb-2
+        .card-body
+          %h5.card-title Dataset
+          = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
+          = f.input :input_pattern, input_html: { value: '*.in' }
+          = f.input :sol_pattern, input_html: { value: '*.sol' }
+          = f.input :replace, label: 'replace all existing datasets of this problem', as: :boolean, wrapper: :horizontal_boolean
+      = f.button :submit, class: 'btn-primary'
+  .col-md-6
+    .card.bg-warning-subtle.mt-2
+      .card-body
+        .card-title
+          %h4
+            Usage
+            .mi.mi-bs.fill help
+          %ul
+            %li
+              Upload a ZIP file to create a new problem with your specified name. 
+              If a problem with that name already exists, the system will add the ZIP content as 
+              a new dataset within the existing problem, rather than replacing it.
+            %li
+              You can assign newly imported problems to a specific group by setting the
+              %strong Groups
+              property.
 
-- if @problem and @problem.errors
-  =error_messages_for 'problem'
+        %h5.my-2 Zip File Format
+        %ul
+          %li
+            The zip file should have multiple testcases where each testcase 
+            are pair of files with the same filename but different extension
+            where
+            %span.rounded.bg-light.p-1.font-monospace .in
+            is for input and
+            %span.rounded.bg-light.p-1.font-monospace .sol
+            is for output.
 
-= form_tag({:action => 'do_import'}, :multipart => true)  do
-  .submitbox
-    %table
-      %tr
-        %td Name:
-        %td= text_field_tag 'name'
-      %tr
-        %td Full name:
-        %td
-          = text_field_tag 'full_name'
-          %span{:class => 'help'} Leave blank to use the same value as the name above.
-      %tr
-        %td Testdata file:
-        %td= file_field_tag 'file'
-      %tr
-        %td
-        %td
-          %span{:class => 'help'}
-            In .zip, .tgz, tar.gz, .tar format.  
-            It should includes inputs (e.g., 1.in, 2a.in, 2b.in) 
-            and solutions (e.g., 1.sol, 2a.sol, 2b.sol).
-            %br/
-            You may put task description in *.html for raw html
-            and *.md or *.markdown for markdown.
-            %br/
-            You may also put a pdf file for the task description
-      %tr
-        %td Checker:
-        %td= select_tag 'checker', options_for_select([['Text checker','text'],['Float checker','float']], 'text')
-      %tr
-        %td
-        %td
-          %span{:class => 'help'}
-            "Text" checker checks if the text (including numbers) is the same, ignoring any whitespace
-            %br/
-            "Float" checker checks if all numbers is within EPSILON error using formula |a-b| < EPSILON * max(|a|,|b|)
+          %li
+            Any
+            %span.rounded.bg-light.p-1.font-monospace .pdf
+            file will be used as a statement of the problem.
+          %li
+            Example: A zip file that contains
+            %span.rounded.bg-light.p-1.font-monospace 1.in
+            ,
+            %span.rounded.bg-light.p-1.font-monospace 1.sol
+            ,
+            %span.rounded.bg-light.p-1.font-monospace 2.in
+            and
+            %span.rounded.bg-light.p-1.font-monospace 2.sol
+            will have a new dataset consisting of two testcases: one with the input and output of 
+            %span.rounded.bg-light.p-1.font-monospace 1.in
+            and
+            %span.rounded.bg-light.p-1.font-monospace 1.sol
+            and another one with
+            %span.rounded.bg-light.p-1.font-monospace 2.in
+            and
+            %span.rounded.bg-light.p-1.font-monospace 2.sol
+          %li
+            Zip file may contain many more files, see
+            %a{href: '#'} the wiki
+            for more detail.
 
-      - if @allow_test_pair_import
-        %tr
-          %td
-          %td
-            = check_box_tag 'import_to_db'
-            Import test data to database (for a test-pair task)
-      %tr
-        %td Time limit:
-        %td
-          = text_field_tag 'time_limit'
-          %span{:class => 'help'} In seconds. Leave blank to use 1 sec.
-      %tr
-        %td Memory limit:
-        %td
-          = text_field_tag 'memory_limit'
-          %span{:class => 'help'} In MB. Leave blank to use 32MB.
-      %tr
-        %td
-        %td= submit_tag 'Import problem'
 
 - if @log
   %h3 Import log

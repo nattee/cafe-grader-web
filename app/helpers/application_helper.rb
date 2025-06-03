@@ -1,6 +1,11 @@
 # Methods added to this helper will be available to all templates in the application.
 module ApplicationHelper
 
+  # render material design icon
+  def mdi(icon,class_name = '')
+    "<span class='mi mi-bs #{class_name}'>#{icon}</span>".html_safe
+  end
+
   #new bootstrap header
   def navbar_user_header
     left_menu = ''
@@ -103,6 +108,15 @@ module ApplicationHelper
     st = time_ago_in_words(time) + ' ago (' + format_short_time(time) + ')'
   end
 
+  # display start and stop time in humanized way
+  def format_start_stop(start,stop)
+    start_text = start.strftime("%y-%b-%d %H:%M")
+    date_diff = (stop.to_date - start.to_date).to_i
+    end_text = stop.strftime("%H:%M")
+    end_text += " (+#{pluralize(date_diff,'day')})" if (date_diff > 0)
+    return "#{start_text} to #{end_text}"
+  end
+
   def read_textfile(fname,max_size=2048)
     begin
       File.open(fname).read(max_size)
@@ -112,9 +126,10 @@ module ApplicationHelper
   end
 
   def toggle_button(on,toggle_url,id, option={})
-    btn_size = option[:size] || 'btn-xs'
+    btn_size = option[:size] || 'btn-sm'
+    btn_block = option[:block] || 'btn-block'
     link_to (on ? "Yes" : "No"), toggle_url,
-      {class: "btn btn-block #{btn_size} btn-#{on ? 'success' : 'default'} ajax-toggle",
+      {class: "btn #{btn_block} #{btn_size} btn-#{on ? 'success' : 'outline-secondary'} ajax-toggle",
         id: id,
         data: {remote: true, method: 'get'}}
   end
@@ -122,6 +137,7 @@ module ApplicationHelper
   def get_ace_mode(language)
     # return ace mode string from Language
 
+    return 'ace/mode/c_cpp' unless language
     case language.pretty_name
       when 'Pascal'
         'ace/mode/pascal'
@@ -133,11 +149,36 @@ module ApplicationHelper
         'ace/mode/python'
       when 'Java'
         'ace/mode/java'
+      when 'Rust'
+        'ace/mode/rust'
+      when 'Go'
+        'ace/mode/golang'
       else
         'ace/mode/c_cpp'
     end
   end
 
+  # render a key pair as two lines (label & value)
+  # input can be either label & value or object & field
+  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil, className: '')
+    label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
+    value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
+
+    # convert value
+    if as&.to_sym == :yes_no
+      if value&.downcase == 'true'
+        value = "<span class='badge text-bg-success'>Yes</span>"
+      else
+        value = "<span class='badge text-bg-danger'>No</span>"
+      end
+    end
+
+    #render
+    content = <<~HTML
+      <div class="col-md-#{width} mb-3 #{className}"><div class="fw-bold">#{label}</div>#{value}</div>
+    HTML
+    return content.html_safe
+  end
 
   def user_title_bar(user)
     header = ''
@@ -181,9 +222,6 @@ ANALYSISMODE
 #{header}
 <tr>
 <td class="left-col">
-#{user.full_name}<br/>
-#{t 'title_bar.current_time'} #{format_short_time(Time.zone.now)}
-#{time_left}
 <br/>
 </td>
 <td class="right-col">#{contest_name}</td>
@@ -211,14 +249,20 @@ TITLEBAR
     BOOTSTRAP_FLASH_MSG.fetch(flash_type.to_sym, flash_type.to_s)
   end
 
-  def flash_messages
-    flash.each do |msg_type, message|
-      concat(content_tag(:div, message, class: "alert #{bootstrap_class_for(msg_type)} fade in") do 
-              concat content_tag(:button, 'x', class: "close", data: { dismiss: 'alert' })
-              concat message 
-            end)
+  def active_class_when(options = {},cname = @active_controller, aname = @active_action)
+    class_name = ' active '
+    ok = true
+    options.each do |k,v|
+      ok = false if k == :controller && v.to_s != cname
+      ok = false if k == :action && v.to_s != aname
     end
-    nil
+    return class_name if ok && options.size > 0
+    return ''
   end
+
+  def is_admin
+    @current_user && @current_user.admin?
+  end
+
 
 end

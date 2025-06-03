@@ -1,4 +1,6 @@
-class Announcement < ActiveRecord::Base
+class Announcement < ApplicationRecord
+  has_one_attached :file
+  belongs_to :group, optional: true
 
   def self.published(contest_started=false)
     if contest_started

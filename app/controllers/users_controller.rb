@@ -4,26 +4,18 @@ class UsersController < ApplicationController
 
   include MailHelperMethods
 
-  before_filter :authenticate, :except => [:new, 
-                                           :register, 
-                                           :confirm, 
+  before_action :check_valid_login, :except => [:new,
+                                           :register,
+                                           :confirm,
                                            :forget,
                                            :retrieve_password]
 
-  before_filter :verify_online_registration, :only => [:new,
+  before_action :verify_online_registration, :only => [:new,
                                                        :register,
                                                        :forget,
                                                        :retrieve_password]
-  before_filter :authenticate, :profile_authorization, only: [:profile]
 
-  before_filter :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
-
-
-  verify :method => :post, :only => [:chg_passwd],
-         :redirect_to => { :action => :index }
-
-  #in_place_edit_for :user, :alias_for_editing
-  #in_place_edit_for :user, :email_for_editing
+  before_action :admin_authorization, only: [:stat, :toggle_activate, :toggle_enable]
 
   def index
     if !GraderConfiguration['system.user_setting_enabled']
@@ -33,16 +25,45 @@ class UsersController < ApplicationController
     end
   end
 
+  # edit logged in user profile
+  def profile
+    if !GraderConfiguration['system.user_setting_enabled']
+      redirect_to :controller => 'main', :action => 'list'
+    else
+      @user = current_user;
+    end
+  end
+
   def chg_passwd
     user = User.find(session[:user_id])
-    user.password = params[:passwd]
-    user.password_confirmation = params[:passwd_verify]
+    user.password = params[:password]
+    user.password_confirmation = params[:password_confirmation]
     if user.save
       flash[:notice] = 'password changed'
     else
       flash[:notice] = 'Error: password changing failed'
     end
-    redirect_to :action => 'index'
+    redirect_to :action => 'profile'
+  end
+
+  def chg_default_language
+    user = User.find(session[:user_id])
+    user.default_language_id = params[:default_language]
+    if user.save
+      flash[:notice] = 'default language changed'
+    else
+      flash[:notice] = 'Error: default language changing failed'
+    end
+    redirect_to :action => 'profile'
+  end
+
+  def update_self
+    user = @current_user
+    if user.update(user_update_params)
+      redirect_to profile_users_path, notice: 'Updated successfully'
+    else
+      render :profile
+    end
   end
 
   def new
@@ -112,49 +133,6 @@ class UsersController < ApplicationController
     redirect_to :action => 'forget'
   end
 
-  def stat
-    @user = User.find(params[:id])
-    @submission = Submission.joins(:problem).where(user_id: params[:id])
-    @submission = @submission.where('problems.available = true') unless current_user.admin?
-
-    range = 120
-    @histogram = { data: Array.new(range,0), summary: {} }
-    @summary = {count: 0, solve: 0, attempt: 0}
-    problem = Hash.new(0)
-
-    @submission.find_each do |sub|
-      #histogram
-      d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
-      @histogram[:data][d.to_i] += 1 if d < range
-
-      @summary[:count] += 1
-      next unless sub.problem
-      problem[sub.problem] = [problem[sub.problem], ( (sub.try(:points) || 0) >= sub.problem.full_score) ? 1 : 0].max
-    end
-
-    @histogram[:summary][:max] = [@histogram[:data].max,1].max
-    @summary[:attempt] = problem.count
-    problem.each_value { |v| @summary[:solve] += 1 if v == 1 }
-  end
-
-  def toggle_activate
-    @user = User.find(params[:id])
-    @user.update_attributes( activated:  !@user.activated? )
-    respond_to do |format|
-      format.js { render partial: 'toggle_button',
-                  locals: {button_id: "#toggle_activate_user_#{@user.id}",button_on: @user.activated? } }
-    end
-  end
-
-  def toggle_enable
-    @user = User.find(params[:id])
-    @user.update_attributes( enabled:  !@user.enabled? )
-    respond_to do |format|
-      format.js { render partial: 'toggle_button',
-                  locals: {button_id: "#toggle_enable_user_#{@user.id}",button_on: @user.enabled? } }
-    end
-  end
-
   protected
 
   def verify_online_registration
@@ -219,4 +197,7 @@ class UsersController < ApplicationController
       params.require(:user).permit(:login, :full_name, :email)
     end
 
+    def user_update_params
+      params.require(:user).permit(:default_language_id, :password, :password_confirmation)
+    end
 end

@@ -1,22 +1,32 @@
 %tr
+  %td.text-end{'data-order': @numbering}
+    %div= @numbering
+    - if @current_user&.admin?
+      %div= link_to 'stat', stat_problem_path(problem)
+      %div= link_to 'edit', edit_problem_path(problem)
+  - @numbering+=1
+  -# problem name, pdf, attachments, etc.
   %td
-    - if @current_user and @current_user.admin?
-      = link_to problem.name, stat_problem_path(problem)
-    - else
-      = "#{problem.name}"
+    = render partial: 'problems/problem_name', locals: {problem: problem}
+  -# score column
+  - score = @prob_submissions[problem.id][:max_score];
+  - cc =  score == 100 ? 'bg-success' : 'bg-warning text-dark'
+  %td{style: "width: 12em; vertical-align: middle", 'data-order': score || 0}
+    .progress
+      .progress-bar{style: "width: #{score}%", class: cc}
+        = number_with_precision score, precision: 2
+  -# last submission column
   %td
-    = "#{problem.full_name}"
-
-    %br
-    = link_to_description_if_any "[#{t 'main.problem_desc'}] <span class='glyphicon glyphicon-file'></span>".html_safe, problem
-  %td
-    = @prob_submissions[problem.id][:count]
-    -#= link_to "[subs]", main_submission_path(problem.id)
-  %td
-    = render :partial => 'submission_short',
-      :locals => {:submission => @prob_submissions[problem.id][:submission], :problem_name => problem.name, :problem_id => problem.id }
+    = render partial: 'submission_short',
+      locals: {submission: @prob_submissions[problem.id][:submission], problem_name: problem.name, problem_id: problem.id, sub_count: @prob_submissions[problem.id][:count], show_button: false, show_id: true }
+  -# Action column
   %td
     - if @prob_submissions[problem.id][:submission]
       = link_to 'Edit', edit_submission_path(@prob_submissions[problem.id][:submission]), class: 'btn btn-success'
     - else
       = link_to 'New', direct_edit_problem_submissions_path(problem.id), class: 'btn btn-success'
+  -# hidden column
+  %td
+    = problem.public_tags.pluck(:name).join ','
+    
+

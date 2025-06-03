@@ -1,14 +1,5 @@
-.panel.panel-info
-  .panel-heading
-    Select Problems
-  .panel-body
-    .form-inline
-      = select 'submission',
-        'problem_id',
-        @problems.collect {|p| ["[#{p.name}] #{p.full_name}", problem_submissions_url(p.id)]},
-        { selected: (@problem ? problem_submissions_url(@problem) : -1) },
-        { class: 'select2 form-control'} 
-      %button.btn.btn-primary.btn-sm.go-button#problem_go{data: {source: '#submission_problem_id'}} Go
+.my-2
+  = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_submissions_path}
 
 - if @problem!=nil
   %h2= "Task: #{@problem.full_name} (#{@problem.name})"

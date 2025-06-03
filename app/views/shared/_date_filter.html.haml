@@ -1,0 +1,26 @@
+.card.border-primary
+  .card-header.text-bg-primary.border-primary
+    Date ranges
+  .card-body
+    .row.mb-3
+      .col-md-4.col-form-label
+        From Date:
+      .col-md-6
+        .input-group.td-date
+          = text_field_tag :since_datetime, nil, class: 'form-control'
+          %span.input-group-text
+            %span.mi event
+    .row.mb-3
+      .col-md-4.col-form-label
+        Until Date:
+      .col-md-6
+        .input-group.date
+          = text_field_tag :until_datetime, nil, class: 'form-control'
+          %span.input-group-text
+            %span.mi event
+
+:javascript
+  $(function() {
+    since_datetime = new TempusDominus(document.getElementById('since_datetime'), cafe.config.td.datetime );
+    until_datetime = new TempusDominus(document.getElementById('until_datetime'), cafe.config.td.datetime );
+  })

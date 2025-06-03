@@ -1,4 +1,4 @@
-class GroupProblem < ActiveRecord::Base
+class GroupProblem < ApplicationRecord
   self.table_name = 'groups_problems'
   
   belongs_to :problem

@@ -1,7 +1,7 @@
 class LoginController < ApplicationController
 
   @@authenticators = []
-  
+
   def index
     # show login screen
     reset_session
@@ -11,34 +11,33 @@ class LoginController < ApplicationController
   def login
     user = get_authenticated_user(params[:login], params[:password])
     unless user
-      flash[:notice] = 'Wrong password'
-      redirect_to :controller => 'main', :action => 'login'
+      redirect_to login_main_path, alert: 'Wrong password'
       return
     end
 
     if (!GraderConfiguration['right.bypass_agreement']) and (!params[:accept_agree]) and !user.admin?
-      flash[:notice] = 'You must accept the agreement before logging in'
-      redirect_to :controller => 'main', :action => 'login'
+      redirect_to login_main_path, alert: 'You must accept the agreement before logging in'
       return
+    end
+
+    #store uuid when login
+    if user.last_ip.nil?
+      user.last_ip = cookies.encrypted[:uuid]
+    else
+      if user.last_ip != cookies.encrypted[:uuid]
+        user.last_ip =cookies.encrypted[:uuid]
+        #log different login
+      end
     end
 
     #process logging in
     session[:user_id] = user.id
     session[:admin] = user.admin?
+    session[:last_login] = Time.zone.now
 
-    # clear forced logout flag for multicontests contest change
-    if GraderConfiguration.multicontests?
-      contest_stat = user.contest_stat
-      if contest_stat.respond_to? :forced_logout
-        if contest_stat.forced_logout
-          contest_stat.forced_logout = false
-          contest_stat.save
-        end
-      end
-    end
 
     #save login information
-    Login.create(user_id: user.id, ip_address: request.remote_ip)
+    Login.create(user_id: user.id, ip_address: request.remote_ip ,cookie: cookies.encrypted[:uuid])
 
     redirect_to :controller => 'main', :action => 'list'
   end
@@ -50,16 +49,20 @@ class LoginController < ApplicationController
       site = nil
     end
     if site==nil
-      flash[:notice] = 'Wrong site'
+      flash[:alert] = 'Wrong site'
       redirect_to :controller => 'main', :action => 'login'  and return
     end
     if (site.password) and (site.password == params[:login][:password])
       session[:site_id] = site.id
       redirect_to :controller => 'site', :action => 'index'
     else
-      flash[:notice] = 'Wrong site password'
+      flash[:alert] = 'Wrong site password'
       redirect_to :controller => 'site', :action => 'login'
     end
+  end
+
+  def logout
+    redirect_to root_path
   end
 
   def self.add_authenticator(authenticator)

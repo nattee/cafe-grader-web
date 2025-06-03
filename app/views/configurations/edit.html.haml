@@ -1,0 +1,5 @@
+= turbo_frame_tag dom_id(@config,"config") do
+  = simple_form_for @config do |f|
+    = f.input :value, label: false, autofocus: true
+    = f.submit "Update", class: 'btn btn-sm btn-primary'
+    = link_to "Cancel", grader_configuration_index_path, class: 'btn btn-sm btn-outline-secondary'

@@ -4,30 +4,38 @@ require 'net/https'
 require 'net/http'
 require 'json'
 
-class User < ActiveRecord::Base
+class User < ApplicationRecord
 
   has_and_belongs_to_many :roles
 
   #has_and_belongs_to_many :groups
-  has_many :groups_users, class_name: GroupUser
+  has_many :groups_users, class_name: 'GroupUser'
   has_many :groups, :through => :groups_users
 
-  has_many :test_requests, -> {order(submitted_at: DESC)}
+  has_many :test_requests, -> {order(submitted_at: :desc)}
 
-  has_many :messages, -> { order(created_at: DESC) },
+  has_many :messages, -> { order(created_at: :desc) },
            :class_name => "Message",
            :foreign_key => "sender_id"
 
-  has_many :replied_messages, -> { order(created_at: DESC) },
+  has_many :replied_messages, -> { order(created_at: :desc) },
            :class_name => "Message",
            :foreign_key => "receiver_id"
 
+  has_many :logins
+
+  has_many :submissions
+
   has_one :contest_stat, :class_name => "UserContestStat", :dependent => :destroy
 
-  belongs_to :site
-  belongs_to :country
+  belongs_to :site, optional: true
+  belongs_to :country, optional: true
 
-  has_and_belongs_to_many :contests, -> { order(:name); uniq}
+  belongs_to :default_language, class_name: 'Language', foreign_key: 'default_language_id', optional: true
+
+  # contest
+  has_many :contests_users, class_name: 'ContestUser'
+  has_many :contests, :through => :contests_users
 
   scope :activated_users, -> {where activated: true}
 
@@ -38,17 +46,17 @@ class User < ActiveRecord::Base
 
   validates_presence_of :full_name
   validates_length_of :full_name, :minimum => 1
-  
+
   validates_presence_of :password, :if => :password_required?
   validates_length_of :password, :within => 4..50, :if => :password_required?
   validates_confirmation_of :password, :if => :password_required?
 
-  validates_format_of :email, 
-                      :with => /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i, 
+  validates_format_of :email,
+                      :with => /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i,
                       :if => :email_validation?
-  validate :uniqueness_of_email_from_activated_users, 
+  validate :uniqueness_of_email_from_activated_users,
            :if => :email_validation?
-  validate :enough_time_interval_between_same_email_registrations, 
+  validate :enough_time_interval_between_same_email_registrations,
            :if => :email_validation?
 
   # these are for ytopc
@@ -61,9 +69,104 @@ class User < ActiveRecord::Base
   before_save :assign_default_site
   before_save :assign_default_contest
 
-  # this is for will_paginate
-  cattr_reader :per_page
-  @@per_page = 50
+  # ---- problem for the users for specific action ------
+  # -- this includes logic of User.role where admin always has right ---
+  # -- this also includes logics of mode of the grader (normal, contest, analysis)
+  # -- this also consider whether the user is enabled ---
+  # valid action is either :submit, :report, :edit
+  def problems_for_action(action)
+    return Problem.all if admin?
+    return Problem.none unless enabled?
+
+    action = action.to_sym
+
+    if GraderConfiguration.multicontests?
+      # legacy mode, have not been implemented yet
+    elsif GraderConfiguration.contest_mode?
+      return Problem.contests_problems_for_user(self.id)
+    else
+      # normal mode
+      if GraderConfiguration.use_problem_group?
+        if action == :edit
+          return Problem.group_editable_by_user(self.id)
+        elsif action == :report
+          return Problem.group_reportable_by_user(self.id)
+        elsif action == :submit
+          return Problem.group_submittable_by_user(self.id)
+        else
+          raise ArgumentError.new('action must be one of :edit, :report, :submit')
+        end
+      else
+        if action == :submit
+          return Problem.available
+        else
+          return Problem.none
+        end
+      end
+    end
+  end
+
+  # ---- groups for the users for specific action ------
+  # * This includes logic of User.role where admin always has right to any group
+  # * This also includes logics of mode of the grader (normal, contest, analysis)
+  # * This also consider whether the user is enabled ---
+  # * This DOES NOT respect group_mode, it always performed as the group mode is enabled
+  #
+  # valid action is either :submit, :report, :edit
+  def groups_for_action(action)
+    return Group.all if admin?
+    return Group.none unless enabled?
+
+    action = action.to_sym
+
+    # normal mode
+    if action == :edit
+      return Group.editable_by_user(self.id)
+    elsif action == :report
+      return Group.reportable_by_user(self.id)
+    elsif action == :submit
+      return Group.submittable_by_user(self.id)
+    else
+      raise ArgumentError.new('action must be one of :edit, :report, :submit')
+    end
+  end
+
+  # ---- groups for the users for specific action ------
+  # * This includes logic of User.role where admin always has right to any group
+  # * This also includes logics of mode of the grader (normal, contest, analysis)
+  # * This also consider whether the user is enabled ---
+  # * This DOES NOT respect group_mode, it always performed as the group mode is enabled
+  #
+  # valid action is either :submit, :edit
+  def contests_for_action(action)
+    return Contest.all if admin?
+    return Contest.none unless enabled?
+    action = action.to_sym
+    
+    # normal mode
+    if action == :edit
+      return Contest.editable_by_user(self.id)
+    elsif action == :submit
+      return Contest.submittable_by_user(self.id)
+    else
+      raise ArgumentError.new('action must be one of :edit, :submit')
+    end
+  end
+
+  def reportable_users
+    return User.all if admin?
+    User.where(id: groups_for_action(:report).joins(:users).pluck('groups_users.user_id'))
+  end
+
+  # return contests of this user that is both enabled and the current time
+  # is during the contest
+  def active_contests
+    if GraderConfiguration.contest_mode?
+      return contests.where(enabled: true).where('start <= ? and stop >= ?',Time.zone.now, Time.zone.now)
+    else
+      return Contest.none
+    end
+  end
 
   def self.authenticate(login, password)
     user = find_by_login(login)
@@ -71,6 +174,7 @@ class User < ActiveRecord::Base
       return user if user.authenticated?(password)
     end
   end
+
 
   def authenticated?(password)
     if self.activated
@@ -80,8 +184,17 @@ class User < ActiveRecord::Base
     end
   end
 
+  def login_with_name
+    "[#{login}] #{full_name}"
+  end
+
   def admin?
-    self.roles.detect {|r| r.name == 'admin' }
+    @is_admin = has_role?('admin') if @is_admin.nil?
+    return @is_admin
+  end
+
+  def has_role?(role)
+    self.roles.where(name: [role,'admin']).any?
   end
 
   def email_for_editing
@@ -130,10 +243,6 @@ class User < ActiveRecord::Base
     password
   end
 
-  def self.find_non_admin_with_prefix(prefix='')
-    users = User.all
-    return users.find_all { |u| !(u.admin?) and u.login.index(prefix)==0 }
-  end
 
   # Contest information
 
@@ -142,7 +251,11 @@ class User < ActiveRecord::Base
     return users.find_all { |u| u.contests.length == 0 }
   end
 
+  # ---------------------
+  # ---- contest --------
+  # ---------------------
 
+  # original contest
   def contest_time_left
     if GraderConfiguration.contest_mode?
       return nil if site==nil
@@ -168,12 +281,13 @@ class User < ActiveRecord::Base
     end
   end
 
+
   def contest_finished?
     if GraderConfiguration.contest_mode?
       return false if site==nil
       return site.finished?
     elsif GraderConfiguration.indv_contest_mode?
-      return false if self.contest_stat(true)==nil
+      return false if self.contest_stat==nil
       return contest_time_left == 0
     else
       return false
@@ -216,88 +330,184 @@ class User < ActiveRecord::Base
     return false
   end
 
-  def available_problems_group_by_contests
-    contest_problems = []
-    pin = {}
-    contests.enabled.each do |contest|
-      available_problems = contest.problems.available
-      contest_problems << {
-        :contest => contest,
-        :problems => available_problems
-      }
-      available_problems.each {|p| pin[p.id] = true}
-    end
-    other_avaiable_problems = Problem.available.find_all {|p| pin[p.id]==nil and p.contests.length==0}
-    contest_problems << {
-      :contest => nil,
-      :problems => other_avaiable_problems
-    }
-    return contest_problems
-  end
 
   def solve_all_available_problems?
     available_problems.each do |p|
       u = self
       sub = Submission.find_last_by_user_and_problem(u.id,p.id)
-      return false if !p or !sub or sub.points < p.full_score
+      return false if !p || !sub || sub.points < 100
     end
     return true
   end
 
-  #get a list of available problem
+  # get a list of available problem for submission
+  # this works with both contest and normal mode
+  #   and for both group and non-group mode
   def available_problems
-    if not GraderConfiguration.multicontests?
+    # first, we check if this is normal mode
+    unless GraderConfiguration.contest_mode?
+      #if this is a normal mode
+      #we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
-        return available_problems_in_group
+        return Problem.group_submittable_by_user(self.id).default_order
       else
-        return Problem.available_problems
+        return Problem.available.default_order
       end
     else
-      contest_problems = []
-      pin = {}
-      contests.enabled.each do |contest|
-        contest.problems.available.each do |problem|
-          if not pin.has_key? problem.id
-            contest_problems << problem
-          end
-          pin[problem.id] = true
-        end
-      end
-      other_avaiable_problems = Problem.available.find_all {|p| pin[p.id]==nil and p.contests.length==0}
-      return contest_problems + other_avaiable_problems
+      #this is contest mode
+      return Problem.contests_problems_for_user(self.id).default_order
     end
   end
 
-  def available_problems_in_group
-    problem = []
-    self.groups.each do |group|
-      group.problems.where(available: true).each { |p| problem << p }
-    end
-    problem.uniq!
-    if problem
-      problem.sort! do |a,b|
-        case
-        when a.date_added < b.date_added
-          1
-        when a.date_added > b.date_added
-          -1
-        else
-          a.name <=> b.name
-        end
-      end
-      return problem
-    else
-      return []
-    end
-  end
-
+  #check if the user has the right to view that problem
+  #this also consider group based problem policy
   def can_view_problem?(problem)
     return true if admin?
     return available_problems.include? problem
   end
 
+  def can_view_testcase?(problem)
+    return true if admin?
+    return can_view_problem?(problem) && GraderConfiguration["right.view_testcase"]
+  end
+
   def self.clear_last_login
-    User.update_all(:last_ip => nil)
+    User.update_all(last_ip: nil)
+  end
+
+  def get_jschart_user_sub_history
+    start = 4.month.ago.beginning_of_day
+    start_date = start.to_date
+    count = Submission.where(user: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
+    i = 0
+    label = []
+    value = []
+    while (start_date + i < Time.zone.now.to_date)
+      label << (start_date+i).strftime("%d-%b")
+      value << (count[start_date+i] || 0)
+      i+=1
+    end
+    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+  end
+
+  def get_jschart_user_contest_history(contest)
+    cu = contest.contests_users.where(user: self).take
+    start = contest.start - cu.start_offset_second.second
+    stop = [Time.zone.now,contest.stop + cu.extra_time_second.second].min
+
+    # divide into 120 step
+    step = (stop - start) / 120
+
+    # adjust
+    step = [60,step].max
+    step = (step / 60).to_i * 60
+
+    submitted_at = contest.user_submissions(self).order(:submitted_at).pluck :submitted_at
+
+
+    now = start
+    i = 0
+    label = []
+    value = []
+    while (now < stop)
+      count = 0;
+      while (i < submitted_at.count && submitted_at[i] < now + step.second)
+        count += 1
+        i += 1
+        puts "got #{submitted_at[i]} for #{now.strftime("%H:%M")}"
+      end
+      label << now.strftime("%H:%M")  # hours / minute
+      value << count
+
+      now += step.second
+    end
+    return {labels: label,datasets: [ {label:'sub',data: value, backgroundColor: 'rgba(255, 99, 132,0.8)', borderColor: 'rgb(255, 99, 132)'}]}
+  end
+
+  #create multiple user, one per lines of input
+  def self.create_from_list(lines)
+    error_logins = []
+    first_error = nil
+    created_user_ids = []
+    updated_user_ids = []
+
+    lines.split("\n").each do |line|
+      #split with large limit, this will cause consecutive ',' to be result in a blank
+      items = line.chomp.split(',',1000)
+      if items.length>=2
+        login = items[0]
+        full_name = items[1]
+        remark =''
+        user_alias = ''
+
+        added_random_password = false
+        added_password = false
+
+        #given password?
+        if items.length >= 3
+          if items[2].chomp(" ").length > 0
+            password = items[2].chomp(" ")
+            added_password = true
+          end
+        else
+          password = random_password
+          added_random_password=true;
+        end
+
+        #given alias?
+        if items.length>= 4 and items[3].chomp(" ").length > 0;
+          user_alias = items[3].chomp(" ")
+        else
+          user_alias = login
+        end
+
+        #given remark?
+        has_remark = false
+        if items.length>=5
+          remark = items[4].strip;
+          has_remark = true
+        end
+
+        user = User.find_by_login(login)
+        created = false
+        if (user)
+          user.full_name = full_name
+          user.remark = remark if has_remark
+          user.password = password if added_password || added_random_password
+        else
+          #create a random password if none are given
+          password = random_password unless password
+          user = User.new({:login => login,
+                           :full_name => full_name,
+                           :password => password,
+                           :password_confirmation => password,
+                           :alias => user_alias,
+                           :remark => remark})
+          created = true
+        end
+        user.activated = true
+
+        if user.save
+          if created
+            created_user_ids << user.id
+          else
+            updated_user_ids << user.id
+          end
+        else
+          error_logins << "'#{login}'"
+          first_error = user.errors.full_messages.to_sentence unless first_error
+        end
+      end
+    end
+
+    return {error_logins: error_logins, first_error: first_error,
+            created_users: User.where(id: created_user_ids), updated_users: User.where(id: updated_user_ids)}
+
+  end
+
+  def self.find_non_admin_with_prefix(prefix='')
+    users = User.all
+    return users.find_all { |u| !(u.admin?) and u.login.index(prefix)==0 }
   end
 
   protected
@@ -306,7 +516,7 @@ class User < ActiveRecord::Base
       self.salt = (10+rand(90)).to_s
       self.hashed_password = User.encrypt(self.password,self.salt)
     end
-  
+
     def assign_default_site
       # have to catch error when migrating (because self.site is not available).
       begin

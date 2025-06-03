@@ -1,14 +1,29 @@
-.container-fluid
-  = form_for @problem,url:{action: 'update'},html: {multipart: true} do
-    .row
-      .col-md-6
-        %h1 Editing problem
-        = render :partial => 'form'
-        .row
-          .col-md-4
-            = submit_tag 'Edit', class: 'btn btn-primary btn-block'
-          .col-md-4
-            = link_to 'Show', {:action => 'show', :id => @problem}, class: 'btn btn-default btn-block'
-          .col-md-4
-            = link_to 'Back', problems_path, class: 'btn btn-default btn-block'
-.div{style: 'height: 5em'}
+%h2 
+  Edit problem
+.mb-3
+  [
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1'
+  |
+  = link_to mdi(:finance) + 'Stat', stat_problem_path(@problem), class: 'mx-1'
+  |
+  = link_to '<span class="mi mi-bs">download</span> Download'.html_safe, download_archive_problem_path(@problem), class: 'mx-1'
+  ]
+.row{'data-controller': 'problem'}
+  -# problem card
+  .col-md-5
+    .card.shadow-sm.my-2
+      .card-body
+        = render 'form', problem: @problem
+  -# dataset card
+  .col-md-7
+    .card.shadow-sm.my-2
+      .card-body
+        %h4 Datasets
+        -# dataset selector
+        = turbo_frame_tag :dataset_select do
+          = render partial: 'datasets/dataset_select', locals: {ds: @problem.live_dataset, problem: @problem}
+        -# dataset form
+        = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset), data: {'problem-target': 'dataset', 'current-id': @problem.live_dataset.id}
+
+:javascript
+  //page 

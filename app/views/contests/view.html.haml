@@ -1,0 +1,268 @@
+%h2
+  Contest Status
+  %small.text-body-tertiary (#{@contest.name})
+-# graph area
+.row.mb-3
+  .col-lg-6
+    %div{style: 'height: 350px'}
+      %canvas#chart
+  .col-lg-6
+    %div{style: 'height: 350px'}
+      %canvas#chart_2
+%table#table.table.datatable.table-hover
+  %thead
+    %tr
+      %th #
+      %th Login
+      %th Name
+      %th Remark
+      %th Seat
+      %th Last Seen
+      - @problems.each do |p|
+        %th= p.name.gsub('_',' ')
+      %th Sum
+  %tfoot
+    %tr
+      %td
+      %td Summation
+      %td
+      %td
+      %td
+      %td
+      - @problems.each do |p|
+        %td.text-end{id: "sum_prob_#{p.id}"}
+      %td#grand_total.text-end
+
+
+:javascript
+  let show_detail = true
+  const sub_download_link = '#{j link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))}'
+  const sub_path = '#{submission_path(-123)}'
+  $(function() {
+    humanize_time_renderer = function(data,type,row,meta) {
+      if (!data) return ''
+      if (type == 'display' || type == 'filter')
+        return humanize_time(data)
+
+      //for sort, we just return the data which is supposed to be iso8601
+      return data
+    }
+
+    // generate a renderer function for rendering score / time / link for problem prob_id
+    function score_renderer_factory(prob_id) {
+      return function(data,type,row,meta) {
+        if (!data) return ''
+        if (type == 'display' || type == 'filter') {
+          if (show_detail) {
+            // render the score, along with the time and link to the sub
+            sub_col = `sub_${prob_id}`
+            time_col = `time_${prob_id}`
+            sub_link = `<a href=${sub_path.replace(-123,row[sub_col])}>[ ${moment(row[time_col]).format('HH:mm:ss')} ]</a>`
+            st = `${data} </br> ${sub_link} | ${sub_download_link.replace(-123,row[sub_col])}`
+            return st
+          } else {
+            return data
+          }
+        }
+
+        //for sort, we just return the data which is supposed to be iso8601
+        return data
+      }
+    }
+
+    // build columns
+    problem_ids = [#{@problems.pluck(:id).join(',')}]
+
+    problem_columns = problem_ids.map( id => {
+      return {data: `prob_${id}`,className: 'text-end',render: score_renderer_factory(id) }
+    })
+    columns = [
+      {data: 'row_number'},
+      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
+      {data: 'full_name'},
+      {data: 'remark'},
+      {data: 'seat'},
+      {data: 'last_heartbeat',label: 'Last Checkin', render: humanize_time_renderer},
+    ].concat(problem_columns)
+    .concat( [
+      {data: 'sum_score'},
+      //{data: 'pass'}
+    ])
+
+    //function that combines and render graph
+    //return the data table
+    function score_display(json) {
+      //combine score into user record
+      // at start json.data[i] is a user data (id,login,name,remark,seat, etc)
+      show_detail = document.getElementById("show-load").checked
+      for (let i = 0, ien = json.data.length; i < ien; i++) {
+        login = json.data[i].login
+
+        //we loop over each problems (in json.problems)
+        sum_score = 0.0
+        json.problem.forEach ( (prob) => {
+
+          //and pluck the score of that user from the "score_table" (json.result)
+          score_result = json.result.score[login]
+
+          prob_id = `prob_${prob.id}`
+          prob_score = (score_result) ? score_result[prob_id] || '' : ''
+          if (prob_score.length > 0) {
+            prob_score = parseFloat(prob_score).toFixed(1)
+            json.data[i][`sub_${prob.id}`] = score_result[`sub_${prob.id}`]
+            json.data[i][`time_${prob.id}`] = score_result[`time_${prob.id}`]
+          }
+          json.data[i][`prob_${prob.id}`] = prob_score
+
+          //also sum the score
+          sum_score += parseFloat(prob_score || 0.0)
+        })
+        json.data[i]['sum_score'] = sum_score.toFixed(1)
+      }
+      draw_graph(json)
+      return json.data;
+    }
+
+    //main table
+    table_config = {
+      processing: true,
+      rowId: 'id',
+      destroy: true,
+      paging: false,
+      order: [[0,'asc']],
+      layout: {
+        topStart: [
+          'buttons',
+          {
+            div: {
+              html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox"> <label class="form-check-label" for="show-load">Show submission time & download button</label>'
+            }
+          }
+        ],
+        topEnd: 'search'
+      },
+      buttons: [
+          { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()}},
+          'copyHtml5',
+          'excelHtml5',
+      ],
+      ajax: {
+        url: "#{view_query_contest_path(@contest)}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+        dataSrc: function (json) {
+          // add placeholder data for row numbering
+          json.data.forEach( (item,index) =>  { item.row_number = 1} )
+
+          // change the summation value
+          let grand_total = 0
+          Object.entries(json.result.stat).forEach( ([key,value]) => {
+            grand_total += Number(value.sum)
+            const formatted = Number(value.sum).toLocaleString(undefined, {minimumFractionDigits: 1})
+            $(`#sum_prob_${key}`).text(formatted)
+          })
+
+          $(`#grand_total`).text(grand_total.toLocaleString(undefined, {minimumFractionDigits: 1}))
+
+
+          // render the graph and also return the data
+          return score_display(json)
+        }
+      },
+      columns: columns,
+      drawCallback: function (settings) {
+        var api = this.api();
+        api.columns.adjust()
+
+      },
+      initComplete: function() {
+        //we have to put it here because #show-load is dynamically generated
+        $('#show-load').on('click', function() {
+          table.ajax.reload()
+        })
+
+      }
+    }
+
+    //initialize the table
+    table = $('#table').DataTable(table_config)
+
+    // add row numbering
+    table.on('order.dt search.dt', function () {
+      let i = 1;
+      let t = $('#table').DataTable()
+
+      // select columns 0 of every row, as search and order is applied
+      t.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+        this.data(i++);
+      });
+    }).draw();
+  });
+
+    //
+    // -------   draw graph -----------
+    // json is the response from the controller {data: ..., result:..., problem: ...}
+    function draw_graph(json) {
+      //build dataset
+      users_count = json.data.length
+      data = {
+        labels: Array.from(Array(users_count), (_, i) => i+1), //this builds [1,2,3,4,....,N]
+        datasets:
+          json.problem.map( (a) => {
+            return {
+              label: a.name,
+              data: json.data.map( (b) => b[`prob_${a.id}`] || 0).sort( (a,b) => a-b )
+            }
+          })
+      }
+
+      //left pad each dataset with zero
+      maxLength = data.labels.length
+      data.datasets.forEach(dataset => {
+        const paddingLength = maxLength - dataset.data.length;
+        if (paddingLength > 0) {
+            const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
+            dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
+        }
+      });
+
+      config = {
+        type: 'line',
+        data: data,
+        options: {
+          responstive: true,
+          maintainAspectRatio: false,
+          elements: {
+            point: {
+              pointStyle: false
+            },
+          }
+        },
+      }
+
+      //clone the config to be used in the second graph
+      //this has to be done before we construct the chart.js object,
+      //else the config is already changed
+      config2 = structuredClone(config)
+      data2 = {
+        labels: Array.from(Array(users_count), (_, i) => i+1), //this build [1,2,3,4,....,N]
+        datasets: [
+          {
+            label: 'Total Score',
+            data: json.data.map( (a) => a.sum_score ).sort( (a,b) => a-b )
+          }
+        ]
+      }
+      config2.data = data2
+
+      // destroy old graph
+      if (typeof chart1 !== 'undefined') { chart1.destroy() }
+      if (typeof chart2 !== 'undefined') { chart2.destroy() }
+
+      // display graph
+      Chart.defaults.font.size = 15
+      //Chart.defaults.font.family = 'Sarabun Light'
+      chart1 = new Chart($('#chart'),config)
+      chart2 = new Chart($('#chart_2'),config2)
+    }
+

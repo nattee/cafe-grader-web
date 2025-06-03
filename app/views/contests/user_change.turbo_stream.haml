@@ -1,0 +1,7 @@
+= turbo_stream.replace :contest_user_table_frame, partial: 'contest_users'
+- if @toast
+  = turbo_stream.append 'toast-area', partial: 'shared/toast', locals: {toast: @toast}
+- if @clear_form
+  = turbo_stream.append 'js-response' do
+    :javascript
+      clear_user_form()

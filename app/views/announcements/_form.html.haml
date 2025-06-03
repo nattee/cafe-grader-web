@@ -1,0 +1,29 @@
+= simple_form_for @announcement do |f|
+  - if @announcement.errors.any?
+    #error_explanation.alert.alert-dismissable.alert-danger
+      %button.close{type: "button", data: { dismiss: "alert"}, aria: {hidden: "true"}} ×
+      %h3= "Error in saving"
+      %ul
+        - @announcement.errors.full_messages.each do |message|
+          %li= message
+  = f.input :title
+  = f.input :notes, label: 'Notes (shown internally, used to organize announcements)'
+  = f.input :body, input_html: {style: 'height: 10rem'}
+  = f.input :author
+  = f.input :group_id, collection: @current_user.groups_for_action(:edit), include_blank: @current_user.admin?
+  = f.input :published
+  = f.input :frontpage, label: 'Display in the front page only?'
+  = f.input :on_nav_bar, label: 'Show on menu bar?'
+  = f.input :contest_only, label: 'Display in contest only?'
+  = f.input :file
+  .row.mb-3
+    .col
+      - if @announcement.file.attached?
+        = link_to "<span class='mi mi-bs md-18'>description</span> Read (#{@announcement.file.filename})".html_safe, url_for(@announcement.file)
+        = " | "
+        = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, delete_file_announcement_path(@announcement), method: :delete, class: 'link-danger', data: {confirm: 'Are you sure?'}
+      - else
+        This announcement has no attached file.
+  = f.submit class: 'btn btn-primary'
+  = link_to 'Back', announcements_path, class: 'btn btn-outline-secondary mx-2'
+

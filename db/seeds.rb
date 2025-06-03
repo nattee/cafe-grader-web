@@ -100,7 +100,7 @@ CONFIGURATIONS =
      :key => 'right.view_testcase',
      :value_type => 'boolean',
      :default_value => 'false',
-     :description => 'When true, any user can view/download test data'
+     :description => 'If true, any user can view/download test data'
    },
    
    {
@@ -181,15 +181,28 @@ CONFIGURATIONS =
    },
 
 
+   {
+     :key => 'right.whitelist_ignore',
+     :value_type => 'boolean',
+     :default_value => 'true',
+     :description => "If true, no IP check against whitelist_ip is perform. However, when false, non-admin user must have their ip in 'whitelist_ip' to be able to login."
+   },
+
+   {
+     :key => 'right.whitelist_ip',
+     :value_type => 'string',
+     :default_value => '0.0.0.0/0',
+     :description => "list of whitelist ip, given in comma separated CIDR notation. For example '192.168.90.0/23, 192.168.1.23/32'"
+   },
 
   ]
 
 
-def create_configuration_key(key, 
-                             value_type, 
-                             default_value, 
+def create_configuration_key(key,
+                             value_type,
+                             default_value,
                              description='')
-  conf = (GraderConfiguration.find_by_key(key) || 
+  conf = (GraderConfiguration.find_by_key(key) ||
           GraderConfiguration.new(:key => key,
                             :value_type => value_type,
                             :value => default_value))
@@ -204,7 +217,7 @@ def seed_config
     else
       desc = ''
     end
-    create_configuration_key(conf[:key], 
+    create_configuration_key(conf[:key],
                              conf[:value_type],
                              conf[:default_value],
                              desc)
@@ -212,6 +225,7 @@ def seed_config
 end
 
 def seed_roles
+  Role.find_or_create_by(name: 'ta')
   return if Role.find_by_name('admin')
 
   role = Role.create(:name => 'admin')
@@ -225,7 +239,7 @@ def seed_roles
   graders_right = Right.create(:name => 'graders_admin',
                                :controller => 'graders',
                                :action => 'all')
-    
+
   role.rights << user_admin_right;
   role.rights << problem_admin_right;
   role.rights << graders_right;
@@ -234,12 +248,12 @@ end
 
 def seed_root
   return if User.find_by_login('root')
-  
+
   root = User.new(:login => 'root',
                   :full_name => 'Administrator',
                   :alias => 'root')
   root.password = 'ioionrails';
-  
+
   class << root
     public :encrypt_new_password
     def valid?(context=nil)
@@ -260,16 +274,6 @@ def seed_users_and_roles
   seed_root
 end
 
-def seed_more_languages
-  Language.delete_all
-  Language.create( name: 'c', pretty_name: 'C', ext: 'c', common_ext: 'c' )
-  Language.create( name: 'cpp', pretty_name: 'C++', ext: 'cpp', common_ext: 'cpp,cc' )
-  Language.create( name: 'pas', pretty_name: 'Pascal', ext: 'pas', common_ext: 'pas' )
-  Language.create( name: 'ruby', pretty_name: 'Ruby', ext: 'rb', common_ext: 'rb' )
-  Language.create( name: 'python', pretty_name: 'Python', ext: 'py', common_ext: 'py' )
-  Language.create( name: 'java', pretty_name: 'Java', ext: 'java', common_ext: 'java' )
-end
-
 seed_config
 seed_users_and_roles
-seed_more_languages
+Language.seed

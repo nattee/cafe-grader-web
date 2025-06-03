@@ -1,0 +1,51 @@
+.card.border-primary.mb-2
+  .card-header.text-bg-primary.border-primary
+    Problems
+  .card-body
+    %p
+      Select problem(s) that we wish to know the score.
+    - if local_assigns[:all]
+      .row.mb-2
+        .col-1
+          .form-check
+            = radio_button_tag :'probs[use]', :all, false, class: 'form-check-input'
+        .col-11
+          = label_tag :probs_use_all, "All problems"
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag :'probs[use]', :ids, true, class: 'form-check-input'
+      .col-11
+        = label_tag :probs_use_ids, "Only these problems"
+        = select_tag 'probs[ids][]',
+          options_for_select(@problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, params[:'probs[ids][]']), { class: 'select2 form-control', multiple: "true" }
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag :'probs[use]', :groups, false, class: 'form-check-input'
+      .col-11
+        = label_tag :probs_use_groups, "Problems in these groups"
+        = select_tag 'probs[group_ids][]',
+            options_for_select(@groups.collect {|g| [g.name, g.id]},params[:prob_group_id]),
+            { class: 'select2 form-control', multiple: "true" }
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag :'probs[use]', :tags, false, class: 'form-check-input'
+      .col-11
+        = label_tag :probs_use_tags, "Problems with these tags"
+        = select_tag 'probs[tag_ids][]',
+            options_for_select(Tag.all.collect {|t| [t.name, t.id]},params[:prob_tag_id]),
+            { class: 'select2 form-control', multiple: "true" }
+:javascript
+  // save the problem selection input into d
+  // (to be used by DataTable Ajax data source)
+  function build_problem_params(d) {
+    d['probs[use]'] = $('input[name="probs[use]"]:checked').val()
+    if ($('#probs_ids_').hasClass("select2-hidden-accessible"))
+      d['probs[ids]']= $('#probs_ids_').select2('data').map( e=>e.id)
+    if ($('#probs_group_ids_').hasClass("select2-hidden-accessible"))
+      d['probs[group_ids]']= $('#probs_group_ids_').select2('data').map( e=>e.id)
+    if ($('#probs_tag_ids_').hasClass("select2-hidden-accessible"))
+      d['probs[tag_ids]']= $('#probs_tag_ids_').select2('data').map( e=>e.id)
+  }

@@ -1,521 +1,997 @@
 !_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
 !_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
-!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
-!_TAG_PROGRAM_NAME	Exuberant Ctags	//
-!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.8	//
-ActiveSupport	test/test_helper.rb	/^class ActiveSupport::TestCase$/;"	c
-AddActivatedToUsers	db/migrate/20081204122651_add_activated_to_users.rb	/^class AddActivatedToUsers < ActiveRecord::Migration$/;"	c
-AddBodyToProblems	db/migrate/026_add_body_to_problems.rb	/^class AddBodyToProblems < ActiveRecord::Migration$/;"	c
-AddCommonExtToLanguages	db/migrate/20090416235658_add_common_ext_to_languages.rb	/^class AddCommonExtToLanguages < ActiveRecord::Migration$/;"	c
-AddContestFlagToAnnouncements	db/migrate/20090206145016_add_contest_flag_to_announcements.rb	/^class AddContestFlagToAnnouncements < ActiveRecord::Migration$/;"	c
-AddCountryToSitesAndUsers	db/migrate/035_add_country_to_sites_and_users.rb	/^class AddCountryToSitesAndUsers < ActiveRecord::Migration$/;"	c
-AddDescriptionFilenameToProblems	db/migrate/20100219014840_add_description_filename_to_problems.rb	/^class AddDescriptionFilenameToProblems < ActiveRecord::Migration$/;"	c
-AddDescriptionToConfig	db/migrate/20100124040107_add_description_to_config.rb	/^class AddDescriptionToConfig < ActiveRecord::Migration$/;"	c
-AddEmailToUsers	db/migrate/012_add_email_to_users.rb	/^class AddEmailToUsers < ActiveRecord::Migration$/;"	c
-AddForcedLogoutToUserContestStat	db/migrate/20100328123325_add_forced_logout_to_user_contest_stat.rb	/^class AddForcedLogoutToUserContestStat < ActiveRecord::Migration$/;"	c
-AddFrontpageFlagToAnnouncement	db/migrate/20081107145815_add_frontpage_flag_to_announcement.rb	/^class AddFrontpageFlagToAnnouncement < ActiveRecord::Migration$/;"	c
-AddIndexToSubmissions	db/migrate/005_add_index_to_submissions.rb	/^class AddIndexToSubmissions < ActiveRecord::Migration$/;"	c
-AddIpToSubmissions	db/migrate/20140917150629_add_ip_to_submissions.rb	/^class AddIpToSubmissions < ActiveRecord::Migration$/;"	c
-AddLanguageExt	db/migrate/011_add_language_ext.rb	/^class AddLanguageExt < ActiveRecord::Migration$/;"	c
-AddMoreDetailToSubmission	db/migrate/20140823031747_add_more_detail_to_submission.rb	/^class AddMoreDetailToSubmission < ActiveRecord::Migration$/;"	c
-AddNameToContests	db/migrate/20100303095700_add_name_to_contests.rb	/^class AddNameToContests < ActiveRecord::Migration$/;"	c
-AddNotesToAnnouncements	db/migrate/20100506163112_add_notes_to_announcements.rb	/^class AddNotesToAnnouncements < ActiveRecord::Migration$/;"	c
-AddNumberToSubmissions	db/migrate/018_add_number_to_submissions.rb	/^class AddNumberToSubmissions < ActiveRecord::Migration$/;"	c
-AddRunstatColumnsToTestRequest	db/migrate/023_add_runstat_columns_to_test_request.rb	/^class AddRunstatColumnsToTestRequest < ActiveRecord::Migration$/;"	c
-AddSessions	db/migrate/009_add_sessions.rb	/^class AddSessions < ActiveRecord::Migration$/;"	c
-AddSiteToUserAndAddDefaultSite	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^class AddSiteToUserAndAddDefaultSite < ActiveRecord::Migration$/;"	c
-AddStatusToTasks	db/migrate/015_add_status_to_tasks.rb	/^class AddStatusToTasks < ActiveRecord::Migration$/;"	c
-AddSupportsForOutputOnlyProblems	db/migrate/031_add_supports_for_output_only_problems.rb	/^class AddSupportsForOutputOnlyProblems < ActiveRecord::Migration$/;"	c
-AddTaskToGraderProcess	db/migrate/016_add_task_to_grader_process.rb	/^class AddTaskToGraderProcess < ActiveRecord::Migration$/;"	c
-AddTaskTypeToGraderProcesses	db/migrate/033_add_task_type_to_grader_processes.rb	/^class AddTaskTypeToGraderProcesses < ActiveRecord::Migration$/;"	c
-AddTerminatedToGraderProcesses	db/migrate/20090426131044_add_terminated_to_grader_processes.rb	/^class AddTerminatedToGraderProcesses < ActiveRecord::Migration$/;"	c
-AddTestAllowedToProblems	db/migrate/029_add_test_allowed_to_problems.rb	/^class AddTestAllowedToProblems < ActiveRecord::Migration$/;"	c
-AddTimestampsToUsers	db/migrate/20081210021333_add_timestamps_to_users.rb	/^class AddTimestampsToUsers < ActiveRecord::Migration$/;"	c
-AddTitleToAnnouncements	db/migrate/20090815171610_add_title_to_announcements.rb	/^class AddTitleToAnnouncements < ActiveRecord::Migration$/;"	c
-AddUrlToProblem	db/migrate/013_add_url_to_problem.rb	/^class AddUrlToProblem < ActiveRecord::Migration$/;"	c
-Announcement	app/models/announcement.rb	/^class Announcement < ActiveRecord::Base$/;"	c
-AnnouncementTest	test/unit/announcement_test.rb	/^class AnnouncementTest < ActiveSupport::TestCase$/;"	c
+!_TAG_OUTPUT_EXCMD	mixed	/number, pattern, mixed, or combineV2/
+!_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
+!_TAG_PROC_CWD	/home/dae/cafe_grader/web/	//
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	5.9.0	//
+ALLOW_TEST_PAIR_IMPORT	config/initializers/cafe_grader_config.rb	/^ALLOW_TEST_PAIR_IMPORT = false$/;"	C
+ANS_EXT	app/engine/problem_exporter.rb	/^  ANS_EXT = 'sol'$/;"	C	class:ProblemExporter
+APP_PATH	bin/rails	/^APP_PATH = File.expand_path("..\/config\/application", __dir__)$/;"	C
+APP_ROOT	bin/setup	/^APP_ROOT = File.expand_path("..", __dir__)$/;"	C
+APP_ROOT	bin/update	/^APP_ROOT = File.expand_path('..', __dir__)$/;"	C
+APP_ROOT	bin/yarn	/^APP_ROOT = File.expand_path('..', __dir__)$/;"	C
+AddActivatedToUsers	db/migrate/20081204122651_add_activated_to_users.rb	/^class AddActivatedToUsers < ActiveRecord::Migration[4.2]$/;"	c
+AddBodyToProblems	db/migrate/026_add_body_to_problems.rb	/^class AddBodyToProblems < ActiveRecord::Migration[4.2]$/;"	c
+AddCommonExtToLanguages	db/migrate/20090416235658_add_common_ext_to_languages.rb	/^class AddCommonExtToLanguages < ActiveRecord::Migration[4.2]$/;"	c
+AddConfigViewTest	db/migrate/20161031063337_add_config_view_test.rb	/^class AddConfigViewTest < ActiveRecord::Migration[4.2]$/;"	c
+AddContestFlagToAnnouncements	db/migrate/20090206145016_add_contest_flag_to_announcements.rb	/^class AddContestFlagToAnnouncements < ActiveRecord::Migration[4.2]$/;"	c
+AddCountryToSitesAndUsers	db/migrate/035_add_country_to_sites_and_users.rb	/^class AddCountryToSitesAndUsers < ActiveRecord::Migration[4.2]$/;"	c
+AddDefaultLanguageToUser	db/migrate/20210130121812_add_default_language_to_user.rb	/^class AddDefaultLanguageToUser < ActiveRecord::Migration[5.2]$/;"	c
+AddDescriptionFilenameToProblems	db/migrate/20100219014840_add_description_filename_to_problems.rb	/^class AddDescriptionFilenameToProblems < ActiveRecord::Migration[4.2]$/;"	c
+AddDescriptionToConfig	db/migrate/20100124040107_add_description_to_config.rb	/^class AddDescriptionToConfig < ActiveRecord::Migration[4.2]$/;"	c
+AddDescriptionToProblems	db/migrate/20220927074644_add_description_to_problems.rb	/^class AddDescriptionToProblems < ActiveRecord::Migration[7.0]$/;"	c
+AddEmailToUsers	db/migrate/012_add_email_to_users.rb	/^class AddEmailToUsers < ActiveRecord::Migration[4.2]$/;"	c
+AddEnabledToGroup	db/migrate/20200813083020_add_enabled_to_group.rb	/^class AddEnabledToGroup < ActiveRecord::Migration[5.2]$/;"	c
+AddForcedLogoutToUserContestStat	db/migrate/20100328123325_add_forced_logout_to_user_contest_stat.rb	/^class AddForcedLogoutToUserContestStat < ActiveRecord::Migration[4.2]$/;"	c
+AddFrontpageFlagToAnnouncement	db/migrate/20081107145815_add_frontpage_flag_to_announcement.rb	/^class AddFrontpageFlagToAnnouncement < ActiveRecord::Migration[4.2]$/;"	c
+AddHeartBeatFull	db/migrate/20170427070345_add_heart_beat_full.rb	/^class AddHeartBeatFull < ActiveRecord::Migration[4.2]$/;"	c
+AddIdToGroupUser	db/migrate/20200404142959_add_id_to_group_user.rb	/^class AddIdToGroupUser < ActiveRecord::Migration[5.2]$/;"	c
+AddIndexToLogin	db/migrate/20200405112919_add_index_to_login.rb	/^class AddIndexToLogin < ActiveRecord::Migration[5.2]$/;"	c
+AddIndexToSubmission	db/migrate/20200404135714_add_index_to_submission.rb	/^class AddIndexToSubmission < ActiveRecord::Migration[5.2]$/;"	c
+AddIndexToSubmissions	db/migrate/005_add_index_to_submissions.rb	/^class AddIndexToSubmissions < ActiveRecord::Migration[4.2]$/;"	c
+AddIndexToTask	db/migrate/20170310110146_add_index_to_task.rb	/^class AddIndexToTask < ActiveRecord::Migration[4.2]$/;"	c
+AddIndexToTaskStatus	db/migrate/20210809105935_add_index_to_task_status.rb	/^class AddIndexToTaskStatus < ActiveRecord::Migration[5.2]$/;"	c
+AddIpToSubmissions	db/migrate/20140917150629_add_ip_to_submissions.rb	/^class AddIpToSubmissions < ActiveRecord::Migration[4.2]$/;"	c
+AddJobPriority	db/migrate/20231019151423_add_job_priority.rb	/^class AddJobPriority < ActiveRecord::Migration[7.0]$/;"	c
+AddLanguageExt	db/migrate/011_add_language_ext.rb	/^class AddLanguageExt < ActiveRecord::Migration[4.2]$/;"	c
+AddLastHeartbeatToUser	db/migrate/20231218145225_add_last_heartbeat_to_user.rb	/^class AddLastHeartbeatToUser < ActiveRecord::Migration[7.0]$/;"	c
+AddLastIpToUser	db/migrate/20150827133841_add_last_ip_to_user.rb	/^class AddLastIpToUser < ActiveRecord::Migration[4.2]$/;"	c
+AddMoreConfig	db/migrate/20150914223258_add_more_config.rb	/^class AddMoreConfig < ActiveRecord::Migration[4.2]$/;"	c
+AddMoreDetailToSubmission	db/migrate/20140823031747_add_more_detail_to_submission.rb	/^class AddMoreDetailToSubmission < ActiveRecord::Migration[4.2]$/;"	c
+AddMoreGraderProcess	db/migrate/20230622080122_add_more_grader_process.rb	/^class AddMoreGraderProcess < ActiveRecord::Migration[7.0]$/;"	c
+AddMoreIndexToSubmissions	db/migrate/20230220171501_add_more_index_to_submissions.rb	/^class AddMoreIndexToSubmissions < ActiveRecord::Migration[7.0]$/;"	c
+AddMoreToUsers	db/migrate/20150203153534_add_more_to_users.rb	/^class AddMoreToUsers < ActiveRecord::Migration[4.2]$/;"	c
+AddNameToContests	db/migrate/20100303095700_add_name_to_contests.rb	/^class AddNameToContests < ActiveRecord::Migration[4.2]$/;"	c
+AddNotesToAnnouncements	db/migrate/20100506163112_add_notes_to_announcements.rb	/^class AddNotesToAnnouncements < ActiveRecord::Migration[4.2]$/;"	c
+AddNumberToSubmissions	db/migrate/018_add_number_to_submissions.rb	/^class AddNumberToSubmissions < ActiveRecord::Migration[4.2]$/;"	c
+AddOnNavBarToAnnouncement	db/migrate/20210124101028_add_on_nav_bar_to_announcement.rb	/^class AddOnNavBarToAnnouncement < ActiveRecord::Migration[5.2]$/;"	c
+AddRunstatColumnsToTestRequest	db/migrate/023_add_runstat_columns_to_test_request.rb	/^class AddRunstatColumnsToTestRequest < ActiveRecord::Migration[4.2]$/;"	c
+AddSectionToUsers	db/migrate/20140913060729_add_section_to_users.rb	/^class AddSectionToUsers < ActiveRecord::Migration[4.2]$/;"	c
+AddSessions	db/migrate/009_add_sessions.rb	/^class AddSessions < ActiveRecord::Migration[4.2]$/;"	c
+AddSiteToUserAndAddDefaultSite	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^class AddSiteToUserAndAddDefaultSite < ActiveRecord::Migration[4.2]$/;"	c
+AddStatusToGraderProcess	db/migrate/20230910132835_add_status_to_grader_process.rb	/^class AddStatusToGraderProcess < ActiveRecord::Migration[7.0]$/;"	c
+AddStatusToHeartBeat	db/migrate/20150914155101_add_status_to_heart_beat.rb	/^class AddStatusToHeartBeat < ActiveRecord::Migration[4.2]$/;"	c
+AddStatusToTasks	db/migrate/015_add_status_to_tasks.rb	/^class AddStatusToTasks < ActiveRecord::Migration[4.2]$/;"	c
+AddSupportsForOutputOnlyProblems	db/migrate/031_add_supports_for_output_only_problems.rb	/^class AddSupportsForOutputOnlyProblems < ActiveRecord::Migration[4.2]$/;"	c
+AddTaskToGraderProcess	db/migrate/016_add_task_to_grader_process.rb	/^class AddTaskToGraderProcess < ActiveRecord::Migration[4.2]$/;"	c
+AddTaskTypeToGraderProcesses	db/migrate/033_add_task_type_to_grader_processes.rb	/^class AddTaskTypeToGraderProcesses < ActiveRecord::Migration[4.2]$/;"	c
+AddTerminatedToGraderProcesses	db/migrate/20090426131044_add_terminated_to_grader_processes.rb	/^class AddTerminatedToGraderProcesses < ActiveRecord::Migration[4.2]$/;"	c
+AddTestAllowedToProblems	db/migrate/029_add_test_allowed_to_problems.rb	/^class AddTestAllowedToProblems < ActiveRecord::Migration[4.2]$/;"	c
+AddTimestampsToUsers	db/migrate/20081210021333_add_timestamps_to_users.rb	/^class AddTimestampsToUsers < ActiveRecord::Migration[4.2]$/;"	c
+AddTitleToAnnouncements	db/migrate/20090815171610_add_title_to_announcements.rb	/^class AddTitleToAnnouncements < ActiveRecord::Migration[4.2]$/;"	c
+AddTypeToSubmission	db/migrate/20220204080936_add_type_to_submission.rb	/^class AddTypeToSubmission < ActiveRecord::Migration[7.0]$/;"	c
+AddUrlToProblem	db/migrate/013_add_url_to_problem.rb	/^class AddUrlToProblem < ActiveRecord::Migration[4.2]$/;"	c
+AddViewTestcaseToProblem	db/migrate/20170124024527_add_view_testcase_to_problem.rb	/^class AddViewTestcaseToProblem < ActiveRecord::Migration[4.2]$/;"	c
+AdminTaskTest	test/integration/admin_task_test.rb	/^class AdminTaskTest < ActionDispatch::IntegrationTest$/;"	c
+Announcement	app/models/announcement.rb	/^class Announcement < ApplicationRecord$/;"	c
 AnnouncementsController	app/controllers/announcements_controller.rb	/^class AnnouncementsController < ApplicationController$/;"	c
+AnnouncementsControllerTest	test/controllers/announcements_controller_test.rb	/^class AnnouncementsControllerTest < ActionController::TestCase$/;"	c
 AnnouncementsHelper	app/helpers/announcements_helper.rb	/^module AnnouncementsHelper$/;"	m
-Application	config/application.rb	/^  class Application < Rails::Application$/;"	c	class:CafeGrader
+AnnouncementsTest	test/system/announcements_test.rb	/^class AnnouncementsTest < ApplicationSystemTestCase$/;"	c
+AnsFilename	app/engine/judge_base.rb	/^  AnsFilename = 'answer.txt'$/;"	C	module:JudgeBase
+Application	config/application.rb	/^  class Application < Rails::Application$/;"	c	module:CafeGrader
 ApplicationController	app/controllers/application_controller.rb	/^class ApplicationController < ActionController::Base$/;"	c
 ApplicationHelper	app/helpers/application_helper.rb	/^module ApplicationHelper$/;"	m
-BrowsingTest	test/performance/browsing_test.rb	/^class BrowsingTest < ActionDispatch::PerformanceTest$/;"	c
+ApplicationRecord	app/models/application_record.rb	/^class ApplicationRecord < ActiveRecord::Base$/;"	c
+ApplicationSystemTestCase	test/application_system_test_case.rb	/^class ApplicationSystemTestCase < ActionDispatch::SystemTestCase$/;"	c
+BASE_EV_DIRECTORY_GLOB	lib/scripts/migrate_2023/migrate_tasks.rb	/^BASE_EV_DIRECTORY_GLOB = Rails.root.join '..\/judge\/ev\/*'$/;"	C
+BASE_TASK_PDF_DIR	lib/scripts/migrate_2023/migrate_tasks.rb	/^BASE_TASK_PDF_DIR = Rails.root.join 'data','tasks'$/;"	C
+BOOTSTRAP_FLASH_MSG	app/helpers/application_helper.rb	/^  BOOTSTRAP_FLASH_MSG = {$/;"	C	module:ApplicationHelper
+BasicJudgeTest	test/judge/basic_judge.rb	/^class BasicJudgeTest < ActionDispatch::IntegrationTest$/;"	c
+C	app/engine/compiler/c.rb	/^class Compiler::C < Compiler$/;"	c	module:Compiler
+COLOR_CHECK_CMD	app/engine/judge_base.rb	/^  COLOR_CHECK_CMD = :indianred$/;"	C	module:JudgeBase
+COLOR_COMPILE_ERROR	app/engine/judge_base.rb	/^  COLOR_COMPILE_ERROR = :deeppink$/;"	C	module:JudgeBase
+COLOR_COMPILE_SUCCESS	app/engine/judge_base.rb	/^  COLOR_COMPILE_SUCCESS = :lawngreen$/;"	C	module:JudgeBase
+COLOR_ERROR	app/engine/judge_base.rb	/^  COLOR_ERROR = :darkred$/;"	C	module:JudgeBase
+COLOR_EVALUATION_DONE	app/engine/judge_base.rb	/^  COLOR_EVALUATION_DONE = :yellowgreen$/;"	C	module:JudgeBase
+COLOR_EVALUATION_FORCE_EXIT	app/engine/judge_base.rb	/^  COLOR_EVALUATION_FORCE_EXIT = :orangered$/;"	C	module:JudgeBase
+COLOR_GRADING_CORRECT	app/engine/judge_base.rb	/^  COLOR_GRADING_CORRECT = :seagreen$/;"	C	module:JudgeBase
+COLOR_GRADING_PARTIAL	app/engine/judge_base.rb	/^  COLOR_GRADING_PARTIAL = :mediumpurple$/;"	C	module:JudgeBase
+COLOR_GRADING_WRONG	app/engine/judge_base.rb	/^  COLOR_GRADING_WRONG = :crimson$/;"	C	module:JudgeBase
+COLOR_ISOLATE_CMD	app/engine/judge_base.rb	/^  COLOR_ISOLATE_CMD = :darkslategray$/;"	C	module:JudgeBase
+COLOR_PROB	app/engine/judge_base.rb	/^  COLOR_PROB = :deepink$/;"	C	module:JudgeBase
+COLOR_SCORE_RESULT	app/engine/judge_base.rb	/^  COLOR_SCORE_RESULT = :orange$/;"	C	module:JudgeBase
+COLOR_SUB	app/engine/judge_base.rb	/^  COLOR_SUB = :skyblue$/;"	C	module:JudgeBase
+COLOR_TESTCASE	app/engine/judge_base.rb	/^  COLOR_TESTCASE = :salmon$/;"	C	module:JudgeBase
+COMPILE_RESULT_META_FILENAME	app/engine/judge_base.rb	/^  COMPILE_RESULT_META_FILENAME = 'compile_meta'$/;"	C	module:JudgeBase
+COMPILE_RESULT_STDERR_FILENAME	app/engine/judge_base.rb	/^  COMPILE_RESULT_STDERR_FILENAME = 'compile_err'$/;"	C	module:JudgeBase
+COMPILE_RESULT_STDOUT_FILENAME	app/engine/judge_base.rb	/^  COMPILE_RESULT_STDOUT_FILENAME = 'compile_output'$/;"	C	module:JudgeBase
+CONFIGURATIONS	db/seeds.rb	/^CONFIGURATIONS = $/;"	C
+CONTEST_TIME_LIMIT_KEY	app/models/grader_configuration.rb	/^  CONTEST_TIME_LIMIT_KEY = 'contest.time_limit'$/;"	C	class:GraderConfiguration
 CafeGrader	config/application.rb	/^module CafeGrader$/;"	m
-ChangeCompilerMessageTypeTestRequest	db/migrate/021_change_compiler_message_type_test_request.rb	/^class ChangeCompilerMessageTypeTestRequest < ActiveRecord::Migration$/;"	c
-ChangeInputSolutionFieldLimitInTestPair	db/migrate/20100129041917_change_input_solution_field_limit_in_test_pair.rb	/^class ChangeInputSolutionFieldLimitInTestPair < ActiveRecord::Migration$/;"	c
-ChangeUserLoginStringLimit	db/migrate/20081215012843_change_user_login_string_limit.rb	/^class ChangeUserLoginStringLimit < ActiveRecord::Migration$/;"	c
-ConfigSpecHelperMethods	spec/config_spec_helper.rb	/^module ConfigSpecHelperMethods$/;"	m
-ConfigurationTest	test/unit/configuration_test.rb	/^class ConfigurationTest < ActiveSupport::TestCase$/;"	c
+ChangeCompilerMessageTypeTestRequest	db/migrate/021_change_compiler_message_type_test_request.rb	/^class ChangeCompilerMessageTypeTestRequest < ActiveRecord::Migration[4.2]$/;"	c
+ChangeInputSolutionFieldLimitInTestPair	db/migrate/20100129041917_change_input_solution_field_limit_in_test_pair.rb	/^class ChangeInputSolutionFieldLimitInTestPair < ActiveRecord::Migration[4.2]$/;"	c
+ChangeSubmissionSourceSize	db/migrate/20180612102327_change_submission_source_size.rb	/^class ChangeSubmissionSourceSize < ActiveRecord::Migration[4.2]$/;"	c
+ChangeTestcaseSize	db/migrate/20170123162543_change_testcase_size.rb	/^class ChangeTestcaseSize < ActiveRecord::Migration[4.2]$/;"	c
+ChangeUserLoginStringLimit	db/migrate/20081215012843_change_user_login_string_limit.rb	/^class ChangeUserLoginStringLimit < ActiveRecord::Migration[4.2]$/;"	c
+ChangeUseridOnLogin	db/migrate/20150503164846_change_userid_on_login.rb	/^class ChangeUseridOnLogin < ActiveRecord::Migration[4.2]$/;"	c
+Checker	app/engine/checker.rb	/^class Checker$/;"	c	mixin:include:IsolateRunner,include:JudgeBase,include:Rails
+Compiler	app/engine/compiler.rb	/^class Compiler$/;"	c	mixin:include:IsolateRunner,include:JudgeBase,include:Rails
 ConfigurationsController	app/controllers/configurations_controller.rb	/^class ConfigurationsController < ApplicationController$/;"	c
 ConfigurationsHelper	app/helpers/configurations_helper.rb	/^module ConfigurationsHelper$/;"	m
-Contest	app/models/contest.rb	/^class Contest < ActiveRecord::Base$/;"	c
+Contest	app/models/contest.rb	/^class Contest < ApplicationRecord$/;"	c
 ContestManagementController	app/controllers/contest_management_controller.rb	/^class ContestManagementController < ApplicationController$/;"	c
 ContestManagementHelper	app/helpers/contest_management_helper.rb	/^module ContestManagementHelper$/;"	m
-ContestManagementHelperTest	test/unit/helpers/contest_management_helper_test.rb	/^class ContestManagementHelperTest < ActionView::TestCase$/;"	c
-ContestManagementSessionMethods	spec/integration/contest_managements_spec.rb	/^  module ContestManagementSessionMethods$/;"	m
-ContestTest	test/unit/contest_test.rb	/^class ContestTest < ActiveSupport::TestCase$/;"	c
 ContestsController	app/controllers/contests_controller.rb	/^class ContestsController < ApplicationController$/;"	c
 ContestsHelper	app/helpers/contests_helper.rb	/^module ContestsHelper$/;"	m
-ContestsHelperTest	test/unit/helpers/contests_helper_test.rb	/^class ContestsHelperTest < ActionView::TestCase$/;"	c
-Country	app/models/country.rb	/^class Country < ActiveRecord::Base$/;"	c
-CountryTest	test/unit/country_test.rb	/^class CountryTest < ActiveSupport::TestCase$/;"	c
-CreateAnnouncements	db/migrate/030_create_announcements.rb	/^class CreateAnnouncements < ActiveRecord::Migration$/;"	c
-CreateConfigurations	db/migrate/022_create_configurations.rb	/^class CreateConfigurations < ActiveRecord::Migration$/;"	c
-CreateContests	db/migrate/20100216105730_create_contests.rb	/^class CreateContests < ActiveRecord::Migration$/;"	c
-CreateContestsProblemsJoinTable	db/migrate/20100216162940_create_contests_problems_join_table.rb	/^class CreateContestsProblemsJoinTable < ActiveRecord::Migration$/;"	c
-CreateContestsUsersJoinTable	db/migrate/20100216162324_create_contests_users_join_table.rb	/^class CreateContestsUsersJoinTable < ActiveRecord::Migration$/;"	c
-CreateCountries	db/migrate/034_create_countries.rb	/^class CreateCountries < ActiveRecord::Migration$/;"	c
-CreateDescriptions	db/migrate/027_create_descriptions.rb	/^class CreateDescriptions < ActiveRecord::Migration$/;"	c
-CreateGraderProcesses	db/migrate/014_create_grader_processes.rb	/^class CreateGraderProcesses < ActiveRecord::Migration$/;"	c
-CreateLanguages	db/migrate/004_create_languages.rb	/^class CreateLanguages < ActiveRecord::Migration$/;"	c
-CreateLogins	db/migrate/20140826095949_create_logins.rb	/^class CreateLogins < ActiveRecord::Migration$/;"	c
-CreateMessages	db/migrate/032_create_messages.rb	/^class CreateMessages < ActiveRecord::Migration$/;"	c
-CreateProblems	db/migrate/002_create_problems.rb	/^class CreateProblems < ActiveRecord::Migration$/;"	c
-CreateRights	db/migrate/007_create_rights.rb	/^class CreateRights < ActiveRecord::Migration$/;"	c
-CreateRoles	db/migrate/006_create_roles.rb	/^class CreateRoles < ActiveRecord::Migration$/;"	c
-CreateSites	db/migrate/024_create_sites.rb	/^class CreateSites < ActiveRecord::Migration$/;"	c
-CreateSubmissions	db/migrate/003_create_submissions.rb	/^class CreateSubmissions < ActiveRecord::Migration$/;"	c
-CreateTasks	db/migrate/008_create_tasks.rb	/^class CreateTasks < ActiveRecord::Migration$/;"	c
-CreateTestPairs	db/migrate/20100113094740_create_test_pairs.rb	/^class CreateTestPairs < ActiveRecord::Migration$/;"	c
-CreateTestRequests	db/migrate/019_create_test_requests.rb	/^class CreateTestRequests < ActiveRecord::Migration$/;"	c
-CreateUserContestStats	db/migrate/20100124054458_create_user_contest_stats.rb	/^class CreateUserContestStats < ActiveRecord::Migration$/;"	c
-CreateUsers	db/migrate/001_create_users.rb	/^class CreateUsers < ActiveRecord::Migration$/;"	c
-Description	app/models/description.rb	/^class Description < ActiveRecord::Base$/;"	c
-DescriptionTest	test/unit/description_test.rb	/^class DescriptionTest < ActiveSupport::TestCase$/;"	c
-GraderConfiguration	app/models/grader_configuration.rb	/^class GraderConfiguration < ActiveRecord::Base$/;"	c
-GraderProcess	app/models/grader_process.rb	/^class GraderProcess < ActiveRecord::Base$/;"	c
-GraderProcessTest	test/unit/grader_process_test.rb	/^class GraderProcessTest < ActiveSupport::TestCase$/;"	c
+Country	app/models/country.rb	/^class Country < ApplicationRecord$/;"	c
+Cpp	app/engine/compiler/cpp.rb	/^class Compiler::Cpp < Compiler$/;"	c	module:Compiler
+CreateActiveStorageTables	db/migrate/20220927070334_create_active_storage_tables.active_storage.rb	/^class CreateActiveStorageTables < ActiveRecord::Migration[5.2]$/;"	c
+CreateAnnouncements	db/migrate/030_create_announcements.rb	/^class CreateAnnouncements < ActiveRecord::Migration[4.2]$/;"	c
+CreateConfigurations	db/migrate/022_create_configurations.rb	/^class CreateConfigurations < ActiveRecord::Migration[4.2]$/;"	c
+CreateContests	db/migrate/20100216105730_create_contests.rb	/^class CreateContests < ActiveRecord::Migration[4.2]$/;"	c
+CreateContestsProblemsJoinTable	db/migrate/20100216162940_create_contests_problems_join_table.rb	/^class CreateContestsProblemsJoinTable < ActiveRecord::Migration[4.2]$/;"	c
+CreateContestsUsersJoinTable	db/migrate/20100216162324_create_contests_users_join_table.rb	/^class CreateContestsUsersJoinTable < ActiveRecord::Migration[4.2]$/;"	c
+CreateCountries	db/migrate/034_create_countries.rb	/^class CreateCountries < ActiveRecord::Migration[4.2]$/;"	c
+CreateDescriptions	db/migrate/027_create_descriptions.rb	/^class CreateDescriptions < ActiveRecord::Migration[4.2]$/;"	c
+CreateGraderProcesses	db/migrate/014_create_grader_processes.rb	/^class CreateGraderProcesses < ActiveRecord::Migration[4.2]$/;"	c
+CreateGroups	db/migrate/20170911091143_create_groups.rb	/^class CreateGroups < ActiveRecord::Migration[4.2]$/;"	c
+CreateHeartBeats	db/migrate/20150914090545_create_heart_beats.rb	/^class CreateHeartBeats < ActiveRecord::Migration[4.2]$/;"	c
+CreateJobs	db/migrate/20230611072646_create_jobs.rb	/^class CreateJobs < ActiveRecord::Migration[7.0]$/;"	c
+CreateLanguages	db/migrate/004_create_languages.rb	/^class CreateLanguages < ActiveRecord::Migration[4.2]$/;"	c
+CreateLogins	db/migrate/20140826095949_create_logins.rb	/^class CreateLogins < ActiveRecord::Migration[4.2]$/;"	c
+CreateMessages	db/migrate/032_create_messages.rb	/^class CreateMessages < ActiveRecord::Migration[4.2]$/;"	c
+CreateProblemTags	db/migrate/20170914150742_create_problem_tags.rb	/^class CreateProblemTags < ActiveRecord::Migration[4.2]$/;"	c
+CreateProblems	db/migrate/002_create_problems.rb	/^class CreateProblems < ActiveRecord::Migration[4.2]$/;"	c
+CreateRights	db/migrate/007_create_rights.rb	/^class CreateRights < ActiveRecord::Migration[4.2]$/;"	c
+CreateRoles	db/migrate/006_create_roles.rb	/^class CreateRoles < ActiveRecord::Migration[4.2]$/;"	c
+CreateSites	db/migrate/024_create_sites.rb	/^class CreateSites < ActiveRecord::Migration[4.2]$/;"	c
+CreateSubmissionViewLogs	db/migrate/20150827131927_create_submission_view_logs.rb	/^class CreateSubmissionViewLogs < ActiveRecord::Migration[4.2]$/;"	c
+CreateSubmissions	db/migrate/003_create_submissions.rb	/^class CreateSubmissions < ActiveRecord::Migration[4.2]$/;"	c
+CreateTags	db/migrate/20170914150545_create_tags.rb	/^class CreateTags < ActiveRecord::Migration[4.2]$/;"	c
+CreateTasks	db/migrate/008_create_tasks.rb	/^class CreateTasks < ActiveRecord::Migration[4.2]$/;"	c
+CreateTestPairs	db/migrate/20100113094740_create_test_pairs.rb	/^class CreateTestPairs < ActiveRecord::Migration[4.2]$/;"	c
+CreateTestRequests	db/migrate/019_create_test_requests.rb	/^class CreateTestRequests < ActiveRecord::Migration[4.2]$/;"	c
+CreateTestcases	db/migrate/20161014091417_create_testcases.rb	/^class CreateTestcases < ActiveRecord::Migration[4.2]$/;"	c
+CreateUserContestStats	db/migrate/20100124054458_create_user_contest_stats.rb	/^class CreateUserContestStats < ActiveRecord::Migration[4.2]$/;"	c
+CreateUsers	db/migrate/001_create_users.rb	/^class CreateUsers < ActiveRecord::Migration[4.2]$/;"	c
+DEFAULT	app/engine/option_const.rb	/^  DEFAULT = {$/;"	C	module:OptionConst
+DEFAULT_MEMORY_LIMIT	app/models/problem.rb	/^  DEFAULT_MEMORY_LIMIT = 32$/;"	C	class:Problem
+DEFAULT_TIME_LIMIT	app/models/problem.rb	/^  DEFAULT_TIME_LIMIT = 1$/;"	C	class:Problem
+Dataset	app/models/dataset.rb	/^class Dataset < ApplicationRecord$/;"	c
+DatasetsController	app/controllers/datasets_controller.rb	/^class DatasetsController < ApplicationController$/;"	c
+DatasetsControllerTest	test/controllers/datasets_controller_test.rb	/^class DatasetsControllerTest < ActionDispatch::IntegrationTest$/;"	c
+DatasetsHelper	app/helpers/datasets_helper.rb	/^module DatasetsHelper$/;"	m
+DatasetsTest	test/system/datasets_test.rb	/^class DatasetsTest < ApplicationSystemTestCase$/;"	c
+Description	app/models/description.rb	/^class Description < ApplicationRecord$/;"	c
+Digital	app/engine/compiler/digital.rb	/^class Compiler::Digital < Compiler$/;"	c	module:Compiler
+EPSILON	lib/checker/relative.rb	/^EPSILON = 0.000001$/;"	C
+Evaluation	app/models/evaluation.rb	/^class Evaluation < ApplicationRecord$/;"	c
+Evaluator	app/engine/evaluator.rb	/^class Evaluator$/;"	c	mixin:include:IsolateRunner,include:JudgeBase,include:Rails
+GRADER_ROOT_DIR	config/initializers/cafe_grader_config.rb	/^GRADER_ROOT_DIR = ''$/;"	C
+GRADER_ROOT_DIR	config/initializers/cafe_grader_config.rb	/^GRADER_ROOT_DIR = '\/home\/dae\/cafe_grader\/judge'$/;"	C
+GRADING_RESULT_DIR	config/initializers/cafe_grader_config.rb	/^GRADING_RESULT_DIR = 'RESULT-DIR'$/;"	C
+GRADING_RESULT_DIR	config/initializers/cafe_grader_config.rb	/^GRADING_RESULT_DIR = '\/home\/dae\/cafe_grader\/judge\/result'$/;"	C
+Go	app/engine/compiler/go.rb	/^class Compiler::Go < Compiler$/;"	c	module:Compiler
+Grader	app/engine/grader.rb	/^class Grader$/;"	c	mixin:include:JudgeBase
+GraderConfiguration	app/models/grader_configuration.rb	/^class GraderConfiguration < ApplicationRecord$/;"	c
+GraderError	app/engine/grader_error.rb	/^class GraderError < RuntimeError$/;"	c
+GraderProcess	app/models/grader_process.rb	/^class GraderProcess < ApplicationRecord$/;"	c
 GraderScript	lib/grader_script.rb	/^module GraderScript$/;"	m
 GradersController	app/controllers/graders_controller.rb	/^class GradersController < ApplicationController$/;"	c
-GradersControllerTest	test/functional/graders_controller_test.rb	/^class GradersControllerTest < ActionController::TestCase$/;"	c
+GradersControllerTest	test/controllers/graders_controller_test.rb	/^class GradersControllerTest < ActionController::TestCase$/;"	c
 GradersHelper	app/helpers/graders_helper.rb	/^module GradersHelper$/;"	m
-Language	app/models/language.rb	/^class Language < ActiveRecord::Base$/;"	c
-LanguageTest	test/unit/language_test.rb	/^class LanguageTest < Test::Unit::TestCase$/;"	c
-Login	app/models/login.rb	/^class Login < ActiveRecord::Base$/;"	c
+Group	app/models/group.rb	/^class Group < ApplicationRecord$/;"	c
+GroupProblem	app/models/group_problem.rb	/^class GroupProblem < ApplicationRecord$/;"	c
+GroupUser	app/models/group_user.rb	/^class GroupUser < ApplicationRecord$/;"	c
+GroupsController	app/controllers/groups_controller.rb	/^class GroupsController < ApplicationController$/;"	c
+GroupsControllerTest	test/controllers/groups_controller_test.rb	/^class GroupsControllerTest < ActionController::TestCase$/;"	c
+GroupsHelper	app/helpers/groups_helper.rb	/^module GroupsHelper$/;"	m
+Haskell	app/engine/compiler/haskell.rb	/^class Compiler::Haskell < Compiler$/;"	c	module:Compiler
+HeartBeat	app/models/heart_beat.rb	/^class HeartBeat < ApplicationRecord$/;"	c
+HeartbeatController	app/controllers/heartbeat_controller.rb	/^class HeartbeatController < ApplicationController$/;"	c
+INPUT_FILENAME	app/engine/judge_base.rb	/^  INPUT_FILENAME = 'input.txt'$/;"	C	module:JudgeBase
+INP_EXT	app/engine/problem_exporter.rb	/^  INP_EXT = 'in'$/;"	C	class:ProblemExporter
+ISOLATE_BIN_PATH	app/engine/judge_base.rb	/^  ISOLATE_BIN_PATH = 'mybin'$/;"	C	module:JudgeBase
+ISOLATE_INPUT_PATH	app/engine/judge_base.rb	/^  ISOLATE_INPUT_PATH = 'input'$/;"	C	module:JudgeBase
+ISOLATE_OUTPUT_PATH	app/engine/judge_base.rb	/^  ISOLATE_OUTPUT_PATH = 'output'$/;"	C	module:JudgeBase
+ISOLATE_SOURCE_MANAGER_PATH	app/engine/judge_base.rb	/^  ISOLATE_SOURCE_MANAGER_PATH = 'source_manager'$/;"	C	module:JudgeBase
+ISOLATE_SOURCE_PATH	app/engine/judge_base.rb	/^  ISOLATE_SOURCE_PATH = 'source'$/;"	C	module:JudgeBase
+IsolateRunner	app/engine/isolate_runner.rb	/^module IsolateRunner$/;"	m
+JUDGE_MANAGER_PATH	app/engine/grader.rb	/^  JUDGE_MANAGER_PATH = 'source_manager'$/;"	C	class:Grader
+JUDGE_SUB_COMPILE_RESULT_PATH	app/engine/grader.rb	/^  JUDGE_SUB_COMPILE_RESULT_PATH = 'compile_result'$/;"	C	class:Grader
+Java	app/engine/compiler/java.rb	/^class Compiler::Java < Compiler$/;"	c	module:Compiler
+Job	app/models/job.rb	/^class Job < ApplicationRecord$/;"	c
+JobTest	test/models/job_test.rb	/^class JobTest < ActiveSupport::TestCase$/;"	c
+JobTypeEnable	db/migrate/20231007041620_job_type_enable.rb	/^class JobTypeEnable < ActiveRecord::Migration[7.0]$/;"	c
+JobsTest	test/system/jobs_test.rb	/^class JobsTest < ApplicationSystemTestCase$/;"	c
+JudgeBase	app/engine/judge_base.rb	/^module JudgeBase$/;"	m
+JudgeLogger	app/engine/judge_logger.rb	/^class JudgeLogger$/;"	c
+JudgeProblemPath	app/engine/grader.rb	/^  JudgeProblemPath = 'isolate_problem'$/;"	C	class:Grader
+JudgeSubmissionBinPath	app/engine/grader.rb	/^  JudgeSubmissionBinPath = 'bin'$/;"	C	class:Grader
+JudgeSubmissionCompilePath	app/engine/grader.rb	/^  JudgeSubmissionCompilePath = 'compile'$/;"	C	class:Grader
+JudgeSubmissionLibPath	app/engine/grader.rb	/^  JudgeSubmissionLibPath = 'lib'$/;"	C	class:Grader
+JudgeSubmissionPath	app/engine/grader.rb	/^  JudgeSubmissionPath = 'isolate_submission'$/;"	C	class:Grader
+JudgeSubmissionSourcePath	app/engine/grader.rb	/^  JudgeSubmissionSourcePath = 'source'$/;"	C	class:Grader
+Language	app/models/language.rb	/^class Language < ApplicationRecord$/;"	c
+Login	app/models/login.rb	/^class Login < ApplicationRecord$/;"	c
 LoginController	app/controllers/login_controller.rb	/^class LoginController < ApplicationController$/;"	c
-LoginController	test/functional/login_controller_test.rb	/^class LoginController; def rescue_action(e) raise e end; end$/;"	c
-LoginControllerTest	test/functional/login_controller_test.rb	/^class LoginControllerTest < ActionController::TestCase$/;"	c
+LoginController	test/controllers/login_controller_test.rb	/^class LoginController; def rescue_action(e) raise e end; end$/;"	c
+LoginControllerTest	test/controllers/login_controller_test.rb	/^class LoginControllerTest < ActionController::TestCase$/;"	c
 LoginHelper	app/helpers/login_helper.rb	/^module LoginHelper$/;"	m
+LoginTest	test/integration/login_test.rb	/^class LoginTest < ActionDispatch::IntegrationTest$/;"	c
+MULTICONTESTS_KEY	app/models/grader_configuration.rb	/^  MULTICONTESTS_KEY = 'system.multicontests'$/;"	C	class:GraderConfiguration
+MULTIPLE_IP_LOGIN_CONF_KEY	app/controllers/application_controller.rb	/^  MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'$/;"	C	class:ApplicationController
+MULTIPLE_IP_LOGIN_KEY	app/models/grader_configuration.rb	/^  MULTIPLE_IP_LOGIN_KEY = 'right.multiple_ip_login'$/;"	C	class:GraderConfiguration
 MailHelperMethods	lib/mail_helper_methods.rb	/^module MailHelperMethods$/;"	m
 MainController	app/controllers/main_controller.rb	/^class MainController < ApplicationController$/;"	c
 MainHelper	app/helpers/main_helper.rb	/^module MainHelper$/;"	m
-MainSessionMethods	spec/integration/contest_managements_spec.rb	/^  module MainSessionMethods$/;"	m
-Message	app/models/message.rb	/^class Message < ActiveRecord::Base$/;"	c
-MessageTest	test/unit/message_test.rb	/^class MessageTest < ActiveSupport::TestCase$/;"	c
+Message	app/models/message.rb	/^class Message < ApplicationRecord$/;"	c
 MessagesController	app/controllers/messages_controller.rb	/^class MessagesController < ApplicationController$/;"	c
 MessagesHelper	app/helpers/messages_helper.rb	/^module MessagesHelper$/;"	m
-Problem	app/models/problem.rb	/^class Problem < ActiveRecord::Base$/;"	c
-ProblemTest	test/unit/problem_test.rb	/^class ProblemTest < Test::Unit::TestCase$/;"	c
-ProblemsController	app/controllers/problems_controller.rb	/^class ProblemsController < ApplicationController$/;"	c
+MetaFilename	app/engine/isolate_runner.rb	/^  MetaFilename = 'meta.json'$/;"	C	module:IsolateRunner
+ModifyGraderProcess	db/migrate/20161008050135_modify_grader_process.rb	/^class ModifyGraderProcess < ActiveRecord::Migration[4.2]$/;"	c
+MoreNewEvaluation	db/migrate/20230728055327_more_new_evaluation.rb	/^class MoreNewEvaluation < ActiveRecord::Migration[7.0]$/;"	c
+MoreStatusOnWorkerDataset	db/migrate/20231228144804_more_status_on_worker_dataset.rb	/^class MoreStatusOnWorkerDataset < ActiveRecord::Migration[7.0]$/;"	c
+NewTestcaseSystem	db/migrate/20230619070315_new_testcase_system.rb	/^class NewTestcaseSystem < ActiveRecord::Migration[7.0]$/;"	c
+OptimizeSubmissionIndices	db/migrate/20230301170551_optimize_submission_indices.rb	/^class OptimizeSubmissionIndices < ActiveRecord::Migration[7.0]$/;"	c
+OptionConst	app/engine/option_const.rb	/^module OptionConst$/;"	m
+PROGRAMMING_AUTHEN_URL	lib/programming_authenticator.rb	/^  PROGRAMMING_AUTHEN_URL = "https:\/\/programming.in.th\/authen.php"$/;"	C	class:ProgrammingAuthenticator
+Pascal	app/engine/compiler/pascal.rb	/^class Compiler::Pascal < Compiler$/;"	c	module:Compiler
+Php	app/engine/compiler/php.rb	/^class Compiler::Php < Compiler$/;"	c	module:Compiler
+Postgres	app/engine/compiler/postgres.rb	/^class Compiler::Postgres < Compiler$/;"	c	module:Compiler
+Problem	app/models/problem.rb	/^class Problem < ApplicationRecord$/;"	c
+ProblemExporter	app/engine/problem_exporter.rb	/^class ProblemExporter$/;"	c
+ProblemImporter	app/engine/problem_importer.rb	/^class ProblemImporter$/;"	c
+ProblemTag	app/models/problem_tag.rb	/^class ProblemTag < ApplicationRecord$/;"	c
+ProblemTagTest	test/models/problem_tag_test.rb	/^class ProblemTagTest < ActiveSupport::TestCase$/;"	c
+ProblemsController	app/controllers/problems_controller.rb	/^class ProblemsController < ApplicationController$/;"	c	mixin:include:ActiveStorage.SetCurrent
 ProblemsHelper	app/helpers/problems_helper.rb	/^module ProblemsHelper$/;"	m
-RailsSpecServer	script/spec_server	/^    class RailsSpecServer$/;"	c	class:Spec.Runner
-RefactorProblemBodyToDescription	db/migrate/028_refactor_problem_body_to_description.rb	/^class RefactorProblemBodyToDescription < ActiveRecord::Migration$/;"	c
-RenameConfigurationsToGraderConfigurations	db/migrate/20121001033508_rename_configurations_to_grader_configurations.rb	/^class RenameConfigurationsToGraderConfigurations < ActiveRecord::Migration$/;"	c
-RenameGraderProcessColumnIpToHost	db/migrate/017_rename_grader_process_column_ip_to_host.rb	/^class RenameGraderProcessColumnIpToHost < ActiveRecord::Migration$/;"	c
+ProgrammingAuthenticator	lib/programming_authenticator.rb	/^class ProgrammingAuthenticator$/;"	c
+Python	app/engine/compiler/python.rb	/^class Compiler::Python < Compiler$/;"	c	module:Compiler
+RefactorProblemBodyToDescription	db/migrate/028_refactor_problem_body_to_description.rb	/^class RefactorProblemBodyToDescription < ActiveRecord::Migration[4.2]$/;"	c
+RenameConfigurationsToGraderConfigurations	db/migrate/20121001033508_rename_configurations_to_grader_configurations.rb	/^class RenameConfigurationsToGraderConfigurations < ActiveRecord::Migration[4.2]$/;"	c
+RenameGraderProcessColumnIpToHost	db/migrate/017_rename_grader_process_column_ip_to_host.rb	/^class RenameGraderProcessColumnIpToHost < ActiveRecord::Migration[4.2]$/;"	c
 ReportController	app/controllers/report_controller.rb	/^class ReportController < ApplicationController$/;"	c
 ReportHelper	app/helpers/report_helper.rb	/^module ReportHelper$/;"	m
-Right	app/models/right.rb	/^class Right < ActiveRecord::Base$/;"	c
-RightTest	test/unit/right_test.rb	/^class RightTest < Test::Unit::TestCase$/;"	c
-Role	app/models/role.rb	/^class Role < ActiveRecord::Base$/;"	c
-RoleTest	test/unit/role_test.rb	/^class RoleTest < Test::Unit::TestCase$/;"	c
-Runner	script/spec_server	/^  module Runner$/;"	m	class:Spec
-Site	app/models/site.rb	/^class Site < ActiveRecord::Base$/;"	c
+Right	app/models/right.rb	/^class Right < ApplicationRecord$/;"	c
+Role	app/models/role.rb	/^class Role < ApplicationRecord$/;"	c
+Ruby	app/engine/compiler/ruby.rb	/^class Compiler::Ruby < Compiler$/;"	c	module:Compiler
+Rust	app/engine/compiler/rust.rb	/^class Compiler::Rust < Compiler$/;"	c	module:Compiler
+SINGLE_USER_KEY	app/models/grader_configuration.rb	/^  SINGLE_USER_KEY = 'system.single_user_mode'$/;"	C	class:GraderConfiguration
+SINGLE_USER_MODE_CONF_KEY	app/controllers/application_controller.rb	/^  SINGLE_USER_MODE_CONF_KEY = 'system.single_user_mode'$/;"	C	class:ApplicationController
+STATEMENT_FN	app/engine/problem_exporter.rb	/^  STATEMENT_FN = 'statement.pdf'$/;"	C	class:ProblemExporter
+STATUS_COMPLETE	app/models/task.rb	/^  STATUS_COMPLETE = 2$/;"	C	class:Task
+STATUS_GRADING	app/models/task.rb	/^  STATUS_GRADING = 0$/;"	C	class:Task
+STATUS_INQUEUE	app/models/task.rb	/^  STATUS_INQUEUE = 1$/;"	C	class:Task
+STDOUT_FILENAME	app/engine/judge_base.rb	/^  STDOUT_FILENAME = 'stdout.txt'$/;"	C	module:JudgeBase
+SUBMIT_DIGITAL_FILENAME	app/engine/compiler/digital.rb	/^  SUBMIT_DIGITAL_FILENAME = 'submitted.dig'$/;"	C	class:Digital
+SYSTEM_MINIMUM_LAST_LOGIN_TIME	app/models/grader_configuration.rb	/^  SYSTEM_MINIMUM_LAST_LOGIN_TIME = 'system.min_last_login_time'$/;"	C	class:GraderConfiguration
+SYSTEM_MODE_CONF_KEY	app/models/grader_configuration.rb	/^  SYSTEM_MODE_CONF_KEY = 'system.mode'$/;"	C	class:GraderConfiguration
+SYSTEM_USE_PROBLEM_GROUP	app/models/grader_configuration.rb	/^  SYSTEM_USE_PROBLEM_GROUP = 'system.use_problem_group'$/;"	C	class:GraderConfiguration
+Scorer	app/engine/scorer.rb	/^class Scorer$/;"	c	mixin:include:IsolateRunner,include:JudgeBase,include:Rails
+SignInHelper	test/test_helper.rb	/^module SignInHelper$/;"	m
+Site	app/models/site.rb	/^class Site < ApplicationRecord$/;"	c
 SiteController	app/controllers/site_controller.rb	/^class SiteController < ApplicationController$/;"	c
 SiteHelper	app/helpers/site_helper.rb	/^module SiteHelper$/;"	m
-SiteTest	test/unit/site_test.rb	/^class SiteTest < ActiveSupport::TestCase$/;"	c
 SitesController	app/controllers/sites_controller.rb	/^class SitesController < ApplicationController$/;"	c
 SitesHelper	app/helpers/sites_helper.rb	/^module SitesHelper$/;"	m
 SizeFilterHandler	config/size_filter_handler.rb	/^class SizeFilterHandler < Mongrel::HttpHandler$/;"	c
-Spec	script/spec_server	/^module Spec$/;"	m
-Submission	app/models/submission.rb	/^class Submission < ActiveRecord::Base$/;"	c
-SubmissionTest	test/unit/submission_test.rb	/^class SubmissionTest < Test::Unit::TestCase$/;"	c
-Task	app/models/task.rb	/^class Task < ActiveRecord::Base$/;"	c
-TaskTest	test/unit/task_test.rb	/^class TaskTest < Test::Unit::TestCase$/;"	c
-TasksController	app/controllers/tasks_controller.rb	/^class TasksController < ApplicationController$/;"	c
+SourcesHelper	app/helpers/sources_helper.rb	/^module SourcesHelper$/;"	m
+StdErrFilename	app/engine/judge_base.rb	/^  StdErrFilename = 'stderr.txt'$/;"	C	module:JudgeBase
+Submission	app/models/submission.rb	/^class Submission < ApplicationRecord$/;"	c
+SubmissionViewLog	app/models/submission_view_log.rb	/^class SubmissionViewLog < ApplicationRecord$/;"	c
+SubmissionsController	app/controllers/submissions_controller.rb	/^class SubmissionsController < ApplicationController$/;"	c
+SubmissionsHelper	app/helpers/submissions_helper.rb	/^module SubmissionsHelper$/;"	m
+SubmissionsTest	test/system/submissions_test.rb	/^class SubmissionsTest < ApplicationSystemTestCase$/;"	c
+TASK_GRADING_INFO_FILENAME	config/initializers/cafe_grader_config.rb	/^TASK_GRADING_INFO_FILENAME = Rails.root + 'config\/tasks.yml'$/;"	C
+TEMP_DIR	test/load/runner.rb	/^TEMP_DIR = '.\/tmp'$/;"	C
+TEST_REQUEST_EARLY_TIMEOUT_KEY	app/models/grader_configuration.rb	/^  TEST_REQUEST_EARLY_TIMEOUT_KEY = 'contest.test_request.early_timeout'$/;"	C	class:GraderConfiguration
+TEST_REQUEST_INPUT_FILE_DIR	config/initializers/cafe_grader_config.rb	/^TEST_REQUEST_INPUT_FILE_DIR = (Rails.root + 'data\/test_request\/input').to_s$/;"	C
+TEST_REQUEST_OUTPUT_FILE_DIR	config/initializers/cafe_grader_config.rb	/^TEST_REQUEST_OUTPUT_FILE_DIR = (Rails.root + 'data\/test_request\/output').to_s$/;"	C
+Tag	app/models/tag.rb	/^class Tag < ApplicationRecord$/;"	c
+TagTest	test/models/tag_test.rb	/^class TagTest < ActiveSupport::TestCase$/;"	c
+TagsController	app/controllers/tags_controller.rb	/^class TagsController < ApplicationController$/;"	c
+TagsControllerTest	test/controllers/tags_controller_test.rb	/^class TagsControllerTest < ActionController::TestCase$/;"	c
+TagsHelper	app/helpers/tags_helper.rb	/^module TagsHelper$/;"	m
+Task	app/models/task.rb	/^class Task < ApplicationRecord$/;"	c
 TasksHelper	app/helpers/tasks_helper.rb	/^module TasksHelper$/;"	m
+TestCase	test/test_helper.rb	/^class ActiveSupport::TestCase$/;"	c	module:ActiveSupport	mixin:include:SignInHelper
 TestController	app/controllers/test_controller.rb	/^class TestController < ApplicationController$/;"	c
 TestHelper	app/helpers/test_helper.rb	/^module TestHelper$/;"	m
-TestPair	app/models/test_pair.rb	/^class TestPair < ActiveRecord::Base$/;"	c
-TestPairTest	test/unit/test_pair_test.rb	/^class TestPairTest < ActiveSupport::TestCase$/;"	c
+TestPair	app/models/test_pair.rb	/^class TestPair < ApplicationRecord$/;"	c
 TestRequest	app/models/test_request.rb	/^class TestRequest < Task$/;"	c
-TestRequestTest	test/unit/test_request_test.rb	/^class TestRequestTest < ActiveSupport::TestCase$/;"	c
+Testcase	app/models/testcase.rb	/^class Testcase < ApplicationRecord$/;"	c
+TestcasesController	app/controllers/testcases_controller.rb	/^class TestcasesController < ApplicationController$/;"	c
+TestcasesControllerTest	test/controllers/testcases_controller_test.rb	/^class TestcasesControllerTest < ActionController::TestCase$/;"	c
+TestcasesHelper	app/helpers/testcases_helper.rb	/^module TestcasesHelper$/;"	m
 TestdataImporter	lib/testdata_importer.rb	/^class TestdataImporter$/;"	c
-UNUSED_test_get_inqueue_concurrent	test/unit/task_test.rb	/^  def UNUSED_test_get_inqueue_concurrent$/;"	f	class:TaskTest
-User	app/models/user.rb	/^class User < ActiveRecord::Base$/;"	c
-User	spec/models/user_spec.rb	/^  class User$/;"	c
-UserAdminController	app/controllers/user_admin_controller.rb	/^class UserAdminController < ApplicationController$/;"	c
-UserAdminController	test/functional/user_admin_controller_test.rb	/^class UserAdminController; def rescue_action(e) raise e end; end$/;"	c
-UserAdminControllerTest	test/functional/user_admin_controller_test.rb	/^class UserAdminControllerTest < ActionController::TestCase$/;"	c
+Tooltips	lib/components/tooltips.rb	/^module Tooltips$/;"	m
+UpdateHeartBeat	db/migrate/20150916054105_update_heart_beat.rb	/^class UpdateHeartBeat < ActiveRecord::Migration[4.2]$/;"	c
+User	app/models/user.rb	/^class User < ApplicationRecord$/;"	c
+UserAdminController	app/controllers/user_admin_controller.rb	/^class UserAdminController < ApplicationController$/;"	c	mixin:include:MailHelperMethods
+UserAdminController	test/controllers/user_admin_controller_test.rb	/^class UserAdminController; def rescue_action(e) raise e end; end$/;"	c
+UserAdminControllerTest	test/controllers/user_admin_controller_test.rb	/^class UserAdminControllerTest < ActionController::TestCase$/;"	c
 UserAdminHelper	app/helpers/user_admin_helper.rb	/^module UserAdminHelper$/;"	m
-UserContestStat	app/models/user_contest_stat.rb	/^class UserContestStat < ActiveRecord::Base$/;"	c
-UserContestStatTest	test/unit/user_contest_stat_test.rb	/^class UserContestStatTest < ActiveSupport::TestCase$/;"	c
-UserTest	test/unit/user_test.rb	/^class UserTest < Test::Unit::TestCase$/;"	c
-UsersController	app/controllers/users_controller.rb	/^class UsersController < ApplicationController$/;"	c
+UserContestStat	app/models/user_contest_stat.rb	/^class UserContestStat < ApplicationRecord$/;"	c
+UsersController	app/controllers/users_controller.rb	/^class UsersController < ApplicationController$/;"	c	mixin:include:MailHelperMethods
 UsersHelper	app/helpers/users_helper.rb	/^module UsersHelper$/;"	m
+UsersTest	test/system/users_test.rb	/^class UsersTest < ApplicationSystemTestCase$/;"	c
+VIEW_TESTCASE	app/models/grader_configuration.rb	/^  VIEW_TESTCASE = 'right.view_testcase'$/;"	C	class:GraderConfiguration
+VISITOR_OPTION_LIST	test/load/common_visitors.rb	/^  VISITOR_OPTION_LIST = {}$/;"	C
+VISITOR_OPTION_LIST	test/load/runner.rb	/^VISITOR_OPTION_LIST = visitor_option_list$/;"	C
 Visitor	test/load/visitor_curl_cli.rb	/^class Visitor$/;"	c
-[]	app/models/grader_configuration.rb	/^  def self.[](key)$/;"	F	class:GraderConfiguration
+WHITELIST_IGNORE_CONF_KEY	app/controllers/application_controller.rb	/^  WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'$/;"	C	class:ApplicationController
+WHITELIST_IP_CONF_KEY	app/controllers/application_controller.rb	/^  WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'$/;"	C	class:ApplicationController
+WorkerController	app/controllers/worker_controller.rb	/^class WorkerController < ApplicationController$/;"	c
+WorkerDataset	app/models/worker_dataset.rb	/^class WorkerDataset < ApplicationRecord$/;"	c
+YAML_FILENAME	app/engine/option_const.rb	/^  YAML_FILENAME = 'config.yml'$/;"	C	module:OptionConst
+YAML_KEY	app/engine/option_const.rb	/^  YAML_KEY = {$/;"	C	module:OptionConst
+[]	app/models/grader_configuration.rb	/^  def self.[](key)$/;"	S	class:GraderConfiguration
 activation_key	app/models/user.rb	/^  def activation_key$/;"	f	class:User
 active	app/controllers/user_admin_controller.rb	/^  def active$/;"	f	class:UserAdminController
+active_class_when	app/helpers/application_helper.rb	/^  def active_class_when(options = {},cname = @active_controller, aname = @active_action)$/;"	f	module:ApplicationHelper
+active_controller_action	app/controllers/application_controller.rb	/^  def active_controller_action$/;"	f	class:ApplicationController
+add_authenticator	app/controllers/login_controller.rb	/^  def self.add_authenticator(authenticator)$/;"	S	class:LoginController
+add_compiling_job	app/models/job.rb	/^  def self.add_compiling_job(submission,dataset,priority)$/;"	S	class:Job
+add_dataset	app/controllers/problems_controller.rb	/^  def add_dataset$/;"	f	class:ProblemsController
+add_evaluation_jobs	app/models/job.rb	/^  def self.add_evaluation_jobs(submission,dataset,parent_job_id = nil,priority = 0)$/;"	S	class:Job
+add_grade_submission_job	app/models/job.rb	/^  def self.add_grade_submission_job(submission,dataset,priority)$/;"	S	class:Job
+add_judge_job	app/models/submission.rb	/^  def add_judge_job(dataset = problem.live_dataset,priority = 0)$/;"	f	class:Submission
+add_menu	app/helpers/application_helper.rb	/^  def add_menu(title, controller, action, html_option = {})$/;"	f	module:ApplicationHelper
+add_problem	app/controllers/groups_controller.rb	/^  def add_problem$/;"	f	class:GroupsController
 add_replied_message	app/models/message.rb	/^  def add_replied_message(m)$/;"	f	class:Message
-add_to_contest	app/controllers/problems_controller.rb	/^  def add_to_contest$/;"	f
-add_to_contest	app/controllers/user_admin_controller.rb	/^  def add_to_contest$/;"	f
-admin	app/controllers/user_admin_controller.rb	/^  def admin$/;"	f
+add_scoring_job	app/models/job.rb	/^  def self.add_scoring_job(submission,dataset,parent_job_id = nil,priority = 0)$/;"	S	class:Job
+add_to_contest	app/controllers/problems_controller.rb	/^  def add_to_contest(problems)$/;"	f	class:ProblemsController
+add_to_contest	app/controllers/user_admin_controller.rb	/^  def add_to_contest$/;"	f	class:UserAdminController
+add_user	app/controllers/groups_controller.rb	/^  def add_user$/;"	f	class:GroupsController
+add_users_skip_existing	app/models/group.rb	/^  def add_users_skip_existing(users_list)$/;"	f	class:Group
+admin	app/controllers/user_admin_controller.rb	/^  def admin$/;"	f	class:UserAdminController
 admin?	app/models/user.rb	/^  def admin?$/;"	f	class:User
 admin_authorization	app/controllers/application_controller.rb	/^  def admin_authorization$/;"	f	class:ApplicationController
-admin_change_users_contest_to	spec/integration/contest_managements_spec.rb	/^  def admin_change_users_contest_to(user_list, contest, reset_timer)$/;"	f
 alias_for_editing	app/models/user.rb	/^  def alias_for_editing$/;"	f	class:User
 alias_for_editing=	app/models/user.rb	/^  def alias_for_editing=(e)$/;"	f	class:User
-allow_test_pair_import?	app/controllers/problems_controller.rb	/^  def allow_test_pair_import?$/;"	f
-allow_test_request	app/models/grader_configuration.rb	/^  def self.allow_test_request(user)$/;"	F	class:GraderConfiguration
-analysis_mode	app/models/grader_configuration.rb	/^  def self.analysis_mode?$/;"	F	class:GraderConfiguration
+all_evaluate_job_complete	app/models/job.rb	/^  def self.all_evaluate_job_complete(job)$/;"	S	class:Job
+allow_test_pair_import?	app/controllers/problems_controller.rb	/^  def allow_test_pair_import?$/;"	f	class:ProblemsController
+allow_test_request	app/models/grader_configuration.rb	/^  def self.allow_test_request(user)$/;"	S	class:GraderConfiguration
+analysis_mode?	app/models/grader_configuration.rb	/^  def self.analysis_mode?$/;"	S	class:GraderConfiguration
+announcement_params	app/controllers/announcements_controller.rb	/^    def announcement_params$/;"	f	class:AnnouncementsController
 announcements	app/controllers/main_controller.rb	/^  def announcements$/;"	f	class:MainController
-append_to	app/helpers/application_helper.rb	/^  def append_to(option,label, controller, action)$/;"	f	class:ApplicationHelper
+append_to	app/helpers/application_helper.rb	/^  def append_to(option,label, controller, action)$/;"	f	module:ApplicationHelper
 assign_default_contest	app/models/user.rb	/^    def assign_default_contest$/;"	f	class:User
 assign_default_site	app/models/user.rb	/^    def assign_default_site$/;"	f	class:User
-assign_from_list	app/controllers/user_admin_controller.rb	/^  def assign_from_list$/;"	f
+assign_from_list	app/controllers/user_admin_controller.rb	/^  def assign_from_list$/;"	f	class:UserAdminController
 assign_language	app/models/submission.rb	/^  def assign_language$/;"	f	class:Submission
 assign_latest_number_if_new_recond	app/models/submission.rb	/^  def assign_latest_number_if_new_recond$/;"	f	class:Submission
-assign_problem	app/models/submission.rb	/^  def assign_problem$/;"	f	class:Submission
-authenticate	app/controllers/application_controller.rb	/^  def authenticate$/;"	f	class:ApplicationController
-authenticate	app/models/user.rb	/^  def self.authenticate(login, password)$/;"	F	class:User
+authenticate	app/models/user.rb	/^  def self.authenticate(login, password)$/;"	S	class:User
+authenticate	lib/programming_authenticator.rb	/^  def authenticate(login, password)$/;"	f	class:ProgrammingAuthenticator
 authenticated?	app/models/user.rb	/^  def authenticated?(password)$/;"	f	class:User
-authenticated_by_cucas?	app/models/user.rb	/^  def authenticated_by_cucas?(password)$/;"	f	class:User
-authenticated_by_pop3?	app/models/user.rb	/^  def authenticated_by_pop3?(password)$/;"	f	class:User
 authorization	app/controllers/application_controller.rb	/^  def authorization$/;"	f	class:ApplicationController
 authorization_by_roles	app/controllers/application_controller.rb	/^  def authorization_by_roles(allowed_roles)$/;"	f	class:ApplicationController
+available_problems	app/models/problem.rb	/^  def self.available_problems$/;"	S	class:Problem
 available_problems	app/models/user.rb	/^  def available_problems$/;"	f	class:User
 available_problems_group_by_contests	app/models/user.rb	/^  def available_problems_group_by_contests$/;"	f	class:User
-build_replying_message_hierarchy	app/controllers/messages_controller.rb	/^  def build_replying_message_hierarchy(user)$/;"	f	class:MessagesController
-build_replying_message_hierarchy	app/models/message.rb	/^  def self.build_replying_message_hierarchy(*args)$/;"	F	class:Message
-bulk_mail	app/controllers/user_admin_controller.rb	/^  def bulk_mail$/;"	f
-cache_ext_hash	app/models/language.rb	/^  def self.cache_ext_hash$/;"	F	class:Language
-call_grader	lib/grader_script.rb	/^  def self.call_grader(params)$/;"	F	class:GraderScript
-call_import_problem	lib/grader_script.rb	/^  def self.call_import_problem(problem_name, $/;"	F	class:GraderScript
+available_problems_in_group	app/models/user.rb	/^  def available_problems_in_group$/;"	f	class:User
+base_url	test/load/visitor_curl_cli.rb	/^    attr_accessor :base_url$/;"	A	class:Visitor
+base_url=	test/load/visitor_curl_cli.rb	/^    attr_accessor :base_url$/;"	A	class:Visitor
+bootstrap_class_for	app/helpers/application_helper.rb	/^  def bootstrap_class_for(flash_type)$/;"	f	module:ApplicationHelper
+box_id	app/engine/grader.rb	/^  attr_reader :box_id$/;"	A	class:Grader
+build_compile_command	app/engine/compiler.rb	/^  def build_compile_command(isolate_source, isolate_bin)$/;"	f	class:Compiler
+build_compile_command	app/engine/compiler/c.rb	/^  def build_compile_command(source,bin)$/;"	f	class:C
+build_compile_command	app/engine/compiler/cpp.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Cpp
+build_compile_command	app/engine/compiler/digital.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Digital
+build_compile_command	app/engine/compiler/go.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Go
+build_compile_command	app/engine/compiler/haskell.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Haskell
+build_compile_command	app/engine/compiler/java.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Java
+build_compile_command	app/engine/compiler/pascal.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Pascal
+build_compile_command	app/engine/compiler/php.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Php
+build_compile_command	app/engine/compiler/postgres.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Postgres
+build_compile_command	app/engine/compiler/python.rb	/^  def build_compile_command(isolate_source,isolate_bin)$/;"	f	class:Python
+build_compile_command	app/engine/compiler/ruby.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Ruby
+build_compile_command	app/engine/compiler/rust.rb	/^  def build_compile_command(source,bin)$/;"	f	class:Rust
+build_glob	app/engine/problem_importer.rb	/^  def build_glob(glob_patterns, recursive: false, path: '')$/;"	f	class:ProblemImporter
+build_grading_text	app/engine/scorer.rb	/^  def build_grading_text$/;"	f	class:Scorer
+build_legacy_config_file	app/models/problem.rb	/^  def build_legacy_config_file$/;"	f	class:Problem
+build_replying_message_hierarchy	app/controllers/messages_controller.rb	/^    def build_replying_message_hierarchy(user)$/;"	f	class:MessagesController
+build_replying_message_hierarchy	app/models/message.rb	/^  def self.build_replying_message_hierarchy(*args)$/;"	S	class:Message
+build_result_hash	app/engine/judge_base.rb	/^  def build_result_hash$/;"	f	module:JudgeBase
+bulk_mail	app/controllers/user_admin_controller.rb	/^  def bulk_mail$/;"	f	class:UserAdminController
+bulk_manage	app/controllers/user_admin_controller.rb	/^  def bulk_manage$/;"	f	class:UserAdminController
+cache_ext_hash	app/models/language.rb	/^  def self.cache_ext_hash$/;"	S	class:Language
+calculate_max_score	app/controllers/report_controller.rb	/^  def calculate_max_score(records,problems,users)$/;"	f	class:ReportController
+call_grader	lib/grader_script.rb	/^  def self.call_grader(params)$/;"	S	module:GraderScript
+call_import_problem	lib/grader_script.rb	/^  def self.call_import_problem(problem_name, $/;"	S	module:GraderScript
+call_import_testcase	lib/grader_script.rb	/^  def self.call_import_testcase(problem_name)$/;"	S	module:GraderScript
+can_view_problem	app/controllers/problems_controller.rb	/^    def can_view_problem$/;"	f	class:ProblemsController
 can_view_problem?	app/models/user.rb	/^  def can_view_problem?(problem)$/;"	f	class:User
+can_view_testcase?	app/models/user.rb	/^  def can_view_testcase?(problem)$/;"	f	class:User
 change	db/migrate/20121001033508_rename_configurations_to_grader_configurations.rb	/^  def change$/;"	f	class:RenameConfigurationsToGraderConfigurations
 change	db/migrate/20140823031747_add_more_detail_to_submission.rb	/^  def change$/;"	f	class:AddMoreDetailToSubmission
 change	db/migrate/20140826095949_create_logins.rb	/^  def change$/;"	f	class:CreateLogins
+change	db/migrate/20140913060729_add_section_to_users.rb	/^  def change$/;"	f	class:AddSectionToUsers
 change	db/migrate/20140917150629_add_ip_to_submissions.rb	/^  def change$/;"	f	class:AddIpToSubmissions
+change	db/migrate/20150203153534_add_more_to_users.rb	/^  def change$/;"	f	class:AddMoreToUsers
+change	db/migrate/20150827131927_create_submission_view_logs.rb	/^  def change$/;"	f	class:CreateSubmissionViewLogs
+change	db/migrate/20150827133841_add_last_ip_to_user.rb	/^  def change$/;"	f	class:AddLastIpToUser
+change	db/migrate/20150914090545_create_heart_beats.rb	/^  def change$/;"	f	class:CreateHeartBeats
+change	db/migrate/20150914155101_add_status_to_heart_beat.rb	/^  def change$/;"	f	class:AddStatusToHeartBeat
+change	db/migrate/20161014091417_create_testcases.rb	/^  def change$/;"	f	class:CreateTestcases
+change	db/migrate/20170123162543_change_testcase_size.rb	/^  def change$/;"	f	class:ChangeTestcaseSize
+change	db/migrate/20170124024527_add_view_testcase_to_problem.rb	/^  def change$/;"	f	class:AddViewTestcaseToProblem
+change	db/migrate/20170310110146_add_index_to_task.rb	/^  def change$/;"	f	class:AddIndexToTask
+change	db/migrate/20170911091143_create_groups.rb	/^  def change$/;"	f	class:CreateGroups
+change	db/migrate/20170914150545_create_tags.rb	/^  def change$/;"	f	class:CreateTags
+change	db/migrate/20170914150742_create_problem_tags.rb	/^  def change$/;"	f	class:CreateProblemTags
+change	db/migrate/20180612102327_change_submission_source_size.rb	/^  def change$/;"	f	class:ChangeSubmissionSourceSize
+change	db/migrate/20200404135714_add_index_to_submission.rb	/^  def change$/;"	f	class:AddIndexToSubmission
+change	db/migrate/20200404142959_add_id_to_group_user.rb	/^  def change$/;"	f	class:AddIdToGroupUser
+change	db/migrate/20200405112919_add_index_to_login.rb	/^  def change$/;"	f	class:AddIndexToLogin
+change	db/migrate/20200813083020_add_enabled_to_group.rb	/^  def change$/;"	f	class:AddEnabledToGroup
+change	db/migrate/20210124101028_add_on_nav_bar_to_announcement.rb	/^  def change$/;"	f	class:AddOnNavBarToAnnouncement
+change	db/migrate/20210130121812_add_default_language_to_user.rb	/^  def change$/;"	f	class:AddDefaultLanguageToUser
+change	db/migrate/20210809105935_add_index_to_task_status.rb	/^  def change$/;"	f	class:AddIndexToTaskStatus
+change	db/migrate/20220204080936_add_type_to_submission.rb	/^  def change$/;"	f	class:AddTypeToSubmission
+change	db/migrate/20220927070334_create_active_storage_tables.active_storage.rb	/^  def change$/;"	f	class:CreateActiveStorageTables
+change	db/migrate/20220927074644_add_description_to_problems.rb	/^  def change$/;"	f	class:AddDescriptionToProblems
+change	db/migrate/20230220171501_add_more_index_to_submissions.rb	/^  def change$/;"	f	class:AddMoreIndexToSubmissions
+change	db/migrate/20230301170551_optimize_submission_indices.rb	/^  def change$/;"	f	class:OptimizeSubmissionIndices
+change	db/migrate/20230611072646_create_jobs.rb	/^  def change$/;"	f	class:CreateJobs
+change	db/migrate/20230619070315_new_testcase_system.rb	/^  def change$/;"	f	class:NewTestcaseSystem
+change	db/migrate/20230622080122_add_more_grader_process.rb	/^  def change$/;"	f	class:AddMoreGraderProcess
+change	db/migrate/20230728055327_more_new_evaluation.rb	/^  def change$/;"	f	class:MoreNewEvaluation
+change	db/migrate/20230910132835_add_status_to_grader_process.rb	/^  def change$/;"	f	class:AddStatusToGraderProcess
+change	db/migrate/20231007041620_job_type_enable.rb	/^  def change$/;"	f	class:JobTypeEnable
+change	db/migrate/20231019151423_add_job_priority.rb	/^  def change$/;"	f	class:AddJobPriority
+change	db/migrate/20231218145225_add_last_heartbeat_to_user.rb	/^  def change$/;"	f	class:AddLastHeartbeatToUser
+change	db/migrate/20231228144804_more_status_on_worker_dataset.rb	/^  def change$/;"	f	class:MoreStatusOnWorkerDataset
 change_contest_mode	app/controllers/contest_management_controller.rb	/^  def change_contest_mode$/;"	f	class:ContestManagementController
-change_date_added	app/controllers/problems_controller.rb	/^  def change_date_added$/;"	f
-change_users_contest_to	spec/controllers/user_admin_controller_spec.rb	/^  def change_users_contest_to(user_login_list, contest, reset_timer=false)$/;"	f
-change_users_contest_to	spec/integration/contest_managements_spec.rb	/^    def change_users_contest_to(user_login_list, contest, reset_timer=false)$/;"	f	class:ContestManagementSessionMethods
+change_date_added	app/controllers/problems_controller.rb	/^  def change_date_added(problems)$/;"	f	class:ProblemsController
+cheat_report	app/controllers/report_controller.rb	/^  def cheat_report$/;"	f	class:ReportController
+cheat_scrutinize	app/controllers/report_controller.rb	/^  def cheat_scrutinize$/;"	f	class:ReportController
+check_and_run_job	app/engine/grader.rb	/^  def check_and_run_job$/;"	f	class:Grader
+check_command	app/engine/checker.rb	/^  def check_command(evaluation_type,input_file,output_file, ans_file)$/;"	f	class:Checker
+check_compile_result	app/engine/compiler.rb	/^  def check_compile_result(out,err,status,meta)$/;"	f	class:Compiler
+check_compile_result	app/engine/compiler/php.rb	/^  def check_compile_result(out,err,status,meta)$/;"	f	class:Php
+check_compile_result	app/engine/compiler/python.rb	/^  def check_compile_result(out,err,status,meta)$/;"	f	class:Python
+check_for_required_file	app/engine/checker.rb	/^  def check_for_required_file$/;"	f	class:Checker
+check_problem	lib/scripts/dump_testcase.rb	/^def check_problem(prob_names)$/;"	f
+check_valid_login	app/controllers/application_controller.rb	/^  def check_valid_login$/;"	f	class:ApplicationController
 check_viewability	app/controllers/main_controller.rb	/^  def check_viewability$/;"	f	class:MainController
-check_viewability	app/controllers/tasks_controller.rb	/^  def check_viewability$/;"	f	class:TasksController
 check_viewability	app/controllers/test_controller.rb	/^  def check_viewability$/;"	f	class:TestController
+checker_delete	app/controllers/datasets_controller.rb	/^  def checker_delete$/;"	f	class:DatasetsController
+checker_download	app/controllers/datasets_controller.rb	/^  def checker_download$/;"	f	class:DatasetsController
+checker_view	app/controllers/datasets_controller.rb	/^  def checker_view$/;"	f	class:DatasetsController
+chg_default_language	app/controllers/users_controller.rb	/^  def chg_default_language$/;"	f	class:UsersController
 chg_passwd	app/controllers/users_controller.rb	/^  def chg_passwd$/;"	f	class:UsersController
-cleanup	test/load/visitor_curl_cli.rb	/^  def cleanup$/;"	f
-clear	app/controllers/graders_controller.rb	/^  def clear$/;"	f	class:GradersController
-clear	app/models/grader_configuration.rb	/^  def self.clear$/;"	F	class:GraderConfiguration
-clear_all	app/controllers/graders_controller.rb	/^  def clear_all$/;"	f	class:GradersController
+clean_old_job	app/models/job.rb	/^  def self.clean_old_job(x = 1.day)$/;"	S	class:Job
+cleanup	test/load/visitor_curl_cli.rb	/^  def cleanup$/;"	f	class:Visitor
+cleanup_isolate	app/engine/isolate_runner.rb	/^  def cleanup_isolate$/;"	f	module:IsolateRunner
+cleanup_judge	app/engine/grader.rb	/^  def self.cleanup_judge(ago_min = 60*24)$/;"	S	class:Grader
+cleanup_web	app/engine/grader.rb	/^  def self.cleanup_web(ago_min = 60*24)$/;"	S	class:Grader
 clear_all_stat	app/controllers/contest_management_controller.rb	/^  def clear_all_stat$/;"	f	class:ContestManagementController
 clear_all_tasks	test/concurrent/task_test_setup.rb	/^def clear_all_tasks$/;"	f
 clear_all_tasks	test/concurrent/task_test_teardown.rb	/^def clear_all_tasks$/;"	f
-clear_reloadable_connections	script/spec_server	/^        def base.clear_reloadable_connections!$/;"	F	class:Spec.Runner.RailsSpecServer.run
+clear_last_ip	app/controllers/user_admin_controller.rb	/^  def clear_last_ip$/;"	f	class:UserAdminController
+clear_last_login	app/models/user.rb	/^  def self.clear_last_login$/;"	S	class:User
 clear_start_time_if_not_started	app/models/site.rb	/^  def clear_start_time_if_not_started$/;"	f	class:Site
 clear_stat	app/controllers/contest_management_controller.rb	/^  def clear_stat$/;"	f	class:ContestManagementController
-clear_terminated	app/controllers/graders_controller.rb	/^  def clear_terminated$/;"	f	class:GradersController
-compiler_msg	app/controllers/main_controller.rb	/^  def compiler_msg$/;"	f	class:MainController
-config_cached	app/models/grader_configuration.rb	/^  def self.config_cached?$/;"	F	class:GraderConfiguration
+clear_user_ip	app/controllers/configurations_controller.rb	/^  def clear_user_ip$/;"	f	class:ConfigurationsController
+cmp_default_checker	lib/scripts/migrate_2023/migrate_tasks.rb	/^def cmp_default_checker(prob_checker, default_checker)$/;"	f
+commands	test/load/visitor_curl_cli.rb	/^    attr_accessor :commands$/;"	A	class:Visitor
+commands=	test/load/visitor_curl_cli.rb	/^    attr_accessor :commands$/;"	A	class:Visitor
+compile	app/engine/compiler.rb	/^  def compile(sub,dataset)$/;"	f	class:Compiler
+compiled_submission	app/controllers/worker_controller.rb	/^  def compiled_submission$/;"	f	class:WorkerController
+compiler_msg	app/controllers/submissions_controller.rb	/^  def compiler_msg$/;"	f	class:SubmissionsController
+configuration_params	app/controllers/configurations_controller.rb	/^  def configuration_params$/;"	f	class:ConfigurationsController
 confirm	app/controllers/users_controller.rb	/^  def confirm$/;"	f	class:UsersController
 confirm_and_update_start_time	app/controllers/main_controller.rb	/^  def confirm_and_update_start_time$/;"	f	class:MainController
 confirm_contest_start	app/controllers/main_controller.rb	/^  def confirm_contest_start$/;"	f	class:MainController
 console	app/controllers/messages_controller.rb	/^  def console$/;"	f	class:MessagesController
 contest_finished?	app/models/user.rb	/^  def contest_finished?$/;"	f	class:User
-contest_management	app/controllers/user_admin_controller.rb	/^  def contest_management$/;"	f
-contest_mode	app/models/grader_configuration.rb	/^  def self.contest_mode?$/;"	F	class:GraderConfiguration
+contest_management	app/controllers/user_admin_controller.rb	/^  def contest_management$/;"	f	class:UserAdminController
+contest_mode?	app/models/grader_configuration.rb	/^  def self.contest_mode?$/;"	S	class:GraderConfiguration
 contest_started?	app/models/user.rb	/^  def contest_started?$/;"	f	class:User
 contest_time_left	app/models/user.rb	/^  def contest_time_left$/;"	f	class:User
-contest_time_limit	app/models/grader_configuration.rb	/^  def self.contest_time_limit$/;"	F	class:GraderConfiguration
-contests	app/controllers/user_admin_controller.rb	/^  def contests$/;"	f
-convert_type	app/models/grader_configuration.rb	/^  def self.convert_type(val,type)$/;"	F	class:GraderConfiguration
+contest_time_limit	app/models/grader_configuration.rb	/^  def self.contest_time_limit$/;"	S	class:GraderConfiguration
+contests	app/controllers/user_admin_controller.rb	/^  def contests$/;"	f	class:UserAdminController
+contests_params	app/controllers/contests_controller.rb	/^    def contests_params$/;"	f	class:ContestsController
+convert_type	app/models/grader_configuration.rb	/^  def self.convert_type(val,type)$/;"	S	class:GraderConfiguration
+cookies_stored	test/load/visitor_curl_cli.rb	/^    attr_accessor :cookies_stored$/;"	A	class:Visitor
+cookies_stored=	test/load/visitor_curl_cli.rb	/^    attr_accessor :cookies_stored$/;"	A	class:Visitor
 create	app/controllers/announcements_controller.rb	/^  def create$/;"	f	class:AnnouncementsController
 create	app/controllers/contests_controller.rb	/^  def create$/;"	f	class:ContestsController
+create	app/controllers/datasets_controller.rb	/^  def create$/;"	f	class:DatasetsController
+create	app/controllers/groups_controller.rb	/^  def create$/;"	f	class:GroupsController
 create	app/controllers/messages_controller.rb	/^  def create$/;"	f	class:MessagesController
 create	app/controllers/problems_controller.rb	/^  def create$/;"	f	class:ProblemsController
 create	app/controllers/sites_controller.rb	/^  def create$/;"	f	class:SitesController
+create	app/controllers/tags_controller.rb	/^  def create$/;"	f	class:TagsController
 create	app/controllers/user_admin_controller.rb	/^  def create$/;"	f	class:UserAdminController
-create_configuration_key	db/seeds.rb	/^def create_configuration_key(key, $/;"	f
-create_from_import_form_params	app/models/problem.rb	/^  def self.create_from_import_form_params(params, old_problem=nil)$/;"	F	class:Problem
+create_configuration_key	db/seeds.rb	/^def create_configuration_key(key,$/;"	f
+create_from_import_form_params	app/models/problem.rb	/^  def self.create_from_import_form_params(params, old_problem=nil)$/;"	S	class:Problem
 create_from_list	app/controllers/user_admin_controller.rb	/^  def create_from_list$/;"	f	class:UserAdminController
-daemonize	script/spec_server	/^def daemonize(pid_file = nil)$/;"	f
+create_from_list	app/models/user.rb	/^  def self.create_from_list(lines)$/;"	S	class:User
+current_user	app/controllers/application_controller.rb	/^  def current_user$/;"	f	class:ApplicationController
+dataset	app/engine/problem_importer.rb	/^  attr_reader :problem, :log, :errors, :got, :dataset$/;"	A	class:ProblemImporter
+dataset_params	app/controllers/datasets_controller.rb	/^    def dataset_params$/;"	f	class:DatasetsController
+default_submission_filename	app/models/language.rb	/^  def default_submission_filename$/;"	f	class:Language
+default_success_result	app/engine/judge_base.rb	/^  def default_success_result(msg = nil)$/;"	f	module:JudgeBase
+description_params	app/controllers/problems_controller.rb	/^    def description_params$/;"	f	class:ProblemsController
 destroy	app/controllers/announcements_controller.rb	/^  def destroy$/;"	f	class:AnnouncementsController
 destroy	app/controllers/contests_controller.rb	/^  def destroy$/;"	f	class:ContestsController
+destroy	app/controllers/datasets_controller.rb	/^  def destroy$/;"	f	class:DatasetsController
+destroy	app/controllers/groups_controller.rb	/^  def destroy$/;"	f	class:GroupsController
 destroy	app/controllers/problems_controller.rb	/^  def destroy$/;"	f	class:ProblemsController
 destroy	app/controllers/sites_controller.rb	/^  def destroy$/;"	f	class:SitesController
-destroy	app/controllers/user_admin_controller.rb	/^  def destroy$/;"	f
-disable_multicontest	spec/config_spec_helper.rb	/^  def disable_multicontest$/;"	f	class:ConfigSpecHelperMethods
-do_import	app/controllers/problems_controller.rb	/^  def do_import$/;"	f
-do_manage	app/controllers/problems_controller.rb	/^  def do_manage$/;"	f
-down	db/migrate/001_create_users.rb	/^  def self.down$/;"	F	class:CreateUsers
-down	db/migrate/002_create_problems.rb	/^  def self.down$/;"	F	class:CreateProblems
-down	db/migrate/003_create_submissions.rb	/^  def self.down$/;"	F	class:CreateSubmissions
-down	db/migrate/004_create_languages.rb	/^  def self.down$/;"	F	class:CreateLanguages
-down	db/migrate/005_add_index_to_submissions.rb	/^  def self.down$/;"	F	class:AddIndexToSubmissions
-down	db/migrate/006_create_roles.rb	/^  def self.down$/;"	F	class:CreateRoles
-down	db/migrate/007_create_rights.rb	/^  def self.down$/;"	F	class:CreateRights
-down	db/migrate/008_create_tasks.rb	/^  def self.down$/;"	F	class:CreateTasks
-down	db/migrate/009_add_sessions.rb	/^  def self.down$/;"	F	class:AddSessions
-down	db/migrate/011_add_language_ext.rb	/^  def self.down$/;"	F	class:AddLanguageExt
-down	db/migrate/012_add_email_to_users.rb	/^  def self.down$/;"	F	class:AddEmailToUsers
-down	db/migrate/013_add_url_to_problem.rb	/^  def self.down$/;"	F	class:AddUrlToProblem
-down	db/migrate/014_create_grader_processes.rb	/^  def self.down$/;"	F	class:CreateGraderProcesses
-down	db/migrate/015_add_status_to_tasks.rb	/^  def self.down$/;"	F	class:AddStatusToTasks
-down	db/migrate/016_add_task_to_grader_process.rb	/^  def self.down$/;"	F	class:AddTaskToGraderProcess
-down	db/migrate/017_rename_grader_process_column_ip_to_host.rb	/^  def self.down$/;"	F	class:RenameGraderProcessColumnIpToHost
-down	db/migrate/018_add_number_to_submissions.rb	/^  def self.down$/;"	F	class:AddNumberToSubmissions
-down	db/migrate/019_create_test_requests.rb	/^  def self.down$/;"	F	class:CreateTestRequests
-down	db/migrate/021_change_compiler_message_type_test_request.rb	/^  def self.down$/;"	F	class:ChangeCompilerMessageTypeTestRequest
-down	db/migrate/022_create_configurations.rb	/^  def self.down$/;"	F	class:CreateConfigurations
-down	db/migrate/023_add_runstat_columns_to_test_request.rb	/^  def self.down$/;"	F	class:AddRunstatColumnsToTestRequest
-down	db/migrate/024_create_sites.rb	/^  def self.down$/;"	F	class:CreateSites
-down	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^  def self.down$/;"	F
-down	db/migrate/026_add_body_to_problems.rb	/^  def self.down$/;"	F	class:AddBodyToProblems
-down	db/migrate/027_create_descriptions.rb	/^  def self.down$/;"	F	class:CreateDescriptions
-down	db/migrate/028_refactor_problem_body_to_description.rb	/^  def self.down$/;"	F	class:RefactorProblemBodyToDescription
-down	db/migrate/029_add_test_allowed_to_problems.rb	/^  def self.down$/;"	F	class:AddTestAllowedToProblems
-down	db/migrate/030_create_announcements.rb	/^  def self.down$/;"	F	class:CreateAnnouncements
-down	db/migrate/031_add_supports_for_output_only_problems.rb	/^  def self.down$/;"	F	class:AddSupportsForOutputOnlyProblems
-down	db/migrate/032_create_messages.rb	/^  def self.down$/;"	F	class:CreateMessages
-down	db/migrate/033_add_task_type_to_grader_processes.rb	/^  def self.down$/;"	F	class:AddTaskTypeToGraderProcesses
-down	db/migrate/034_create_countries.rb	/^  def self.down$/;"	F	class:CreateCountries
-down	db/migrate/035_add_country_to_sites_and_users.rb	/^  def self.down$/;"	F	class:AddCountryToSitesAndUsers
-down	db/migrate/20081107145815_add_frontpage_flag_to_announcement.rb	/^  def self.down$/;"	F	class:AddFrontpageFlagToAnnouncement
-down	db/migrate/20081204122651_add_activated_to_users.rb	/^  def self.down$/;"	F
-down	db/migrate/20081210021333_add_timestamps_to_users.rb	/^  def self.down$/;"	F	class:AddTimestampsToUsers
-down	db/migrate/20081215012843_change_user_login_string_limit.rb	/^  def self.down$/;"	F	class:ChangeUserLoginStringLimit
-down	db/migrate/20090206145016_add_contest_flag_to_announcements.rb	/^  def self.down$/;"	F	class:AddContestFlagToAnnouncements
-down	db/migrate/20090416235658_add_common_ext_to_languages.rb	/^  def self.down$/;"	F	class:AddCommonExtToLanguages
-down	db/migrate/20090426131044_add_terminated_to_grader_processes.rb	/^  def self.down$/;"	F	class:AddTerminatedToGraderProcesses
-down	db/migrate/20090815171610_add_title_to_announcements.rb	/^  def self.down$/;"	F	class:AddTitleToAnnouncements
-down	db/migrate/20100113094740_create_test_pairs.rb	/^  def self.down$/;"	F	class:CreateTestPairs
-down	db/migrate/20100124040107_add_description_to_config.rb	/^  def self.down$/;"	F	class:AddDescriptionToConfig
-down	db/migrate/20100124054458_create_user_contest_stats.rb	/^  def self.down$/;"	F	class:CreateUserContestStats
-down	db/migrate/20100129041917_change_input_solution_field_limit_in_test_pair.rb	/^  def self.down$/;"	F	class:ChangeInputSolutionFieldLimitInTestPair
-down	db/migrate/20100216105730_create_contests.rb	/^  def self.down$/;"	F	class:CreateContests
-down	db/migrate/20100216162324_create_contests_users_join_table.rb	/^  def self.down$/;"	F	class:CreateContestsUsersJoinTable
-down	db/migrate/20100216162940_create_contests_problems_join_table.rb	/^  def self.down$/;"	F	class:CreateContestsProblemsJoinTable
-down	db/migrate/20100219014840_add_description_filename_to_problems.rb	/^  def self.down$/;"	F	class:AddDescriptionFilenameToProblems
-down	db/migrate/20100303095700_add_name_to_contests.rb	/^  def self.down$/;"	F	class:AddNameToContests
-down	db/migrate/20100328123325_add_forced_logout_to_user_contest_stat.rb	/^  def self.down$/;"	F	class:AddForcedLogoutToUserContestStat
-down	db/migrate/20100506163112_add_notes_to_announcements.rb	/^  def self.down$/;"	F	class:AddNotesToAnnouncements
-download	app/controllers/tasks_controller.rb	/^  def download$/;"	f	class:TasksController
-download_file_basedir	app/models/problem.rb	/^  def self.download_file_basedir$/;"	F	class:Problem
+destroy	app/controllers/tags_controller.rb	/^  def destroy$/;"	f	class:TagsController
+destroy	app/controllers/user_admin_controller.rb	/^  def destroy$/;"	f	class:UserAdminController
+direct_edit_problem	app/controllers/submissions_controller.rb	/^  def direct_edit_problem$/;"	f	class:SubmissionsController
+display_manual	script/score_subtask.rb	/^def display_manual$/;"	f
+do_dir	lib/scripts/migrate_2023/migrate_tasks.rb	/^def do_dir(prob_ev_dir)$/;"	f
+do_import	app/controllers/problems_controller.rb	/^  def do_import$/;"	f	class:ProblemsController
+do_manage	app/controllers/problems_controller.rb	/^  def do_manage$/;"	f	class:ProblemsController
+down	db/migrate/001_create_users.rb	/^  def self.down$/;"	S	class:CreateUsers
+down	db/migrate/002_create_problems.rb	/^  def self.down$/;"	S	class:CreateProblems
+down	db/migrate/003_create_submissions.rb	/^  def self.down$/;"	S	class:CreateSubmissions
+down	db/migrate/004_create_languages.rb	/^  def self.down$/;"	S	class:CreateLanguages
+down	db/migrate/005_add_index_to_submissions.rb	/^  def self.down$/;"	S	class:AddIndexToSubmissions
+down	db/migrate/006_create_roles.rb	/^  def self.down$/;"	S	class:CreateRoles
+down	db/migrate/007_create_rights.rb	/^  def self.down$/;"	S	class:CreateRights
+down	db/migrate/008_create_tasks.rb	/^  def self.down$/;"	S	class:CreateTasks
+down	db/migrate/009_add_sessions.rb	/^  def self.down$/;"	S	class:AddSessions
+down	db/migrate/011_add_language_ext.rb	/^  def self.down$/;"	S	class:AddLanguageExt
+down	db/migrate/012_add_email_to_users.rb	/^  def self.down$/;"	S	class:AddEmailToUsers
+down	db/migrate/013_add_url_to_problem.rb	/^  def self.down$/;"	S	class:AddUrlToProblem
+down	db/migrate/014_create_grader_processes.rb	/^  def self.down$/;"	S	class:CreateGraderProcesses
+down	db/migrate/015_add_status_to_tasks.rb	/^  def self.down$/;"	S	class:AddStatusToTasks
+down	db/migrate/016_add_task_to_grader_process.rb	/^  def self.down$/;"	S	class:AddTaskToGraderProcess
+down	db/migrate/017_rename_grader_process_column_ip_to_host.rb	/^  def self.down$/;"	S	class:RenameGraderProcessColumnIpToHost
+down	db/migrate/018_add_number_to_submissions.rb	/^  def self.down$/;"	S	class:AddNumberToSubmissions
+down	db/migrate/019_create_test_requests.rb	/^  def self.down$/;"	S	class:CreateTestRequests
+down	db/migrate/021_change_compiler_message_type_test_request.rb	/^  def self.down$/;"	S	class:ChangeCompilerMessageTypeTestRequest
+down	db/migrate/022_create_configurations.rb	/^  def self.down$/;"	S	class:CreateConfigurations
+down	db/migrate/023_add_runstat_columns_to_test_request.rb	/^  def self.down$/;"	S	class:AddRunstatColumnsToTestRequest
+down	db/migrate/024_create_sites.rb	/^  def self.down$/;"	S	class:CreateSites
+down	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^  def self.down$/;"	S	class:AddSiteToUserAndAddDefaultSite
+down	db/migrate/026_add_body_to_problems.rb	/^  def self.down$/;"	S	class:AddBodyToProblems
+down	db/migrate/027_create_descriptions.rb	/^  def self.down$/;"	S	class:CreateDescriptions
+down	db/migrate/028_refactor_problem_body_to_description.rb	/^  def self.down$/;"	S	class:RefactorProblemBodyToDescription
+down	db/migrate/029_add_test_allowed_to_problems.rb	/^  def self.down$/;"	S	class:AddTestAllowedToProblems
+down	db/migrate/030_create_announcements.rb	/^  def self.down$/;"	S	class:CreateAnnouncements
+down	db/migrate/031_add_supports_for_output_only_problems.rb	/^  def self.down$/;"	S	class:AddSupportsForOutputOnlyProblems
+down	db/migrate/032_create_messages.rb	/^  def self.down$/;"	S	class:CreateMessages
+down	db/migrate/033_add_task_type_to_grader_processes.rb	/^  def self.down$/;"	S	class:AddTaskTypeToGraderProcesses
+down	db/migrate/034_create_countries.rb	/^  def self.down$/;"	S	class:CreateCountries
+down	db/migrate/035_add_country_to_sites_and_users.rb	/^  def self.down$/;"	S	class:AddCountryToSitesAndUsers
+down	db/migrate/20081107145815_add_frontpage_flag_to_announcement.rb	/^  def self.down$/;"	S	class:AddFrontpageFlagToAnnouncement
+down	db/migrate/20081204122651_add_activated_to_users.rb	/^  def self.down$/;"	S	class:AddActivatedToUsers
+down	db/migrate/20081210021333_add_timestamps_to_users.rb	/^  def self.down$/;"	S	class:AddTimestampsToUsers
+down	db/migrate/20081215012843_change_user_login_string_limit.rb	/^  def self.down$/;"	S	class:ChangeUserLoginStringLimit
+down	db/migrate/20090206145016_add_contest_flag_to_announcements.rb	/^  def self.down$/;"	S	class:AddContestFlagToAnnouncements
+down	db/migrate/20090416235658_add_common_ext_to_languages.rb	/^  def self.down$/;"	S	class:AddCommonExtToLanguages
+down	db/migrate/20090426131044_add_terminated_to_grader_processes.rb	/^  def self.down$/;"	S	class:AddTerminatedToGraderProcesses
+down	db/migrate/20090815171610_add_title_to_announcements.rb	/^  def self.down$/;"	S	class:AddTitleToAnnouncements
+down	db/migrate/20100113094740_create_test_pairs.rb	/^  def self.down$/;"	S	class:CreateTestPairs
+down	db/migrate/20100124040107_add_description_to_config.rb	/^  def self.down$/;"	S	class:AddDescriptionToConfig
+down	db/migrate/20100124054458_create_user_contest_stats.rb	/^  def self.down$/;"	S	class:CreateUserContestStats
+down	db/migrate/20100129041917_change_input_solution_field_limit_in_test_pair.rb	/^  def self.down$/;"	S	class:ChangeInputSolutionFieldLimitInTestPair
+down	db/migrate/20100216105730_create_contests.rb	/^  def self.down$/;"	S	class:CreateContests
+down	db/migrate/20100216162324_create_contests_users_join_table.rb	/^  def self.down$/;"	S	class:CreateContestsUsersJoinTable
+down	db/migrate/20100216162940_create_contests_problems_join_table.rb	/^  def self.down$/;"	S	class:CreateContestsProblemsJoinTable
+down	db/migrate/20100219014840_add_description_filename_to_problems.rb	/^  def self.down$/;"	S	class:AddDescriptionFilenameToProblems
+down	db/migrate/20100303095700_add_name_to_contests.rb	/^  def self.down$/;"	S	class:AddNameToContests
+down	db/migrate/20100328123325_add_forced_logout_to_user_contest_stat.rb	/^  def self.down$/;"	S	class:AddForcedLogoutToUserContestStat
+down	db/migrate/20100506163112_add_notes_to_announcements.rb	/^  def self.down$/;"	S	class:AddNotesToAnnouncements
+down	db/migrate/20150503164846_change_userid_on_login.rb	/^  def down$/;"	f	class:ChangeUseridOnLogin
+down	db/migrate/20150914223258_add_more_config.rb	/^  def down$/;"	f	class:AddMoreConfig
+down	db/migrate/20150916054105_update_heart_beat.rb	/^  def down$/;"	f	class:UpdateHeartBeat
+down	db/migrate/20161008050135_modify_grader_process.rb	/^  def down$/;"	f	class:ModifyGraderProcess
+down	db/migrate/20161031063337_add_config_view_test.rb	/^  def down$/;"	f	class:AddConfigViewTest
+down	db/migrate/20170427070345_add_heart_beat_full.rb	/^  def down$/;"	f	class:AddHeartBeatFull
+download	app/controllers/submissions_controller.rb	/^  def download$/;"	f	class:SubmissionsController
+download_dataset	app/engine/judge_base.rb	/^  def download_dataset(dataset, type)$/;"	f	module:JudgeBase
+download_file_basedir	app/models/problem.rb	/^  def self.download_file_basedir$/;"	S	class:Problem
 download_filename	app/models/submission.rb	/^  def download_filename$/;"	f	class:Submission
+download_from_web	app/engine/judge_base.rb	/^  def download_from_web(url,dest,download_type: 'generic' ,chmod_mode: nil, sub_id: nil)$/;"	f	module:JudgeBase
+download_input	app/controllers/testcases_controller.rb	/^  def download_input$/;"	f	class:TestcasesController
+download_manager	app/controllers/testcases_controller.rb	/^  def download_manager$/;"	f	class:TestcasesController
+download_sol	app/controllers/testcases_controller.rb	/^  def download_sol$/;"	f	class:TestcasesController
+dump	lib/scripts/dump_testcase.rb	/^def dump(problem,root_path)$/;"	f
+dump_problems	app/engine/problem_exporter.rb	/^  def self.dump_problems(probs = Problem.available, base_dir = Rails.root.join('..\/judge\/dump'/;"	S	class:ProblemExporter
 edit	app/controllers/announcements_controller.rb	/^  def edit$/;"	f	class:AnnouncementsController
+edit	app/controllers/configurations_controller.rb	/^  def edit$/;"	f	class:ConfigurationsController
 edit	app/controllers/contests_controller.rb	/^  def edit$/;"	f	class:ContestsController
+edit	app/controllers/datasets_controller.rb	/^  def edit$/;"	f	class:DatasetsController
+edit	app/controllers/groups_controller.rb	/^  def edit$/;"	f	class:GroupsController
+edit	app/controllers/heartbeat_controller.rb	/^  def edit$/;"	f	class:HeartbeatController
 edit	app/controllers/problems_controller.rb	/^  def edit$/;"	f	class:ProblemsController
 edit	app/controllers/sites_controller.rb	/^  def edit$/;"	f	class:SitesController
-edit	app/controllers/user_admin_controller.rb	/^  def edit$/;"	f
+edit	app/controllers/submissions_controller.rb	/^  def edit$/;"	f	class:SubmissionsController
+edit	app/controllers/tags_controller.rb	/^  def edit$/;"	f	class:TagsController
+edit	app/controllers/user_admin_controller.rb	/^  def edit$/;"	f	class:UserAdminController
+edit_job_type	app/controllers/graders_controller.rb	/^  def edit_job_type$/;"	f	class:GradersController
 email_for_editing	app/models/user.rb	/^  def email_for_editing$/;"	f	class:User
 email_for_editing=	app/models/user.rb	/^  def email_for_editing=(e)$/;"	f	class:User
 email_validation?	app/models/user.rb	/^    def email_validation?$/;"	f	class:User
-enable_multicontest	spec/config_spec_helper.rb	/^  def enable_multicontest$/;"	f	class:ConfigSpecHelperMethods
-encode_params	test/load/visitor_curl_cli.rb	/^  def encode_params(params)$/;"	f
-encrypt	app/models/user.rb	/^    def self.encrypt(string,salt)$/;"	F	class:User
+encode_params	test/load/visitor_curl_cli.rb	/^  def encode_params(params)$/;"	f	class:Visitor
+encrypt	app/models/user.rb	/^    def self.encrypt(string,salt)$/;"	S	class:User
 encrypt_new_password	app/models/user.rb	/^    def encrypt_new_password$/;"	f	class:User
+end_job	app/engine/grader_error.rb	/^  attr_reader :end_job$/;"	A	class:GraderError
 enough_time_interval_between_same_email_registrations	app/models/user.rb	/^    def enough_time_interval_between_same_email_registrations$/;"	f	class:User
 error	app/controllers/main_controller.rb	/^  def error$/;"	f	class:MainController
+errors	app/engine/problem_importer.rb	/^  attr_reader :problem, :log, :errors, :got, :dataset$/;"	A	class:ProblemImporter
+evaluate	app/engine/evaluator.rb	/^  def evaluate(out,meta,err)$/;"	f	class:Evaluator
+exec_filename	app/models/problem.rb	/^  def exec_filename(language)$/;"	f	class:Problem
+execute	app/engine/evaluator.rb	/^  def execute(sub,testcase)$/;"	f	class:Evaluator
+export_attachment	app/engine/problem_exporter.rb	/^  def export_attachment$/;"	f	class:ProblemExporter
+export_managers_checker	app/engine/problem_exporter.rb	/^  def export_managers_checker$/;"	f	class:ProblemExporter
+export_options	app/engine/problem_exporter.rb	/^  def export_options$/;"	f	class:ProblemExporter
+export_pdf	app/engine/problem_exporter.rb	/^  def export_pdf$/;"	f	class:ProblemExporter
+export_problem_to_dir	app/engine/problem_exporter.rb	/^  def export_problem_to_dir(problem, base_dir)$/;"	f	class:ProblemExporter
+export_solutions	app/engine/problem_exporter.rb	/^  def export_solutions$/;"	f	class:ProblemExporter
+export_testcases	app/engine/problem_exporter.rb	/^  def export_testcases$/;"	f	class:ProblemExporter
 extract	lib/testdata_importer.rb	/^  def extract(tempfile)$/;"	f	class:TestdataImporter
-extract_params_and_check	app/models/problem.rb	/^  def self.extract_params_and_check(params, problem)$/;"	F	class:Problem
 extract_running_stat	app/controllers/main_controller.rb	/^  def extract_running_stat(results)$/;"	f	class:MainController
-find_all_by_user_problem	app/models/submission.rb	/^  def self.find_all_by_user_problem(user_id, problem_id)$/;"	F	class:Submission
-find_all_last_by_problem	app/models/submission.rb	/^  def self.find_all_last_by_problem(problem_id)$/;"	F	class:Submission
-find_all_sent_by_user	app/models/message.rb	/^  def self.find_all_sent_by_user(user)$/;"	F	class:Message
-find_all_system_unreplied_messages	app/models/message.rb	/^  def self.find_all_system_unreplied_messages$/;"	F	class:Message
-find_available_problems	app/models/problem.rb	/^  def self.find_available_problems$/;"	F	class:Problem
-find_by_extension	app/models/language.rb	/^  def self.find_by_extension(ext)$/;"	F	class:Language
-find_by_host_and_pid	app/models/grader_process.rb	/^  def self.find_by_host_and_pid(host,pid)$/;"	F	class:GraderProcess
-find_by_user_problem_number	app/models/submission.rb	/^  def self.find_by_user_problem_number(user_id, problem_id, number)$/;"	F	class:Submission
-find_contest_and_user_from_contest_id	app/controllers/user_admin_controller.rb	/^  def find_contest_and_user_from_contest_id(id)$/;"	f
-find_for_frontpage	app/models/announcement.rb	/^  def self.find_for_frontpage$/;"	F	class:Announcement
-find_in_range_by_user_and_problem	app/models/submission.rb	/^  def self.find_in_range_by_user_and_problem(user_id, problem_id,since_id,until_id)$/;"	F	class:Submission
-find_language_in_source	app/models/submission.rb	/^  def self.find_language_in_source(source, source_filename="")$/;"	F	class:Submission
-find_last_by_user_and_problem	app/models/submission.rb	/^  def self.find_last_by_user_and_problem(user_id, problem_id)$/;"	F	class:Submission
-find_last_for_all_available_problems	app/models/submission.rb	/^  def self.find_last_for_all_available_problems(user_id)$/;"	F	class:Submission
-find_non_admin_with_prefix	app/models/user.rb	/^  def self.find_non_admin_with_prefix(prefix='')$/;"	F	class:User
-find_option_in_source	app/models/submission.rb	/^  def self.find_option_in_source(option, source)$/;"	F	class:Submission
-find_or_create_and_set_config	spec/config_spec_helper.rb	/^  def find_or_create_and_set_config(key, type, value)$/;"	f	class:ConfigSpecHelperMethods
-find_problem_in_source	app/models/submission.rb	/^  def self.find_problem_in_source(source, source_filename="")$/;"	F	class:Submission
-find_published	app/models/announcement.rb	/^  def self.find_published(contest_started=false)$/;"	F	class:Announcement
-find_running_graders	app/models/grader_process.rb	/^  def self.find_running_graders$/;"	F	class:GraderProcess
-find_stalled_process	app/models/grader_process.rb	/^  def self.find_stalled_process$/;"	F	class:GraderProcess
-find_terminated_graders	app/models/grader_process.rb	/^  def self.find_terminated_graders$/;"	F	class:GraderProcess
-find_users_with_no_contest	app/models/user.rb	/^  def self.find_users_with_no_contest()$/;"	F	class:User
+file_delete	app/controllers/datasets_controller.rb	/^  def file_delete$/;"	f	class:DatasetsController
+file_view	app/controllers/datasets_controller.rb	/^  def file_view$/;"	f	class:DatasetsController
+find_all_by_user_problem	app/models/submission.rb	/^  def self.find_all_by_user_problem(user_id, problem_id)$/;"	S	class:Submission
+find_all_last_by_problem	app/models/submission.rb	/^  def self.find_all_last_by_problem(problem_id)$/;"	S	class:Submission
+find_all_sent_by_user	app/models/message.rb	/^  def self.find_all_sent_by_user(user)$/;"	S	class:Message
+find_all_system_unreplied_messages	app/models/message.rb	/^  def self.find_all_system_unreplied_messages$/;"	S	class:Message
+find_by_extension	app/models/language.rb	/^  def self.find_by_extension(ext)$/;"	S	class:Language
+find_by_user_problem_number	app/models/submission.rb	/^  def self.find_by_user_problem_number(user_id, problem_id, number)$/;"	S	class:Submission
+find_contest_and_user_from_contest_id	app/controllers/user_admin_controller.rb	/^  def find_contest_and_user_from_contest_id(id)$/;"	f	class:UserAdminController
+find_in_range_by_user_and_problem	app/models/submission.rb	/^  def self.find_in_range_by_user_and_problem(user_id, problem_id,since_id,until_id)$/;"	S	class:Submission
+find_language_in_source	app/models/submission.rb	/^  def self.find_language_in_source(source, source_filename="")$/;"	S	class:Submission
+find_last_by_user_and_problem	app/models/submission.rb	/^  def self.find_last_by_user_and_problem(user_id, problem_id)$/;"	S	class:Submission
+find_last_for_all_available_problems	app/models/submission.rb	/^  def self.find_last_for_all_available_problems(user_id)$/;"	S	class:Submission
+find_non_admin_with_prefix	app/models/user.rb	/^  def self.find_non_admin_with_prefix(prefix='')$/;"	S	class:User
+find_option_in_source	app/models/submission.rb	/^  def self.find_option_in_source(option, source)$/;"	S	class:Submission
+find_or_create_user	lib/programming_authenticator.rb	/^  def find_or_create_user(result)$/;"	f	class:ProgrammingAuthenticator
+find_problem_in_source	app/models/submission.rb	/^  def self.find_problem_in_source(source, source_filename="")$/;"	S	class:Submission
+find_users_with_no_contest	app/models/user.rb	/^  def self.find_users_with_no_contest()$/;"	S	class:User
 finished?	app/models/site.rb	/^  def finished?$/;"	f	class:Site
 forget	app/controllers/users_controller.rb	/^  def forget$/;"	f	class:UsersController
-format_short_duration	app/helpers/application_helper.rb	/^  def format_short_duration(duration)$/;"	f	class:ApplicationHelper
-format_short_time	app/helpers/application_helper.rb	/^  def format_short_time(time)$/;"	f	class:ApplicationHelper
-gen_csv_from_scorearray	app/controllers/user_admin_controller.rb	/^  def gen_csv_from_scorearray(scorearray,problem)$/;"	f
-generate_tasks	test/unit/task_test.rb	/^  def generate_tasks(n)$/;"	f	class:TaskTest
-get	app/models/grader_configuration.rb	/^  def self.get(key)$/;"	F	class:GraderConfiguration
-get	test/load/visitor_curl_cli.rb	/^  def get(url,params)$/;"	f
-get	test/load/visitor_curl_cli.rb	/^  def self.get(url,params=nil)$/;"	F
-get_cookie_fname	test/load/visitor_curl_cli.rb	/^  def get_cookie_fname$/;"	f
-get_inqueue_and_change_status	app/models/task.rb	/^  def self.get_inqueue_and_change_status(status)$/;"	F	class:Task
-get_inqueue_and_change_status	app/models/test_request.rb	/^  def self.get_inqueue_and_change_status(status)$/;"	F	class:TestRequest
-get_main_list	spec/integration/contest_managements_spec.rb	/^    def get_main_list$/;"	f	class:MainSessionMethods
-get_main_list_and_assert_logout	spec/integration/contest_managements_spec.rb	/^    def get_main_list_and_assert_logout$/;"	f	class:MainSessionMethods
-get_output_fname	test/load/visitor_curl_cli.rb	/^  def get_output_fname$/;"	f
-get_problems_from_params	app/controllers/problems_controller.rb	/^  def get_problems_from_params$/;"	f
-grader_control_enabled	lib/grader_script.rb	/^  def self.grader_control_enabled?$/;"	F	class:GraderScript
+format_full_time_ago	app/helpers/application_helper.rb	/^  def format_full_time_ago(time)$/;"	f	module:ApplicationHelper
+format_short_duration	app/helpers/application_helper.rb	/^  def format_short_duration(duration)$/;"	f	module:ApplicationHelper
+format_short_time	app/helpers/application_helper.rb	/^  def format_short_time(time)$/;"	f	module:ApplicationHelper
+frontpage	app/models/announcement.rb	/^  def self.frontpage$/;"	S	class:Announcement
+gen_csv_from_scorearray	app/controllers/report_controller.rb	/^  def gen_csv_from_scorearray(scorearray,problem)$/;"	f	class:ReportController
+gen_csv_from_scorearray	app/controllers/user_admin_controller.rb	/^  def gen_csv_from_scorearray(scorearray,problem)$/;"	f	class:UserAdminController
+get	app/models/grader_configuration.rb	/^  def self.get(key)$/;"	S	class:GraderConfiguration
+get	test/load/visitor_curl_cli.rb	/^  def get(url,params)$/;"	f	class:Visitor
+get	test/load/visitor_curl_cli.rb	/^  def self.get(url,params=nil)$/;"	S	class:Visitor
+get_ace_mode	app/helpers/application_helper.rb	/^  def get_ace_mode(language)$/;"	f	module:ApplicationHelper
+get_attachment	app/controllers/problems_controller.rb	/^  def get_attachment$/;"	f	class:ProblemsController
+get_attachment	app/controllers/worker_controller.rb	/^  def get_attachment$/;"	f	class:WorkerController
+get_authenticated_user	app/controllers/login_controller.rb	/^  def get_authenticated_user(login, password)$/;"	f	class:LoginController
+get_checker	app/engine/checker.rb	/^  def self.get_checker(submission)$/;"	S	class:Checker
+get_compiled_submission	app/controllers/worker_controller.rb	/^  def get_compiled_submission$/;"	f	class:WorkerController
+get_compiler	app/engine/compiler.rb	/^  def self.get_compiler(sub)$/;"	S	class:Compiler
+get_content_of_first_match	app/engine/problem_importer.rb	/^  def get_content_of_first_match(glob_pattern, recursive: true, path: '')$/;"	f	class:ProblemImporter
+get_cookie_fname	test/load/visitor_curl_cli.rb	/^  def get_cookie_fname$/;"	f	class:Visitor
+get_evaluator	app/engine/evaluator.rb	/^  def self.get_evaluator(submission)$/;"	S	class:Evaluator
+get_inqueue_and_change_status	app/models/task.rb	/^  def self.get_inqueue_and_change_status(status)$/;"	S	class:Task
+get_inqueue_and_change_status	app/models/test_request.rb	/^  def self.get_inqueue_and_change_status(status)$/;"	S	class:TestRequest
+get_jschart_history	app/models/problem.rb	/^  def get_jschart_history$/;"	f	class:Problem
+get_jschart_user_sub_history	app/models/user.rb	/^  def get_jschart_user_sub_history$/;"	f	class:User
+get_latest_submission_status	app/controllers/submissions_controller.rb	/^  def get_latest_submission_status$/;"	f	class:SubmissionsController
+get_manager	app/controllers/worker_controller.rb	/^  def get_manager$/;"	f	class:WorkerController
+get_name_for_dir	app/models/dataset.rb	/^  def get_name_for_dir$/;"	f	class:Dataset
+get_name_for_dir	app/models/testcase.rb	/^  def get_name_for_dir$/;"	f	class:Testcase
+get_next_dataset_name	app/models/problem.rb	/^  def get_next_dataset_name(base = 'Dataset')$/;"	f	class:Problem
+get_output_fname	test/load/visitor_curl_cli.rb	/^  def get_output_fname$/;"	f	class:Visitor
+get_permitted_lang_as_ids	app/models/problem.rb	/^  def get_permitted_lang_as_ids$/;"	f	class:Problem
+get_problems_from_params	app/controllers/problems_controller.rb	/^  def get_problems_from_params$/;"	f	class:ProblemsController
+get_problems_stat	app/controllers/problems_controller.rb	/^  def get_problems_stat$/;"	f	class:ProblemsController
+get_scorer	app/engine/scorer.rb	/^  def self.get_scorer(submission)$/;"	S	class:Scorer
+get_statement	app/controllers/problems_controller.rb	/^  def get_statement$/;"	f	class:ProblemsController
+get_submission_filename	app/engine/compiler.rb	/^  def get_submission_filename$/;"	f	class:Compiler
+get_submission_stat	app/models/problem.rb	/^  def get_submission_stat$/;"	f	class:Problem
+get_weight	app/models/testcase.rb	/^  def get_weight$/;"	f	class:Testcase
+got	app/engine/problem_importer.rb	/^  attr_reader :problem, :log, :errors, :got, :dataset$/;"	A	class:ProblemImporter
+grader_control_enabled?	lib/grader_script.rb	/^  def self.grader_control_enabled?$/;"	S	module:GraderScript
 grading_result_dir	app/controllers/main_controller.rb	/^  def grading_result_dir(user_name, problem_name, submission_id, case_num)$/;"	f	class:MainController
-grant_admin	app/controllers/user_admin_controller.rb	/^  def grant_admin$/;"	f
+group_editor_authorization	app/controllers/groups_controller.rb	/^    def group_editor_authorization$/;"	f	class:GroupsController
+group_min	app/engine/scorer.rb	/^  def group_min$/;"	f	class:Scorer
+group_params	app/controllers/groups_controller.rb	/^    def group_params$/;"	f	class:GroupsController
+has_role?	app/models/user.rb	/^  def has_role?(role)$/;"	f	class:User
+has_waiting_job	app/models/job.rb	/^  def self.has_waiting_job(job_type = nil)$/;"	S	class:Job
+header_info	app/controllers/application_controller.rb	/^  def header_info$/;"	f	class:ApplicationController
 help	app/controllers/main_controller.rb	/^  def help$/;"	f	class:MainController
 hide	app/controllers/messages_controller.rb	/^  def hide$/;"	f	class:MessagesController
-id	test/load/visitor_curl_cli.rb	/^  def id$/;"	f
-import	app/controllers/problems_controller.rb	/^  def import$/;"	f
-import	app/controllers/user_admin_controller.rb	/^  def import$/;"	f
-import_from_file	app/controllers/user_admin_controller.rb	/^  def import_from_file(f)$/;"	f
-import_from_file	lib/testdata_importer.rb	/^  def import_from_file(tempfile, $/;"	f	class:TestdataImporter
-import_full_score	lib/testdata_importer.rb	/^  def import_full_score(dirname)$/;"	f
-import_problem_description	lib/testdata_importer.rb	/^  def import_problem_description(dirname)$/;"	f
-import_problem_pdf	lib/testdata_importer.rb	/^  def import_problem_pdf(dirname)$/;"	f
-import_test_pairs	lib/testdata_importer.rb	/^  def import_test_pairs(dirname)$/;"	f
+id	test/load/visitor_curl_cli.rb	/^  def id$/;"	f	class:Visitor
+import	app/controllers/problems_controller.rb	/^  def import$/;"	f	class:ProblemsController
+import	app/controllers/user_admin_controller.rb	/^  def import$/;"	f	class:UserAdminController
+import_all_from_dir	app/engine/problem_importer.rb	/^  def self.import_all_from_dir(base_dir, skip_existing: true)$/;"	S	class:ProblemImporter
+import_all_testcase	lib/scripts/migrate_2023/migrate_tasks.rb	/^def import_all_testcase(prob_ev_dir,problem)$/;"	f
+import_dataset_from_dir	app/engine/problem_importer.rb	/^  def import_dataset_from_dir(dir, name,$/;"	f	class:ProblemImporter
+import_from_file	app/controllers/user_admin_controller.rb	/^  def import_from_file(f)$/;"	f	class:UserAdminController
+import_from_file	lib/testdata_importer.rb	/^  def import_from_file(tempfile,$/;"	f	class:TestdataImporter
+import_full_score	lib/testdata_importer.rb	/^  def import_full_score(dirname)$/;"	f	class:TestdataImporter
+import_problem_description	lib/testdata_importer.rb	/^  def import_problem_description(dirname)$/;"	f	class:TestdataImporter
+import_problem_pdf	lib/testdata_importer.rb	/^  def import_problem_pdf(dirname)$/;"	f	class:TestdataImporter
+import_test_pairs	lib/testdata_importer.rb	/^  def import_test_pairs(dirname)$/;"	f	class:TestdataImporter
+import_testcases	app/controllers/problems_controller.rb	/^  def import_testcases$/;"	f	class:ProblemsController
 index	app/controllers/announcements_controller.rb	/^  def index$/;"	f	class:AnnouncementsController
 index	app/controllers/configurations_controller.rb	/^  def index$/;"	f	class:ConfigurationsController
 index	app/controllers/contest_management_controller.rb	/^  def index$/;"	f	class:ContestManagementController
 index	app/controllers/contests_controller.rb	/^  def index$/;"	f	class:ContestsController
 index	app/controllers/graders_controller.rb	/^  def index$/;"	f	class:GradersController
+index	app/controllers/groups_controller.rb	/^  def index$/;"	f	class:GroupsController
+index	app/controllers/heartbeat_controller.rb	/^  def index$/;"	f	class:HeartbeatController
 index	app/controllers/login_controller.rb	/^  def index$/;"	f	class:LoginController
-index	app/controllers/main_controller.rb	/^  def index$/;"	f	class:MainController
+index	app/controllers/messages_controller.rb	/^  def index$/;"	f	class:MessagesController
 index	app/controllers/problems_controller.rb	/^  def index$/;"	f	class:ProblemsController
 index	app/controllers/site_controller.rb	/^  def index$/;"	f	class:SiteController
 index	app/controllers/sites_controller.rb	/^  def index$/;"	f	class:SitesController
-index	app/controllers/tasks_controller.rb	/^  def index$/;"	f	class:TasksController
+index	app/controllers/submissions_controller.rb	/^  def index$/;"	f	class:SubmissionsController
+index	app/controllers/tags_controller.rb	/^  def index$/;"	f	class:TagsController
 index	app/controllers/test_controller.rb	/^  def index$/;"	f	class:TestController
 index	app/controllers/user_admin_controller.rb	/^  def index$/;"	f	class:UserAdminController
 index	app/controllers/users_controller.rb	/^  def index$/;"	f	class:UsersController
-indv_contest_mode	app/models/grader_configuration.rb	/^  def self.indv_contest_mode?$/;"	F	class:GraderConfiguration
+indv_contest_mode?	app/models/grader_configuration.rb	/^  def self.indv_contest_mode?$/;"	S	class:GraderConfiguration
+initialize	app/engine/grader.rb	/^  def initialize(worker_id,box_id,key = Rails.configuration.worker[:server_key])$/;"	f	class:Grader
+initialize	app/engine/grader_error.rb	/^  def initialize(msg = "Generic grader error",$/;"	f	class:GraderError
+initialize	app/engine/judge_base.rb	/^  def initialize(worker_id,box_id)$/;"	f	module:JudgeBase
+initialize	app/engine/problem_exporter.rb	/^  def initialize$/;"	f	class:ProblemExporter
+initialize	app/engine/problem_importer.rb	/^  def initialize$/;"	f	class:ProblemImporter
 initialize	config/size_filter_handler.rb	/^  def initialize(options = {})$/;"	f	class:SizeFilterHandler
 initialize	lib/testdata_importer.rb	/^  def initialize(problem)$/;"	f	class:TestdataImporter
-initialize	test/load/visitor_curl_cli.rb	/^  def initialize(id=0, base_dir='.')$/;"	f
+initialize	test/load/visitor_curl_cli.rb	/^  def initialize(id=0, base_dir='.')$/;"	f	class:Visitor
 initialize_temp_dir	test/load/runner.rb	/^def initialize_temp_dir$/;"	f
-james_login_and_get_main_list	spec/integration/contest_managements_spec.rb	/^  def james_login_and_get_main_list(session)$/;"	f
+input_redirect_by_lang	app/engine/judge_base.rb	/^  def input_redirect_by_lang(language_name)$/;"	f	module:JudgeBase
+invalidate_worker	app/models/dataset.rb	/^  def invalidate_worker$/;"	f	class:Dataset
+is_admin	app/helpers/application_helper.rb	/^  def is_admin$/;"	f	module:ApplicationHelper
+is_float?	lib/checker/relative.rb	/^def is_float?(fl)$/;"	f
+is_request_ip_allowed?	app/controllers/application_controller.rb	/^  def is_request_ip_allowed?$/;"	f	class:ApplicationController
+isolate_need_cg_by_lang	app/engine/judge_base.rb	/^  def isolate_need_cg_by_lang(language_name)$/;"	f	module:JudgeBase
+isolate_options_by_lang	app/engine/judge_base.rb	/^  def isolate_options_by_lang(language_name)$/;"	f	module:JudgeBase
+job	app/engine/grader.rb	/^  attr_accessor :job$/;"	A	class:Grader
+job=	app/engine/grader.rb	/^  attr_accessor :job$/;"	A	class:Grader
+job_type_array	app/models/grader_process.rb	/^  def job_type_array$/;"	f	class:GraderProcess
+job_type_text	app/helpers/graders_helper.rb	/^  def job_type_text(job_type)$/;"	f	module:GradersHelper
+judge_log	app/engine/judge_base.rb	/^  def judge_log(msg,severity = Logger::INFO)$/;"	f	module:JudgeBase
+judge_log_tag	app/engine/judge_base.rb	/^  def judge_log_tag$/;"	f	module:JudgeBase
 language	app/models/test_request.rb	/^  def language$/;"	f	class:TestRequest
-link_to_description_if_any	app/helpers/main_helper.rb	/^  def link_to_description_if_any(name, problem, options={})$/;"	f	class:MainHelper
-list	app/controllers/graders_controller.rb	/^  def list$/;"	f	class:GradersController
+link_to_description_if_any	app/helpers/main_helper.rb	/^  def link_to_description_if_any(name, problem, **options)$/;"	f	module:MainHelper
 list	app/controllers/main_controller.rb	/^  def list$/;"	f	class:MainController
-list	app/controllers/messages_controller.rb	/^  def list$/;"	f	class:MessagesController
-list	app/controllers/problems_controller.rb	/^  def list$/;"	f	class:ProblemsController
-list	app/controllers/tasks_controller.rb	/^  def list$/;"	f	class:TasksController
-list	app/controllers/user_admin_controller.rb	/^  def list$/;"	f	class:UserAdminController
+list_all	app/controllers/messages_controller.rb	/^  def list_all$/;"	f	class:MessagesController
+live?	app/models/dataset.rb	/^  def live?$/;"	f	class:Dataset
+load_options	app/engine/problem_importer.rb	/^  def load_options$/;"	f	class:ProblemImporter
 load_output	app/controllers/main_controller.rb	/^  def load_output$/;"	f	class:MainController
+lock_for_fetching_submission	app/models/grader_process.rb	/^  def self.lock_for_fetching_submission(host_id,sub_id)$/;"	S	class:GraderProcess
+log	app/engine/problem_importer.rb	/^  attr_reader :problem, :log, :errors, :got, :dataset$/;"	A	class:ProblemImporter
+logger	app/engine/judge_logger.rb	/^  def self.logger$/;"	S	class:JudgeLogger
 login	app/controllers/login_controller.rb	/^  def login$/;"	f	class:LoginController
 login	app/controllers/main_controller.rb	/^  def login$/;"	f	class:MainController
+login	app/controllers/report_controller.rb	/^  def login$/;"	f	class:ReportController
 login	app/controllers/site_controller.rb	/^  def login$/;"	f	class:SiteController
-login	spec/integration/contest_managements_spec.rb	/^    def login(login_name, password)$/;"	f	class:MainSessionMethods
-login_stat	app/controllers/report_controller.rb	/^  def login_stat$/;"	f	class:ReportController
+login	test/system/submissions_test.rb	/^  def login(username,password)$/;"	f	class:SubmissionsTest
+login	test/system/users_test.rb	/^  def login(username,password)$/;"	f	class:UsersTest
+login_detail_query	app/controllers/report_controller.rb	/^  def login_detail_query$/;"	f	class:ReportController
+login_summary_query	app/controllers/report_controller.rb	/^  def login_summary_query$/;"	f	class:ReportController
+login_with_name	app/models/user.rb	/^  def login_with_name$/;"	f	class:User
+logout	app/controllers/login_controller.rb	/^  def logout$/;"	f	class:LoginController
+logout	app/controllers/main_controller.rb	/^  def logout$/;"	f	class:MainController
 logout	app/controllers/site_controller.rb	/^  def logout$/;"	f	class:SiteController
-logout_users	app/controllers/user_admin_controller.rb	/^  def logout_users(users)$/;"	f
-long_ext	lib/testdata_importer.rb	/^  def self.long_ext(filename)$/;"	F	class:TestdataImporter
-manage	app/controllers/problems_controller.rb	/^  def manage$/;"	f
-manage_contest	app/controllers/user_admin_controller.rb	/^  def manage_contest$/;"	f
-markdown	app/helpers/application_helper.rb	/^  def markdown(text)$/;"	f	class:ApplicationHelper
-mass_mailing	app/controllers/user_admin_controller.rb	/^  def mass_mailing$/;"	f
-multicontests	app/models/grader_configuration.rb	/^  def self.multicontests?$/;"	F	class:GraderConfiguration
+logout_users	app/controllers/user_admin_controller.rb	/^  def logout_users(users)$/;"	f	class:UserAdminController
+long_ext	lib/testdata_importer.rb	/^  def self.long_ext(filename)$/;"	S	class:TestdataImporter
+long_name	app/models/problem.rb	/^  def long_name$/;"	f	class:Problem
+main	lib/scripts/migrate_2023/migrate_tasks.rb	/^def main$/;"	f
+main_loop	app/engine/grader.rb	/^  def main_loop$/;"	f	class:Grader
+make_enabled	app/engine/grader.rb	/^  def self.make_enabled(num)$/;"	S	class:Grader
+manage	app/controllers/problems_controller.rb	/^  def manage$/;"	f	class:ProblemsController
+manage_contest	app/controllers/user_admin_controller.rb	/^  def manage_contest$/;"	f	class:UserAdminController
+markdown	app/helpers/application_helper.rb	/^  def markdown(text)$/;"	f	module:ApplicationHelper
+mass_mailing	app/controllers/user_admin_controller.rb	/^  def mass_mailing$/;"	f	class:UserAdminController
+max_score	app/controllers/report_controller.rb	/^  def max_score$/;"	f	class:ReportController
+message_for_user	app/engine/grader_error.rb	/^  attr_reader :message_for_user$/;"	A	class:GraderError
+message_params	app/controllers/messages_controller.rb	/^    def message_params$/;"	f	class:MessagesController
+migrate_one_testcase	lib/scripts/migrate_2023/testcase_to_activestorage.rb	/^def migrate_one_testcase(testcase)$/;"	f
+minimum_last_login_time	app/models/grader_configuration.rb	/^  def self.minimum_last_login_time$/;"	S	class:GraderConfiguration
+modify_role	app/controllers/user_admin_controller.rb	/^  def modify_role$/;"	f	class:UserAdminController
+multicontests?	app/models/grader_configuration.rb	/^  def self.multicontests?$/;"	S	class:GraderConfiguration
+multiple_login	app/controllers/report_controller.rb	/^  def multiple_login$/;"	f	class:ReportController
 must_have_valid_problem	app/models/submission.rb	/^  def must_have_valid_problem$/;"	f	class:Submission
-must_have_valid_problem	app/models/test_request.rb	/^  def must_have_valid_problem$/;"	f
+must_have_valid_problem	app/models/test_request.rb	/^  def must_have_valid_problem$/;"	f	class:TestRequest
 must_specify_language	app/models/submission.rb	/^  def must_specify_language$/;"	f	class:Submission
-name_of	app/models/test_request.rb	/^  def self.name_of(problem)$/;"	F	class:TestRequest
+name_of	app/models/test_request.rb	/^  def self.name_of(problem)$/;"	S	class:TestRequest
+navbar_user_header	app/helpers/application_helper.rb	/^  def navbar_user_header$/;"	f	module:ApplicationHelper
 new	app/controllers/announcements_controller.rb	/^  def new$/;"	f	class:AnnouncementsController
 new	app/controllers/contests_controller.rb	/^  def new$/;"	f	class:ContestsController
-new	app/controllers/problems_controller.rb	/^  def new$/;"	f	class:ProblemsController
+new	app/controllers/datasets_controller.rb	/^  def new$/;"	f	class:DatasetsController
+new	app/controllers/groups_controller.rb	/^  def new$/;"	f	class:GroupsController
 new	app/controllers/sites_controller.rb	/^  def new$/;"	f	class:SitesController
+new	app/controllers/tags_controller.rb	/^  def new$/;"	f	class:TagsController
 new	app/controllers/user_admin_controller.rb	/^  def new$/;"	f	class:UserAdminController
 new	app/controllers/users_controller.rb	/^  def new$/;"	f	class:UsersController
-new_from_form_params	app/models/test_request.rb	/^  def self.new_from_form_params(user,params)$/;"	F	class:TestRequest
+new_from_form_params	app/models/test_request.rb	/^  def self.new_from_form_params(user,params)$/;"	S	class:TestRequest
 output_filename	app/controllers/main_controller.rb	/^  def output_filename(user_name, problem_name, submission_id, case_num)$/;"	f	class:MainController
+parse_all_test_cfg	lib/scripts/migrate_2023/migrate_tasks.rb	/^def parse_all_test_cfg(filename,ds)$/;"	f
+parse_meta	app/engine/isolate_runner.rb	/^  def parse_meta(filename)$/;"	f	module:IsolateRunner
+parse_td_datetime	app/controllers/application_controller.rb	/^  def parse_td_datetime(text, default = Time.zone.now)$/;"	f	class:ApplicationController
+password	app/models/user.rb	/^  attr_accessor :password$/;"	A	class:User
+password=	app/models/user.rb	/^  attr_accessor :password$/;"	A	class:User
 password_required?	app/models/user.rb	/^    def password_required?$/;"	f	class:User
-post	test/load/visitor_curl_cli.rb	/^  def post(url,params,options)$/;"	f
-post	test/load/visitor_curl_cli.rb	/^  def self.post(url,params=nil,options=nil)$/;"	F
+post	test/load/visitor_curl_cli.rb	/^  def post(url,params,options)$/;"	f	class:Visitor
+post	test/load/visitor_curl_cli.rb	/^  def self.post(url,params=nil,options=nil)$/;"	S	class:Visitor
+post_compile	app/engine/compiler.rb	/^  def post_compile$/;"	f	class:Compiler
+post_compile	app/engine/compiler/digital.rb	/^  def post_compile$/;"	f	class:Digital
+post_compile	app/engine/compiler/java.rb	/^  def post_compile$/;"	f	class:Java
+post_compile	app/engine/compiler/php.rb	/^  def post_compile$/;"	f	class:Php
+post_compile	app/engine/compiler/postgres.rb	/^  def post_compile$/;"	f	class:Postgres
+post_compile	app/engine/compiler/ruby.rb	/^  def post_compile$/;"	f	class:Ruby
+pre_compile	app/engine/compiler.rb	/^  def pre_compile$/;"	f	class:Compiler
+pre_compile	app/engine/compiler/java.rb	/^  def pre_compile$/;"	f	class:Java
+pre_compile	app/engine/compiler/postgres.rb	/^  def pre_compile$/;"	f	class:Postgres
 prepare_announcements	app/controllers/main_controller.rb	/^  def prepare_announcements(recent=nil)$/;"	f	class:MainController
+prepare_dataset_directory	app/engine/judge_base.rb	/^  def prepare_dataset_directory(dataset)$/;"	f	module:JudgeBase
+prepare_executable	app/engine/evaluator.rb	/^  def prepare_executable$/;"	f	class:Evaluator
+prepare_files_for_compile	app/engine/compiler.rb	/^  def prepare_files_for_compile$/;"	f	class:Compiler
 prepare_grading_result	app/controllers/main_controller.rb	/^  def prepare_grading_result(submission)$/;"	f	class:MainController
 prepare_index_information	app/controllers/test_controller.rb	/^  def prepare_index_information$/;"	f	class:TestController
 prepare_list_information	app/controllers/main_controller.rb	/^  def prepare_list_information$/;"	f	class:MainController
-preprocess_param_hash	test/load/visitor_curl_cli.rb	/^  def self.preprocess_param_hash(params)$/;"	F
-problem_hof	app/controllers/report_controller.rb	/^  def problem_hof$/;"	f
+prepare_list_information_old	app/controllers/main_controller.rb	/^  def prepare_list_information_old$/;"	f	class:MainController
+prepare_submission_directory	app/engine/judge_base.rb	/^  def prepare_submission_directory(sub)$/;"	f	module:JudgeBase
+prepare_testcase_directory	app/engine/judge_base.rb	/^  def prepare_testcase_directory(sub,testcase)$/;"	f	module:JudgeBase
+prepare_worker_dataset	app/engine/judge_base.rb	/^  def prepare_worker_dataset(dataset, type)$/;"	f	module:JudgeBase
+preprocess_param_hash	test/load/visitor_curl_cli.rb	/^  def self.preprocess_param_hash(params)$/;"	S	class:Visitor
+primary_and_foreign_key_types	db/migrate/20220927070334_create_active_storage_tables.active_storage.rb	/^    def primary_and_foreign_key_types$/;"	f	class:CreateActiveStorageTables
+prob_group	app/controllers/main_controller.rb	/^  def prob_group$/;"	f	class:MainController
+problem	app/engine/problem_importer.rb	/^  attr_reader :problem, :log, :errors, :got, :dataset$/;"	A	class:ProblemImporter
+problem_hof	app/controllers/report_controller.rb	/^  def problem_hof$/;"	f	class:ReportController
 problem_in_user_contests?	app/models/user.rb	/^  def problem_in_user_contests?(problem)$/;"	f	class:User
 problem_name	app/models/test_request.rb	/^  def problem_name$/;"	f	class:TestRequest
+problem_params	app/controllers/problems_controller.rb	/^    def problem_params$/;"	f	class:ProblemsController
+process	app/engine/checker.rb	/^  def process(sub,testcase)$/;"	f	class:Checker
+process	app/engine/scorer.rb	/^  def process(sub,dataset)$/;"	f	class:Scorer
 process	config/size_filter_handler.rb	/^  def process(request, response)$/;"	f	class:SizeFilterHandler
-process_options	test/load/visitor_curl_cli.rb	/^  def self.process_options(options)$/;"	F
+process_comment	script/score_subtask.rb	/^def process_comment(st)$/;"	f
+process_job_compile	app/engine/grader.rb	/^  def process_job_compile$/;"	f	class:Grader
+process_job_evaluate	app/engine/grader.rb	/^  def process_job_evaluate$/;"	f	class:Grader
+process_job_scoring	app/engine/grader.rb	/^  def process_job_scoring$/;"	f	class:Grader
+process_options	script/score_subtask.rb	/^def process_options$/;"	f
+process_options	test/load/visitor_curl_cli.rb	/^  def self.process_options(options)$/;"	S	class:Visitor
+process_query_record	app/controllers/application_controller.rb	/^  def process_query_record(record, $/;"	f	class:ApplicationController
+process_result	app/engine/checker.rb	/^  def process_result(evaluation_type,out,err,status)$/;"	f	class:Checker
+process_result_cafe	app/engine/checker.rb	/^  def process_result_cafe(out,err)$/;"	f	class:Checker
+process_result_cms	app/engine/checker.rb	/^  def process_result_cms(out,err)$/;"	f	class:Checker
+process_subtask	script/score_subtask.rb	/^def process_subtask(st)$/;"	f
 profile	app/controllers/users_controller.rb	/^  def profile$/;"	f	class:UsersController
 profile_authorization	app/controllers/users_controller.rb	/^  def profile_authorization$/;"	f	class:UsersController
+progress	app/controllers/report_controller.rb	/^  def progress$/;"	f	class:ReportController
+progress_query	app/controllers/report_controller.rb	/^  def progress_query$/;"	f	class:ReportController
+published	app/models/announcement.rb	/^  def self.published(contest_started=false)$/;"	S	class:Announcement
 quick_create	app/controllers/problems_controller.rb	/^  def quick_create$/;"	f	class:ProblemsController
-random_all_passwords	app/controllers/user_admin_controller.rb	/^  def random_all_passwords$/;"	f
-random_input_file_name	app/models/test_request.rb	/^  def self.random_input_file_name(user,problem)$/;"	F	class:TestRequest
-random_password	app/controllers/user_admin_controller.rb	/^  def random_password(length=5)$/;"	f
-random_password	app/models/user.rb	/^  def self.random_password(length=5)$/;"	F	class:User
-raw_dir	lib/grader_script.rb	/^  def self.raw_dir$/;"	F	class:GraderScript
+random_input_file_name	app/models/test_request.rb	/^  def self.random_input_file_name(user,problem)$/;"	S	class:TestRequest
+random_password	app/controllers/user_admin_controller.rb	/^  def random_password(length=5)$/;"	f	class:UserAdminController
+random_password	app/models/user.rb	/^  def self.random_password(length=5)$/;"	S	class:User
+raw_dir	lib/grader_script.rb	/^  def self.raw_dir$/;"	S	module:GraderScript
+rb_prob	app/engine/judge_base.rb	/^  def rb_prob(prob)$/;"	f	module:JudgeBase
+rb_sub	app/engine/judge_base.rb	/^  def rb_sub(sub)$/;"	f	module:JudgeBase
+rb_testcase	app/engine/judge_base.rb	/^  def rb_testcase(testcase)$/;"	f	module:JudgeBase
 read	app/controllers/test_controller.rb	/^  def read$/;"	f	class:TestController
-read_config	app/models/grader_configuration.rb	/^  def self.read_config$/;"	F	class:GraderConfiguration
-read_grading_info	app/models/grader_configuration.rb	/^  def self.read_grading_info$/;"	F	class:GraderConfiguration
+read_attachment	app/engine/problem_importer.rb	/^  def read_attachment$/;"	f	class:ProblemImporter
+read_checker	app/engine/problem_importer.rb	/^  def read_checker$/;"	f	class:ProblemImporter
+read_checker_from_ev	lib/scripts/migrate_2023/migrate_tasks.rb	/^def read_checker_from_ev(prob_ev_dir,ds)$/;"	f
+read_config	app/models/grader_configuration.rb	/^  def self.read_config$/;"	S	class:GraderConfiguration
+read_cpp_extras	app/engine/problem_importer.rb	/^  def read_cpp_extras$/;"	f	class:ProblemImporter
+read_default_checker	lib/scripts/migrate_2023/migrate_tasks.rb	/^def read_default_checker(judge_script_dir =  Rails.root.join('..\/judge\/scripts') )$/;"	f
+read_grader_configuration	app/controllers/application_controller.rb	/^  def read_grader_configuration$/;"	f	class:ApplicationController
+read_grading_info	app/models/grader_configuration.rb	/^  def self.read_grading_info$/;"	S	class:GraderConfiguration
 read_grading_result	app/controllers/main_controller.rb	/^  def read_grading_result(user_name, problem_name, submission_id, case_num)$/;"	f	class:MainController
-read_one_key	app/models/grader_configuration.rb	/^  def self.read_one_key(key)$/;"	F	class:GraderConfiguration
-read_textfile	app/helpers/application_helper.rb	/^  def read_textfile(fname,max_size=2048)$/;"	f	class:ApplicationHelper
+read_initializers	app/engine/problem_importer.rb	/^  def read_initializers$/;"	f	class:ProblemImporter
+read_managers_from_ev	lib/scripts/migrate_2023/migrate_tasks.rb	/^def read_managers_from_ev(prob_ev_dir,ds)$/;"	f
+read_options	app/engine/problem_importer.rb	/^  def read_options$/;"	f	class:ProblemImporter
+read_solutions	app/engine/problem_importer.rb	/^  def read_solutions$/;"	f	class:ProblemImporter
+read_statement	app/engine/problem_importer.rb	/^  def read_statement$/;"	f	class:ProblemImporter
+read_testcase	app/engine/problem_importer.rb	/^  def read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)$/;"	f	class:ProblemImporter
+read_textfile	app/helpers/application_helper.rb	/^  def read_textfile(fname,max_size=2048)$/;"	f	module:ApplicationHelper
 register	app/controllers/users_controller.rb	/^  def register$/;"	f	class:UsersController
-register	app/models/grader_process.rb	/^  def self.register(host,pid,mode)$/;"	F	class:GraderProcess
+register_grader	app/models/grader_process.rb	/^  def self.register_grader(host_id,box_id)$/;"	S	class:GraderProcess
 reject_announcement_refresh_when_logged_out	app/controllers/main_controller.rb	/^  def reject_announcement_refresh_when_logged_out$/;"	f	class:MainController
+rejudge	app/controllers/datasets_controller.rb	/^  def rejudge$/;"	f	class:DatasetsController
+rejudge	app/controllers/submissions_controller.rb	/^  def rejudge$/;"	f	class:SubmissionsController
 reload	app/controllers/configurations_controller.rb	/^  def reload$/;"	f	class:ConfigurationsController
-reload	app/models/grader_configuration.rb	/^  def self.reload$/;"	F	class:GraderConfiguration
-remove_contest	app/controllers/problems_controller.rb	/^  def remove_contest$/;"	f
-remove_from_contest	app/controllers/user_admin_controller.rb	/^  def remove_from_contest$/;"	f
+remove_all_problem	app/controllers/groups_controller.rb	/^  def remove_all_problem$/;"	f	class:GroupsController
+remove_all_user	app/controllers/groups_controller.rb	/^  def remove_all_user$/;"	f	class:GroupsController
+remove_contest	app/controllers/problems_controller.rb	/^  def remove_contest$/;"	f	class:ProblemsController
+remove_from_contest	app/controllers/user_admin_controller.rb	/^  def remove_from_contest$/;"	f	class:UserAdminController
+remove_problem	app/controllers/groups_controller.rb	/^  def remove_problem$/;"	f	class:GroupsController
+remove_user	app/controllers/groups_controller.rb	/^  def remove_user$/;"	f	class:GroupsController
+render_star	app/helpers/problems_helper.rb	/^  def render_star(count)$/;"	f	module:ProblemsHelper
+render_tag	app/helpers/problems_helper.rb	/^  def render_tag(ptag)$/;"	f	module:ProblemsHelper
+replied_messages	app/models/message.rb	/^  attr_accessor :replied_messages$/;"	A	class:Message
+replied_messages=	app/models/message.rb	/^  attr_accessor :replied_messages$/;"	A	class:Message
 reply	app/controllers/messages_controller.rb	/^  def reply$/;"	f	class:MessagesController
-report_active	app/models/grader_process.rb	/^  def report_active(task=nil)$/;"	f	class:GraderProcess
-report_inactive	app/models/grader_process.rb	/^  def report_inactive(task=nil)$/;"	f	class:GraderProcess
+report	app/models/job.rb	/^  def report(result)$/;"	f	class:Job
+report_check	app/engine/checker.rb	/^  def report_check(score,comment)$/;"	f	class:Checker
+report_check_correct	app/engine/checker.rb	/^  def report_check_correct(score = 1.to_d, comment = nil)$/;"	f	class:Checker
+report_check_error	app/engine/checker.rb	/^  def report_check_error(comment = 'checker error')$/;"	f	class:Checker
+report_check_partial	app/engine/checker.rb	/^  def report_check_partial(score, comment = nil)$/;"	f	class:Checker
+report_check_wrong	app/engine/checker.rb	/^  def report_check_wrong(score = 0.to_d,comment = nil)$/;"	f	class:Checker
+report_correct	lib/checker/relative.rb	/^def report_correct$/;"	f
+report_wrong	lib/checker/relative.rb	/^def report_wrong$/;"	f
 request_begins	config/size_filter_handler.rb	/^  def request_begins(params)$/;"	f	class:SizeFilterHandler
 reset_timer_and_save	app/models/user_contest_stat.rb	/^  def reset_timer_and_save$/;"	f	class:UserContestStat
-restart_test_server	script/spec_server	/^def restart_test_server$/;"	f
+restart	app/engine/grader.rb	/^  def self.restart(num=-1)$/;"	S	class:Grader
 result	app/controllers/main_controller.rb	/^  def result$/;"	f	class:MainController
 result	app/controllers/test_controller.rb	/^  def result$/;"	f	class:TestController
+result_text_with_color	app/engine/checker.rb	/^  def result_text_with_color(result)$/;"	f	class:Checker
 retrieve_password	app/controllers/users_controller.rb	/^  def retrieve_password$/;"	f	class:UsersController
-revoke_admin	app/controllers/user_admin_controller.rb	/^  def revoke_admin$/;"	f
-run	script/spec_server	/^      def run(argv, stderr, stdout)$/;"	f	class:Spec.Runner.RailsSpecServer
-run	test/load/visitor_curl_cli.rb	/^  def run(times=nil, options={})$/;"	f
+run	test/load/visitor_curl_cli.rb	/^  def run(times=nil, options={})$/;"	f	class:Visitor
+run_initializer	app/engine/judge_base.rb	/^  def run_initializer(dataset)$/;"	f	module:JudgeBase
+run_isolate	app/engine/isolate_runner.rb	/^  def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 0.5,mem_limi/;"	f	module:IsolateRunner
 runner	test/load/runner.rb	/^def runner(visitor_lists, load_time=60, options={})$/;"	f
-save_additional_file	app/models/test_request.rb	/^  def self.save_additional_file(tempfile,dir)$/;"	F
-save_input_file	app/models/test_request.rb	/^  def self.save_input_file(tempfile, user, problem)$/;"	F	class:TestRequest
+save_additional_file	app/models/test_request.rb	/^  def self.save_additional_file(tempfile,dir)$/;"	S	class:TestRequest
+save_input_file	app/models/test_request.rb	/^  def self.save_input_file(tempfile, user, problem)$/;"	S	class:TestRequest
 save_testdata_file	lib/testdata_importer.rb	/^  def save_testdata_file(tempfile)$/;"	f	class:TestdataImporter
+seed	app/models/language.rb	/^  def self.seed$/;"	S	class:Language
 seed_config	db/seeds.rb	/^def seed_config$/;"	f
-seed_more_languages	db/seeds.rb	/^def seed_more_languages$/;"	f
 seed_roles	db/seeds.rb	/^def seed_roles$/;"	f
 seed_root	db/seeds.rb	/^def seed_root$/;"	f
 seed_users_and_roles	db/seeds.rb	/^def seed_users_and_roles$/;"	f
 send_confirmation_email	app/controllers/users_controller.rb	/^  def send_confirmation_email(user)$/;"	f	class:UsersController
-send_contest_update_notification_email	app/controllers/user_admin_controller.rb	/^  def send_contest_update_notification_email(user, contest)$/;"	f
-send_file_to_user	app/controllers/tasks_controller.rb	/^  def send_file_to_user(filename, base_filename)$/;"	f	class:TasksController
-send_mail	lib/mail_helper_methods.rb	/^  def send_mail(mail_to, mail_subject, mail_body)$/;"	f	class:MailHelperMethods
+send_contest_update_notification_email	app/controllers/user_admin_controller.rb	/^  def send_contest_update_notification_email(user, contest)$/;"	f	class:UserAdminController
+send_mail	lib/mail_helper_methods.rb	/^  def send_mail(mail_to, mail_subject, mail_body)$/;"	f	module:MailHelperMethods
 send_new_password_email	app/controllers/users_controller.rb	/^  def send_new_password_email(user)$/;"	f	class:UsersController
-set_contest_time_limit	spec/config_spec_helper.rb	/^  def set_contest_time_limit(limit)$/;"	f	class:ConfigSpecHelperMethods
-set_indv_contest_mode	spec/config_spec_helper.rb	/^  def set_indv_contest_mode$/;"	f	class:ConfigSpecHelperMethods
-set_standard_mode	spec/config_spec_helper.rb	/^  def set_standard_mode$/;"	f	class:ConfigSpecHelperMethods
-setup	test/functional/login_controller_test.rb	/^  def setup$/;"	f	class:LoginControllerTest
-setup	test/functional/user_admin_controller_test.rb	/^  def setup$/;"	f	class:UserAdminControllerTest
+set_as_live	app/controllers/datasets_controller.rb	/^  def set_as_live$/;"	f	class:DatasetsController
+set_by_array	app/models/dataset.rb	/^  def set_by_array(field, array)$/;"	f	class:Dataset
+set_by_hash	app/models/dataset.rb	/^  def set_by_hash(options)$/;"	f	class:Dataset
+set_config	app/controllers/configurations_controller.rb	/^  def set_config$/;"	f	class:ConfigurationsController
+set_dataset	app/controllers/datasets_controller.rb	/^    def set_dataset$/;"	f	class:DatasetsController
+set_default	app/models/dataset.rb	/^  def set_default$/;"	f	class:Dataset
+set_default_value	app/models/problem.rb	/^  def set_default_value$/;"	f	class:Problem
+set_enabled	app/controllers/graders_controller.rb	/^  def set_enabled$/;"	f	class:GradersController
+set_exam_right	app/controllers/configurations_controller.rb	/^  def set_exam_right$/;"	f	class:ConfigurationsController
+set_grading_complete	app/models/submission.rb	/^  def set_grading_complete(point,grading_text,max_time,max_mem)$/;"	f	class:Submission
+set_grading_error	app/models/submission.rb	/^  def set_grading_error(error_text)$/;"	f	class:Submission
+set_group	app/controllers/groups_controller.rb	/^    def set_group$/;"	f	class:GroupsController
+set_message	app/controllers/messages_controller.rb	/^    def set_message$/;"	f	class:MessagesController
+set_permitted_lang_from_ids_string	app/models/problem.rb	/^  def set_permitted_lang_from_ids_string(ids_string)$/;"	f	class:Problem
+set_problem	app/controllers/graders_controller.rb	/^    def set_problem$/;"	f	class:GradersController
+set_problem	app/controllers/problems_controller.rb	/^    def set_problem$/;"	f	class:ProblemsController
+set_problem	app/controllers/testcases_controller.rb	/^    def set_problem$/;"	f	class:TestcasesController
+set_result_text_from_result	app/models/evaluation.rb	/^  def set_result_text_from_result$/;"	f	class:Evaluation
+set_submission	app/controllers/submissions_controller.rb	/^  def set_submission$/;"	f	class:SubmissionsController
+set_tag	app/controllers/submissions_controller.rb	/^  def set_tag$/;"	f	class:SubmissionsController
+set_tag	app/controllers/tags_controller.rb	/^    def set_tag$/;"	f	class:TagsController
+set_testcase	app/controllers/testcases_controller.rb	/^    def set_testcase$/;"	f	class:TestcasesController
+set_user_role	app/controllers/groups_controller.rb	/^  def set_user_role$/;"	f	class:GroupsController
+set_weight	app/controllers/datasets_controller.rb	/^  def set_weight$/;"	f	class:DatasetsController
+set_weight	app/models/dataset.rb	/^  def set_weight(weight_param)$/;"	f	class:Dataset
+setup	test/controllers/login_controller_test.rb	/^  def setup$/;"	f	class:LoginControllerTest
+setup	test/controllers/user_admin_controller_test.rb	/^  def setup$/;"	f	class:UserAdminControllerTest
+setup_isolate	app/engine/isolate_runner.rb	/^  def setup_isolate(box_id,cg = false)$/;"	f	module:IsolateRunner
 show	app/controllers/announcements_controller.rb	/^  def show$/;"	f	class:AnnouncementsController
 show	app/controllers/contests_controller.rb	/^  def show$/;"	f	class:ContestsController
+show	app/controllers/groups_controller.rb	/^  def show$/;"	f	class:GroupsController
 show	app/controllers/messages_controller.rb	/^  def show$/;"	f	class:MessagesController
-show	app/controllers/problems_controller.rb	/^  def show$/;"	f	class:ProblemsController
 show	app/controllers/sites_controller.rb	/^  def show$/;"	f	class:SitesController
+show	app/controllers/submissions_controller.rb	/^  def show$/;"	f	class:SubmissionsController
+show	app/controllers/tags_controller.rb	/^  def show$/;"	f	class:TagsController
 show	app/controllers/user_admin_controller.rb	/^  def show$/;"	f	class:UserAdminController
-show_grading_result	app/models/grader_configuration.rb	/^  def self.show_grading_result$/;"	F	class:GraderConfiguration
-show_raw_stat	test/load/visitor_curl_cli.rb	/^  def show_raw_stat$/;"	f
-show_submitbox_to	app/models/grader_configuration.rb	/^  def self.show_submitbox_to?(user)$/;"	F	class:GraderConfiguration
-show_tasks_to	app/models/grader_configuration.rb	/^  def self.show_tasks_to?(user)$/;"	F	class:GraderConfiguration
+show_grading_result	app/models/grader_configuration.rb	/^  def self.show_grading_result$/;"	S	class:GraderConfiguration
+show_max_score	app/controllers/report_controller.rb	/^  def show_max_score$/;"	f	class:ReportController
+show_problem	app/controllers/testcases_controller.rb	/^  def show_problem$/;"	f	class:TestcasesController
+show_raw_stat	test/load/visitor_curl_cli.rb	/^  def show_raw_stat$/;"	f	class:Visitor
+show_submitbox_to?	app/models/grader_configuration.rb	/^  def self.show_submitbox_to?(user)$/;"	S	class:GraderConfiguration
+show_tasks_to?	app/models/grader_configuration.rb	/^  def self.show_tasks_to?(user)$/;"	S	class:GraderConfiguration
+show_testcase	app/models/grader_configuration.rb	/^  def  self.show_testcase$/;"	S	class:GraderConfiguration
 show_usage	test/load/runner.rb	/^def show_usage$/;"	f
+sign_in_as	test/test_helper.rb	/^  def sign_in_as(user,password)$/;"	f	module:SignInHelper
 site_admin_authorization	app/controllers/site_controller.rb	/^  def site_admin_authorization$/;"	f	class:SiteController
 site_login	app/controllers/login_controller.rb	/^  def site_login$/;"	f	class:LoginController
-site_url	test/load/visitor_curl_cli.rb	/^  def self.site_url(url)$/;"	F
+site_params	app/controllers/site_controller.rb	/^    def site_params$/;"	f	class:SiteController
+site_params	app/controllers/sites_controller.rb	/^    def site_params$/;"	f	class:SitesController
+site_url	test/load/visitor_curl_cli.rb	/^  def self.site_url(url)$/;"	S	class:Visitor
+solve_all_available_problems?	app/models/user.rb	/^  def solve_all_available_problems?$/;"	f	class:User
+sorted_evaluation	app/engine/scorer.rb	/^  def sorted_evaluation$/;"	f	class:Scorer
 source	app/controllers/main_controller.rb	/^  def source$/;"	f	class:MainController
-stalled_time	app/models/grader_process.rb	/^  def self.stalled_time()$/;"	F	class:GraderProcess
-standard_mode	app/models/grader_configuration.rb	/^  def self.standard_mode?$/;"	F	class:GraderConfiguration
+stalled_time	app/models/grader_process.rb	/^  def self.stalled_time()$/;"	S	class:GraderProcess
+standard_mode?	app/models/grader_configuration.rb	/^  def self.standard_mode?$/;"	S	class:GraderConfiguration
 start	app/controllers/site_controller.rb	/^  def start$/;"	f	class:SiteController
-start_exam	app/controllers/graders_controller.rb	/^  def start_exam$/;"	f
-start_grader	lib/grader_script.rb	/^  def self.start_grader(env)$/;"	F	class:GraderScript
-start_grading	app/controllers/graders_controller.rb	/^  def start_grading$/;"	f
-stat	app/controllers/problems_controller.rb	/^  def stat$/;"	f
-statistics	test/load/visitor_curl_cli.rb	/^  def statistics$/;"	f
+start	app/engine/grader.rb	/^  def self.start(box_id, key)$/;"	S	class:Grader
+start_grader	lib/grader_script.rb	/^  def self.start_grader(env)$/;"	S	module:GraderScript
+stat	app/controllers/problems_controller.rb	/^  def stat$/;"	f	class:ProblemsController
+stat	app/controllers/users_controller.rb	/^  def stat$/;"	f	class:UsersController
+statistics	test/load/visitor_curl_cli.rb	/^  def statistics$/;"	f	class:Visitor
 status_complete	app/models/task.rb	/^  def status_complete$/;"	f	class:Task
 status_complete!	app/models/task.rb	/^  def status_complete!$/;"	f	class:Task
 status_grading	app/models/task.rb	/^  def status_grading$/;"	f	class:Task
@@ -523,134 +999,165 @@ status_grading!	app/models/task.rb	/^  def status_grading!$/;"	f	class:Task
 status_inqueue	app/models/task.rb	/^  def status_inqueue$/;"	f	class:Task
 status_inqueue!	app/models/task.rb	/^  def status_inqueue!$/;"	f	class:Task
 status_str	app/models/task.rb	/^  def status_str$/;"	f	class:Task
-stop	app/controllers/graders_controller.rb	/^  def stop $/;"	f
-stop!	test/load/visitor_curl_cli.rb	/^  def stop!$/;"	f
-stop_all	app/controllers/graders_controller.rb	/^  def stop_all$/;"	f
-stop_grader	lib/grader_script.rb	/^  def self.stop_grader(pid)$/;"	F	class:GraderScript
-stop_graders	lib/grader_script.rb	/^  def self.stop_graders(pids)$/;"	F	class:GraderScript
-stores_cookies	test/load/visitor_curl_cli.rb	/^  def self.stores_cookies$/;"	F
-submission	app/controllers/graders_controller.rb	/^  def submission$/;"	f	class:GradersController
-submission	app/controllers/main_controller.rb	/^  def submission$/;"	f	class:MainController
-submission_stat	app/controllers/report_controller.rb	/^  def submission_stat$/;"	f	class:ReportController
+stop!	test/load/visitor_curl_cli.rb	/^  def stop!$/;"	f	class:Visitor
+stop_grader	lib/grader_script.rb	/^  def self.stop_grader(pid)$/;"	S	module:GraderScript
+stop_graders	lib/grader_script.rb	/^  def self.stop_graders(pids)$/;"	S	module:GraderScript
+stores_cookies	test/load/visitor_curl_cli.rb	/^  def self.stores_cookies$/;"	S	class:Visitor
+stuck	app/controllers/report_controller.rb	/^  def stuck #report struggling user,problem$/;"	f	class:ReportController
+submission	app/controllers/report_controller.rb	/^  def submission$/;"	f	class:ReportController
+submission_authorization	app/controllers/submissions_controller.rb	/^  def submission_authorization$/;"	f	class:SubmissionsController
+submission_id	app/engine/grader_error.rb	/^  attr_reader :submission_id$/;"	A	class:GraderError
+submission_in_range	app/controllers/report_controller.rb	/^  def submission_in_range(query,range_params)$/;"	f	class:ReportController
+submission_query	app/controllers/report_controller.rb	/^  def submission_query$/;"	f	class:ReportController
 submit	app/controllers/main_controller.rb	/^  def submit$/;"	f	class:MainController
 submit	app/controllers/test_controller.rb	/^  def submit$/;"	f	class:TestController
-substitute_id	test/load/visitor_curl_cli.rb	/^  def substitute_id(st)$/;"	f
+substitute_id	test/load/visitor_curl_cli.rb	/^  def substitute_id(st)$/;"	f	class:Visitor
+sum_of_all_testcases	app/engine/scorer.rb	/^  def sum_of_all_testcases$/;"	f	class:Scorer
+system!	bin/setup	/^def system!(*args)$/;"	f
+system!	bin/update	/^def system!(*args)$/;"	f
+tag_params	app/controllers/tags_controller.rb	/^    def tag_params$/;"	f	class:TagsController
+take_oldest_waiting_job	app/models/job.rb	/^  def self.take_oldest_waiting_job(grader_process,job_type = nil)$/;"	S	class:Job
 take_wait_return	test/concurrent/task_test_get.rb	/^def take_wait_return$/;"	f
-task	app/controllers/graders_controller.rb	/^  def task$/;"	f	class:GradersController
-task_grading_info	app/models/grader_configuration.rb	/^  def self.task_grading_info$/;"	F	class:GraderConfiguration
-terminate	app/models/grader_process.rb	/^  def terminate$/;"	f	class:GraderProcess
-test_create_with_correct_confirmation_password	test/functional/user_admin_controller_test.rb	/^  def test_create_with_correct_confirmation_password$/;"	f	class:UserAdminControllerTest
-test_create_with_wrong_confirmation_password	test/functional/user_admin_controller_test.rb	/^  def test_create_with_wrong_confirmation_password$/;"	f	class:UserAdminControllerTest
-test_destroy	test/functional/user_admin_controller_test.rb	/^  def test_destroy$/;"	f	class:UserAdminControllerTest
-test_edit	test/functional/user_admin_controller_test.rb	/^  def test_edit$/;"	f	class:UserAdminControllerTest
-test_get_inqueue_simple	test/unit/task_test.rb	/^  def test_get_inqueue_simple$/;"	f	class:TaskTest
-test_homepage	test/performance/browsing_test.rb	/^  def test_homepage$/;"	f	class:BrowsingTest
-test_index	test/functional/user_admin_controller_test.rb	/^  def test_index$/;"	f	class:UserAdminControllerTest
-test_list	test/functional/user_admin_controller_test.rb	/^  def test_list$/;"	f	class:UserAdminControllerTest
-test_new	test/functional/user_admin_controller_test.rb	/^  def test_new$/;"	f	class:UserAdminControllerTest
-test_request	app/controllers/graders_controller.rb	/^  def test_request$/;"	f	class:GradersController
-test_should_allow_admin_to_see	test/functional/graders_controller_test.rb	/^  def test_should_allow_admin_to_see$/;"	f	class:GradersControllerTest
-test_should_allow_admin_to_see	test/functional/user_admin_controller_test.rb	/^  def test_should_allow_admin_to_see$/;"	f	class:UserAdminControllerTest
-test_should_hide_index	test/functional/login_controller_test.rb	/^  def test_should_hide_index$/;"	f	class:LoginControllerTest
-test_should_login_user_and_set_session	test/functional/login_controller_test.rb	/^  def test_should_login_user_and_set_session$/;"	f	class:LoginControllerTest
-test_should_not_allow_new_user_to_see	test/functional/graders_controller_test.rb	/^  def test_should_not_allow_new_user_to_see$/;"	f	class:GradersControllerTest
-test_should_not_allow_new_user_to_see	test/functional/user_admin_controller_test.rb	/^  def test_should_not_allow_new_user_to_see$/;"	f	class:UserAdminControllerTest
-test_should_not_allow_normal_user_to_see	test/functional/graders_controller_test.rb	/^  def test_should_not_allow_normal_user_to_see$/;"	f	class:GradersControllerTest
-test_should_not_allow_normal_user_to_see	test/functional/user_admin_controller_test.rb	/^  def test_should_not_allow_normal_user_to_see$/;"	f	class:UserAdminControllerTest
-test_should_reject_user_with_wrong_password	test/functional/login_controller_test.rb	/^  def test_should_reject_user_with_wrong_password$/;"	f	class:LoginControllerTest
-test_show	test/functional/user_admin_controller_test.rb	/^  def test_show$/;"	f	class:UserAdminControllerTest
-test_truth	test/unit/announcement_test.rb	/^  def test_truth$/;"	f	class:AnnouncementTest
-test_truth	test/unit/configuration_test.rb	/^  def test_truth$/;"	f	class:ConfigurationTest
-test_truth	test/unit/country_test.rb	/^  def test_truth$/;"	f	class:CountryTest
-test_truth	test/unit/description_test.rb	/^  def test_truth$/;"	f	class:DescriptionTest
-test_truth	test/unit/grader_process_test.rb	/^  def test_truth$/;"	f	class:GraderProcessTest
-test_truth	test/unit/language_test.rb	/^  def test_truth$/;"	f	class:LanguageTest
-test_truth	test/unit/message_test.rb	/^  def test_truth$/;"	f	class:MessageTest
-test_truth	test/unit/problem_test.rb	/^  def test_truth$/;"	f	class:ProblemTest
-test_truth	test/unit/right_test.rb	/^  def test_truth$/;"	f	class:RightTest
-test_truth	test/unit/role_test.rb	/^  def test_truth$/;"	f	class:RoleTest
-test_truth	test/unit/site_test.rb	/^  def test_truth$/;"	f	class:SiteTest
-test_truth	test/unit/submission_test.rb	/^  def test_truth$/;"	f	class:SubmissionTest
-test_truth	test/unit/test_request_test.rb	/^  def test_truth$/;"	f	class:TestRequestTest
-test_truth	test/unit/user_test.rb	/^  def test_truth$/;"	f	class:UserTest
-test_update	test/functional/user_admin_controller_test.rb	/^  def test_update$/;"	f	class:UserAdminControllerTest
+talkative	test/load/visitor_curl_cli.rb	/^  attr_accessor :talkative$/;"	A	class:Visitor
+talkative=	test/load/visitor_curl_cli.rb	/^  attr_accessor :talkative$/;"	A	class:Visitor
+task_grading_info	app/models/grader_configuration.rb	/^  def self.task_grading_info$/;"	S	class:GraderConfiguration
+test_create_with_correct_confirmation_password	test/controllers/user_admin_controller_test.rb	/^  def test_create_with_correct_confirmation_password$/;"	f	class:UserAdminControllerTest
+test_create_with_wrong_confirmation_password	test/controllers/user_admin_controller_test.rb	/^  def test_create_with_wrong_confirmation_password$/;"	f	class:UserAdminControllerTest
+test_destroy	test/controllers/user_admin_controller_test.rb	/^  def test_destroy$/;"	f	class:UserAdminControllerTest
+test_edit	test/controllers/user_admin_controller_test.rb	/^  def test_edit$/;"	f	class:UserAdminControllerTest
+test_index	test/controllers/user_admin_controller_test.rb	/^  def test_index$/;"	f	class:UserAdminControllerTest
+test_list	test/controllers/user_admin_controller_test.rb	/^  def test_list$/;"	f	class:UserAdminControllerTest
+test_log	app/engine/judge_base.rb	/^  def test_log(keyword)$/;"	f	module:JudgeBase
+test_new	test/controllers/user_admin_controller_test.rb	/^  def test_new$/;"	f	class:UserAdminControllerTest
+test_should_allow_admin_to_see	test/controllers/graders_controller_test.rb	/^  def test_should_allow_admin_to_see$/;"	f	class:GradersControllerTest
+test_should_allow_admin_to_see	test/controllers/user_admin_controller_test.rb	/^  def test_should_allow_admin_to_see$/;"	f	class:UserAdminControllerTest
+test_should_hide_index	test/controllers/login_controller_test.rb	/^  def test_should_hide_index$/;"	f	class:LoginControllerTest
+test_should_login_user_and_set_session	test/controllers/login_controller_test.rb	/^  def test_should_login_user_and_set_session$/;"	f	class:LoginControllerTest
+test_should_not_allow_new_user_to_see	test/controllers/graders_controller_test.rb	/^  def test_should_not_allow_new_user_to_see$/;"	f	class:GradersControllerTest
+test_should_not_allow_new_user_to_see	test/controllers/user_admin_controller_test.rb	/^  def test_should_not_allow_new_user_to_see$/;"	f	class:UserAdminControllerTest
+test_should_not_allow_normal_user_to_see	test/controllers/graders_controller_test.rb	/^  def test_should_not_allow_normal_user_to_see$/;"	f	class:GradersControllerTest
+test_should_not_allow_normal_user_to_see	test/controllers/user_admin_controller_test.rb	/^  def test_should_not_allow_normal_user_to_see$/;"	f	class:UserAdminControllerTest
+test_should_reject_user_with_wrong_password	test/controllers/login_controller_test.rb	/^  def test_should_reject_user_with_wrong_password$/;"	f	class:LoginControllerTest
+test_show	test/controllers/user_admin_controller_test.rb	/^  def test_show$/;"	f	class:UserAdminControllerTest
+test_update	test/controllers/user_admin_controller_test.rb	/^  def test_update$/;"	f	class:UserAdminControllerTest
+testcase_authorization	app/controllers/testcases_controller.rb	/^    def testcase_authorization$/;"	f	class:TestcasesController
+testcase_delete	app/controllers/datasets_controller.rb	/^  def testcase_delete$/;"	f	class:DatasetsController
+testcase_input	app/controllers/datasets_controller.rb	/^  def testcase_input$/;"	f	class:DatasetsController
+testcase_params	app/controllers/testcases_controller.rb	/^    def testcase_params$/;"	f	class:TestcasesController
+testcase_sol	app/controllers/datasets_controller.rb	/^  def testcase_sol$/;"	f	class:DatasetsController
 time_left	app/models/site.rb	/^  def time_left$/;"	f	class:Site
-time_limit_mode	app/models/grader_configuration.rb	/^  def self.time_limit_mode?$/;"	F	class:GraderConfiguration
-to_f_or_default	app/models/problem.rb	/^  def self.to_f_or_default(st, default)$/;"	F	class:Problem
-to_i_or_default	app/models/problem.rb	/^  def self.to_i_or_default(st, default)$/;"	F	class:Problem
+time_limit_mode?	app/models/grader_configuration.rb	/^  def self.time_limit_mode?$/;"	S	class:GraderConfiguration
+tmp_test	lib/scripts/migrate_2023/migrate_tasks.rb	/^def tmp_test$/;"	f
+to_text	app/models/job.rb	/^  def to_text$/;"	f	class:Job
+toggle	app/controllers/announcements_controller.rb	/^  def toggle$/;"	f	class:AnnouncementsController
+toggle	app/controllers/configurations_controller.rb	/^  def toggle$/;"	f	class:ConfigurationsController
+toggle	app/controllers/groups_controller.rb	/^  def toggle$/;"	f	class:GroupsController
 toggle	app/controllers/problems_controller.rb	/^  def toggle$/;"	f	class:ProblemsController
+toggle_activate	app/controllers/users_controller.rb	/^  def toggle_activate$/;"	f	class:UsersController
+toggle_button	app/helpers/application_helper.rb	/^  def toggle_button(on,toggle_url,id, option={})$/;"	f	module:ApplicationHelper
+toggle_enable	app/controllers/users_controller.rb	/^  def toggle_enable$/;"	f	class:UsersController
+toggle_front	app/controllers/announcements_controller.rb	/^  def toggle_front$/;"	f	class:AnnouncementsController
+toggle_test	app/controllers/problems_controller.rb	/^  def toggle_test$/;"	f	class:ProblemsController
+toggle_view_testcase	app/controllers/problems_controller.rb	/^  def toggle_view_testcase$/;"	f	class:ProblemsController
+tooltip	lib/components/tooltips.rb	/^  def tooltip(wrapper_options = nil)$/;"	f	module:Tooltips
+tooltip_position	lib/components/tooltips.rb	/^  def tooltip_position$/;"	f	module:Tooltips
+tooltip_text	lib/components/tooltips.rb	/^  def tooltip_text$/;"	f	module:Tooltips
 turn_all_off	app/controllers/problems_controller.rb	/^  def turn_all_off$/;"	f	class:ProblemsController
-turn_all_on	app/controllers/problems_controller.rb	/^  def turn_all_on$/;"	f
+turn_all_on	app/controllers/problems_controller.rb	/^  def turn_all_on$/;"	f	class:ProblemsController
+unauthorized_redirect	app/controllers/application_controller.rb	/^  def unauthorized_redirect(msg = 'You are not authorized to view the page you requested')$/;"	f	class:ApplicationController
+unique_visitor_id	app/controllers/application_controller.rb	/^  def unique_visitor_id$/;"	f	class:ApplicationController
 uniqueness_of_email_from_activated_users	app/models/user.rb	/^    def uniqueness_of_email_from_activated_users$/;"	f	class:User
-up	db/migrate/001_create_users.rb	/^  def self.up$/;"	F	class:CreateUsers
-up	db/migrate/002_create_problems.rb	/^  def self.up$/;"	F	class:CreateProblems
-up	db/migrate/003_create_submissions.rb	/^  def self.up$/;"	F	class:CreateSubmissions
-up	db/migrate/004_create_languages.rb	/^  def self.up$/;"	F	class:CreateLanguages
-up	db/migrate/005_add_index_to_submissions.rb	/^  def self.up$/;"	F	class:AddIndexToSubmissions
-up	db/migrate/006_create_roles.rb	/^  def self.up$/;"	F	class:CreateRoles
-up	db/migrate/007_create_rights.rb	/^  def self.up$/;"	F	class:CreateRights
-up	db/migrate/008_create_tasks.rb	/^  def self.up$/;"	F	class:CreateTasks
-up	db/migrate/009_add_sessions.rb	/^  def self.up$/;"	F	class:AddSessions
-up	db/migrate/011_add_language_ext.rb	/^  def self.up$/;"	F	class:AddLanguageExt
-up	db/migrate/012_add_email_to_users.rb	/^  def self.up$/;"	F	class:AddEmailToUsers
-up	db/migrate/013_add_url_to_problem.rb	/^  def self.up$/;"	F	class:AddUrlToProblem
-up	db/migrate/014_create_grader_processes.rb	/^  def self.up$/;"	F	class:CreateGraderProcesses
-up	db/migrate/015_add_status_to_tasks.rb	/^  def self.up$/;"	F	class:AddStatusToTasks
-up	db/migrate/016_add_task_to_grader_process.rb	/^  def self.up$/;"	F	class:AddTaskToGraderProcess
-up	db/migrate/017_rename_grader_process_column_ip_to_host.rb	/^  def self.up$/;"	F	class:RenameGraderProcessColumnIpToHost
-up	db/migrate/018_add_number_to_submissions.rb	/^  def self.up$/;"	F	class:AddNumberToSubmissions
-up	db/migrate/019_create_test_requests.rb	/^  def self.up$/;"	F	class:CreateTestRequests
-up	db/migrate/021_change_compiler_message_type_test_request.rb	/^  def self.up$/;"	F	class:ChangeCompilerMessageTypeTestRequest
-up	db/migrate/022_create_configurations.rb	/^  def self.up$/;"	F	class:CreateConfigurations
-up	db/migrate/023_add_runstat_columns_to_test_request.rb	/^  def self.up$/;"	F	class:AddRunstatColumnsToTestRequest
-up	db/migrate/024_create_sites.rb	/^  def self.up$/;"	F	class:CreateSites
-up	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^  def self.up$/;"	F	class:AddSiteToUserAndAddDefaultSite
-up	db/migrate/026_add_body_to_problems.rb	/^  def self.up$/;"	F	class:AddBodyToProblems
-up	db/migrate/027_create_descriptions.rb	/^  def self.up$/;"	F	class:CreateDescriptions
-up	db/migrate/028_refactor_problem_body_to_description.rb	/^  def self.up$/;"	F	class:RefactorProblemBodyToDescription
-up	db/migrate/029_add_test_allowed_to_problems.rb	/^  def self.up$/;"	F	class:AddTestAllowedToProblems
-up	db/migrate/030_create_announcements.rb	/^  def self.up$/;"	F	class:CreateAnnouncements
-up	db/migrate/031_add_supports_for_output_only_problems.rb	/^  def self.up$/;"	F	class:AddSupportsForOutputOnlyProblems
-up	db/migrate/032_create_messages.rb	/^  def self.up$/;"	F	class:CreateMessages
-up	db/migrate/033_add_task_type_to_grader_processes.rb	/^  def self.up$/;"	F	class:AddTaskTypeToGraderProcesses
-up	db/migrate/034_create_countries.rb	/^  def self.up$/;"	F	class:CreateCountries
-up	db/migrate/035_add_country_to_sites_and_users.rb	/^  def self.up$/;"	F	class:AddCountryToSitesAndUsers
-up	db/migrate/20081107145815_add_frontpage_flag_to_announcement.rb	/^  def self.up$/;"	F	class:AddFrontpageFlagToAnnouncement
-up	db/migrate/20081204122651_add_activated_to_users.rb	/^  def self.up$/;"	F	class:AddActivatedToUsers
-up	db/migrate/20081210021333_add_timestamps_to_users.rb	/^  def self.up$/;"	F	class:AddTimestampsToUsers
-up	db/migrate/20081215012843_change_user_login_string_limit.rb	/^  def self.up$/;"	F	class:ChangeUserLoginStringLimit
-up	db/migrate/20090206145016_add_contest_flag_to_announcements.rb	/^  def self.up$/;"	F	class:AddContestFlagToAnnouncements
-up	db/migrate/20090416235658_add_common_ext_to_languages.rb	/^  def self.up$/;"	F	class:AddCommonExtToLanguages
-up	db/migrate/20090426131044_add_terminated_to_grader_processes.rb	/^  def self.up$/;"	F	class:AddTerminatedToGraderProcesses
-up	db/migrate/20090815171610_add_title_to_announcements.rb	/^  def self.up$/;"	F	class:AddTitleToAnnouncements
-up	db/migrate/20100113094740_create_test_pairs.rb	/^  def self.up$/;"	F	class:CreateTestPairs
-up	db/migrate/20100124040107_add_description_to_config.rb	/^  def self.up$/;"	F	class:AddDescriptionToConfig
-up	db/migrate/20100124054458_create_user_contest_stats.rb	/^  def self.up$/;"	F	class:CreateUserContestStats
-up	db/migrate/20100129041917_change_input_solution_field_limit_in_test_pair.rb	/^  def self.up$/;"	F	class:ChangeInputSolutionFieldLimitInTestPair
-up	db/migrate/20100216105730_create_contests.rb	/^  def self.up$/;"	F	class:CreateContests
-up	db/migrate/20100216162324_create_contests_users_join_table.rb	/^  def self.up$/;"	F	class:CreateContestsUsersJoinTable
-up	db/migrate/20100216162940_create_contests_problems_join_table.rb	/^  def self.up$/;"	F	class:CreateContestsProblemsJoinTable
-up	db/migrate/20100219014840_add_description_filename_to_problems.rb	/^  def self.up$/;"	F	class:AddDescriptionFilenameToProblems
-up	db/migrate/20100303095700_add_name_to_contests.rb	/^  def self.up$/;"	F	class:AddNameToContests
-up	db/migrate/20100328123325_add_forced_logout_to_user_contest_stat.rb	/^  def self.up$/;"	F	class:AddForcedLogoutToUserContestStat
-up	db/migrate/20100506163112_add_notes_to_announcements.rb	/^  def self.up$/;"	F	class:AddNotesToAnnouncements
+unzip_to_dir	app/engine/problem_importer.rb	/^  def unzip_to_dir(file,name,dir)$/;"	f	class:ProblemImporter
+up	db/migrate/001_create_users.rb	/^  def self.up$/;"	S	class:CreateUsers
+up	db/migrate/002_create_problems.rb	/^  def self.up$/;"	S	class:CreateProblems
+up	db/migrate/003_create_submissions.rb	/^  def self.up$/;"	S	class:CreateSubmissions
+up	db/migrate/004_create_languages.rb	/^  def self.up$/;"	S	class:CreateLanguages
+up	db/migrate/005_add_index_to_submissions.rb	/^  def self.up$/;"	S	class:AddIndexToSubmissions
+up	db/migrate/006_create_roles.rb	/^  def self.up$/;"	S	class:CreateRoles
+up	db/migrate/007_create_rights.rb	/^  def self.up$/;"	S	class:CreateRights
+up	db/migrate/008_create_tasks.rb	/^  def self.up$/;"	S	class:CreateTasks
+up	db/migrate/009_add_sessions.rb	/^  def self.up$/;"	S	class:AddSessions
+up	db/migrate/011_add_language_ext.rb	/^  def self.up$/;"	S	class:AddLanguageExt
+up	db/migrate/012_add_email_to_users.rb	/^  def self.up$/;"	S	class:AddEmailToUsers
+up	db/migrate/013_add_url_to_problem.rb	/^  def self.up$/;"	S	class:AddUrlToProblem
+up	db/migrate/014_create_grader_processes.rb	/^  def self.up$/;"	S	class:CreateGraderProcesses
+up	db/migrate/015_add_status_to_tasks.rb	/^  def self.up$/;"	S	class:AddStatusToTasks
+up	db/migrate/016_add_task_to_grader_process.rb	/^  def self.up$/;"	S	class:AddTaskToGraderProcess
+up	db/migrate/017_rename_grader_process_column_ip_to_host.rb	/^  def self.up$/;"	S	class:RenameGraderProcessColumnIpToHost
+up	db/migrate/018_add_number_to_submissions.rb	/^  def self.up$/;"	S	class:AddNumberToSubmissions
+up	db/migrate/019_create_test_requests.rb	/^  def self.up$/;"	S	class:CreateTestRequests
+up	db/migrate/021_change_compiler_message_type_test_request.rb	/^  def self.up$/;"	S	class:ChangeCompilerMessageTypeTestRequest
+up	db/migrate/022_create_configurations.rb	/^  def self.up$/;"	S	class:CreateConfigurations
+up	db/migrate/023_add_runstat_columns_to_test_request.rb	/^  def self.up$/;"	S	class:AddRunstatColumnsToTestRequest
+up	db/migrate/024_create_sites.rb	/^  def self.up$/;"	S	class:CreateSites
+up	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^  def self.up$/;"	S	class:AddSiteToUserAndAddDefaultSite
+up	db/migrate/026_add_body_to_problems.rb	/^  def self.up$/;"	S	class:AddBodyToProblems
+up	db/migrate/027_create_descriptions.rb	/^  def self.up$/;"	S	class:CreateDescriptions
+up	db/migrate/028_refactor_problem_body_to_description.rb	/^  def self.up$/;"	S	class:RefactorProblemBodyToDescription
+up	db/migrate/029_add_test_allowed_to_problems.rb	/^  def self.up$/;"	S	class:AddTestAllowedToProblems
+up	db/migrate/030_create_announcements.rb	/^  def self.up$/;"	S	class:CreateAnnouncements
+up	db/migrate/031_add_supports_for_output_only_problems.rb	/^  def self.up$/;"	S	class:AddSupportsForOutputOnlyProblems
+up	db/migrate/032_create_messages.rb	/^  def self.up$/;"	S	class:CreateMessages
+up	db/migrate/033_add_task_type_to_grader_processes.rb	/^  def self.up$/;"	S	class:AddTaskTypeToGraderProcesses
+up	db/migrate/034_create_countries.rb	/^  def self.up$/;"	S	class:CreateCountries
+up	db/migrate/035_add_country_to_sites_and_users.rb	/^  def self.up$/;"	S	class:AddCountryToSitesAndUsers
+up	db/migrate/20081107145815_add_frontpage_flag_to_announcement.rb	/^  def self.up$/;"	S	class:AddFrontpageFlagToAnnouncement
+up	db/migrate/20081204122651_add_activated_to_users.rb	/^  def self.up$/;"	S	class:AddActivatedToUsers
+up	db/migrate/20081210021333_add_timestamps_to_users.rb	/^  def self.up$/;"	S	class:AddTimestampsToUsers
+up	db/migrate/20081215012843_change_user_login_string_limit.rb	/^  def self.up$/;"	S	class:ChangeUserLoginStringLimit
+up	db/migrate/20090206145016_add_contest_flag_to_announcements.rb	/^  def self.up$/;"	S	class:AddContestFlagToAnnouncements
+up	db/migrate/20090416235658_add_common_ext_to_languages.rb	/^  def self.up$/;"	S	class:AddCommonExtToLanguages
+up	db/migrate/20090426131044_add_terminated_to_grader_processes.rb	/^  def self.up$/;"	S	class:AddTerminatedToGraderProcesses
+up	db/migrate/20090815171610_add_title_to_announcements.rb	/^  def self.up$/;"	S	class:AddTitleToAnnouncements
+up	db/migrate/20100113094740_create_test_pairs.rb	/^  def self.up$/;"	S	class:CreateTestPairs
+up	db/migrate/20100124040107_add_description_to_config.rb	/^  def self.up$/;"	S	class:AddDescriptionToConfig
+up	db/migrate/20100124054458_create_user_contest_stats.rb	/^  def self.up$/;"	S	class:CreateUserContestStats
+up	db/migrate/20100129041917_change_input_solution_field_limit_in_test_pair.rb	/^  def self.up$/;"	S	class:ChangeInputSolutionFieldLimitInTestPair
+up	db/migrate/20100216105730_create_contests.rb	/^  def self.up$/;"	S	class:CreateContests
+up	db/migrate/20100216162324_create_contests_users_join_table.rb	/^  def self.up$/;"	S	class:CreateContestsUsersJoinTable
+up	db/migrate/20100216162940_create_contests_problems_join_table.rb	/^  def self.up$/;"	S	class:CreateContestsProblemsJoinTable
+up	db/migrate/20100219014840_add_description_filename_to_problems.rb	/^  def self.up$/;"	S	class:AddDescriptionFilenameToProblems
+up	db/migrate/20100303095700_add_name_to_contests.rb	/^  def self.up$/;"	S	class:AddNameToContests
+up	db/migrate/20100328123325_add_forced_logout_to_user_contest_stat.rb	/^  def self.up$/;"	S	class:AddForcedLogoutToUserContestStat
+up	db/migrate/20100506163112_add_notes_to_announcements.rb	/^  def self.up$/;"	S	class:AddNotesToAnnouncements
+up	db/migrate/20150503164846_change_userid_on_login.rb	/^  def up$/;"	f	class:ChangeUseridOnLogin
+up	db/migrate/20150914223258_add_more_config.rb	/^  def up$/;"	f	class:AddMoreConfig
+up	db/migrate/20150916054105_update_heart_beat.rb	/^  def up$/;"	f	class:UpdateHeartBeat
+up	db/migrate/20161008050135_modify_grader_process.rb	/^  def up$/;"	f	class:ModifyGraderProcess
+up	db/migrate/20161031063337_add_config_view_test.rb	/^  def up$/;"	f	class:AddConfigViewTest
+up	db/migrate/20170427070345_add_heart_beat_full.rb	/^  def up$/;"	f	class:AddHeartBeatFull
 update	app/controllers/announcements_controller.rb	/^  def update$/;"	f	class:AnnouncementsController
+update	app/controllers/configurations_controller.rb	/^  def update$/;"	f	class:ConfigurationsController
 update	app/controllers/contests_controller.rb	/^  def update$/;"	f	class:ContestsController
+update	app/controllers/datasets_controller.rb	/^  def update$/;"	f	class:DatasetsController
+update	app/controllers/graders_controller.rb	/^  def update$/;"	f	class:GradersController
+update	app/controllers/groups_controller.rb	/^  def update$/;"	f	class:GroupsController
 update	app/controllers/problems_controller.rb	/^  def update$/;"	f	class:ProblemsController
 update	app/controllers/sites_controller.rb	/^  def update$/;"	f	class:SitesController
-update	app/controllers/user_admin_controller.rb	/^  def update$/;"	f
+update	app/controllers/tags_controller.rb	/^  def update$/;"	f	class:TagsController
+update	app/controllers/user_admin_controller.rb	/^  def update$/;"	f	class:UserAdminController
+update_min_last_login	app/models/grader_configuration.rb	/^  def self.update_min_last_login$/;"	S	class:GraderConfiguration
+update_self	app/controllers/users_controller.rb	/^  def update_self$/;"	f	class:UsersController
 update_start_time	app/models/user.rb	/^  def update_start_time$/;"	f	class:User
-user_header	app/helpers/application_helper.rb	/^  def user_header$/;"	f	class:ApplicationHelper
+update_submission	app/engine/grader_error.rb	/^  attr_reader :update_submission$/;"	A	class:GraderError
+upload_compiled_files	app/engine/compiler.rb	/^  def upload_compiled_files$/;"	f	class:Compiler
+upload_compiled_params	app/controllers/worker_controller.rb	/^    def upload_compiled_params$/;"	f	class:WorkerController
+use_problem_group?	app/models/grader_configuration.rb	/^  def self.use_problem_group?$/;"	S	class:GraderConfiguration
+user_header	app/helpers/application_helper.rb	/^  def user_header$/;"	f	module:ApplicationHelper
+user_params	app/controllers/user_admin_controller.rb	/^    def user_params$/;"	f	class:UserAdminController
+user_params	app/controllers/users_controller.rb	/^    def user_params$/;"	f	class:UsersController
 user_stat	app/controllers/contest_management_controller.rb	/^  def user_stat$/;"	f	class:ContestManagementController
-user_stat	app/controllers/user_admin_controller.rb	/^  def user_stat$/;"	f
-user_stat_max	app/controllers/user_admin_controller.rb	/^  def user_stat_max$/;"	f
-user_title_bar	app/helpers/application_helper.rb	/^  def user_title_bar(user)$/;"	f	class:ApplicationHelper
-valid?	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^        def valid?$/;"	f	class:AddSiteToUserAndAddDefaultSite.up
-valid?	db/migrate/20081204122651_add_activated_to_users.rb	/^        def valid?$/;"	f	class:AddActivatedToUsers.up
-valid?	db/seeds.rb	/^    def valid?(context=nil)$/;"	f	class:seed_root
+user_title_bar	app/helpers/application_helper.rb	/^  def user_title_bar(user)$/;"	f	module:ApplicationHelper
+user_update_params	app/controllers/users_controller.rb	/^    def user_update_params$/;"	f	class:UsersController
+valid?	db/migrate/025_add_site_to_user_and_add_default_site.rb	/^        def valid?$/;"	f	singletonMethod:AddSiteToUserAndAddDefaultSite.up
+valid?	db/migrate/20081204122651_add_activated_to_users.rb	/^        def valid?$/;"	f	singletonMethod:AddActivatedToUsers.up
+valid?	db/seeds.rb	/^    def valid?(context=nil)$/;"	f	method:seed_root
+validate	app/engine/compiler.rb	/^  def validate$/;"	f	class:Compiler
 verify_activation_key	app/models/user.rb	/^  def verify_activation_key(key)$/;"	f	class:User
 verify_online_registration	app/controllers/users_controller.rb	/^  def verify_online_registration$/;"	f	class:UsersController
 verify_time_limit	app/controllers/application_controller.rb	/^  def verify_time_limit$/;"	f	class:ApplicationController
-view	app/controllers/graders_controller.rb	/^  def view$/;"	f	class:GradersController
-view	app/controllers/tasks_controller.rb	/^  def view$/;"	f	class:TasksController
+view	app/controllers/datasets_controller.rb	/^  def view$/;"	f	class:DatasetsController
+view_live_testcases	app/controllers/problems_controller.rb	/^  def view_live_testcases$/;"	f	class:ProblemsController
 visitor	test/load/visitor_curl_cli.rb	/^def visitor(cname,options={},&blk)$/;"	f
+watchdog	app/engine/grader.rb	/^  def self.watchdog$/;"	S	class:Grader
+worker_authenticity	app/controllers/worker_controller.rb	/^    def worker_authenticity$/;"	f	class:WorkerController

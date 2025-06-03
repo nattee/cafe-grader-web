@@ -1,6 +1,6 @@
 class ContestManagementController < ApplicationController
 
-  before_filter :admin_authorization
+  before_action :admin_authorization
 
   def index
     @num_contests = Contest.count()

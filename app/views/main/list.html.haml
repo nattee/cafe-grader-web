@@ -1,64 +1,77 @@
 - content_for :head do
   = javascript_include_tag "announcement_refresh"
 
-= user_title_bar(@user)
-
-- if (GraderConfiguration.contest_mode?) and (@user.site!=nil) and (@user.site.started!=true)
-  %p=t 'main.start_soon'
-
 .row
-  .col-md-7
+  -# Left pane: (Contest Card, Submission Card and problem list)
+  .col-lg-7
+    - if (GraderConfiguration.contest_mode?)
+      = render 'contest_box'
     - if GraderConfiguration.show_submitbox_to?(@user)
-      .panel.panel-primary
-        .panel-heading
-          Submission
-        .panel-body
-          = render :partial => 'submission_box'
+      = render 'submission_box'
     - if GraderConfiguration.show_tasks_to?(@user)
-      - if not GraderConfiguration.multicontests?
-        %table.table.table-striped.table-condensed
-          %thead
-            %tr
-              %th Task name
-              %th Full name
-              %th # of sub(s)
-              %th Results
-              %th
-          %tbody
-            = render :partial => 'problem', :collection => @problems
-      - else
-        - @contest_problems.each do |cp|
-          - if cp[:problems].length > 0
-            %h2{:class =>'contest-title'}
-              = "#{cp[:contest] ? cp[:contest].title : 'Public problems'}"
-            %table.info
-              %tr.info-head
-                %th Task name
-                %th Full name
-                %th # of sub(s)
-                %th Results
-                %th
-              = render :partial => 'problem', :collection => cp[:problems]
-  .col-md-5
-    .panel.panel-info
-      .panel-heading
+      %h2.mt-3 Problems
+      = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
+  -# right pane (Announcements)
+  .col-lg-5
+    .card
+      .card-header
         Announcement
-        = link_to 'Manage', announcements_path, class: 'btn btn-xs btn-default'
-      %ul.list-group
+        - if is_admin
+          = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
+      %ul.list-group.list-group-flush
         = render :partial => 'announcement', :collection => @announcements
+-#
+  %script{:type => 'text/javascript'}
+    = "Announcement.refreshUrl = '#{url_for :controller => 'main', :action => 'announcements'}';".html_safe
+    Announcement.registerRefreshEventTimer();
 
-%script{:type => 'text/javascript'}
-  = "Announcement.refreshUrl = '#{url_for :controller => 'main', :action => 'announcements'}';"
-  Announcement.registerRefreshEventTimer();
+:javascript
+  function filter_tag() {
+    let selected_tag = $('#filter-tag :selected').val()
+    table.column(5).search(selected_tag).draw()
+  }
 
-.modal.fade#compiler{tabindex: -1,role: 'dialog'}
-  .modal-dialog.modal-lg{role:'document'}
-    .modal-content
-      .modal-header
-        %button.close{type: 'button', data: {dismissed: :modal}, aria: {label: 'close'}}
-          %span{aria: {hidden: 'true'}, data: {dismiss: 'modal'}} &times;
-        %h4 Compiler message
-      .modal-body
-        %pre#compiler_msg
-      .modal-footer
-        %button.btn.btn-default{type: 'button', data: {dismiss: 'modal'}} Close
+  $(function() {
+    table = $("#main_table").DataTable({
+      columnDefs: [
+        { targets: [3,4], sortable: false }, // latest result & action
+        { targets: [5], visible: false }, // hidden tags column
+      ],
+      paging: false,
+      responsive: true,
+      layout: {
+        topStart: () => {
+          let element = document.createElement('div');
+          element.className = 'row'
+          element.innerHTML = '<div class="col-auto"><label class="cl-form-label"> <span class="text-nowrap">Topic Filter:</span> </label></div>' +
+            '<div class="col-auto"><select id="filter-tag" class="form-select form-select-sm select2" onchange="filter_tag()">' +
+            '<option value=""> -- All --</option>' +
+            '#{j options_from_collection_for_select(Tag.where(public: true),:name,:name)}' +
+            '</select></div>'
+          return element;
+
+        },
+        topStart: 'info',
+        topEnd: 'search'
+
+      }
+      //dom: "<'row'<'#prob-group.col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+      //  "<'row'<'col-sm-12'tr>>" +
+      //  "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    })
+
+    $("#contest-table").DataTable({
+      paging: false,
+      responsive: true,
+      columnDefs: [
+        { targets: [3], sortable: false }, // latest result & action
+      ],
+      layout: {
+        topStart: null,
+        topEnd: null,
+        bottomStart: null,
+      }
+    })
+
+  });
+

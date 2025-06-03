@@ -1,29 +1,15 @@
-
-/- if params[:id]
-/  %h1 Tasks Hall of Fame
-/  = link_to('[back to All-Time Hall of Fame]', action: 'problem_hof', id: nil  )
-/- else
-/  %h1 All-Time Hall of Fame
-
-.panel.panel-info
-  .panel-heading
-    Select Task
-  .panel-body
-    .form-inline
-      = select 'report',
-        'problem_id',
-        @problems.collect {|p| ["[#{p.name}] #{p.full_name}", report_problem_hof_url(p.id)]},
-        {:selected => report_problem_hof_url(@problem)},
-        { class: 'select2 form-control' }
-      %button.btn.btn-primary.btn-sm.go-button#problem_go{data: {source: "#report_problem_id"}} Go
-
+.row.my-2
+  .col-md-6
+    = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_hof_report_path}
 
 - unless params[:id]
-  /=render partial: 'all_time_hof'
-  Please select a problem.
+  Please select a problem from the list above.
 - else
-  %h1 [#{Problem.find(params[:id]).name}] #{Problem.find(params[:id]).full_name}
-  %h2 Submission History
-  =render partial: 'application/bar_graph', locals: { histogram: @histogram }
-  =render partial: 'task_hof'
+  .my-3
+    %h1= @problem.full_name
+    %h5.font-monospace
+      = @problem.name
+      - if @current_user.has_role?('ta')
+        %a{href:stat_problem_path(@problem)} (stat)
+  = render partial: 'task_hof'
 

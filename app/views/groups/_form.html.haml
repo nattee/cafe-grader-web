@@ -1,16 +1,13 @@
-= form_for @group do |f|
-  - if @group.errors.any?
-    #error_explanation
-      %h2= "#{pluralize(@group.errors.count, "error")} prohibited this group from being saved:"
-      %ul
-        - @group.errors.full_messages.each do |msg|
-          %li= msg
-
-  .form-group.field
-    = f.label :name
-    = f.text_field :name, class: 'form-control'
-  .form-group.field
-    = f.label :description
-    = f.text_field :description, class: 'form-control'
-  .form-group.actions
-    = f.submit 'Save', class: 'btn btn-primary'
+= simple_form_for @group, wrapper: :horizontal_form do |f|
+  = f.error_notification
+  = f.input :name
+  = f.input :description
+  - if @current_user.admin?
+    = f.input :enabled, disabled: @current_user.admin? == false
+  - else
+    = f.input :enabled, label: 'Enabled (group editor cannot modify Enabled field)', disabled: true
+  = f.button :submit, class: 'btn btn-primary'
+  - if @group.id
+    = link_to 'Back', group_path(@group), class: 'btn btn-outline-secondary mx-2'
+  - else
+    = link_to 'Back', groups_path, class: 'btn btn-outline-secondary mx-2'

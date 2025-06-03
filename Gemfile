@@ -1,9 +1,18 @@
 source 'https://rubygems.org'
+git_source(:github) { |repo| "https://github.com/#{repo}.git" }
+
+ruby '3.2.1'
 
 #rails
-gem 'rails', '~>4.2.0'
-gem 'activerecord-session_store'
+gem 'rails', '~>7.0'
 
+# The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
+gem "sprockets-rails"
+
+gem 'puma'
+
+# Reduces boot times through caching; required in config/boot.rb
+gem 'bootsnap', require: false
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
@@ -13,77 +22,74 @@ gem 'activerecord-session_store'
 gem 'mysql2'
 #for testing
 gem 'sqlite3'
-#for dumping database into yaml
-gem 'yaml_db'
 
+#for grader
+gem 'pg'
+#gem 'rails-controller-testing'
+#for dumping database into yaml
+#gem 'yaml_db'
+
+
+#------------- assset pipeline -----------------
 # Gems used only for assets and not required
 # in production environments by default.
-gem 'sass-rails'
+#sass-rails is depricated
+#gem 'sass-rails'
+gem 'sassc-rails'
 gem 'coffee-rails'
+# gem 'material_icons'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   # gem 'therubyracer', :platforms => :ruby
 
-gem 'uglifier'
+# use import map
+gem "importmap-rails", "~> 1.1"
+
+# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
+gem "turbo-rails"
+
+# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
+gem "stimulus-rails"
 
 gem 'haml'
 gem 'haml-rails'
-# gem 'prototype-rails'
 
-# To use ActiveModel has_secure_password
-# gem 'bcrypt-ruby', '~> 3.0.0'
-
-# To use Jbuilder templates for JSON
-# gem 'jbuilder'
-
-# Use unicorn as the app server
-# gem 'unicorn'
-
-# Deploy with Capistrano
-# gem 'capistrano'
-
-# To use debugger
-# gem 'debugger'
-#
-
-#in-place editor
-gem 'best_in_place', '~> 3.0.1'
+gem 'jbuilder'
 
 # jquery addition
-gem 'jquery-rails'
-gem 'jquery-ui-rails'
-gem 'jquery-timepicker-addon-rails'
-gem 'jquery-tablesorter'
-gem 'jquery-countdown-rails'
+gem 'jquery-rails', '~> 4.6'
+#gem 'jquery-ui-rails'
+#gem 'jquery-timepicker-addon-rails'
+#gem 'jquery-tablesorter'
+#gem 'jquery-countdown-rails'
 
 #syntax highlighter
 gem 'rouge'
 
 #bootstrap add-ons
-gem 'bootstrap-sass', '~> 3.4.1'
-gem 'sassc-rails', '>= 2.1.0'
-gem 'bootstrap-switch-rails'
-gem 'bootstrap-toggle-rails'
-gem 'autoprefixer-rails'
+#gem 'bootstrap-sass', '~> 3.4.1'
+gem 'bootstrap', '~> 5.3'
+#gem 'bootstrap-switch-rails'
+#gem 'bootstrap-toggle-rails'
+#gem 'autoprefixer-rails'
 gem 'momentjs-rails'
-gem 'rails_bootstrap_sortable'
-gem 'bootstrap-datepicker-rails'
-gem 'bootstrap3-datetimepicker-rails'
-gem 'jquery-datatables-rails'
+#gem 'rails_bootstrap_sortable'
+#gem 'bootstrap-datepicker-rails'
+#gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
+#gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------
-#select 2
-gem 'select2-rails'
+#gem 'simple_form', git: 'https://github.com/heartcombo/simple_form', ref: '31fe255'
+gem 'simple_form'
+
 #ace editor
 gem 'ace-rails-ap'
-#paginator
-gem 'will_paginate', '~> 3.0.7'
 
 gem 'mail'
-gem 'rdiscount'
-gem 'dynamic_form'
-gem 'in_place_editing'
-gem 'verification', :git => 'https://github.com/sikachu/verification.git'
+gem 'rdiscount'  #markdown
+gem 'rainbow'
+
+gem 'whenever', require: false
 
 
 #---------------- testiing -----------------------
@@ -91,3 +97,30 @@ gem 'minitest-reporters'
 
 #---------------- for console --------------------
 gem 'fuzzy-string-match'
+
+
+group :development, :test do
+  # Call 'byebug' anywhere in the code to stop execution and get a debugger console
+  gem 'byebug'
+end
+
+group :development do
+  # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
+  gem 'web-console', '>= 3.3.0'
+  gem 'listen', '>= 3.0.5', '< 3.2'
+  # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
+  gem 'spring'
+  gem 'spring-watcher-listen', '~> 2.0.0'
+
+  # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
+  # gem "rack-mini-profiler"
+end
+
+group :test do
+  # Adds support for Capybara system testing and selenium driver
+  gem 'capybara'
+  gem 'selenium-webdriver'
+  gem 'webdrivers'
+end
+
+

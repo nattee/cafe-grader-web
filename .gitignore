@@ -12,6 +12,7 @@
 
 # Ignore all logfiles and tempfiles.
 /log/*.log
+/log/*.txt
 /tmp
 
 *~
@@ -28,8 +29,18 @@
 *.orig
 *.swp
 
+
 #ignore rvm setting file
 #.ruby-gemset
 #.ruby-version
 
 /config/secrets.yml
+/config/worker.yml
+/config/credentials.yml.enc
+
+/.byebug_history
+/storage/*
+
+/config/master.key
+
+/.hg/

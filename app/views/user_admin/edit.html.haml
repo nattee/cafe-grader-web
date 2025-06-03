@@ -1,13 +1,29 @@
-%h1 Editing user
+%h1 Edit user
+.row
+  .col-md-6
+    .card.shadow-sm
+      .card-body
+        %h4 Basic Info
+        = simple_form_for @user, url: user_admin_path(@user), wrapper: :horizontal_form do |f|
+          = render partial: 'form', locals: {f: f}
+  .col-md-6
+    .card.shadow-sm
+      .card-body
+        %h4 Groups
+        .card.bg-warning-subtle
+          .card-body
+            Add / Remove user from the group in the management page of the group by clicking on the group name.
+        %table.table
+          %thead
+            %tr
+              %th Group
+              %th Description
+              %th Role
+          %tbody
+            - @user.groups_users.each do |gu|
+              %tr
+                %td= link_to gu.group.name, group_path(gu.group)
+                %td= gu.group.description
+                %td= gu.role
+    
 
-= form_tag( {:action => 'update', :id => @user}, {class: 'form-horizontal'}) do
-  = error_messages_for 'user'
-  = render partial: "form"
-  .form-group
-    .col-md-offset-2.col-md-4
-      = submit_tag "Edit", class: 'btn btn-primary'
-
-
-= link_to 'Show', :action => 'show', :id => @user 
-|
-= link_to 'Back', :action => 'list'

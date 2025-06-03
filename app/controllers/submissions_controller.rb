@@ -1,7 +1,8 @@
 class SubmissionsController < ApplicationController
-  before_action :authenticate
+  before_action :set_submission, only: [:show,:download,:compiler_msg,:rejudge,:set_tag, :edit]
+  before_action :check_valid_login
   before_action :submission_authorization, only: [:show, :download, :edit]
-  before_action :admin_authorization, only: [:rejudge]
+  before_action only: [:rejudge, :set_tag] do authorization_by_roles([:ta]) end
 
   # GET /submissions
   # GET /submissions.json
@@ -14,38 +15,41 @@ class SubmissionsController < ApplicationController
       @problem = nil
       @submissions = nil
     else
-      @problem = Problem.find_by_id(params[:problem_id])
-      if (@problem == nil) or (not @problem.available)
-        redirect_to main_list_path
-        flash[:notice] = 'Error: submissions for that problem are not viewable.'
+      @problem = Problem.find(params[:problem_id]) rescue nil
+      if (@problem == nil) || (! @user.can_view_problem?(@problem))
+        redirect_to list_main_path
+        flash[:error] = 'Authorization error: You have no right to view submissions for this problem'
         return
       end
-      @submissions = Submission.find_all_by_user_problem(@user.id, @problem.id).order(id: :desc)
+      @submissions = Submission.where(user: @user, problem: @problem).order(id: :desc)
     end
   end
 
   # GET /submissions/1
   # GET /submissions/1.json
   def show
-    @submission = Submission.find(params[:id])
-
     #log the viewing
     user = User.find(session[:user_id])
     SubmissionViewLog.create(user_id: session[:user_id],submission_id: @submission.id) unless user.admin?
 
-    @task = @submission.task
+    @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
+      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text, :result)
+
+
   end
 
   def download
-    @submission = Submission.find(params[:id])
+    if @submission.language.binary? && @submission.binary
+      send_data @submission.binary, filename: @submission.download_filename, type: @submission.content_type || 'application/octet-stream', disposition: 'attachment'
+      return 
+    end
+
+    # no binary, send the source
     send_data(@submission.source, {:filename => @submission.download_filename, :type => 'text/plain'})
   end
 
   def compiler_msg
-    @submission = Submission.find(params[:id])
-    respond_to do |format|
-      format.js
-    end
+    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
   end
 
   #on-site new submission on specific problem
@@ -56,28 +60,33 @@ class SubmissionsController < ApplicationController
       return
     end
     @source = ''
-    if (params[:view_latest])
-      sub = Submission.find_last_by_user_and_problem(@current_user.id,@problem.id)
-      @source = @submission.source.to_s if @submission and @submission.source
+
+    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
+
+    if @problem.get_permitted_lang_as_ids.count == 1
+      @language = problem_lang
+      @as_binary = @language.binary?
+    else
+      @language = @current_user.default_language || problem_lang || Language.first
+      @as_binary = @language.binary?
     end
+
+
     render 'edit'
   end
 
   # GET /submissions/1/edit
   def edit
-    @submission = Submission.find(params[:id])
     @source = @submission.source.to_s
     @problem = @submission.problem
-    @lang_id = @submission.language.id
+    @language = @submission.language || @current_user.default_language || Language.first
+    @as_binary = @language.binary?
   end
 
 
   def get_latest_submission_status
     @problem = Problem.find(params[:pid])
     @submission = Submission.find_last_by_user_and_problem(params[:uid],params[:pid])
-    puts User.find(params[:uid]).login
-    puts Problem.find(params[:pid]).name
-    puts 'nil' unless @submission
     respond_to do |format|
       format.js
     end
@@ -85,21 +94,27 @@ class SubmissionsController < ApplicationController
 
   # GET /submissions/:id/rejudge
   def rejudge
-    @submission = Submission.find(params[:id])
-    @task = @submission.task
-    @task.status_inqueue! if @task
+    #@task = @submission.task
+    #@task.status_inqueue! if @task
+
+    #add lower priority job
+    @submission.add_judge_job(@submission.problem.live_dataset,-10)
     respond_to do |format|
       format.js
     end
+  end
+
+  def set_tag
+    @submission.update(tag: params[:tag])
+    redirect_to @submission
   end
 
 protected
 
   def submission_authorization
     #admin always has privileged
-    if @current_user.admin?
-      return true
-    end
+    return true if @current_user.admin?
+    return true if @current_user.has_role?('ta') && (['show','download'].include? action_name)
 
     sub = Submission.find(params[:id])
     if @current_user.available_problems.include? sub.problem
@@ -109,6 +124,10 @@ protected
     #default to NO
     unauthorized_redirect
     return false
+  end
+  
+  def set_submission
+    @submission = Submission.find(params[:id])
   end
 
     

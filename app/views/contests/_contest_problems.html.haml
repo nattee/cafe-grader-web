@@ -1,0 +1,14 @@
+= turbo_frame_tag :contest_problem_table_frame do
+  %table#problem_table.table.datatable.table-hover
+    %thead
+      %tr
+        %th Full name
+        %th Remove
+    %tbody
+      - @contest.problems.each do |problem|
+        %tr
+          %td= problem.full_name
+          %td
+            -#= button_to 'Remove', remove_problem_contest_path(@contest,problem), method: :delete, data: { confirm: "Remove #{problem.long_name}?", turbo: true, 'turbo-method': 'delete'}, class: 'btn btn-danger btn-sm'
+  :javascript
+    reload_table();

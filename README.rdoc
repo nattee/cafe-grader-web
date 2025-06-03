@@ -25,7 +25,10 @@ Next, we will connect to mysql as root and set up the database. You can choose y
     mysql> create database DATABASENAME;
     Query OK, 1 row affected (0.00 sec)
 
-    mysql> grant all privileges on DATABASENAME.* to USERNAME@localhost identified by 'PASSWORD';
+    mysql> create user USERNAME@localhost identified by 'PASSWORD';
+    Query OK, 0 rows affected, 1 warning (0.00 sec)
+
+    mysql> grant all privileges on DATABASENAME.* to USERNAME@localhost;
     Query OK, 0 rows affected, 1 warning (0.00 sec)
 
     mysql> flush privileges;
@@ -45,13 +48,35 @@ Second, we add the custom PPA, update the system and install RVM.
     cafe@grader:~$ sudo apt-get update
     cafe@grader:~$ sudo apt-get install rvm
 
-This is very important. You have to logout and login again since RVM change a lots of system. 
+We also need to add our user to the rvm group
 
-If you are using GUI version of Ubuntu, be sure to have Gnome Terminal (or any other terminal you are using) perform login every time. This can be done by mark the check box "Run command as a login shell" in Gnome terminal or by adding --login to bash. 
+    sudo usermod -a -G rvm $USER
 
-=== 3. Install necessary package
+This is very important. 
+1. You have to reboot since RVM change a lots of system.
+2. If you are using GUI version of Ubuntu, be sure to have Gnome Terminal (or any other terminal you are using) perform login every time. This can be done by mark the check box "Run command as a login shell" in Gnome terminal or by adding --login to bash. 
 
-    cafe@grader:~$ sudo apt install libmysqlclient-dev default-jdk unzip nodejs php-cli apache2 dirmngr gnupg apache2-dev
+=== 3. Install necessary package and nodejs
+
+
+First, we install required package via apt.
+
+    cafe@grader:~$ sudo apt install git libmysqlclient-dev default-jdk unzip php-cli apache2 apache2-dev
+
+Next, we need nodejs. Depends on your ubuntu version, the step to install correct version of nodejs differs.
+
+==== 3.1 Install nodejs on Ubuntu 18.04
+
+Since nodejs that comes with ubuntu 18.04 is very outdated, we need to install it manually. This follow the method outlined in https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-18-04 under *Installing Node.js with Apt Using a NodeSource PPA*
+
+    cd ~
+    curl -sL https://deb.nodesource.com/setup_17.x -o nodesource_setup.sh
+    sudo bash nodesource_setup.sh
+    sudo apt install nodejs
+
+==== 3.2 Install nodejs on Ubuntu 20.04 or newer
+
+    cafe@grader:~$ sudo apt install nodejs
 
 === 4. Install cafe-grader
 
@@ -70,11 +95,11 @@ Next, we will let the install script do the work of installing cafe-grader. Plea
     cafe@grader:~$ wget https://github.com/cafe-grader-team/cafe-grader-judge-scripts/raw/master/installer/install.sh
     cafe@grader:~$ . ./install.sh
 
-After installation is finished, grader is ready to run in development mode via WEBrick. We will try that by the following command which will start a grader accessible via http://localhost:3000/. You can try logging in to the system and verify that it is actually work.
+After installation is finished, grader is ready to run in development mode via Puma. We will try that by the following command which will start a grader accessible via http://localhost:3000/. You can try logging in to the system and verify that it is actually work.
 
 cafe@grader:~/cafe_grader/web$ rails s
 
-If Everything is OK, stop the WEBrick by Ctrl-C.
+If Everything is OK, stop the Puma by Ctrl-C.
 
 We are almost done. The last step is to set up apache and Phusion so that cafe-grader is served by apache. 
 

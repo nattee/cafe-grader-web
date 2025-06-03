@@ -1,0 +1,66 @@
+.card.border-primary.mb-2
+  .card-header.text-bg-primary.border-primary
+    Submission range
+  .card-body
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag :'sub_range[use]', :sub_id, true, class: 'form-check-input'
+      .col-11
+        %label.form-check-label{for: 'sub_range_use_sub_id'}
+          Use submission ID.
+          Only submission with ID within this range is included.
+          A blank value for min and max means -1 and infinity, respectively.
+    .row.mb-2
+      .col-1
+      .col-11
+        .row
+          .col-md-1
+            = label_tag 'sub_range[from_id]', "Min", class: 'form-check-label col-form-label'
+          .col-md-5
+            = text_field_tag 'sub_range[from_id]', @since_id, class: "form-control"
+          .col-md-1
+            = label_tag 'sub_range[to_id]', "Max", class: 'col-form-label'
+          .col-md-5
+            = text_field_tag 'sub_range[to_id]', @until_id, class: "form-control"
+    .row.mb-2
+      .col-1
+        .form-check
+          = radio_button_tag 'sub_range[use]', :sub_time, false, class: 'form-check-input'
+      .col-11
+        %label.form-check-label{for: 'sub_range_use_sub_time'}
+          Use Date and time.
+          Only submission that is submitted within this range is included.
+          A blank value for from and until means Today.
+    .row.mb-2
+      .col-1
+      .col-11
+        .row
+          .col-md-3.col-form-label
+            From Date
+          .col-md-9
+            .input-group.td-date
+              = text_field_tag 'sub_range[from_time]', nil, class: 'form-control'
+              %span.input-group-text
+                %span.mi event
+    .row.mb-2
+      .col-1
+      .col-11
+        .row
+          .col-md-3.col-form-label
+            Until Date
+          .col-md-9
+            .input-group.date
+              = text_field_tag 'sub_range[to_time]', nil, class: 'form-control'
+              %span.input-group-text
+                %span.mi event
+:javascript
+  $(function() {
+    since_datetime = new TempusDominus(document.getElementById('sub_range_from_time'), cafe.config.td.datetime );
+    until_datetime = new TempusDominus(document.getElementById('sub_range_to_time'), cafe.config.td.datetime );
+  })
+
+  function build_sub_range_params(d) {
+    $('input[name^="sub_range"]').each( function(a,b) {d[b.name]  = b.value }  )
+    d['sub_range[use]'] = $('input[name="sub_range[use]"]:checked').val()
+  }

@@ -1,7 +1,21 @@
-%h1 Editing tag
+%h1 Edit tag
+.row.my-3.gx-3
+  .col-md-6
+    .card.shadow-sm
+      .card-body
+        = render 'form'
+  .col-md-6
+    .card.bg-warning-subtle.shadow-sm
+      .card-body
+        .card-title
+          :markdown
+            #### Tags
 
-= render 'form'
+            Tags are a way to mark a problem with customizable badge. For example, we can use tags to mark topic of a problem. 
+            A problem can have multiple tags. If a tag is **public**, the tag is shown, under the problem name, to users in the main page.
+            A tag can also be set as a **primary**. All primary tags are display for filtering problem in the main page.
 
-= link_to 'Show', @tag
-\|
-= link_to 'Back', tags_path
+            Example uses cases is using primary tags to mark a chapter or a class that the problem belongs to while using 
+            public tags to mark detailed topic of the problem.
+        
+

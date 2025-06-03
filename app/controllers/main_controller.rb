@@ -1,103 +1,125 @@
 class MainController < ApplicationController
 
-  before_filter :authenticate, :except => [:index, :login]
-  before_filter :check_viewability, :except => [:index, :login]
+  before_action :check_valid_login, :except => [:login]
+  before_action :check_viewability, :except => [:index, :login]
 
-  append_before_filter :confirm_and_update_start_time, 
-                       :except => [:index, 
-                                   :login, 
+  before_action :default_stimulus_controller
+
+  append_before_action :confirm_and_update_start_time,
+                       :except => [:index,
+                                   :login,
                                    :confirm_contest_start]
 
   # to prevent log in box to be shown when user logged out of the
   # system only in some tab
-  prepend_before_filter :reject_announcement_refresh_when_logged_out, 
+  prepend_before_action :reject_announcement_refresh_when_logged_out, 
                         :only => [:announcements]
 
-  before_filter :authenticate_by_ip_address, :only => [:list]
-
-  # COMMENTED OUT: filter in each action instead
-  # before_filter :verify_time_limit, :only => [:submit]
-
-  verify :method => :post, :only => [:submit],
-         :redirect_to => { :action => :index }
-
-  # COMMENT OUT: only need when having high load
-  # caches_action :index, :login
-
-  # NOTE: This method is not actually needed, 'config/routes.rb' has
-  # assigned action login as a default action.
-  def index
-    redirect_to :action => 'login'
-  end
-
+  #reset login, clear session
+  #front page
   def login
-    saved_notice = flash[:notice]
-    reset_session
-    flash.now[:notice] = saved_notice
-
-    # EXPERIMENT:
-    # Hide login if in single user mode and the url does not
-    # explicitly specify /login
-    #
-    # logger.info "PATH: #{request.path}"
-    # if GraderConfiguration['system.single_user_mode'] and 
-    #     request.path!='/main/login'
-    #   @hidelogin = true
-    # end
+    #saved_notice = flash[:notice]
+    #flash[:notice] = saved_notice
+    @remote_ip = request.remote_ip
 
     @announcements = Announcement.frontpage
-    render :action => 'login', :layout => 'empty'
+    render :action => 'login', locals: {skip_header: true}
+  end
+
+  def logout
+    reset_session
+    redirect_to root_path
   end
 
   def list
     prepare_list_information
+    prepare_announcements
+
+    if GraderConfiguration.contest_mode?
+      @contests = @current_user.contests.enabled
+    else
+      @contests = nil
+    end
+
+
+    @groups = [['All',-1]] + @current_user.groups.pluck(:name,:id)
+    @primary_tags = Tag.where(primary: true)
+  end
+
+  def prob_group
+
   end
 
   def help
     @user = User.find(session[:user_id])
   end
 
+  # handle post of new submission either by
+  #   1. submit via a form in the main file
+  #   2. submit via "new" button
+  #   4. submit vis "edit" button
   def submit
-    user = User.find(session[:user_id])
-
-    @submission = Submission.new
-    @submission.problem_id = params[:submission][:problem_id]
-    @submission.user = user
-    @submission.language_id = 0
-    if (params['file']) and (params['file']!='')
-      @submission.source = File.open(params['file'].path,'r:UTF-8',&:read) 
-      @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
-      @submission.source_filename = params['file'].original_filename
+    
+    # parameter validation
+    problem = Problem.where(id: params[:submission][:problem_id]).first
+    unless problem
+      redirect_to list_main_path, alert: 'You must specify a problem' and return
     end
 
-    if (params[:editor_text])
-      language = Language.find_by_id(params[:language_id])
+    # check if the problem is submittable
+    # the problems_for_action already include the logic for admin privilege
+    unless @current_user.problems_for_action(:submit).where(id: problem).any?
+      redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available for you" and return
+    end
+
+    # set language
+    if params['file'] && params['file']!=''
+      language = Language.find_by_extension params['file'].original_filename.ext
+    end
+    language = Language.find(params[:language_id]) rescue nil
+    language = Language.find(problem.get_permitted_lang_as_ids[0]) rescue nil if problem.get_permitted_lang_as_ids.count == 1   # if permitted only 1 language, we will use it
+    language = Language.where(name: 'cpp').first if language.nil?
+
+    @submission = Submission.new(user: @current_user,
+                                 language: language,
+                                 problem: problem,
+                                 submitted_at: Time.zone.now,
+                                 cookie: cookies.encrypted[:uuid],
+                                 ip_address: request.remote_ip)
+    # if a file is submitted, without editor_text
+    if params['file'] && params['file']!='' && params[:editor_text].blank?
+      if language.binary?
+        @submission.binary = params['file'].read
+        @submission.content_type = params['file'].content_type
+        @submission.source_filename = params['file'].original_filename
+      else
+        @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
+        @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
+        @submission.source_filename = params['file'].original_filename
+      end
+    end
+
+    # this will overwrite @sub.source by th editor_text (if exsists)
+    # we prioritize editor_text if it exists
+    # because a user might choose a file and it is loaded to the editor_text and then
+    # the user might edit the editor text later
+    if (params[:editor_text] && !language.binary?)
+      @submission.language = language
       @submission.source = params[:editor_text]
       @submission.source_filename = "live_edit.#{language.ext}"
-      @submission.language = language
     end
 
-    @submission.submitted_at = Time.new.gmtime
-    @submission.ip_address = request.remote_ip
-
-    if GraderConfiguration.time_limit_mode? and user.contest_finished?
-      @submission.errors.add(:base,"The contest is over.")
-      prepare_list_information
-      render :action => 'list' and return
+    if @submission.source.blank? && @submission.binary.blank?
+      redirect_to list_main_path, alert: 'You must add a source code' and return
     end
 
-    if @submission.valid?(@current_user)
-      if @submission.save == false
-        flash[:notice] = 'Error saving your submission'
-      elsif Task.create(:submission_id => @submission.id, 
-                        :status => Task::STATUS_INQUEUE) == false
-        flash[:notice] = 'Error adding your submission to task queue'
-      end
+
+    if @submission.valid? && @submission.save
+      @submission.add_judge_job
+      redirect_to edit_submission_path(@submission)
     else
-      prepare_list_information
-      render :action => 'list' and return
+      redirect_to list_main_path, alert: "Error saving your submission: #{@submission.errors.full_messages.join(', ')}" and return
     end
-    redirect_to edit_submission_path(@submission)
   end
 
   def source
@@ -108,16 +130,6 @@ class MainController < ApplicationController
       send_data(submission.source, 
                 {:filename => submission.download_filename, 
                   :type => 'text/plain'})
-    else
-      flash[:notice] = 'Error viewing source'
-      redirect_to :action => 'list'
-    end
-  end
-
-  def compiler_msg
-    @submission = Submission.find(params[:id])
-    if @submission.user_id == session[:user_id]
-      render :action => 'compiler_msg', :layout => 'empty'
     else
       flash[:notice] = 'Error viewing source'
       redirect_to :action => 'list'
@@ -172,19 +184,6 @@ class MainController < ApplicationController
     @user = User.find(session[:user_id])
   end
 
-  # announcement refreshing and hiding methods
-
-  def announcements
-    if params.has_key? 'recent'
-      prepare_announcements(params[:recent])
-    else
-      prepare_announcements
-    end
-    render(:partial => 'announcement', 
-           :collection => @announcements,
-           :locals => {:announcement_effect => true})
-  end
-
   def confirm_contest_start
     user = User.find(session[:user_id])
     if request.method == 'POST'
@@ -195,7 +194,7 @@ class MainController < ApplicationController
       @user = user
     end
   end
-  
+
   protected
 
   def prepare_announcements(recent=nil)
@@ -204,30 +203,19 @@ class MainController < ApplicationController
     else
       @announcements = Announcement.published
     end
-    if recent!=nil
-      recent_id = recent.to_i
-      @announcements = @announcements.find_all { |a| a.id > recent_id }
-    end
   end
 
   def prepare_list_information
-    @user = User.find(session[:user_id])
-    if not GraderConfiguration.multicontests?
-      @problems = @user.available_problems
-    else
-      @contest_problems = @user.available_problems_group_by_contests
-      @problems = @user.available_problems
+    @problems = @current_user.available_problems.with_attached_statement
+
+    #get latest score
+    @prob_submissions = Hash.new { |h,k| h[k] = {count: 0, submission: nil} }
+    last_sub_ids = Submission.where(user: @current_user,problem: @problems).group(:problem_id).pluck('max(id)')
+    Submission.where(id: last_sub_ids).each do |sub|
+      @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
     end
-    @prob_submissions = {}
-    @problems.each do |p|
-      sub = Submission.find_last_by_user_and_problem(@user.id,p.id)
-      if sub!=nil
-        @prob_submissions[p.id] = { :count => sub.number, :submission => sub }
-      else
-        @prob_submissions[p.id] = { :count => 0, :submission => nil }
-      end
-    end
-    prepare_announcements
+
+    Submission.where(user: @current_user).group(:problem_id).pluck('problem_id','max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
   end
 
   def check_viewability
@@ -243,7 +231,7 @@ class MainController < ApplicationController
       grading_info = GraderConfiguration.task_grading_info[submission.problem.name]
     else
       # guess task info from problem.full_score
-      cases = submission.problem.full_score / 10
+      cases = submission.problem.live_dataset.testcases.count
       grading_info = {
         'testruns' => cases, 
         'testcases' => cases
@@ -359,18 +347,6 @@ class MainController < ApplicationController
     end
   end
 
-  def reject_announcement_refresh_when_logged_out
-    if not session[:user_id]
-      render :text => 'Access forbidden', :status => 403
-    end
-
-    if GraderConfiguration.multicontests?
-      user = User.find(session[:user_id])
-      if user.contest_stat.forced_logout
-        render :text => 'Access forbidden', :status => 403
-      end
-    end
-  end
 
 end
 

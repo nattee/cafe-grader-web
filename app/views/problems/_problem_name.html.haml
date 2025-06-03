@@ -1,0 +1,24 @@
+%strong
+  = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
+  %span{style: 'color: var(--bs-orange)'}= render_star(problem.difficulty)
+.text-muted.font-monospace
+  = "#{problem.name}".gsub("_","_&ZeroWidthSpace;").html_safe
+%div
+  = link_to_description_if_any "<span class='mi mi-bs md-18'>description</span> Read".html_safe, problem, cxlass: 'badge text-bg-primary'
+  - if problem.attachment.attached?
+    .d-md-none
+    %span.d-none.d-md-inline
+      |
+    = link_to "<span class='mi mi-bs md-18'>archive</span> File".html_safe, get_attachment_problem_path(problem)
+  - if problem.can_view_testcase
+    %span
+      |
+    = link_to "<span class='mi mi-bs md-18'>bug_report</span> Testcases".html_safe, show_problem_testcases_path(problem), class: ''
+-# public tags
+%div
+  - problem.public_tags.each do |tag|
+    - data_hash = tag.description.present? ? {bs: {toggle: 'tooltip', title: tag.description }} : nil
+    - if tag.color.blank?
+      %span.badge.text-bg-secondary{data: data_hash}= tag.name
+    - else
+      %span.badge{style: "background-color: #{tag.color}", data: data_hash}= tag.name

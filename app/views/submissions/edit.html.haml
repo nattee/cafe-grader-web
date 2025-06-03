@@ -1,73 +1,89 @@
-%h2 Live submit
-%br
-
 %textarea#text_sourcecode{style: "display:none"}~ @source
 .container
   .row
     .col-md-12
-      .alert.alert-info
-        Write your code in the following box, choose language, and click submit button when finished
-  .row
-    .col-md-8
-      %div#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
-    .col-md-4
-      - # submission form
-      = form_tag({controller: :main, :action => 'submit'}, :multipart => true, class: 'form') do
+      %h2 Live submit
 
-        = hidden_field_tag 'editor_text', @source
-        = hidden_field_tag 'submission[problem_id]', @problem.id
-        .form-group
-          = label_tag "Task:"
-          = text_field_tag 'asdf', "#{@problem.long_name}", class: 'form-control', disabled: true
-        .form-group
-          = label_tag "Description:"
-          = link_to_description_if_any "[download] <span class='glyphicon glyphicon-file'></span>".html_safe, @problem
-
-        .form-group
-          = label_tag 'Language:'
-          = select_tag 'language_id', options_from_collection_for_select(Language.all, 'id', 'pretty_name', @lang_id || Language.find_by_pretty_name("Python").id || Language.first.id), class: 'form-control select', style: "width: 100px"
-        .form-group
-          .input-group
-            %span.input-group-btn
-              %span.btn.btn-default.btn-file
-                Browse
-                = file_field_tag 'load_file'
-            = text_field_tag '' , nil, {readonly: true, class: 'form-control'}
-        .form-group
-          = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
-            data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
-      - # latest submission status
-      .panel{class: (@submission && @submission.graded_at) ? "panel-info" : "panel-warning"}
-        .panel-heading
-          Latest Submission Status
-          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), class: "btn btn-default btn-sm", remote: true if @submission
-        .panel-body
-          %div#latest_status
-            - if @submission
-              = render :partial => 'submission_short',
-                :locals => {submission: @submission, problem_name: @problem.name, problem_id: @problem.id }
   .row
     .col-md-12
-      %h2 Console
-      %textarea#console{style: 'height: 100%; width: 100%;background-color:#000;color:#fff;font-family: consolas, monaco, "Droid Sans Mono";',rows: 20}
+      - unless @as_binary
+        .alert.alert-info
+          Write your code in the following box, choose language, and click submit button when finished
+  .row
+    .col-lg-8
+      - unless @as_binary
+        %div.mb-3#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
+      - else
+        .alert.alert-success
+          The problem only accept upload of an archive file. Select a file using the button
+          %strong "Browse"
+          and click submit.
+        - if @submission && @submission.binary
+          %ul
+            %li You have already submitted a file.
+            %li
+              The submitted file can be 
+              = link_to 'download', download_submission_path(@submission)
+              here.
+    .col-lg-4
+      -# submission form
+      .card.mb-3
+        .card-header
+          Submission
+        .card-body
+          = form_with url: submit_main_path, :multipart => true, class: 'form' do |form|
+            = hidden_field_tag 'editor_text', @source
+            = hidden_field_tag 'submission[problem_id]', @problem.id
+            .row.mb-2
+              .col-md-4
+                = form.label "Task", class: 'col-form-label text-secondary'
+              .col-md-8
+                = form.label nil, "#{@problem.full_name}", class: 'mb-0 pb-0 col-form-label fw-bold'
+                %br
+                = form.label nil, "#{@problem.name}", class: 'my-0 py-0 col-form-label text-muted'
+                %br
+                %span= @problem.live_dataset.time_limit
+                %span.text-muted (s)
+                |
+                %span= @problem.live_dataset.memory_limit
+                %span.text-muted (MB)
+            .row.mb-2
+              .col-md-4
+                = form.label "Description", class: 'col-form-label text-secondary'
+              .col-md-8.col-form-label
+                = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, @problem
+            - if @problem.attachment.attached?
+              .row.mb-2
+                .col-md-4
+                  = form.label "Attachment", class: 'col-form-label text-secondary'
+                .col-md-8.col-form-label
+                  = link_to "[File <span class='mi mi-bs'>archive</span>]".html_safe, get_attachment_problem_path(@problem)
+            .row.mb-2
+              .col-md-4
+                = form.label :language_id, 'Language', class: 'col-form-label text-secondary'
+              .col-md-8
+                - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
+                = form.select :language_id, options, {},  class: 'form-select', style: "width: 100px", id: 'language_id'
+            .row.mb-2
+              .col-12
+                = form.file_field :file, class: 'form-control', id: 'load_file'
+            .row.mb-2
+              .col-12
+                = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
+                  data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
 
-.modal.fade#compiler{tabindex: -1,role: 'dialog'}
-  .modal-dialog.modal-lg{role:'document'}
-    .modal-content
-      .modal-header
-        %button.close{type: 'button', data: {dismissed: :modal}, aria: {label: 'close'}}
-          %span{aria: {hidden: 'true'}, data: {dismiss: 'modal'}} &times;
-        %h4 Compiler message
-      .modal-body
-      %pre#compiler_msg
-        - if @submission
-          = @submission.compiler_message
-      .modal-footer
-        %button.btn.btn-default{type: 'button', data: {dismiss: 'modal'}} Close
+      -# latest submission status
+      .card
+        .card-header.text-bg-info.border-info
+          Latest Submission Status
+          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", remote: true if @submission
+        .card-body
+          #latest_status
 
 :javascript
   $(document).ready(function() {
-    e = ace.edit("editor")
+
+    var e = ace.edit("editor")
     e.setValue($("#text_sourcecode").val());
     e.gotoLine(1);
     $("#language_id").trigger('change');
@@ -83,228 +99,50 @@
       reader.readAsText(file)
     });
 
-    //brython();
+    $("#live_submit").on("click", function(event) {
+      $("#editor_text").val(e.getValue());
+    });
+
+    $("#language_id").on("change", function(event) {
+      text = $("#language_id option:selected").text();
+      mode = 'ace/mode/c_cpp';
+      switch (text) {
+        case 'Pascal':
+          mode = 'ace/mode/pascal';
+          break;
+        case 'C++':
+        case 'C':
+          mode = 'ace/mode/c_cpp';
+          break;
+        case 'Ruby':
+          mode = 'ace/mode/ruby';
+          break;
+        case 'Python':
+          mode = 'ace/mode/python';
+          break;
+        case 'Java':
+          mode = 'ace/mode/java';
+          break;
+        case 'Rust':
+          mode = 'ace/mode/rust';
+          break;
+        case 'Go':
+          mode = 'ace/mode/golang';
+          break;
+        case 'PHP':
+          mode = 'ace/mode/php';
+          break;
+        case 'Haskell':
+          mode = 'ace/mode/haskell';
+          break;
+      }
+      e.getSession().setMode(mode);
+    });
+
+    $('#refresh').click()
+    $('#language_id').change()
+
   });
-
-
-
-
-
-%script#__main__{type:'text/python3'}
-  :plain
-    import sys
-    import traceback
-
-    from browser import document as doc
-    from browser import window, alert, console
-
-    _credits = """    Thanks to CWI, CNRI, BeOpen.com, Zope Corporation and a cast of thousands
-        for supporting Python development.  See www.python.org for more information."""
-
-    _copyright = """Copyright (c) 2012, Pierre Quentel pierre.quentel@gmail.com
-    All Rights Reserved.
-
-    Copyright (c) 2001-2013 Python Software Foundation.
-    All Rights Reserved.
-
-    Copyright (c) 2000 BeOpen.com.
-    All Rights Reserved.
-
-    Copyright (c) 1995-2001 Corporation for National Research Initiatives.
-    All Rights Reserved.
-
-    Copyright (c) 1991-1995 Stichting Mathematisch Centrum, Amsterdam.
-    All Rights Reserved."""
-
-    _license = """Copyright (c) 2012, Pierre Quentel pierre.quentel@gmail.com
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without 
-    modification, are permitted provided that the following conditions are met:
-
-    Redistributions of source code must retain the above copyright notice, this
-    list of conditions and the following disclaimer. Redistributions in binary 
-    form must reproduce the above copyright notice, this list of conditions and 
-    the following disclaimer in the documentation and/or other materials provided 
-    with the distribution.
-    Neither the name of the <ORGANIZATION> nor the names of its contributors may 
-    be used to endorse or promote products derived from this software without 
-    specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE 
-    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
-    POSSIBILITY OF SUCH DAMAGE.
-    """
-
-    def credits():
-        print(_credits)
-    credits.__repr__ = lambda:_credits
-
-    def copyright():
-        print(_copyright)
-    copyright.__repr__ = lambda:_copyright
-
-    def license():
-        print(_license)
-    license.__repr__ = lambda:_license
-
-    def write(data):
-        doc['console'].value += str(data)
-
-
-    sys.stdout.write = sys.stderr.write = write
-    history = []
-    current = 0
-    _status = "main"  # or "block" if typing inside a block
-
-    # execution namespace
-    editor_ns = {'credits':credits,
-        'copyright':copyright,
-        'license':license,
-        '__name__':'__main__'}  
-
-    def cursorToEnd(*args):
-        pos = len(doc['console'].value)
-        doc['console'].setSelectionRange(pos, pos)
-        doc['console'].scrollTop = doc['console'].scrollHeight
-
-    def get_col(area):
-        # returns the column num of cursor
-        sel = doc['console'].selectionStart
-        lines = doc['console'].value.split('\n')
-        for line in lines[:-1]:
-            sel -= len(line) + 1
-        return sel
-
-
-    def myKeyPress(event):
-        global _status, current
-        if event.keyCode == 9:  # tab key
-            event.preventDefault()
-            doc['console'].value += "    "
-        elif event.keyCode == 13:  # return
-            src = doc['console'].value
-            if _status == "main":
-                currentLine = src[src.rfind('>>>') + 4:]
-            elif _status == "3string":
-                currentLine = src[src.rfind('>>>') + 4:]
-                currentLine = currentLine.replace('\n... ', '\n')
-            else:
-                currentLine = src[src.rfind('...') + 4:]
-            if _status == 'main' and not currentLine.strip():
-                doc['console'].value += '\n>>> '
-                event.preventDefault()
-                return
-            doc['console'].value += '\n'
-            history.append(currentLine)
-            current = len(history)
-            if _status == "main" or _status == "3string":
-                try:
-                    _ = editor_ns['_'] = eval(currentLine, editor_ns)
-                    if _ is not None:
-                        write(repr(_)+'\n')
-                    doc['console'].value += '>>> '
-                    _status = "main"
-                except IndentationError:
-                    doc['console'].value += '... '
-                    _status = "block"
-                except SyntaxError as msg:
-                    if str(msg) == 'invalid syntax : triple string end not found' or \
-                        str(msg).startswith('Unbalanced bracket'):
-                        doc['console'].value += '... '
-                        _status = "3string"
-                    elif str(msg) == 'eval() argument must be an expression':
-                        try:
-                            exec(currentLine, editor_ns)
-                        except:
-                            traceback.print_exc()
-                        doc['console'].value += '>>> '
-                        _status = "main"
-                    elif str(msg) == 'decorator expects function':
-                        doc['console'].value += '... '
-                        _status = "block"
-                    else:
-                        traceback.print_exc()
-                        doc['console'].value += '>>> '
-                        _status = "main"
-                except:
-                    traceback.print_exc()
-                    doc['console'].value += '>>> '
-                    _status = "main"
-            elif currentLine == "":  # end of block
-                block = src[src.rfind('>>>') + 4:].splitlines()
-                block = [block[0]] + [b[4:] for b in block[1:]]
-                block_src = '\n'.join(block)
-                # status must be set before executing code in globals()
-                _status = "main"
-                try:
-                    _ = exec(block_src, editor_ns)
-                    if _ is not None:
-                        print(repr(_))
-                except:
-                    traceback.print_exc()
-                doc['console'].value += '>>> '
-            else:
-                doc['console'].value += '... '
-            
-            cursorToEnd()
-            event.preventDefault()
-
-    def myKeyDown(event):
-        global _status, current
-        if event.keyCode == 37:  # left arrow
-            sel = get_col(doc['console'])
-            if sel < 5:
-                event.preventDefault()
-                event.stopPropagation()
-        elif event.keyCode == 36:  # line start
-            pos = doc['console'].selectionStart
-            col = get_col(doc['console'])
-            doc['console'].setSelectionRange(pos - col + 4, pos - col + 4)
-            event.preventDefault()
-        elif event.keyCode == 38:  # up
-            if current > 0:
-                pos = doc['console'].selectionStart
-                col = get_col(doc['console'])
-                # remove current line
-                doc['console'].value = doc['console'].value[:pos - col + 4]
-                current -= 1
-                doc['console'].value += history[current]
-            event.preventDefault()
-        elif event.keyCode == 40:  # down
-            if current < len(history) - 1:
-                pos = doc['console'].selectionStart
-                col = get_col(doc['console'])
-                # remove current line
-                doc['console'].value = doc['console'].value[:pos - col + 4]
-                current += 1
-                doc['console'].value += history[current]
-            event.preventDefault()
-        elif event.keyCode == 8:  # backspace
-            src = doc['console'].value
-            lstart = src.rfind('\n')
-            if (lstart == -1 and len(src) < 5) or (len(src) - lstart < 6):
-                event.preventDefault()
-                event.stopPropagation()
-
-
-    doc['console'].bind('keypress', myKeyPress)
-    doc['console'].bind('keydown', myKeyDown)
-    doc['console'].bind('click', cursorToEnd)
-    v = sys.implementation.version
-    doc['console'].value = "Brython %s.%s.%s on %s %s\n>>> " % (
-        v[0], v[1], v[2], window.navigator.appName, window.navigator.appVersion)
-    #doc['console'].value += 'Type "copyright", "credits" or "license" for more information.'
-    doc['console'].focus()
-    cursorToEnd()
 
 
 
