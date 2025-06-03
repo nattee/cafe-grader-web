@@ -1,8 +1,10 @@
+-# problem name
 %strong
   = "#{problem.full_name}".gsub("_","_&ZeroWidthSpace;").html_safe
   %span{style: 'color: var(--bs-orange)'}= render_star(problem.difficulty)
 .text-muted.font-monospace
   = "#{problem.name}".gsub("_","_&ZeroWidthSpace;").html_safe
+-# link for download statement, attachment, testcases
 %div
   = link_to_description_if_any "<span class='mi mi-bs md-18'>description</span> Read".html_safe, problem, cxlass: 'badge text-bg-primary'
   - if problem.attachment.attached?

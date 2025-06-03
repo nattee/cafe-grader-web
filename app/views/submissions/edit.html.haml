@@ -1,84 +1,78 @@
 %textarea#text_sourcecode{style: "display:none"}~ @source
 .container
-  .row
-    .col-md-12
-      %h2 Live submit
-
-  .row
-    .col-md-12
-      - unless @as_binary
-        .alert.alert-info
-          Write your code in the following box, choose language, and click submit button when finished
+  .row.mb-2
+    .col-lg-8
+      %h4 
+        %span
+          [#{@problem.name}]
+        #{@problem.full_name}
+      .row
+        .col-md-6
+          %em
+            Limit: 
+            #{@problem.live_dataset.time_limit}
+            %span.text-body-tertiary>s
+            ,
+            %span= @problem.live_dataset.memory_limit
+            %span.text-body-tertiary>MB
+        .col-md-6.text-md-end
+          = link_to_description_if_any "<span class='mi mi-bs md-18'>description</span> Read".html_safe, @problem, cxlass: 'badge text-bg-primary'
+          - if @problem.attachment.attached?
+            .d-md-none
+            %span.d-none.d-md-inline
+              |
+            = link_to "<span class='mi mi-bs md-18'>archive</span> File".html_safe, get_attachment_problem_path(@problem)
+          - if @problem.can_view_testcase
+            %span
+              |
+            = link_to "<span class='mi mi-bs md-18'>bug_report</span> Testcases".html_safe, show_problem_testcases_path(@problem), class: ''
   .row
     .col-lg-8
-      - unless @as_binary
-        %div.mb-3#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
-      - else
-        .alert.alert-success
-          The problem only accept upload of an archive file. Select a file using the button
-          %strong "Browse"
-          and click submit.
-        - if @submission && @submission.binary
-          %ul
-            %li You have already submitted a file.
-            %li
-              The submitted file can be 
-              = link_to 'download', download_submission_path(@submission)
-              here.
-    .col-lg-4
-      -# submission form
-      .card.mb-3
-        .card-header
-          Submission
-        .card-body
-          = form_with url: submit_main_path, :multipart => true, class: 'form' do |form|
-            = hidden_field_tag 'editor_text', @source
-            = hidden_field_tag 'submission[problem_id]', @problem.id
-            .row.mb-2
-              .col-md-4
-                = form.label "Task", class: 'col-form-label text-secondary'
-              .col-md-8
-                = form.label nil, "#{@problem.full_name}", class: 'mb-0 pb-0 col-form-label fw-bold'
-                %br
-                = form.label nil, "#{@problem.name}", class: 'my-0 py-0 col-form-label text-muted'
-                %br
-                %span= @problem.live_dataset.time_limit
-                %span.text-muted (s)
-                |
-                %span= @problem.live_dataset.memory_limit
-                %span.text-muted (MB)
-            .row.mb-2
-              .col-md-4
-                = form.label "Description", class: 'col-form-label text-secondary'
-              .col-md-8.col-form-label
-                = link_to_description_if_any "[Read <span class='mi mi-bs'>description</span>]".html_safe, @problem
-            - if @problem.attachment.attached?
-              .row.mb-2
-                .col-md-4
-                  = form.label "Attachment", class: 'col-form-label text-secondary'
-                .col-md-8.col-form-label
-                  = link_to "[File <span class='mi mi-bs'>archive</span>]".html_safe, get_attachment_problem_path(@problem)
-            .row.mb-2
-              .col-md-4
-                = form.label :language_id, 'Language', class: 'col-form-label text-secondary'
-              .col-md-8
-                - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
-                = form.select :language_id, options, {},  class: 'form-select', style: "width: 100px", id: 'language_id'
-            .row.mb-2
-              .col-12
-                = form.file_field :file, class: 'form-control', id: 'load_file'
-            .row.mb-2
-              .col-12
-                = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
-                  data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
+      -# Coding area (or text display for Binary Type)
+      %div
+        - unless @as_binary
+          %div.mb-3#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
+          .alert.alert-info
+            Write your code in the above box, choose a language, and click submit button when finished
+        - else
+          .alert.alert-success
+            The problem only accept upload of an archive file. Select a file using the button
+            %strong "Browse"
+            and click submit.
+          - if @submission && @submission.binary
+            %ul
+              %li You have already submitted a file.
+              %li
+                The submitted file can be 
+                = link_to 'download', download_submission_path(@submission)
+                here.
+      -# Form for submit & Language
+      %div.mb-3
+        = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center' do |form|
+          = hidden_field_tag 'editor_text', @source
+          = hidden_field_tag 'submission[problem_id]', @problem.id
+          .col-auto
+            = form.label :language_id, 'Language'
+          .col-auto
+            - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
+            = form.select :language_id, options, {},  class: 'form-select', style: "width: 100px", id: 'language_id'
+          .col-auto
+            = form.file_field :file, class: 'form-control', id: 'load_file'
+          .col-auto
+            = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
+              data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
 
+    .col-lg-4{ data: {turbo: true}}
       -# latest submission status
-      .card
+      .card.mb-3
         .card-header.text-bg-info.border-info
           Latest Submission Status
           = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", remote: true if @submission
         .card-body
           #latest_status
+      -# Helper
+      = turbo_frame_tag :problem_helpers, src: helpers_problem_path(@problem) do
+        %p Loading...
 
 :javascript
   $(document).ready(function() {

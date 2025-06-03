@@ -1,11 +1,11 @@
 .alert.alert-secondary.p-2
-  = simple_form_for :null, url: manage_hint_problem_path(@problem), data: { turbo: 'true', 'children-select-target': 'selectForm'}, wrapper: :inline_form do |f|
+  = simple_form_for :null, url: manage_problem_hint_index_path(@problem), data: { turbo: 'true', 'children-select-target': 'selectForm'}, wrapper: :inline_form do |f|
     .row.row-cols-lg-auto.g-3.align-items-center
       .col-12
         .form-check
           %label.form-check-label Hint
       .col-12
-        = f.input :hint_id, collection: @problem.hints, selected: @current_hint&.id, wrapper: :inline_form, 
+        = f.input :hint_id, collection: @problem.hints, selected: @hint&.id, wrapper: :inline_form, 
           input_html: {class: 'form-select-sm form-select', data: {action: 'change->children-select#childSelect', 'children-select-target': 'selectInput'}}
       .col-12
         .form-check

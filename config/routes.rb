@@ -81,9 +81,16 @@ Rails.application.routes.draw do
       post 'import_testcases'
       delete 'attachment', action: 'delete_attachment'
       delete 'statement', action: 'delete_statement'
+      get 'helpers'
+      # nested hint
       post 'manage_hint'
       get 'edit_hint(/:hint_id)', action: 'edit_hint', as: 'edit_hint'
-      patch 'update_hint(/:hint_id)', action: 'update_hint', as: 'update_hint'
+      patch 'update_hint/:hint_id', action: 'update_hint', as: 'update_hint'
+      get 'show_hint/:hint_id', action: :show_hint, as: :show_hint
+    end
+    resources :comments, as: :hint, path: :hint, only: [:edit,:update,:show] do
+      post 'manage_problem', on: :collection, as: :manage
+      post 'acquire', on: :member
     end
     collection do
       get 'turn_all_off'

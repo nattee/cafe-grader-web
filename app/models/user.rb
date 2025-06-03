@@ -37,6 +37,10 @@ class User < ApplicationRecord
   has_many :contests_users, class_name: 'ContestUser'
   has_many :contests, :through => :contests_users
 
+  # comments
+  has_many :comment_reveals
+  has_many :revealed_comments, through: :comment_reveals, source: :comment
+
   scope :activated_users, -> {where activated: true}
 
   validates_presence_of :login
@@ -71,8 +75,10 @@ class User < ApplicationRecord
 
   # ---- problem for the users for specific action ------
   # -- this includes logic of User.role where admin always has right ---
+  # -- this respect the Group Mode
   # -- this also includes logics of mode of the grader (normal, contest, analysis)
   # -- this also consider whether the user is enabled ---
+  # -- In short, PLEASE USE this function for user perspective
   # valid action is either :submit, :report, :edit
   def problems_for_action(action)
     return Problem.all if admin?

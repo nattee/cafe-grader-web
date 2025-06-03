@@ -1,0 +1,3 @@
+= turbo_stream.replace("problem_helpers", partial: 'problems/helpers')
+- if @toast
+  = turbo_stream.append 'toast-area', partial: 'toast', locals: {toast: @toast}

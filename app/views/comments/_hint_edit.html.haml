@@ -1,0 +1,12 @@
+- if hint
+  = simple_form_for hint, url: problem_hint_path(@problem,hint), wrapper: :horizontal_form, multipart: true do |f|
+    .row{'data-controller': 'bs-init-tooltip'}
+      .col-12
+        %h5.my-2 Hint Detail
+        = f.input :title
+        = f.input :body
+        = f.input :cost
+        = f.input :kind, collection: Comment::HINT_KIND.keys.map { |key| [I18n.t("activerecord.attributes.comment.kinds.#{key}"), key] }, include_blank: false, wrapper: :horizontal_form
+        = f.button :submit, class: 'btn btn-primary me-2'
+- else
+  %em -- There is no hint for this problem. Click "Add" to add a hint. --

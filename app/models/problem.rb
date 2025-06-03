@@ -27,6 +27,9 @@ class Problem < ApplicationRecord
 
   has_many :comments, as: :commentable, dependent: :destroy
 
+  # This allows you to get all comment reveals for comments belonging to this problem
+  has_many :comment_reveals, through: :comments
+
   has_many :datasets, :dependent => :destroy
   belongs_to :live_dataset, class_name: 'Dataset'
 
@@ -45,8 +48,10 @@ class Problem < ApplicationRecord
   # return problems that is enabled and is in an enabled group that has the given user
   # this does not check whether the user is enabled
   #
-  # It always considers groups, regardless of the group mode configuration
+  # It always considers groups, REGARDLESS of the group mode configuration
   # When group mode is false, use Problem.available_problems instead
+  #
+  # please use User#problems_for_action when we want to consider everything
   scope :group_submittable_by_user, ->(user_id) {
     joins(groups_problems: {group: :groups_users})
       .where(available: true)                   #available problems only
@@ -194,10 +199,54 @@ class Problem < ApplicationRecord
     "[#{name}] #{full_name}"
   end
 
-  # hint related
+  # -- HINT section begin --
   def hints
-    comments.where(kind: [:hint0, :hint1, :hint2])
+    comments.where(kind: :hint)
   end
+
+  # indicate weather this problem has a helper
+  def helpers?
+    hints.any?
+  end
+  
+  # return a records of all comment with the reveal status
+  # to get all hints, we can use comment_with_reveal_status(user,kind: 'hint')
+  def comments_with_reveal_status(user, kind: nil)
+    query = comments
+    query = query.where(kind: kind) if kind.present?
+    query.left_joins(:comment_reveals).select('comments.*',"CASE WHEN comment_reveals.user_id = #{user.id} THEN TRUE ELSE FALSE END AS is_acquired")
+  end
+
+  # this method is used both in acquiring and viewing
+  def comment_reveal_prerequisite_satisfied?(comment, user)
+    case comment.kind
+    when 'hint'
+      # user want to reveal a hint
+
+      # check if the problem allow hint
+      return false unless self.allow_hint?
+
+      # check if the user has the right to the problem
+      return false unless user.problems_for_action(:submit).where(id: self).any?
+
+      # if the current mode is a contest, also check the contest
+      if GraderConfiguration.contest_mode?
+        #TODO: this is WRONG, need to check actual active time
+        return false unless self.contests.enabled.where(allow_hint: true).any?
+      end
+
+      # pass all checks
+      return true
+    else
+      false
+    end
+  end
+
+  # return the enabled comments of the specified *kind* that are revealed by *user*
+  def revealed_comments_for_user(user,kind)
+    commens.joins(:comment_reveals).where(enabled: true, comment_reveals: {user: user,kind: kind})
+  end
+  # -- HINT section end --
 
   # ids_string is something like ['1','3','7']
   # which correspond to the submitted value from  select2 multiple selection

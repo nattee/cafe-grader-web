@@ -14,7 +14,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  %body{ 'data-controller': @stimulus_controller}
+  %body{ 'data-controller': "initialize #{@stimulus_controller}" }
     - unless local_assigns[:skip_header]
       = render 'layouts/header'
 

@@ -10,6 +10,12 @@ class Submission < ApplicationRecord
 
   has_many :evaluations, :dependent => :destroy
 
+  # comments
+  has_many :comments, as: :commentable
+  # Allows you to get all comment reveals for comments belonging to this submission
+  has_many :comment_reveals, through: :comments
+
+
   before_validation :assign_language
   before_save :assign_latest_number_if_new_recond
 
@@ -69,12 +75,10 @@ class Submission < ApplicationRecord
       "ORDER BY user_id")
   end
 
-  def self.find_in_range_by_user_and_problem(user_id, problem_id,since_id,until_id)
-    records = Submission.where(problem_id: problem_id,user_id: user_id)
-    records = records.where('id >= ?',since_id) if since_id and since_id > 0
-    records = records.where('id <= ?',until_id) if until_id and until_id > 0
-    records.all
+  def revealed_comments_for_user(user)
+    comments.joins(:comment_reveals).where(comment_reveals: { user_id: user.id })
   end
+
 
   def self.find_last_for_all_available_problems(user_id)
     submissions = Array.new
@@ -86,9 +90,6 @@ class Submission < ApplicationRecord
     submissions
   end
 
-  def self.find_by_user_problem_number(user_id, problem_id, number)
-    where("user_id = ? AND problem_id = ? AND number = ?",user_id,problem_id,number).first
-  end
 
   def download_filename
     if self.problem.output_only
@@ -171,6 +172,11 @@ class Submission < ApplicationRecord
     end
     result[:count] = count
     return result
+  end
+
+  # deprecated
+  def self.find_by_user_problem_number(user_id, problem_id, number)
+    where("user_id = ? AND problem_id = ? AND number = ?",user_id,problem_id,number).first
   end
 
 
