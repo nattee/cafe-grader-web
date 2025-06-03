@@ -24,12 +24,15 @@ export default class extends rowFieldToggle(Controller) {
     this.submitToggleForm(form,recId)
   }
 
-  // use in the problem/edit page on the dataset card
-  // activate when a dropdown of a dataset list is changed
+  // ---- Problem/Edit page ---------
+  // on dataset card, activate when a dropdown of a dataset list is changed
+  // submit a form 
   viewDataset(event) {
     const form = this.datasetSelectFormTarget
     form.requestSubmit()
   }
+
+  // s
 
   // event handling binded with bulk manage form submit
   bulkManageSubmitEnd(event) {

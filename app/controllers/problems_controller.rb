@@ -7,7 +7,8 @@ class ProblemsController < ApplicationController
                    :delete_statement, :delete_attachment,
                    :toggle_available, :toggle_view_testcase, :stat,
                    :add_dataset,:import_testcases,
-                   :download_archive
+                   :download_archive, 
+                   :manage_hint, :edit_hint, :update_hint,
                   ]
 
   before_action :set_problem, only: MEMBER_METHOD
@@ -75,6 +76,41 @@ class ProblemsController < ApplicationController
     redirect_to edit_problem_path(@problem), notice: 'The attachment has been deleted'
   end
 
+  # as turbo
+  def manage_hint
+    @hint = Comment.find(params[:null][:hint_id]) rescue nil
+    if params[:button] == 'add'
+      @hint = @problem.hints.create(user: @current_user)
+    elsif params[:button] == 'delete'
+      @hint.destroy if @hint
+    end
+    render turbo_stream: [
+      turbo_stream.update("hint_detail", partial: 'hint_edit', locals: {hint: @hint})
+    ]
+  end
+
+  def edit_hint
+    @hint = @problem.hints.where(id: params[:hint_id]).take
+    render turbo_stream: [
+      turbo_stream.update("hint_detail", partial: 'hint_edit', locals: {hint: @hint})
+    ]
+  end
+
+  def update_hint
+    @hint = @problem.hints.where(id: params[:hint_id]).take
+    hint_params = params.require(:comment).permit(:body, :title, :cost, :kind)
+    if @hint.update(hint_params)
+      @toast = {title: "Problem #{@problem.name}'s hint",body: "Hint #{@hint.title} updated"}
+    else
+      error_html = "<ul>#{@hint.errors.full_messages.map {|m| "<li>#{m}</li>"}.join}</ul>"
+      render partial: 'msg_modal_show', locals: {do_popup: true, 
+                                                 header_msg: 'Hint update error', 
+                                                 header_class: 'bg-danger-subtle',
+                                                 body_msg: error_html.html_safe}
+    end
+  end
+
+
   def create
     @problem = Problem.new(problem_params)
     if @problem.save
@@ -96,7 +132,7 @@ class ProblemsController < ApplicationController
       redirect_to action: :index
     else
       flash[:notice] = 'Error saving problem'
-    redirect_to action: :index
+      redirect_to action: :index
     end
   end
 

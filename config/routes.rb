@@ -81,6 +81,9 @@ Rails.application.routes.draw do
       post 'import_testcases'
       delete 'attachment', action: 'delete_attachment'
       delete 'statement', action: 'delete_statement'
+      post 'manage_hint'
+      get 'edit_hint(/:hint_id)', action: 'edit_hint', as: 'edit_hint'
+      patch 'update_hint(/:hint_id)', action: 'update_hint', as: 'update_hint'
     end
     collection do
       get 'turn_all_off'

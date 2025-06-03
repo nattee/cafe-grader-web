@@ -25,6 +25,8 @@ class Problem < ApplicationRecord
 
   has_many :submissions, :dependent => :destroy
 
+  has_many :comments, as: :commentable, dependent: :destroy
+
   has_many :datasets, :dependent => :destroy
   belongs_to :live_dataset, class_name: 'Dataset'
 
@@ -190,6 +192,11 @@ class Problem < ApplicationRecord
 
   def long_name
     "[#{name}] #{full_name}"
+  end
+
+  # hint related
+  def hints
+    comments.where(kind: [:hint0, :hint1, :hint2])
   end
 
   # ids_string is something like ['1','3','7']
