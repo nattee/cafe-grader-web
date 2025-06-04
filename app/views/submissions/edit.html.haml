@@ -32,35 +32,42 @@
       %div
         - unless @as_binary
           %div.mb-3#editor{style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
-          .alert.alert-info
-            Write your code in the above box, choose a language, and click submit button when finished
         - else
-          .alert.alert-success
-            The problem only accept upload of an archive file. Select a file using the button
-            %strong "Browse"
-            and click submit.
-          - if @submission && @submission.binary
+          - if @last_sub.present?
             %ul
-              %li You have already submitted a file.
               %li
-                The submitted file can be 
-                = link_to 'download', download_submission_path(@submission)
-                here.
+                You have already submitted a file.
+                = link_to 'Download', download_submission_path(@last_sub)
+                the latest submission
+              %li
+                = link_to 'View', problem_submissions_path(@problem)
+                all submissions for this problem.
+          - else
+            %ul
+              %li You have not submitted any file to this problem.
       -# Form for submit & Language
       %div.mb-3
-        = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center' do |form|
-          = hidden_field_tag 'editor_text', @source
-          = hidden_field_tag 'submission[problem_id]', @problem.id
-          .col-auto
-            = form.label :language_id, 'Language'
-          .col-auto
-            - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
-            = form.select :language_id, options, {},  class: 'form-select', style: "width: 100px", id: 'language_id'
-          .col-auto
-            = form.file_field :file, class: 'form-control', id: 'load_file'
-          .col-auto
-            = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
-              data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
+        .alert{class: (@as_binary ? 'alert-warning' : 'alert-info')}
+          .mb-2
+            - if @as_binary
+              The problem only accept upload of an archive file. Select a file using the button
+              %strong "Browse"
+              and click submit.
+            - else
+              Write your code in the above box, choose a language, and click submit button when finished
+          = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center' do |form|
+            = hidden_field_tag 'editor_text', @source
+            = hidden_field_tag 'submission[problem_id]', @problem.id
+            .col-auto
+              = form.label :language_id, 'Language'
+            .col-auto
+              - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
+              = form.select :language_id, options, {},  class: 'form-select', style: "width: 100px", id: 'language_id'
+            .col-auto
+              = form.file_field :file, class: 'form-control', id: 'load_file'
+            .col-auto
+              = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
+                data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
 
     .col-lg-4{ data: {turbo: true}}
       -# latest submission status

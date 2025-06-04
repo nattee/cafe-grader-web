@@ -62,14 +62,15 @@ class SubmissionsController < ApplicationController
     @source = ''
 
     problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
-
     if @problem.get_permitted_lang_as_ids.count == 1
       @language = problem_lang
-      @as_binary = @language.binary?
     else
       @language = @current_user.default_language || problem_lang || Language.first
-      @as_binary = @language.binary?
     end
+
+
+    @as_binary = @language.binary?
+    @last_sub = @current_user.last_submission_by_problem(@problem)
 
 
     render 'edit'
@@ -79,14 +80,22 @@ class SubmissionsController < ApplicationController
   def edit
     @source = @submission.source.to_s
     @problem = @submission.problem
-    @language = @submission.language || @current_user.default_language || Language.first
+
+    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
+    if @problem.get_permitted_lang_as_ids.count == 1
+      @language = problem_lang
+    else
+      @language = @submission.language || @current_user.default_language || problem_lang || Language.first
+    end
+
     @as_binary = @language.binary?
+    @last_sub = @current_user.last_submission_by_problem(@problem)
   end
 
 
   def get_latest_submission_status
     @problem = Problem.find(params[:pid])
-    @submission = Submission.find_last_by_user_and_problem(params[:uid],params[:pid])
+    @submission = @current_user.last_submission_by_problem(@problem)
     respond_to do |format|
       format.js
     end

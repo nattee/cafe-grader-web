@@ -346,6 +346,10 @@ class User < ApplicationRecord
     return true
   end
 
+  def last_submission_by_problem(problem)
+    Submission.where(problem: problem).order(:submitted_at).last
+  end
+
   # get a list of available problem for submission
   # this works with both contest and normal mode
   #   and for both group and non-group mode
