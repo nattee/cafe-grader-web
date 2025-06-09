@@ -23,6 +23,7 @@ class Scorer
   end
 
   def group_min
+    # evs = evaluations sorted by group
     evs = sorted_evaluation.select(:group, :group_name,:score,:weight,:testcase_id).map{ |r| r.attributes.symbolize_keys }
     max_group = evs.max { |x,y| x[:group] || 0 && y[:group] || 0 }
     evs << {group: max_group[:group]+1} #this is sentinel, the after final group
@@ -103,6 +104,15 @@ class Scorer
   def process(sub,dataset)
     @sub = sub
     @working_dataset = dataset
+
+    #validate if sub has evaluations of all testcases of the dataset
+    sub_tc_ids = @sub.evaluations.where.not(result: 'waiting').pluck(:testcase_id).sort
+    ds_tc_ids = @working_dataset.testcases.ids.sort
+    if (sub_tc_ids != ds_tc_ids) 
+      msg = "Evaluations are missing, please rejudge."
+      @sub.set_grading_error(msg)
+      return error_result(msg)
+    end
 
     #calculate score
     point = nil
