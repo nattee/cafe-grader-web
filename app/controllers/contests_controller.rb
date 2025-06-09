@@ -19,6 +19,10 @@ class ContestsController < ApplicationController
   before_action :group_editor_authorization, except: USER_ACTION
   before_action :can_manage_contest, only: EDITOR_ACTION
 
+  before_action :check_finalized, only: %i[add_user_by_group add_user add_users_from_csv
+                                           add_problem add_problem_by_group toggle do_all_problems
+                                           toggle do_all_users do_user do_all_problems do_problem
+                                          ]
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
   # GET /contests
@@ -367,7 +371,17 @@ class ContestsController < ApplicationController
     end
 
     def contests_params
-      params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop, :finalized)
+      if @contest.finalized?
+        params.require(:contest).permit(:finalized)
+      else
+        params.require(:contest).permit(:name, :description,:enabled,:lock, :start, :stop, :finalized)
+      end
+    end
+
+    def check_finalized
+      if @contest.finalized?
+        render partial: 'error_modal', locals: {title: 'Contest update error', body: 'The contest is finalized. It cannot be modified unless it is de-finalized first'}
+      end
     end
 
 end
