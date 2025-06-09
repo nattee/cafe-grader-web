@@ -4,10 +4,12 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby '3.2.1'
 
 #rails
-gem 'rails', '~>7.0.0'
+gem 'rails', '~>7.1.0'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
-gem "sprockets-rails"
+# gem "sprockets-rails"
+gem "propshaft" # Replaces sprockets-rails for serving assets
+gem "cssbundling-rails" # Replaces sassc-rails for compiling CSS
 
 gem 'puma'
 
@@ -35,8 +37,9 @@ gem 'pg'
 # in production environments by default.
 #sass-rails is depricated
 #gem 'sass-rails'
-gem 'sassc-rails'
-gem 'coffee-rails'
+# 2025 remove sprockets and go to propshaft
+#  gem 'sassc-rails'
+#   gem 'coffee-rails'
 # gem 'material_icons'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
@@ -68,11 +71,11 @@ gem 'rouge'
 
 #bootstrap add-ons
 #gem 'bootstrap-sass', '~> 3.4.1'
-gem 'bootstrap', '~> 5.3'
+#gem 'bootstrap', '~> 5.3' # move to propshaft
 #gem 'bootstrap-switch-rails'
 #gem 'bootstrap-toggle-rails'
 #gem 'autoprefixer-rails'
-gem 'momentjs-rails'
+#gem 'momentjs-rails' # move to propshaft
 #gem 'rails_bootstrap_sortable'
 #gem 'bootstrap-datepicker-rails'
 #gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
@@ -83,7 +86,7 @@ gem 'momentjs-rails'
 gem 'simple_form'
 
 #ace editor
-gem 'ace-rails-ap'
+# gem 'ace-rails-ap' # move to propshaft
 
 gem 'mail'
 gem 'rdiscount'  #markdown

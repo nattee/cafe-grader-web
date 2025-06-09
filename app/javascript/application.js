@@ -51,3 +51,4 @@ window.cafe = cafe
 // this bootbox is non-minified version and is edited by dae
 // since that version does not support importmap, I have to add 'root = root || window'
 import 'bootbox'
+import * as bootstrap from "bootstrap"

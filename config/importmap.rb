@@ -46,3 +46,4 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 # rails usj (should be removed soon)
 pin "rails-ujs", to: 'rails-ujs.esm.js'
 pin "bootbox", to: 'bootbox.js' # @6.0.0
+pin "bootstrap", to: "bootstrap.bundle.min.js"
