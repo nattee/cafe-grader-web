@@ -3,7 +3,7 @@ class ContestsController < ApplicationController
                                      :add_users_from_csv,:clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
-                                     :toggle, :do_all_users, :do_user, :extra_time_user, :do_all_problems, :do_problem,
+                                     :do_all_users, :do_user, :extra_time_user, :do_all_problems, :do_problem,
                                     ]
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
@@ -13,15 +13,15 @@ class ContestsController < ApplicationController
                      show_users_query show_problems_query
                      add_users_from_csv add_user add_user_by_group
                      add_problem add_problem_by_group
-                     toggle do_all_users do_user do_all_problems do_problem
+                     do_all_users do_user do_all_problems do_problem
                     ]
   before_action :check_valid_login, only: USER_ACTION
   before_action :group_editor_authorization, except: USER_ACTION
   before_action :can_manage_contest, only: EDITOR_ACTION
 
   before_action :check_finalized, only: %i[add_user_by_group add_user add_users_from_csv
-                                           add_problem add_problem_by_group toggle do_all_problems
-                                           toggle do_all_users do_user do_all_problems do_problem
+                                           add_problem add_problem_by_group do_all_problems
+                                           do_all_users do_user do_all_problems do_problem
                                           ]
   delegate :pluralize, to: 'ActionController::Base.helpers'
 

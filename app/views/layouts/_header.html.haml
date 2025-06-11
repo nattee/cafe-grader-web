@@ -100,7 +100,7 @@
 :javascript
   let server_time_offset_ms = 0
 
-  document.addEventListener("load", function() {
+  window.addEventListener("load", function() {
     $('.active-with-children').each( (index,obj) => { 
       if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
         $(obj).addClass('active')

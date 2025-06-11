@@ -82,8 +82,7 @@
         %p Loading...
 
 :javascript
-  $(document).ready(function() {
-
+  window.addEventListener("load", function() {
     var e = ace.edit("editor")
     e.setValue($("#text_sourcecode").val());
     e.gotoLine(1);

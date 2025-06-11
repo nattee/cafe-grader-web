@@ -30,7 +30,7 @@
   = f.hidden_field :command, 'data-user-admin--index-target': 'userFormCommand'
 
 :javascript
-  $(function() {
+  window.addEventListener("load", function() {
     $('#main-table').DataTable({
       processing: true,
       rowId: 'id',

@@ -1,13 +1,10 @@
 // Entry point for your Sass build
-@use "my_bootstrap_var";
-@use "application.bootstrap";
-
-//@import "bootstrap";
-@use "bootstrap/scss/bootstrap";
+@import "my_bootstrap_var";
+@import "bootstrap/scss/bootstrap";
 //@use "select2/dist/css/select2.min.css";
 
 
 //@use 'tempus-dominus/tempus-dominus';
-@use 'my_font';
-@use 'my_custom';
+@import 'my_font';
+@import 'my_custom';
 

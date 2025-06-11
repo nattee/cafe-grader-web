@@ -7,14 +7,6 @@ pin "prepend_jquery"
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin_all_from "app/javascript/mixins", under: "mixins"
 
-#we don't really need jquery in importmap because we use sprocket version
-#but... bootbox tries to import jquery, so... we have to pin it here
-# pin "jquery", to: 'my_jquery.js', preload: true
-# this is pinned but not import by other
-
-
-#no need popper, because bundled already in bootstrap
-
 # datatable
 # I have to fix vfs_font.js for this to work
 pin "datatables", to: "datatables/datatables.min.js"
@@ -22,14 +14,8 @@ pin "vfs-fonts", to: "datatables/vfs_fonts.js"
 pin "pdfmake", to: 'datatables/pdfmake.min.js'
 
 #select2
-pin "select2" # @4.1.0
+pin "select2", to: "select2.min.js" # @4.1.0
 
-#my local js
-pin "cafe_bundle", to: "cafe_bundle.js"
-pin "cafe", to: "cafe.js"
-pin "cafe_event", to: "cafe_event.js"
-pin "cafe_datatable", to: 'cafe_datatable.js'
-pin "cafe_turbo", to: "cafe_turbo.js"
 
 #pin "ace-rails-ap"
 pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js
@@ -45,13 +31,24 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 pin "rails-ujs", to: 'rails-ujs.esm.js'
 pin "bootbox", to: 'bootbox.js' # @6.0.0
 pin "jquery", preload: true # @3.7.1
-#pin "bootstrap-bundle", to: "bootstrap.bundle.min.js", preload: true # @5.3.6
-#pin "bootstrap", to: "bootstrap.js", preload: true # @5.3.6
 
-#pin "jquery", to: "https://ga.jspm.io/npm:jquery@3.7.1/dist/jquery.js", preload: true
-pin "bootstrap", to: "bootstrap-jsdelivr.js"
-#pin "bootstrap", to: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js", preload: true
 
-#pin "@popperjs/core", to: "@popperjs--core.js" # @2.11.8
-#pin "@popperjs/core", to: "@popperjs--core--+esm.js" # @2.11.8
+
+# this bootstrap is wgetted from "https://ga.jspm.io/npm:bootstrap@5.3.6/dist/js/bootstrap.esm.js"
+# we need the esm version
+# similarly, tis @popperjs/core is wget from ""
+# pin "bootstrap", to: "bootstrap.js" # @5.3.6
+pin "bootstrap", to: "bootstrap.esm.js"
 pin "@popperjs/core", to: "@popperjs-core-esm.js" # @2.11.8
+
+#my local js
+pin "cafe_bundle", to: "cafe_bundle.js"
+pin "cafe", to: "cafe.js"
+pin "cafe_event", to: "cafe_event.js"
+pin "cafe_datatable", to: 'cafe_datatable.js'
+pin "cafe_turbo", to: "cafe_turbo.js"
+pin "setup_jquery"
+pin "setup_bootstrap"
+pin "setup_datatables"
+pin "moment" # @2.30.1
+pin "ace-builds" # @1.42.0

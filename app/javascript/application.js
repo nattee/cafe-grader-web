@@ -2,41 +2,23 @@
 
 
 
-//import jQuery from "jquery"
-//window.$ = window.jQuery = jQuery;
-import jquery from "jquery"
-window.jQuery = jquery
-window.$ = jquery
-
-// when pin to "bootstrap.js"
-//import * as bootstrap from "bootstrap"
-//window.bootstrap = bootstrap
-
-// when pin to "bootstrap.bundle.min.js"
-import * as bootstrap from "bootstrap"
-window.bootstrap = bootstrap
-
 // import Turbo and Stimulus Controller
 // Disable Turbo by default
 import { Turbo } from "@hotwired/turbo-rails"
 import "controllers"
 Turbo.session.drive = false
 
-//import jQuery from "jquery"
-//window.$ = window.jQuery = jQuery;
 
-/* 
-//bootstrap
-//import "bootstrap"
-//window.bootstrap = bootstrap
+// these setup our library
+// even we import setup_datatables and setup_bootstrap BEFORE setup_jquery
+// everything still work fine because in setup_bootstrap and setup_database,
+// we explicitly import setup_jquery as well, so, the browser knows that they
+// must load the setup_jquery first
+import "setup_datatables"
+import "setup_bootstrap"
+import "setup_jquery"
 
-import jQuery from "jquery"
-window.$ = window.jQuery = jQuery;
 
-console.log($)
-console.log('i am prepend_jquery');
-
-import "select2"
 import "chart"
 
 
@@ -58,15 +40,6 @@ import Rails from 'rails-ujs';
 Rails.start()
 
 
-//my own customization
-//import 'custom'
-
-
-//trigger import map ready (no longer used)
-//window.importmapScriptsLoaded = true
-//const import_map_loaded = new CustomEvent('import-map-loaded', { });
-//document.dispatchEvent(import_map_loaded);
-
 //Import cafe-grader global functions into *cafe* object
 import * as cafe from 'cafe_bundle'
 window.cafe = cafe
@@ -76,7 +49,6 @@ window.cafe = cafe
 // this bootbox is non-minified version and is edited by dae
 // since that version does not support importmap, I have to add 'root = root || window'
 import 'bootbox'
-import "@popperjs/core"
-import * as bootstrap from "bootstrap"
-
-*/
+import 'ace-builds'
+import moment from 'moment'
+window.moment = moment

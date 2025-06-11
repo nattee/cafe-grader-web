@@ -4,6 +4,5 @@ import BaseController from "controllers/user_admin/base_controller"
 export default class extends BaseController {
 
   connect(event) {
-    console.log('user-admin--index')
   }
 }
