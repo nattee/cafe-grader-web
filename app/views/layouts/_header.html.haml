@@ -100,12 +100,18 @@
 :javascript
   let server_time_offset_ms = 0
 
-  $(function() {
+  document.addEventListener("load", function() {
     $('.active-with-children').each( (index,obj) => { 
       if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
         $(obj).addClass('active')
       }
     } )
+
+    //make view sub form use go_to_sub()
+    $("#view_sub_form").on('submit',function(e){
+        e.preventDefault();
+        go_to_sub();
+    });
 
   });
 
@@ -116,11 +122,6 @@
     }
   }
 
-  //make view sub form use go_to_sub()
-  $("#view_sub_form").on('submit',function(e){
-      e.preventDefault();
-      go_to_sub();
-  });
 
   // call check_in api and return a string of last check-in time
   function check_in() {

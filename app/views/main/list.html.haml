@@ -28,7 +28,9 @@
     table.column(5).search(selected_tag).draw()
   }
 
-  $(function() {
+
+
+  document.addEventListener("load", function() {
     table = $("#main_table").DataTable({
       columnDefs: [
         { targets: [3,4], sortable: false }, // latest result & action

@@ -3,10 +3,14 @@
 
 // import Turbo and Stimulus Controller
 // Disable Turbo by default
-import "controllers"
 import { Turbo } from "@hotwired/turbo-rails"
+import "controllers"
 Turbo.session.drive = false
 
+//import jQuery from "jquery"
+//window.$ = window.jQuery = jQuery;
+
+/* 
 //bootstrap
 //import "bootstrap"
 //window.bootstrap = bootstrap
@@ -57,4 +61,7 @@ window.cafe = cafe
 // this bootbox is non-minified version and is edited by dae
 // since that version does not support importmap, I have to add 'root = root || window'
 import 'bootbox'
+import "@popperjs/core"
 import * as bootstrap from "bootstrap"
+
+*/

@@ -3,9 +3,11 @@
 @use "application.bootstrap";
 
 //@import "bootstrap";
-@use "select2/select2.min";
-@use "select2/select2-bootstrap-5-theme.min";
+@use "bootstrap/scss/bootstrap";
+//@use "select2/dist/css/select2.min.css";
 
-@use 'tempus-dominus/tempus-dominus';
+
+//@use 'tempus-dominus/tempus-dominus';
 @use 'my_font';
 @use 'my_custom';
+
