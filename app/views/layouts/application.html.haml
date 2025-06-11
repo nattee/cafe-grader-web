@@ -6,7 +6,7 @@
     = stylesheet_link_tag "datatables/datatables-new.min"
     = csrf_meta_tags
     = csp_meta_tag
-    = javascript_include_tag :my_app # This is loaded via Sprocket, thus it is loaded first
+    /= javascript_include_tag :my_app # This is loaded via Sprocket, thus it is loaded first
     = javascript_importmap_tags
     = content_for :header
     = yield :head

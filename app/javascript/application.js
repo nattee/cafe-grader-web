@@ -11,6 +11,12 @@ Turbo.session.drive = false
 //import "bootstrap"
 //window.bootstrap = bootstrap
 
+import jQuery from "jquery"
+window.$ = window.jQuery = jQuery;
+
+console.log($)
+console.log('i am prepend_jquery');
+
 import "select2"
 import "chart"
 

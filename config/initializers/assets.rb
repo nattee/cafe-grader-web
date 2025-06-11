@@ -13,3 +13,5 @@ Rails.application.config.assets.paths << Rails.root.join("node_modules/bootstrap
 # folder are already added.
 # Rails.application.config.assets.precompile += %w( admin.js admin.css )
 Rails.application.config.assets.precompile << "bootstrap.bundle.min.js"
+
+# --- propshaft ---

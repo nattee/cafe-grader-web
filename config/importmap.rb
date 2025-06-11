@@ -24,7 +24,7 @@ pin "vfs-fonts", to: "datatables/vfs_fonts.js"
 pin "pdfmake", to: 'datatables/pdfmake.min.js'
 
 #select2
-pin "select2", to: "select2.min.js"
+pin "select2" # @4.1.0
 
 #my local js
 pin "cafe_bundle", to: "cafe_bundle.js"
@@ -46,4 +46,6 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 # rails usj (should be removed soon)
 pin "rails-ujs", to: 'rails-ujs.esm.js'
 pin "bootbox", to: 'bootbox.js' # @6.0.0
-pin "bootstrap", to: "bootstrap.bundle.min.js"
+pin "bootstrap" # @5.3.6
+pin "jquery" # @3.7.1
+pin "@popperjs/core", to: "@popperjs--core.js" # @2.11.8
