@@ -13,9 +13,7 @@ pin_all_from "app/javascript/mixins", under: "mixins"
 # this is pinned but not import by other
 
 
-#pin "bootstrap", to: "bootstrap.bundle.min.js", preload: true
 #no need popper, because bundled already in bootstrap
-#pin "@popperjs/core", to: "https://ga.jspm.io/npm:@popperjs/core@2.11.6/lib/index.js"
 
 # datatable
 # I have to fix vfs_font.js for this to work
@@ -46,6 +44,14 @@ pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
 # rails usj (should be removed soon)
 pin "rails-ujs", to: 'rails-ujs.esm.js'
 pin "bootbox", to: 'bootbox.js' # @6.0.0
-pin "bootstrap" # @5.3.6
-pin "jquery" # @3.7.1
-pin "@popperjs/core", to: "@popperjs--core.js" # @2.11.8
+pin "jquery", preload: true # @3.7.1
+#pin "bootstrap-bundle", to: "bootstrap.bundle.min.js", preload: true # @5.3.6
+#pin "bootstrap", to: "bootstrap.js", preload: true # @5.3.6
+
+#pin "jquery", to: "https://ga.jspm.io/npm:jquery@3.7.1/dist/jquery.js", preload: true
+pin "bootstrap", to: "bootstrap-jsdelivr.js"
+#pin "bootstrap", to: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js", preload: true
+
+#pin "@popperjs/core", to: "@popperjs--core.js" # @2.11.8
+#pin "@popperjs/core", to: "@popperjs--core--+esm.js" # @2.11.8
+pin "@popperjs/core", to: "@popperjs-core-esm.js" # @2.11.8

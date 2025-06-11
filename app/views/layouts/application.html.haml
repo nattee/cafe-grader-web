@@ -10,6 +10,9 @@
     = csp_meta_tag
     /= javasc  ript_include_tag :my_app # This is loaded via Sprocket, thus it is loaded first
     = javascript_importmap_tags
+    = javascript_import_module_tag "bootstrap"
+
+    -# %script{src: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"}
     = content_for :header
     = yield :head
     %meta{name: :viewport, content: "width=device-width, initial-scale=1"}

@@ -1,6 +1,21 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 
 
+
+//import jQuery from "jquery"
+//window.$ = window.jQuery = jQuery;
+import jquery from "jquery"
+window.jQuery = jquery
+window.$ = jquery
+
+// when pin to "bootstrap.js"
+//import * as bootstrap from "bootstrap"
+//window.bootstrap = bootstrap
+
+// when pin to "bootstrap.bundle.min.js"
+import * as bootstrap from "bootstrap"
+window.bootstrap = bootstrap
+
 // import Turbo and Stimulus Controller
 // Disable Turbo by default
 import { Turbo } from "@hotwired/turbo-rails"

@@ -64,3 +64,6 @@
 .pnp.*
 .yarn/install-state.gz
 .yarn/unplugged
+
+/app/assets/builds/*
+!/app/assets/builds/.keep
