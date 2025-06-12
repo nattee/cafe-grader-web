@@ -1,5 +1,3 @@
-require 'csv'
-
 class UserAdminController < ApplicationController
 
   include MailHelperMethods
