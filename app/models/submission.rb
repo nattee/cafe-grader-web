@@ -1,7 +1,7 @@
 class Submission < ApplicationRecord
 
-  enum tag: {default: 0, model: 1}, _prefix: true
-  enum status: {submitted: 0, evaluating: 1, done: 2, compilation_error: 3, compilation_success: 4, grader_error: 5}
+  enum :tag, {default: 0, model: 1}, prefix: true
+  enum :status, {submitted: 0, evaluating: 1, done: 2, compilation_error: 3, compilation_success: 4, grader_error: 5}
 
 
   belongs_to :language

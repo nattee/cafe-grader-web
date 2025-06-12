@@ -1,6 +1,6 @@
 class Job < ApplicationRecord
-  enum status: {wait: 0, process: 1, success: 2, error: 3}
-  enum job_type: {preprocess: 0, compile: 1, evaluate: 2, score: 3}, _prefix: :jt
+  enum :status, {wait: 0, process: 1, success: 2, error: 3}
+  enum :job_type, {preprocess: 0, compile: 1, evaluate: 2, score: 3}, prefix: :jt
 
   scope :oldest_waiting, -> {where(status: :wait)}
   scope :finished, -> {where(status: [:success,:error])}

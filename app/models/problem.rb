@@ -2,9 +2,9 @@ class Problem < ApplicationRecord
 
   # -- fields --
   #how the submission should be compiled
-  enum compilation_type:  {self_contained: 0,
+  enum :compilation_type,  {self_contained: 0,
                            with_managers: 1}
-  enum task_type: { batch: 0 }
+  enum :task_type, { batch: 0 }
 
   #belongs_to :description
 

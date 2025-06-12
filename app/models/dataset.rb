@@ -4,16 +4,16 @@ class Dataset < ApplicationRecord
   has_many :testcases, dependent: :destroy
   has_many :submissions
 
-  enum evaluation_type: {default: 0, #diff ignore trailing space, ignore blank line
-                         exact: 1, #diff ignore nothing
-                         relative: 2, #token match float relate
-                         custom_cafe: 3,
-                         custom_cms: 4,
-                         postgres: 5}
+  enum :evaluation_type, { default: 0, #diff ignore trailing space, ignore blank line
+                           exact: 1, #diff ignore nothing
+                           relative: 2, #token match float relate
+                           custom_cafe: 3,
+                           custom_cms: 4,
+                           postgres: 5}
 
-  enum score_type:        {sum: 0,      # summation of all testcase, default
+  enum :score_type,      {sum: 0,      # summation of all testcase, default
                            group_min: 1,
-                          }, _prefix: :st
+                          }, prefix: :st
 
   has_one_attached :checker
   has_many_attached :managers       # additional files for compile process (these files are VISIBLE to the user's submission)
