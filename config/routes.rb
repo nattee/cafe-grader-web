@@ -88,7 +88,8 @@ Rails.application.routes.draw do
       patch 'update_hint/:hint_id', action: 'update_hint', as: 'update_hint'
       get 'show_hint/:hint_id', action: :show_hint, as: :show_hint
     end
-    resources :comments, as: :hint, path: :hint, only: [:edit,:update,:show] do
+    resources :comments, as: :hint, path: :hint, only: [:update,:show] do
+      get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
       post 'manage_problem', on: :collection, as: :manage
       post 'acquire', on: :member
     end

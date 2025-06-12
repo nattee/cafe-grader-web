@@ -70,7 +70,7 @@
       = turbo_frame_tag :hint_select do
         = render partial: 'hint_select', locals: {ds: @problem.live_dataset, problem: @problem}
       -# dataset form
-      = turbo_frame_tag :hint_detail, src: edit_problem_hint_path(@problem,@problem.hints.first)
+      = turbo_frame_tag :hint_detail, src: edit_problem_hint_index_path(@problem,@problem.hints.first)
 
 
 :javascript
