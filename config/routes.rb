@@ -174,6 +174,8 @@ Rails.application.routes.draw do
     # these are for each user editing their own properties
     collection do
       get 'profile'
+      post 'register'
+      post 'confirm'
       post 'chg_passwd'
       post 'chg_default_language'
       patch 'update_self'
