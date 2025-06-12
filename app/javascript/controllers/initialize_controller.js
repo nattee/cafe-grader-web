@@ -11,7 +11,8 @@ export default class extends Controller {
 
   // this setup the Turbo confirmation 
   setupTurboConfirm() {
-    Turbo.setConfirmMethod((dataConfirmMessage, element) => {
+    Turbo.config.forms.confirm = (dataConfirmMessage, element) => {
+    //Turbo.setConfirmMethod((dataConfirmMessage, element) => {
       return new Promise((resolve) => {
         let modalTitle = 'Confirmation'; // Default title
         let modalBody = String(dataConfirmMessage); // Default body (if not an object)
@@ -112,7 +113,7 @@ export default class extends Controller {
         // 8. Show the modal
         customConfirmModal.show();
       });
-    });
+    }
   }
 
 }
