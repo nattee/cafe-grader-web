@@ -135,6 +135,12 @@
         case 'Haskell':
           mode = 'ace/mode/haskell';
           break;
+        case 'PostgreSQL':
+          mode = 'ace/mode/sql';
+          break;
+        case 'Digital':
+          mode = 'ace/mode/xml';
+          break;
       }
       e.getSession().setMode(mode);
     });

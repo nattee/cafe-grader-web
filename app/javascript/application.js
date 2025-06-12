@@ -17,6 +17,7 @@ Turbo.session.drive = false
 import "setup_datatables"
 import "setup_bootstrap"
 import "setup_jquery"
+import "setup_ace"
 
 
 import "chart"
@@ -49,6 +50,7 @@ window.cafe = cafe
 // this bootbox is non-minified version and is edited by dae
 // since that version does not support importmap, I have to add 'root = root || window'
 import 'bootbox'
-import 'ace-builds'
 import moment from 'moment'
 window.moment = moment
+
+//import 'ace-haha'
