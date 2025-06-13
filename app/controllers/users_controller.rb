@@ -78,14 +78,14 @@ class UsersController < ApplicationController
     end
     @user = User.new(user_params)
     @user.password_confirmation = @user.password = User.random_password
-    @user.activated = false
+    @user.activated = true
     if (@user.valid?) and (@user.save)
-      if send_confirmation_email(@user)
-        render :action => 'new_splash', :layout => 'empty'
-      else
-        @admin_email = GraderConfiguration['system.admin_email']
-        render :action => 'email_error', :layout => 'empty'
-      end
+      # if send_confirmation_email(@user)
+      render :action => 'new_splash', :layout => 'empty'
+      # else
+      #   @admin_email = GraderConfiguration['system.admin_email']
+      #   render :action => 'email_error', :layout => 'empty'
+      # end
     else
       @user.errors.add(:base,"Email cannot be blank") if @user.email==''
       render :action => 'new', :layout => 'empty'
@@ -146,16 +146,16 @@ class UsersController < ApplicationController
     activation_url = url_for(:action => 'confirm', 
                              :login => user.login, 
                              :activation => user.activation_key)
-    home_url = url_for(:controller => 'main', :action => 'index')
+    home_url = url_for(:controller => 'main', :action => 'login')
     mail_subject = "[#{contest_name}] Confirmation"
-    mail_body = t('registration.email_body', {
+    mail_body = I18n::translate('registration.email_body', 
                     :full_name => user.full_name,
                     :contest_name => contest_name,
                     :login => user.login,
                     :password => user.password,
                     :activation_url => activation_url,
                     :admin_email => GraderConfiguration['system.admin_email']
-                  })
+                  )
 
     logger.info mail_body
 
@@ -165,7 +165,7 @@ class UsersController < ApplicationController
   def send_new_password_email(user)
     contest_name = GraderConfiguration['contest.name']
     mail_subject = "[#{contest_name}] Password recovery"
-    mail_body = t('registration.password_retrieval.email_body', {
+    mail_body = I18n.t('registration.password_retrieval.email_body', {
                     :full_name => user.full_name,
                     :contest_name => contest_name,
                     :login => user.login,
