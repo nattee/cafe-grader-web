@@ -1,0 +1,103 @@
+// For setting the ace editor
+import { Controller } from "@hotwired/stimulus"
+
+export default class extends Controller {
+
+  static targets = [
+                    "editor", "languageSelect", "source", "submitSource"
+                   ]
+
+  connect() {
+    // initialize the editor if we have one
+    if (this.hasEditorTarget) this.initEditor();
+
+    //trigger the setLanguage if there is a language selection
+    if (this.hasLanguageSelectTarget) this.setLanguage();
+
+    //set up file reader
+    this.reader = new FileReader();
+    // must use the arrow function else "this" in the function won't 
+    // refer to the stimulus Controller
+    this.reader.onload = this.#readFile;
+  }
+
+  // attached to the select of a language
+  // set the syntax highlight rule, using #setEditorHighlight
+  setLanguage() {
+    //get the selected text
+    const select = this.languageSelectTarget
+    const selectedOption = select.options[select.selectedIndex]
+    const lang = selectedOption.text
+    this.#setEditorHighlight(lang)
+  }
+
+
+  // initialize the ace editor
+  // load the text, goto line 1 and setup highlight
+  initEditor() {
+    // load the ace editor
+    this.editor = ace.edit(this.editorTarget.id)
+
+    // load the source code from the element
+    this.editor.setValue(this.sourceTarget.value)
+    this.editor.gotoLine(1)
+
+    // init the syntax highlight
+    this.#setEditorHighlight(this.editorTarget.dataset.language)
+
+    // set readonly mode, if indicated
+    if (this.editorTarget.dataset.editorMode == 'view') {
+      this.editor.setOptions({ maxLines: Infinity })
+      this.editor.setReadOnly(true)
+    }
+  }
+
+  // attached to the file input, load the file
+  // this depends on the "#readFile" functions belows
+  loadFileToEditor(event) {
+    const file = event.target.files[0];
+    this.reader.readAsText(file)
+  }
+
+  // attached to form submit
+  // copy the editor code to the hidden input for submit
+  submit(event) {
+    this.submitSourceTarget.value = this.editor.getValue()
+  }
+
+  disconnect() {
+  }
+
+  // --- private function ---
+  #readFile = (theFile) => {
+      this.editor.setValue(theFile.target.result);
+      this.editor.gotoLine(1);
+  };
+
+  // set the syntax highlight
+  #setEditorHighlight(language) {
+    const languageModes = {
+      'Pascal': 'ace/mode/pascal',
+      'C++': 'ace/mode/c_cpp',
+      'C': 'ace/mode/c_cpp',
+      'Ruby': 'ace/mode/ruby',
+      'Python': 'ace/mode/python',
+      'Java': 'ace/mode/java',
+      'Rust': 'ace/mode/rust',
+      'Go': 'ace/mode/golang',
+      'PHP': 'ace/mode/php',
+      'Haskell': 'ace/mode/haskell',
+      'PostgreSQL': 'ace/mode/sql',
+      'Digital': 'ace/mode/xml',
+    };
+
+    // Get the mode from the map, falling back to defaultMode if not found
+    const defaultMode = 'ace/mode/c_cpp';
+    const mode = languageModes[language] || defaultMode;
+
+    // set the highlight
+    this.editor.getSession().setMode(mode);
+  }
+
+}
+

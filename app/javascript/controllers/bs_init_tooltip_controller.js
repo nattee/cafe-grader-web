@@ -6,7 +6,6 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
 
   connect() {
-    console.log("Controller CONNECTED to:", this.element, this.element.id);
     this.initializeTooltips()
     this.element.addEventListener("turbo:frame-load", this.handleFrameHasLoaded);
     this.element.addEventListener("turbo:frame-render", this.handleFrameHasLoaded);
