@@ -3,25 +3,24 @@ class ProblemsController < ApplicationController
   # concern for problem authorization
   include ProblemAuthorization
 
-  MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
-                   :delete_statement, :delete_attachment,
+  MEMBER_METHOD = [:edit, :update, :destroy,
                    :toggle_available, :toggle_view_testcase, :stat,
-                   :add_dataset,:import_testcases,
-                   :download_archive, :helpers,
+                   :add_dataset, :import_testcases,
+                   :download_archive, :helpers, :download_by_type, :delete_by_type,
                   ]
 
   before_action :set_problem, only: MEMBER_METHOD
   before_action :check_valid_login
 
   #permission
-  before_action :group_editor_authorization, except: [:get_statement, :get_attachment]
-  before_action :can_view_problem, only: [:get_statement, :get_attachment]
+  before_action :group_editor_authorization, except: [:download_by_type]
+  before_action :can_view_problem, only: [:download_by_type]
 
   before_action :admin_authorization, only: [:toggle_available, :turn_all_on, :turn_all_off, :download_archive]
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
-                                          :delete_statement, :delete_attachment,
                                           :toggle_view_testcase, :stat,
-                                          :add_dataset,:import_testcases,
+                                          :add_dataset, :import_testcases,
+                                          :delete_by_type,
                                          ]
   before_action :can_report_problem, only: [:stat]
   before_action :set_active_tab, only: %i[update]
@@ -43,36 +42,44 @@ class ProblemsController < ApplicationController
     render 'datasets/update'
   end
 
-  #get statement download link handler
-  def get_statement
+  def download_by_type
+    # Find the attachment on the model
+    attachment_type = params[:attachment_type]
+    unless %w[statement generated_statement attachment].include? attachment_type
+      @error_message = "File is not available in the server."
+      render 'error' and return
+    end
+
+    attachment = @problem.send(attachment_type)
+
+    # build the filename or render error when the type is invalid
+    filename =
+      case attachment_type
+      when 'statement', 'generated_statement' then @problem.name + '.pdf'
+      when 'attachment' then attachment.filename.to_s
+      end
+
     begin
-      filename = @problem.name
-      data = @problem.statement.download
-      # we send as inline because we want it to be rendered on the browser instead of downloading
-      send_data data, type: 'application/pdf',  disposition: 'inline', filename: (filename+'.pdf')
+      send_data attachment.download,
+                filename: filename,
+                type: attachment.content_type || 'application/octet-stream',
+                disposition: 'inline'
     rescue  ActiveStorage::FileNotFoundError
       @error_message = "File is not found in the server."
       render 'error'
     end
   end
 
-  #delete attachment
-  def delete_statement
-    @problem.statement.purge
-    redirect_to edit_problem_path(@problem), notice: 'The statement has been deleted'
-  end
+  def delete_by_type
+    attachment_to_purge = @problem.send(params[:attachment_type])
 
-  #get attachment
-  def get_attachment
-    filename = @problem.attachment.filename.to_s
-    data = @problem.attachment.download
-    send_data data, disposition: 'inline', filename: filename
-  end
-
-  #delete attachment
-  def delete_attachment
-    @problem.attachment.purge
-    redirect_to edit_problem_path(@problem), notice: 'The attachment has been deleted'
+    if attachment_to_purge.attached?
+      attachment_to_purge.purge
+      @toast = {title: "Problem #{@problem.name}", body: "The #{params[:attachment_type].humanize} has been deleted."}
+    else
+      @toast = {title: "Problem #{@problem.name}", body: "The specified attachment was not found."}
+    end
+    render :update
   end
 
   # -- hint and helpers --
@@ -80,8 +87,8 @@ class ProblemsController < ApplicationController
   # render a card displaying all problem helpers (hint, solution, LLM, etc)
   def helpers
     respond_to do |format|
-      format.html { render partial: 'helpers'}
-      format.turbo_stream { render 'helpers'}
+      format.html { render partial: 'helpers' }
+      format.turbo_stream { render 'helpers' }
     end
   end
   # -- END hint and helpers --
@@ -121,7 +128,6 @@ class ProblemsController < ApplicationController
   end
 
   def update
-    
     if @problem.update(problem_params)
       msg = 'Problem was successfully updated. '
       msg += 'A new statement PDF is uploaded' if problem_params[:statement]
@@ -131,22 +137,21 @@ class ProblemsController < ApplicationController
       @problem.permitted_lang = permitted_lang_as_string
       @problem.save
 
-      @toast = {title: "Problem #{@problem.name}",body: "Problem settings updated"}
+      @toast = {title: "Problem #{@problem.name}", body: "Problem settings updated"}
     end
     if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
-      @problem.errors.add(:base,' Uploaded file is not PDF')
+      @problem.errors.add(:base, ' Uploaded file is not PDF')
     end
 
     if @problem.errors.any?
-      error_html = "<ul>#{@problem.errors.full_messages.map {|m| "<li>#{m}</li>"}.join}</ul>"
-      render partial: 'msg_modal_show', locals: {do_popup: true, 
-                                                 header_msg: 'Problem update error', 
+      error_html = "<ul>#{@problem.errors.full_messages.map { |m| "<li>#{m}</li>" }.join}</ul>"
+      render partial: 'msg_modal_show', locals: {do_popup: true,
+                                                 header_msg: 'Problem update error',
                                                  header_class: 'bg-danger-subtle',
                                                  body_msg: error_html.html_safe}
     else
       render :update
     end
-
   end
 
   def destroy

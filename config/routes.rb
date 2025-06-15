@@ -10,8 +10,8 @@ Rails.application.routes.draw do
 
   root :to => 'main#login'
 
-  #logins
-  match 'login/login',  to: 'login#login', via: [:get,:post]
+  # logins
+  match 'login/login',  to: 'login#login', via: [:get, :post]
 
   resources :contests do
     member do
@@ -64,7 +64,8 @@ Rails.application.routes.draw do
 
   resources :announcements do
     member do
-      post 'toggle_published','toggle_front'
+      post 'toggle_published'
+      post 'toggle_front'
       delete 'delete_file'
     end
   end
@@ -82,13 +83,16 @@ Rails.application.routes.draw do
       delete 'attachment', action: 'delete_attachment'
       delete 'statement', action: 'delete_statement'
       get 'helpers'
+      # attachment
+      get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
+      delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
       # nested hint
       post 'manage_hint'
       get 'edit_hint(/:hint_id)', action: 'edit_hint', as: 'edit_hint'
       patch 'update_hint/:hint_id', action: 'update_hint', as: 'update_hint'
       get 'show_hint/:hint_id', action: :show_hint, as: :show_hint
     end
-    resources :comments, as: :hint, path: :hint, only: [:update,:show] do
+    resources :comments, as: :hint, path: :hint, only: [:update, :show] do
       get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
       post 'manage_problem', on: :collection, as: :manage
       post 'acquire', on: :member
@@ -181,7 +185,7 @@ Rails.application.routes.draw do
     end
   end
 
-  #user admin
+  # user admin
   # ** since :user_admin is SINGULAR, the helper functions will be xxx_user_admin_index_path <-- NOTICE THE *_index*
   resources :user_admin do
     collection do
@@ -201,7 +205,8 @@ Rails.application.routes.draw do
     end
     member do
       get 'clear_last_ip'
-      get 'toggle_activate', 'toggle_enable'
+      get 'toggle_activate'
+      get 'toggle_enable'
       get 'stat'
       get 'stat/contest/:contest_id', to: 'user_admin#stat_contest', as: 'stat_contest'
     end
