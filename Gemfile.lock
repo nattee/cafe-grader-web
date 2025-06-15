@@ -1,9 +1,6 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    RubyInline (3.14.2)
-      ZenTest (~> 4.3)
-    ZenTest (4.12.2)
     actioncable (8.0.2)
       actionpack (= 8.0.2)
       activesupport (= 8.0.2)
@@ -77,15 +74,16 @@ GEM
       uri (>= 0.13.1)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
-    ansi (1.5.0)
+    ast (2.4.3)
     base64 (0.3.0)
     benchmark (0.4.1)
     bigdecimal (3.2.2)
     bindex (0.8.1)
     bootsnap (1.18.6)
       msgpack (~> 1.2)
+    brakeman (7.0.2)
+      racc
     builder (3.3.0)
-    byebug (12.0.0)
     capybara (3.40.0)
       addressable
       matrix
@@ -102,19 +100,17 @@ GEM
     cssbundling-rails (1.4.3)
       railties (>= 6.0.0)
     date (3.4.1)
+    debug (1.10.0)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
     drb (2.2.3)
     erb (5.0.1)
     erubi (1.13.1)
-    ffi (1.17.2-aarch64-linux-gnu)
-    ffi (1.17.2-aarch64-linux-musl)
-    ffi (1.17.2-arm-linux-gnu)
-    ffi (1.17.2-arm-linux-musl)
-    ffi (1.17.2-arm64-darwin)
-    ffi (1.17.2-x86_64-darwin)
-    ffi (1.17.2-x86_64-linux-gnu)
-    ffi (1.17.2-x86_64-linux-musl)
-    fuzzy-string-match (1.0.1)
-      RubyInline (>= 3.8.6)
+    et-orbi (1.2.11)
+      tzinfo
+    fugit (1.11.1)
+      et-orbi (~> 1, >= 1.2.11)
+      raabro (~> 1.4)
     globalid (1.2.1)
       activesupport (>= 6.1)
     haml (6.3.0)
@@ -128,7 +124,7 @@ GEM
       railties (>= 5.1)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
-    importmap-rails (1.2.3)
+    importmap-rails (2.1.0)
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
       railties (>= 6.0.0)
@@ -140,13 +136,9 @@ GEM
     jbuilder (2.13.0)
       actionview (>= 5.0.0)
       activesupport (>= 5.0.0)
-    jquery-rails (4.6.0)
-      rails-dom-testing (>= 1, < 3)
-      railties (>= 4.2.0)
-      thor (>= 0.14, < 2.0)
-    listen (3.0.8)
-      rb-fsevent (~> 0.9, >= 0.9.4)
-      rb-inotify (~> 0.9, >= 0.9.7)
+    json (2.12.2)
+    language_server-protocol (3.17.0.5)
+    lint_roller (1.1.0)
     logger (1.7.0)
     loofah (2.24.1)
       crass (~> 1.0.2)
@@ -160,11 +152,6 @@ GEM
     matrix (0.4.2)
     mini_mime (1.1.5)
     minitest (5.25.5)
-    minitest-reporters (1.7.1)
-      ansi
-      builder
-      minitest (>= 5.0)
-      ruby-progressbar
     msgpack (1.8.0)
     mutex_m (0.3.0)
     mysql2 (0.5.6)
@@ -194,10 +181,15 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.8-x86_64-linux-musl)
       racc (~> 1.4)
+    parallel (1.27.0)
+    parser (3.3.8.0)
+      ast (~> 2.4.1)
+      racc
     pg (1.5.9)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
+    prism (1.4.0)
     propshaft (1.1.0)
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
@@ -209,6 +201,7 @@ GEM
     public_suffix (6.0.2)
     puma (6.6.0)
       nio4r (~> 2.0)
+    raabro (1.4.0)
     racc (1.8.1)
     rack (3.1.16)
     rack-session (2.1.1)
@@ -249,9 +242,6 @@ GEM
       zeitwerk (~> 2.6)
     rainbow (3.1.1)
     rake (13.3.0)
-    rb-fsevent (0.11.2)
-    rb-inotify (0.11.1)
-      ffi (~> 1.0)
     rdiscount (2.2.7.3)
     rdoc (6.14.0)
       erb
@@ -262,20 +252,62 @@ GEM
       io-console (~> 0.5)
     rexml (3.4.1)
     rouge (4.5.2)
+    rubocop (1.76.1)
+      json (~> 2.3)
+      language_server-protocol (~> 3.17.0.2)
+      lint_roller (~> 1.1.0)
+      parallel (~> 1.10)
+      parser (>= 3.3.0.2)
+      rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 2.9.3, < 3.0)
+      rubocop-ast (>= 1.45.0, < 2.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 2.4.0, < 4.0)
+    rubocop-ast (1.45.1)
+      parser (>= 3.3.7.2)
+      prism (~> 1.4)
+    rubocop-performance (1.25.0)
+      lint_roller (~> 1.1)
+      rubocop (>= 1.75.0, < 2.0)
+      rubocop-ast (>= 1.38.0, < 2.0)
+    rubocop-rails (2.32.0)
+      activesupport (>= 4.2.0)
+      lint_roller (~> 1.1)
+      rack (>= 1.1)
+      rubocop (>= 1.75.0, < 2.0)
+      rubocop-ast (>= 1.44.0, < 2.0)
+    rubocop-rails-omakase (1.1.0)
+      rubocop (>= 1.72)
+      rubocop-performance (>= 1.24)
+      rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
     rubyzip (2.4.1)
     securerandom (0.4.1)
-    selenium-webdriver (4.10.0)
+    selenium-webdriver (4.33.0)
+      base64 (~> 0.2)
+      logger (~> 1.4)
       rexml (~> 3.2, >= 3.2.5)
       rubyzip (>= 1.2.2, < 3.0)
       websocket (~> 1.0)
     simple_form (5.3.1)
       actionpack (>= 5.2)
       activemodel (>= 5.2)
-    spring (2.1.1)
-    spring-watcher-listen (2.0.1)
-      listen (>= 2.7, < 4.0)
-      spring (>= 1.2, < 3.0)
+    solid_cable (3.0.8)
+      actioncable (>= 7.2)
+      activejob (>= 7.2)
+      activerecord (>= 7.2)
+      railties (>= 7.2)
+    solid_cache (1.0.7)
+      activejob (>= 7.2)
+      activerecord (>= 7.2)
+      railties (>= 7.2)
+    solid_queue (1.1.5)
+      activejob (>= 7.1)
+      activerecord (>= 7.1)
+      concurrent-ruby (>= 1.3.1)
+      fugit (~> 1.11.0)
+      railties (>= 7.1)
+      thor (~> 1.3.1)
     sqlite3 (2.7.0-aarch64-linux-gnu)
     sqlite3 (2.7.0-aarch64-linux-musl)
     sqlite3 (2.7.0-arm-linux-gnu)
@@ -289,6 +321,11 @@ GEM
     stringio (3.1.7)
     temple (0.10.3)
     thor (1.3.2)
+    thruster (0.1.13)
+    thruster (0.1.13-aarch64-linux)
+    thruster (0.1.13-arm64-darwin)
+    thruster (0.1.13-x86_64-darwin)
+    thruster (0.1.13-x86_64-linux)
     tilt (2.6.0)
     timeout (0.4.3)
     turbo-rails (2.0.16)
@@ -296,6 +333,9 @@ GEM
       railties (>= 7.1.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
+    unicode-display_width (3.1.4)
+      unicode-emoji (~> 4.0, >= 4.0.4)
+    unicode-emoji (4.0.4)
     uri (1.0.3)
     useragent (0.16.11)
     web-console (4.2.1)
@@ -303,10 +343,6 @@ GEM
       activemodel (>= 6.0.0)
       bindex (>= 0.4.0)
       railties (>= 6.0.0)
-    webdrivers (5.3.1)
-      nokogiri (~> 1.6)
-      rubyzip (>= 1.3.0)
-      selenium-webdriver (~> 4.0, < 4.11)
     websocket (1.2.11)
     websocket-driver (0.8.0)
       base64
@@ -319,6 +355,7 @@ GEM
     zeitwerk (2.7.3)
 
 PLATFORMS
+  aarch64-linux
   aarch64-linux-gnu
   aarch64-linux-musl
   arm-linux-gnu
@@ -330,19 +367,16 @@ PLATFORMS
 
 DEPENDENCIES
   bootsnap
-  byebug
+  brakeman
   capybara
   concurrent-ruby (= 1.3.4)
   cssbundling-rails
-  fuzzy-string-match
+  debug
   haml
   haml-rails
-  importmap-rails (~> 1.1)
+  importmap-rails
   jbuilder
-  jquery-rails (~> 4.6)
-  listen (>= 3.0.5, < 3.2)
   mail
-  minitest-reporters
   mutex_m
   mysql2
   pg
@@ -353,15 +387,17 @@ DEPENDENCIES
   rdiscount
   redcarpet
   rouge
+  rubocop-rails-omakase
   selenium-webdriver
   simple_form
-  spring
-  spring-watcher-listen (~> 2.0.0)
+  solid_cable
+  solid_cache
+  solid_queue
   sqlite3
   stimulus-rails
+  thruster
   turbo-rails
   web-console (>= 3.3.0)
-  webdrivers
   whenever
 
 RUBY VERSION

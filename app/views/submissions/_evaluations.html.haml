@@ -1,0 +1,106 @@
+-#
+  show evaluation with respect to the dataset
+  requires evaluations which should be 
+  Testcase.left_joins(:evaluation).where(submission_id: @submission.id, testcase_id: @dataset.testcases.id)
+%h4 Evaluations
+.alert.my-0.py-0
+  .row
+    .col-1.text-end
+      %strong Num
+    .col-2.text-end
+      %strong Time
+    .col-2.text-end
+      %strong Memory
+    .col-5
+      %strong Result
+    .col-1.text-end
+      %strong Score
+    .col-1.text-end
+      %strong Weight
+- groups = evaluations.pluck(:group_name)
+- group_count, group_min, group_weight = 0,0,0
+- evaluations.each.with_index do |ev,idx|
+  - group_change = idx == 0 || groups[idx] != groups[idx-1]
+  - next_change = idx == groups.count-1 || groups[idx] != groups[idx+1]
+  - next_group_has_multiple = idx < groups.count-1 && groups[idx] == groups[idx+1]
+  - if group_change
+    - group_min = 100
+    - group_weight = ev.weight
+    - group_count = 0
+
+
+  - if group_change 
+    -# start new group
+    - if next_group_has_multiple
+      :plain
+        <div class='alert alert-info my-2 py-1'>
+    - else
+      :plain
+        <div class='alert my-0 py-0'>
+
+  -# process this ev
+  - group_count += 1
+  - group_min = [group_min,ev.score || 0].min
+
+  .row.mb-1
+    .col-1.text-end
+      =ev.num
+    .col-2.text-end
+      %span= (ev.time || 0) / 1000.0
+      %span.text-body-tertiary> s
+    .col-2.text-end
+      %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
+      %span.text-body-tertiary> MB
+    .col-5
+      = ev.result_as_word
+      - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
+        %div.text-secondary
+          = ev.result_text
+    .col-1.text-end
+      = number_to_percentage (ev.score || 0) *100, precision: 0
+    .col-1.text-end
+      = ev.weight
+
+  - if next_change
+    -# end current bundle
+    - if group_count > 1
+      -# display group summary
+      .row.mt-1
+        .col.text-center
+          %strong
+            Group #{groups[idx-1]} score:
+            = number_to_percentage (group_min || 0) *100, precision: 0
+    :plain
+      </div>
+
+-#
+  %table.table
+    %thead
+      %tr
+        %th.text-end ID
+        %th.text-end Group
+        %th.text-end Time
+        %th.text-end Memory
+        %th Result
+        %th.text-end Score
+        %th.text-end Weight
+    %tbody
+      - @evaluations.each do |ev|
+        %tr
+          %td.text-end= ev.num
+          %td.text-end= ev.group_name
+          %td.text-end
+            %span= (ev.time || 0) / 1000.0
+            %span.text-secondary s
+          %td.text-end
+            %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
+            %span.text-secondary MB
+          %td
+            = ev.result_as_word
+            - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
+              %div.text-secondary
+                = ev.result_text
+          %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
+          %td.text-end= ev.weight
+
+

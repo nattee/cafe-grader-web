@@ -31,6 +31,14 @@ gem 'pg'
 #for dumping database into yaml
 #gem 'yaml_db'
 
+# Use the database-backed adapters for Rails.cache, Active Job, and Action Cable
+gem "solid_cache"
+gem "solid_queue"
+gem "solid_cable"
+
+# Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
+gem "thruster", require: false
+
 
 #------------- assset pipeline -----------------
 # Gems used only for assets and not required
@@ -46,13 +54,13 @@ gem 'pg'
   # gem 'therubyracer', :platforms => :ruby
 
 # use import map
-gem "importmap-rails", "~> 1.1"
+gem "importmap-rails"
 
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
 gem "turbo-rails"
-
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
+
 
 gem 'haml'
 gem 'haml-rails'
@@ -60,7 +68,7 @@ gem 'haml-rails'
 gem 'jbuilder'
 
 # jquery addition
-gem 'jquery-rails', '~> 4.6'
+# gem 'jquery-rails', '~> 4.6'
 #gem 'jquery-ui-rails'
 #gem 'jquery-timepicker-addon-rails'
 #gem 'jquery-tablesorter'
@@ -68,18 +76,6 @@ gem 'jquery-rails', '~> 4.6'
 
 #syntax highlighter
 gem 'rouge'
-
-#bootstrap add-ons
-#gem 'bootstrap-sass', '~> 3.4.1'
-#gem 'bootstrap', '~> 5.3' # move to propshaft
-#gem 'bootstrap-switch-rails'
-#gem 'bootstrap-toggle-rails'
-#gem 'autoprefixer-rails'
-#gem 'momentjs-rails' # move to propshaft
-#gem 'rails_bootstrap_sortable'
-#gem 'bootstrap-datepicker-rails'
-#gem 'bootstrap3-datetimepicker-rails', '~> 4.17.47'
-#gem 'jquery-datatables-rails'
 
 #----------- user interface -----------------
 #gem 'simple_form', git: 'https://github.com/heartcombo/simple_form', ref: '31fe255'
@@ -99,38 +95,35 @@ gem 'whenever', require: false
 gem 'concurrent-ruby', '1.3.4'
 
 
-#---------------- testiing -----------------------
-gem 'minitest-reporters'
-
-#---------------- for console --------------------
-gem 'fuzzy-string-match'
-
-
 group :development, :test do
-  # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  gem 'byebug'
+  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
+  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
+
+  # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
+  gem "brakeman", require: false
+
+  # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
+  gem "rubocop-rails-omakase", require: false
 end
 
 group :development do
   # Access an interactive console on exception pages or by calling 'console' anywhere in the code.
   gem 'web-console', '>= 3.3.0'
-  gem 'listen', '>= 3.0.5', '< 3.2'
-  # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
-  gem 'spring'
-  gem 'spring-watcher-listen', '~> 2.0.0'
+
+
+  # gem 'listen', '>= 3.0.5', '< 3.2'
+  # # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
+  # gem 'spring'
+  # gem 'spring-watcher-listen', '~> 2.0.0'
 
   # fix some ???? bugs ????
   gem 'mutex_m'
-
-  # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
-  # gem "rack-mini-profiler"
 end
 
 group :test do
   # Adds support for Capybara system testing and selenium driver
   gem 'capybara'
   gem 'selenium-webdriver'
-  gem 'webdrivers'
 end
 
 
