@@ -235,6 +235,8 @@ class Compiler
       return Compiler::Blank
     when 'text'
       return Compiler::Blank
+    when 'verilog'
+      return Compiler::Verilog
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)

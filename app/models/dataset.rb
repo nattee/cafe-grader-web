@@ -9,7 +9,8 @@ class Dataset < ApplicationRecord
                          relative: 2, #token match float relate
                          custom_cafe: 3,
                          custom_cms: 4,
-                         postgres: 5}
+                         postgres: 5,
+                         firstline: 6}
 
   enum score_type:        {sum: 0,      # summation of all testcase, default
                            group_min: 1,
