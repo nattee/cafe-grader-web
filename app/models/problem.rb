@@ -308,7 +308,7 @@ class Problem < ApplicationRecord
       'a.out'
     when 'python'
       'cafe_code.py'
-    when 'java','digital','verilog'
+    when 'java','digital','verilog','jupyter'
       #for java, the compilation create a shell script that runs the file
       'run.sh'
     else

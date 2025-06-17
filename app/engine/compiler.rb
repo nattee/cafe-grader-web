@@ -237,6 +237,8 @@ class Compiler
       return Compiler::Blank
     when 'verilog'
       return Compiler::Verilog
+    when 'jupyter'
+      return Compiler::Jupyter
     else
       raise GraderError.new("Unsupported language (#{sub.language.name})",
                             submission_id: sub.id)

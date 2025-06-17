@@ -48,7 +48,7 @@ module JudgeBase
 
   def isolate_need_cg_by_lang(language_name)
     case language_name
-    when 'java', 'digital', 'go', 'python', 'verilog'
+    when 'java', 'digital', 'go', 'python', 'verilog', 'jupyter'
       true
     else
       false
@@ -60,7 +60,7 @@ module JudgeBase
     case language_name
     when 'pas','php'
       '-d /etc/alternatives'
-    when 'python'
+    when 'python','jupyter'
       '-p -d /venv -E HOME -d /etc/alternatives'
     when 'java'
       '-p -d /etc/alternatives'
@@ -84,7 +84,7 @@ module JudgeBase
   # return true when we must redirect the input into stdin
   def input_redirect_by_lang(language_name)
     case language_name
-    when 'digital', 'verilog'
+    when 'digital', 'verilog', 'jupyter'
       return false
     else
       return true

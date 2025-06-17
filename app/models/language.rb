@@ -23,6 +23,7 @@ class Language < ApplicationRecord
     Language.find_or_create_by( name: 'archive').update(pretty_name: 'Archive', ext: 'zip', common_ext: 'zip,jar', binary: true )
     Language.find_or_create_by( name: 'text').update(pretty_name: 'Text', ext: 'txt', common_ext: 'txt' )
     Language.find_or_create_by( name: 'verilog').update(pretty_name: 'Verilog', ext: 'v', common_ext: 'v' )
+    Language.find_or_create_by( name: 'jupyter').update(pretty_name: 'Jupyter Notebook', ext: 'ipynb', common_ext: 'ipynb', binary: true)
   end
 
   def self.cache_ext_hash
