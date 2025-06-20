@@ -1,9 +1,9 @@
 # Pin npm packages by running ./bin/importmap
 
-#entry point
+# entry point
 pin "application"
 pin "prepend_jquery"
-#pin "my_sprocket"
+# pin "my_sprocket"
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin_all_from "app/javascript/mixins", under: "mixins"
 
@@ -13,16 +13,16 @@ pin "datatables", to: "datatables/datatables.min.js"
 pin "vfs-fonts", to: "datatables/vfs_fonts.js"
 pin "pdfmake", to: 'datatables/pdfmake.min.js'
 
-#select2
+# select2
 pin "select2", to: "select2.min.js" # @4.1.0
 
 
-#pin "ace-rails-ap"
+# pin "ace-rails-ap"
 pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js
 pin "tempus-dominus-esm", to: "tempus-dominus/tempus-dominus.esm.js"
 pin "tempus-dominus-js", to: "tempus-dominus/tempus-dominus.js"
 
-#hotwire
+# hotwire
 pin "@hotwired/stimulus", to: "stimulus.min.js", preload: true
 pin "@hotwired/stimulus-loading", to: "stimulus-loading.js", preload: true
 pin "@hotwired/turbo-rails", to: "turbo.min.js", preload: true
@@ -41,7 +41,7 @@ pin "jquery", preload: true # @3.7.1
 pin "bootstrap", to: "bootstrap.esm.js"
 pin "@popperjs/core", to: "@popperjs-core-esm.js" # @2.11.8
 
-#my local js
+# my local js
 pin "cafe_bundle", to: "cafe_bundle.js"
 pin "cafe", to: "cafe.js"
 pin "cafe_event", to: "cafe_event.js"
@@ -57,11 +57,11 @@ pin "ace-builds" # @1.42.0
 # --- ace editor pin ---
 # pin_all_from does not works so I have to pin each individual files that is required by ace editor
 # however, we also have to import all of these as well, see setup_ace
-ACE_MODE = %w[c_cpp pascal ruby python java rust golang php haskell sql xml]
-ACE_THEME =%w[merbivore merbivore_soft dracula]
+ace_mode = %w[c_cpp pascal ruby python java rust golang php haskell sql xml]
+ace_theme =%w[merbivore merbivore_soft dracula]
 
-ACE_MODE.each { |mod| pin "ace-mode-#{mod}", to: "ace-noconflict/mode-#{mod}.js" }
-ACE_THEME.each { |theme| pin "ace-theme-#{theme}", to: "ace-noconflict/theme-#{theme}.js" }
+ace_mode.each { |mod| pin "ace-mode-#{mod}", to: "ace-noconflict/mode-#{mod}.js" }
+ace_theme.each { |theme| pin "ace-theme-#{theme}", to: "ace-noconflict/theme-#{theme}.js" }
 
-#pin "ace-theme-merbivore", to: 'ace-noconflict/theme-merbivore.js'
-#pin "ace-mode-c_cpp", to: 'ace-noconflict/mode-c_cpp.js'
+# pin "ace-theme-merbivore", to: 'ace-noconflict/theme-merbivore.js'
+# pin "ace-mode-c_cpp", to: 'ace-noconflict/mode-c_cpp.js'
