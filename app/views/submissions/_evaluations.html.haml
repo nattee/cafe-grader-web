@@ -1,8 +1,8 @@
 -#
   show evaluation with respect to the dataset
-  requires evaluations which should be 
+  requires *evaluations* which should be
   Testcase.left_joins(:evaluation).where(submission_id: @submission.id, testcase_id: @dataset.testcases.id)
-%h4 Evaluations
+-# header row
 .alert.my-0.py-0
   .row
     .col-1.text-end
@@ -17,6 +17,7 @@
       %strong Score
     .col-1.text-end
       %strong Weight
+-# body row
 - groups = evaluations.pluck(:group_name)
 - group_count, group_min, group_weight = 0,0,0
 - evaluations.each.with_index do |ev,idx|
@@ -52,9 +53,9 @@
       %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
       %span.text-body-tertiary> MB
     .col-5
-      = ev.result_as_word
-      - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
-        %div.text-secondary
+      = Evaluation.result_enum_to_code(ev.result)
+      - unless ev.result_text.blank? || ev.result_text == Evaluation.result_enum_to_code(ev.result)
+        %div.grader-comment
           = ev.result_text
     .col-1.text-end
       = number_to_percentage (ev.score || 0) *100, precision: 0
@@ -68,39 +69,7 @@
       .row.mt-1
         .col.text-center
           %strong
-            Group #{groups[idx-1]} score:
+            Group "#{groups[idx-1]}" Minimum Score:
             = number_to_percentage (group_min || 0) *100, precision: 0
     :plain
       </div>
-
--#
-  %table.table
-    %thead
-      %tr
-        %th.text-end ID
-        %th.text-end Group
-        %th.text-end Time
-        %th.text-end Memory
-        %th Result
-        %th.text-end Score
-        %th.text-end Weight
-    %tbody
-      - @evaluations.each do |ev|
-        %tr
-          %td.text-end= ev.num
-          %td.text-end= ev.group_name
-          %td.text-end
-            %span= (ev.time || 0) / 1000.0
-            %span.text-secondary s
-          %td.text-end
-            %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
-            %span.text-secondary MB
-          %td
-            = ev.result_as_word
-            - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
-              %div.text-secondary
-                = ev.result_text
-          %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
-          %td.text-end= ev.weight
-
-

@@ -146,3 +146,30 @@
   font-style: normal;
   src: url('material_symbols/MaterialSymbolsSharp.woff2') format('woff');
 }
+
+
+// Caskadia
+@font-face {
+  font-family: 'Cascadia Code';
+  font-weight: 400;
+  font-style: normal;
+  src: url('cascadia_code/CascadiaCode-Regular.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Cascadia Code';
+  font-weight: 400;
+  font-style: italic;
+  src: url('cascadia_code/CascadiaCode-Italic.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Cascadia Code';
+  font-weight: 700;
+  font-style: normal;
+  src: url('cascadia_code/CascadiaCode-Bold.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Cascadia Code';
+  font-weight: 700;
+  font-style: italic;
+  src: url('cascadia_code/CascadiaCode-BoldItalic.ttf') format('truetype'),
+}

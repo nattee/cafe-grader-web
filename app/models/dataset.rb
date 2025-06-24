@@ -4,16 +4,16 @@ class Dataset < ApplicationRecord
   has_many :testcases, dependent: :destroy
   has_many :submissions
 
-  enum :evaluation_type, { default: 0, #diff ignore trailing space, ignore blank line
-                           exact: 1, #diff ignore nothing
-                           relative: 2, #token match float relate
+  enum :evaluation_type, { default: 0,  # diff ignore trailing space, ignore blank line
+                           exact: 1,    # diff ignore nothing
+                           relative: 2, # token match float relate
                            custom_cafe: 3,
                            custom_cms: 4,
                            postgres: 5}
 
-  enum :score_type,      {sum: 0,      # summation of all testcase, default
+  enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,
-                          }, prefix: :st
+                         }, prefix: :st
 
   has_one_attached :checker
   has_many_attached :managers       # additional files for compile process (these files are VISIBLE to the user's submission)
@@ -45,12 +45,12 @@ class Dataset < ApplicationRecord
     tc_ids = testcases.display_order.ids
     idx = 0
     weight_param.each do |wp|
-      count = 1;
+      count = 1
       if wp.is_a? Array
         count = wp[1].to_i
-        w = wp[0].to_i;
+        w = wp[0].to_i
       else
-        w = wp.to_i;
+        w = wp.to_i
       end
       # take next count ids
       ids = tc_ids[idx...(idx+count)]
@@ -64,12 +64,12 @@ class Dataset < ApplicationRecord
     tc_ids = testcases.display_order.ids
     idx = 0
     array.each do |config|
-      count = 1;
+      count = 1
       if config.is_a? Array
         count = config[1].to_i
-        value = config[0];
+        value = config[0]
       else
-        value = config;
+        value = config
       end
       # take next count ids
       ids = tc_ids[idx...(idx+count)]
@@ -81,9 +81,9 @@ class Dataset < ApplicationRecord
   end
 
   def set_by_hash(options)
-    set_by_array(:weight,options[:weight]) if options.has_key? :weight
-    set_by_array(:group,options[:group]) if options.has_key? :group
-    set_by_array(:group_name,options[:group_name]) if options.has_key? :group_name
+    set_by_array(:weight, options[:weight]) if options.has_key? :weight
+    set_by_array(:group, options[:group]) if options.has_key? :group
+    set_by_array(:group_name, options[:group_name]) if options.has_key? :group_name
   end
 
   def invalidate_worker
@@ -96,7 +96,7 @@ class Dataset < ApplicationRecord
   # return true if change were made (which means that the record should be save)
   def update_main_filename
     if managers.attached?
-      manager_filenames = self.managers.map{ |x| x.filename.to_s }
+      manager_filenames = self.managers.map { |x| x.filename.to_s }
       unless manager_filenames.include? main_filename
         self.main_filename = manager_filenames[0]
         return true
@@ -111,5 +111,4 @@ class Dataset < ApplicationRecord
   end
 
   protected
-
 end

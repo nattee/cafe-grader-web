@@ -124,38 +124,7 @@
                 No
                 - if @current_user.has_role?('ta')
                   = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
-      -# evaluation result
+      %h4 Evaluations
       = render partial: 'evaluations', locals: {evaluations: @evaluations}
-      -#
-        - if @submission.evaluations.count > 0
-          %h4 Evaluations
-          %table.table
-            %thead
-              %tr
-                %th.text-end ID
-                %th.text-end Group
-                %th.text-end Time
-                %th.text-end Memory
-                %th Result
-                %th.text-end Score
-                %th.text-end Weight
-            %tbody
-              - @evaluations.each do |ev|
-                %tr
-                  %td.text-end= ev.num
-                  %td.text-end= ev.group_name
-                  %td.text-end
-                    %span= (ev.time || 0) / 1000.0
-                    %span.text-secondary s
-                  %td.text-end
-                    %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
-                    %span.text-secondary MB
-                  %td
-                    = ev.result_as_word
-                    - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
-                      %div.text-secondary
-                        = ev.result_text
-                  %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
-                  %td.text-end= ev.weight
 
 = render partial: 'msg_modal', locals: {header_msg: 'Compiler message', body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}

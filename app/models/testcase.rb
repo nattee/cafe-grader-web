@@ -1,7 +1,9 @@
 class Testcase < ApplicationRecord
   belongs_to :problem, optional: true
   belongs_to :dataset
-  #attr_accessible :group, :input, :num, :score, :sol
+
+  has_many :evaluations
+  # attr_accessible :group, :input, :num, :score, :sol
 
   has_one_attached :inp_file
   has_one_attached :ans_file
@@ -17,5 +19,4 @@ class Testcase < ApplicationRecord
   def get_weight
     return score
   end
-
 end
