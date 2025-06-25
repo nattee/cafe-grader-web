@@ -288,7 +288,7 @@ class ProblemsController < ApplicationController
     name = params[:problem][:name]
     uploaded_file_path = params[:problem][:file].to_path
 
-    #check valid group
+    # check valid group
     group = Group.find(params[:problem][:groups]) rescue nil
     unless @current_user.admin? || @current_user.groups_for_action(:edit).where(id: group).any?
       @errors = ['You can only upload a problem into a group that you are editor']

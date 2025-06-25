@@ -7,7 +7,7 @@ class Checker
 
   # A langauge specific sub-class may override this method
   # it should return shell command that do the comparison
-  def check_command(evaluation_type,input_file,output_file, ans_file)
+  def check_command(evaluation_type, input_file, output_file, ans_file)
     case evaluation_type
     when 'default'
       return "diff -q -b -B -Z #{output_file} #{ans_file}"
@@ -28,13 +28,13 @@ class Checker
     end
   end
 
-  def process_result_cms(out,err)
+  def process_result_cms(out, err)
     score = out.chomp.strip
     err = nil if err.blank?
-    return report_check(score,err)
+    return report_check(score, err)
   end
 
-  def process_result_cafe(out,err)
+  def process_result_cafe(out, err)
     arr = out.split("\n")
     if arr.count < 2
       return report_check_error('(cafe-checker) output from checker is malformed')
@@ -46,27 +46,27 @@ class Checker
       return report_check_wrong(score)
     elsif arr[0].split(':')[0].upcase == 'COMMENT'
       comment = arr[0][8...]
-      return report_check_partial(score,comment)
+      return report_check_partial(score, comment)
     end
   end
 
-  def process_result(evaluation_type,out,err,status)
+  def process_result(evaluation_type, out, err, status)
     case evaluation_type
     when 'default', 'exact', 'relative'
-      #these standard check return 0 when correct
-      if (status.exitstatus == 0)
+      # these standard check return 0 when correct
+      if status.exitstatus == 0
         return report_check_correct
       else
         return report_check_wrong
       end
     when 'postgres'
-      return process_result_cms(out,err)
+      return process_result_cms(out, err)
     when 'custom_cms', 'custom_cafe'
       if status.exitstatus == 0
         if evaluation_type == 'custom_cms'
-          return process_result_cms(out,err)
+          return process_result_cms(out, err)
         else
-          return process_result_cafe(out,err)
+          return process_result_cafe(out, err)
         end
       else
         comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
@@ -104,7 +104,7 @@ class Checker
 
   # main run function
   # run the submission against the testcase
-  def process(sub,testcase)
+  def process(sub, testcase)
     @sub = sub
     @testcase = testcase
     @ds = @testcase.dataset
@@ -112,24 +112,24 @@ class Checker
     # init isolate
     # setup_isolate(@box_id)
 
-    #prepare files location variable
+    # prepare files location variable
     prepare_submission_directory(@sub)
     prepare_dataset_directory(@ds)
-    prepare_testcase_directory(@sub,@testcase)
+    prepare_testcase_directory(@sub, @testcase)
     check_for_required_file
 
-    cmd = check_command(@ds.evaluation_type,@input_file,@output_file,@ans_file)
+    cmd = check_command(@ds.evaluation_type, @input_file, @output_file, @ans_file)
 
     # call the compare command
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check cmd: " + Rainbow(cmd).color(JudgeBase::COLOR_CHECK_CMD)
-    out,err,status = Open3.capture3(cmd)
+    out, err, status = Open3.capture3(cmd)
 
-    result = process_result(@ds.evaluation_type,out,err,status)
+    result = process_result(@ds.evaluation_type, out, err, status)
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_status_with_color(result)
-    return result;
+    return result
   end
 
-  def report_check(score,comment)
+  def report_check(score, comment)
     x = {score: score, comment: comment}
     if score.to_f == 1
       x[:result] = :correct
@@ -145,15 +145,15 @@ class Checker
     {
       result: :correct,
       score: score,
-      comment: comment,
+      comment: comment
     }
   end
 
-  def report_check_wrong(score = 0.to_d,comment = nil)
+  def report_check_wrong(score = 0.to_d, comment = nil)
     {
       result: :wrong,
       score: score,
-      comment: comment,
+      comment: comment
     }
   end
 
@@ -161,7 +161,7 @@ class Checker
     {
       result: :partial,
       score: score,
-      comment: comment,
+      comment: comment
     }
   end
 
@@ -169,13 +169,13 @@ class Checker
     {
       result: :grader_error,
       score: nil,
-      comment: comment,
+      comment: comment
     }
   end
 
-  #return appropriate evaluator class for the submission
+  # return appropriate evaluator class for the submission
   def self.get_checker(submission)
-    #TODO: should return appropriate scorer class
+    # TODO: should return appropriate scorer class
     return self
   end
 end
