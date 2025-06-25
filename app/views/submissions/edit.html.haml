@@ -47,29 +47,33 @@
           - else
             %ul
               %li You have not submitted any file to this problem.
-      -# Form for submit & Language
-      %div.mb-3
-        .alert{class: (@as_binary ? 'alert-warning' : 'alert-info')}
-          .mb-2
-            - if @as_binary
-              The problem only accept upload of an archive file. Select a file using the button
-              %strong "Browse"
-              and click submit.
+      -# Form for submit & Language select
+      .alert.mb-3{class: (@as_binary ? 'alert-warning' : 'alert-info')}
+        .mb-2
+          - if @as_binary
+            The problem only accept upload of a binary file such as .zip. Select a file using the
+            %strong "Browse"
+            button and click submit.
+          - else
+            - if @language_forced
+              Write your code in the box above and then click the submit button to submit the code. This problem requires that the submission must be in 
+              %strong= @language.pretty_name
+              only.
             - else
-              Write your code in the above box, choose a language, and click submit button when finished
-          = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center', data: {action: 'editor#submit'} do |form|
-            = hidden_field_tag 'editor_text', @source, data: {editor_target: 'submitSource'}
-            = hidden_field_tag 'submission[problem_id]', @problem.id
-            .col-auto
-              = form.label :language_id, 'Language'
-            .col-auto
-              - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
-              = form.select :language_id, options, {},  class: 'form-select', data: {action: 'change->editor#setLanguage', editor_target: 'languageSelect'}, style: "width: 100px", id: 'language_id'
-            .col-auto
-              = form.file_field :file, class: 'form-control', id: 'load_file', data: {action: 'change->editor#loadFileToEditor'}
-            .col-auto
-              = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
-                data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
+              Write your code in the box above, choose a language, and then click the submit button to submit the code.
+        = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center', data: {action: 'editor#submit'} do |form|
+          = hidden_field_tag 'editor_text', @source, data: {editor_target: 'submitSource'}
+          = hidden_field_tag 'submission[problem_id]', @problem.id
+          .col-auto
+            = form.label :language_id, 'Language'
+          .col-auto
+            - options = options_from_collection_for_select(Language.where(id: @problem.get_permitted_lang_as_ids), 'id', 'pretty_name', @language.id )
+            = form.select :language_id, options, {},  class: 'form-select', data: {action: 'change->editor#setLanguage', editor_target: 'languageSelect'}, style: "width: 100px", id: 'language_id', disabled: @language_forced
+          .col-auto
+            = form.file_field :file, class: 'form-control', id: 'load_file', data: {action: 'change->editor#loadFileToEditor'}
+          .col-auto
+            = submit_tag 'Submit', class: 'btn btn-success', id: 'live_submit', 
+              data: {confirm: "Submitting this source code for task #{@problem.long_name}?"}
 
     .col-lg-4{ data: {turbo: true}}
       -# latest submission status
@@ -79,6 +83,6 @@
           = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", remote: true if @submission
         .card-body
           #latest_status
-      -# Helper
+      -# Hint area
       = turbo_frame_tag :problem_helpers, src: helpers_problem_path(@problem) do
         %p Loading...

@@ -73,10 +73,8 @@ class SubmissionsController < ApplicationController
       @language = @current_user.default_language || problem_lang || Language.first
     end
 
-
     @as_binary = @language.binary?
     @last_sub = @current_user.last_submission_by_problem(@problem)
-
 
     render 'edit'
   end
@@ -87,7 +85,8 @@ class SubmissionsController < ApplicationController
     @problem = @submission.problem
 
     problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
-    if @problem.get_permitted_lang_as_ids.count == 1
+    @language_forced = @problem.get_permitted_lang_as_ids.count == 1
+    if @language_forced
       @language = problem_lang
     else
       @language = @submission.language || @current_user.default_language || problem_lang || Language.first

@@ -25,7 +25,7 @@ class ProblemPdfGenerator
           "-o", pdf_tempfile.path
         ]
 
-        stdout_str, stderr_str, status = Open3.capture3(pandoc_command.shelljoin, stdin_data: @description)
+        _stdout_str, stderr_str, status = Open3.capture3(pandoc_command.shelljoin, stdin_data: @description)
 
         if status.success?
           attach_pdf(pdf_tempfile)
