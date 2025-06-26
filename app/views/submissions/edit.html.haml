@@ -1,4 +1,4 @@
-.container{'data-controller': ('editor' unless @as_binary)}
+.container{data: {controller: 'editor', editor_delay_value: 4000, editor_as_binary_value: @as_binary }}
   - unless @as_binary
     -# hidden area that shows the original code
     %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @source
@@ -80,9 +80,12 @@
       .card.mb-3
         .card-header.text-bg-info.border-info
           Latest Submission Status
-          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", remote: true if @submission
+          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", data: {turbo: true, editor_delay_value: 3000, editor_target: 'refreshButton'} if @submission
         .card-body
-          #latest_status
+          = turbo_frame_tag :latest_status do
+            %div
+          = turbo_frame_tag :latest_status_text do
+            %div{data: {editor_target: 'waitingText'}}
       -# Hint area
       = turbo_frame_tag :problem_helpers, src: helpers_problem_path(@problem) do
         %p Loading...

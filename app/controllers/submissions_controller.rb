@@ -97,12 +97,21 @@ class SubmissionsController < ApplicationController
   end
 
 
+  # as Turbo
   def get_latest_submission_status
     @problem = Problem.find(params[:pid])
     @submission = @current_user.last_submission_by_problem(@problem)
-    respond_to do |format|
-      format.js
-    end
+    render turbo_stream: [
+      turbo_stream.update("latest_status",
+                           partial: 'submission_short',
+                           locals: {submission: @submission,
+                                    show_id: true,
+                                    sub_count: @submission.number,
+                                    show_button: false })
+    ]
+    #respond_to do |format|
+    #  format.js
+    #end
   end
 
   # GET /submissions/:id/rejudge

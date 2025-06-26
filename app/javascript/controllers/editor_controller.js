@@ -4,21 +4,31 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
 
   static targets = [
-                    "editor", "languageSelect", "source", "submitSource"
+                    "editor", "languageSelect", "source", "submitSource",
+                    "refreshButton", "waitingText"
                    ]
+
+  // this is values that is read from data-editor-delay-value
+  static values = {
+    delay: { type: Number, default: 5000 }, // Default delay is 5000ms (5 secs)
+    asBinary: {type: Boolean, default: false }
+  }
 
   connect() {
     // initialize the editor if we have one
     if (this.hasEditorTarget) this.initEditor();
 
-    //trigger the setLanguage if there is a language selection
+    // trigger the setLanguage if there is a language selection
     if (this.hasLanguageSelectTarget) this.setLanguage();
 
-    //set up file reader
+    // set up file reader
     this.reader = new FileReader();
     // must use the arrow function else "this" in the function won't 
     // refer to the stimulus Controller
     this.reader.onload = this.#readFile;
+
+    this.startRefreshTimer();
+
   }
 
   // attached to the select of a language
@@ -65,7 +75,38 @@ export default class extends Controller {
     this.submitSourceTarget.value = this.editor.getValue()
   }
 
+  // for starting auto refresh latest submission status
+  startRefreshTimer() {
+    // click the refresh button after 5 secs
+    this.remainingSeconds = this.delayValue / 1000
+    this.updateWaitingText()
+    this.refreshTimer = setInterval(() => {
+      this.remainingSeconds--;
+      this.updateWaitingText()
+      if (this.remainingSeconds <= 0) {
+        clearInterval(this.refreshTimer)
+
+        // click the refersh button
+        if (this.hasRefreshButtonTarget) {
+          this.refreshButtonTarget.click();
+        }
+      }
+    }, 1000) // update every second
+  }
+
+  // render the waiting text
+  updateWaitingText() {
+    if (this.hasWaitingTextTarget) {
+      this.waitingTextTarget.textContent = `Checking score in ${this.remainingSeconds} seconds...`;
+    }
+  }
+
   disconnect() {
+    // Clear the timeout if the controller is ever disconnected from the DOM
+    // This prevents memory leaks or unexpected clicks.
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+    }
   }
 
   // --- private function ---
@@ -76,6 +117,9 @@ export default class extends Controller {
 
   // set the syntax highlight
   #setEditorHighlight(language) {
+    // skip if there is no editor
+    if (!this.hasEditorTarget) return ;
+
     const languageModes = {
       'Pascal': 'ace/mode/pascal',
       'C++': 'ace/mode/c_cpp',
