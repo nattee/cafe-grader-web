@@ -161,5 +161,18 @@ Cheers!
       comment:
         kinds:
           hint: Hint
+      evaluation:
+        results:
+          waiting: Judging
+          correct: Correct
+          wrong: Wrong Answer
+          partial: Partially Correct
+          time_limit: Time Limit Exceed
+          memory_limit: Memory Limit Exceed
+          crash: Crashed
+          unknown_error: UNKNOWN ERROR
+          grader_error: GRADER ERROR
+
+
 
 

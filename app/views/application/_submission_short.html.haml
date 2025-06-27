@@ -6,9 +6,9 @@
     .row
       .col-12
         %span.me-1.mi.mi-bs.text-secondary tag
-        = link_to submission.id, submission_path(submission)
+        = link_to submission.id, submission_path(submission), data: {turbo: false}
         %span.ms-2
-          = "(#{link_to pluralize(sub_count || '-',"try"), problem_submissions_path(submission.problem_id)})"
+          = "(#{link_to pluralize(sub_count || '-',"try"), problem_submissions_path(submission.problem_id), data: {turbo: false}})"
         %span.ms-2
           - if submission.status == 'compilation_error'
             - compiler_msg_class = 'link-danger'

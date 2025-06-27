@@ -47,6 +47,8 @@ class Checker
     elsif arr[0].split(':')[0].upcase == 'COMMENT'
       comment = arr[0][8...]
       return report_check_partial(score, comment)
+    else
+      return report_check_error('(cafe-checker) output from checker is malformed')
     end
   end
 

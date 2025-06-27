@@ -31,3 +31,7 @@ ALLOW_TEST_PAIR_IMPORT = false
 
 # Uncomment to allow authentication and user import from programming.in.th
 # LoginController.add_authenticator(ProgrammingAuthenticator.new)
+
+
+# Load the config from YML
+Rails.configuration.worker = Rails.application.config_for(:worker)
