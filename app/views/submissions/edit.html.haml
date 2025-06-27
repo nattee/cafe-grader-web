@@ -88,7 +88,8 @@
             .col-md-8
               %h5 Latest Submission Status
             .col-md-4.text-md-end
-              = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-info btn-sm", data: {turbo: true, turbo_prefetch: false}
+              - if @submission
+                = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-info btn-sm", data: {turbo: true, turbo_prefetch: false}
           - if @submission
             = turbo_frame_tag :latest_status,src: get_latest_submission_status_submissions_path(@submission.user,@problem) do
               %div

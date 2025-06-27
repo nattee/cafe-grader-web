@@ -6,7 +6,7 @@
     There are following errors
     %ul
       - @errors.each do |msg|
-        %li= msg
+        %li= msg.html_safe
 
 .row
   .col-md-6

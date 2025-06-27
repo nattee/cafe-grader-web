@@ -234,7 +234,6 @@ class ProblemImporter
     if checker
       @log << "Found a custom checker file [#{fn}]"
       @got << fn
-      debugger
       @dataset.checker.attach(io: StringIO.new(checker), filename: fn.basename)
     end
   end

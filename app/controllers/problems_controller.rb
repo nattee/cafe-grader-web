@@ -1,5 +1,4 @@
 class ProblemsController < ApplicationController
-
   # concern for problem authorization
   include ProblemAuthorization
 
@@ -12,7 +11,7 @@ class ProblemsController < ApplicationController
   before_action :set_problem, only: MEMBER_METHOD
   before_action :check_valid_login
 
-  #permission
+  # permission
   before_action :group_editor_authorization, except: [:download_by_type]
   before_action :can_view_problem, only: [:download_by_type]
 
@@ -99,7 +98,7 @@ class ProblemsController < ApplicationController
     if @problem.save
       redirect_to action: :index, notice: 'Problem was successfully created.'
     else
-      render :action => 'new'
+      render action: 'new'
     end
   end
 
@@ -166,13 +165,13 @@ class ProblemsController < ApplicationController
 
   def toggle_available
     @problem.update(available: !@problem.available)
-    @toast = {title: "Problem #{@problem.name}",body: "Available updated"}
+    @toast = {title: "Problem #{@problem.name}", body: "Available updated"}
     render 'toggle'
   end
 
   def toggle_view_testcase
     @problem.update(view_testcase: !@problem.view_testcase)
-    @toast = {title: "Problem #{@problem.name}",body: "View Testcase updated"}
+    @toast = {title: "Problem #{@problem.name}", body: "View Testcase updated"}
     render 'toggle'
   end
 
@@ -188,26 +187,26 @@ class ProblemsController < ApplicationController
 
   def stat
     unless @problem.available or session[:admin]
-      redirect_to :controller => 'main', :action => 'list'
+      redirect_to controller: 'main', action: 'list'
       return
     end
-    @submissions = Submission.includes(:user).includes(:language).where(problem_id: params[:id]).order(:user_id,:id)
+    @submissions = Submission.includes(:user).includes(:language).where(problem_id: params[:id]).order(:user_id, :id)
 
-    #stat summary
+    # stat summary
     range =65
-    @histogram = { data: Array.new(range,0), summary: {} }
+    @histogram = { data: Array.new(range, 0), summary: {} }
     user = Hash.new(0)
     @submissions.find_each do |sub|
       d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
       @histogram[:data][d.to_i] += 1 if d < range
       user[sub.user_id] = [user[sub.user_id], ((sub.try(:points) || 0) >= 100) ? 1 : 0].max
     end
-    @histogram[:summary][:max] = [@histogram[:data].max,1].max
+    @histogram[:summary][:max] = [@histogram[:data].max, 1].max
 
     @summary = { attempt: user.count, solve: 0 }
     user.each_value { |v| @summary[:solve] += 1 if v == 1 }
 
-    #for new graph
+    # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
     @can_view_ip =  true
   end
@@ -217,11 +216,9 @@ class ProblemsController < ApplicationController
   end
 
   def do_manage
-
-
     @result = []
     @error = []
-    problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids )
+    problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids)
 
     @toast = {title: "Bulk Manage #{problems.count} #{'problem'.pluralize(problems.count)}"}
 
@@ -232,18 +229,18 @@ class ProblemsController < ApplicationController
       @result << "Set \"Available\" to <strong>#{params[:enable]}</strong>"
     end
     if params[:add_tags] == '1'
-      problems.each { |p| p.tag_ids += params[:tag_ids] } 
-      tag_names = Tag.where(id:params[:tag_ids]).pluck(:name).map{ |x| "[<strong>#{x}</strong>]"}.join(', ')
+      problems.each { |p| p.tag_ids += params[:tag_ids] }
+      tag_names = Tag.where(id: params[:tag_ids]).pluck(:name).map { |x| "[<strong>#{x}</strong>]" }.join(', ')
       @result << "Add tags #{tag_names}"
     end
 
     if params[:set_languages] == '1'
       permitted_lang = Language.where(id: params[:lang_ids]).pluck(:name)
       problems.update_all(permitted_lang: permitted_lang.join(' '))
-      @result << "Permitted languages are changed to #{permitted_lang.map{ |x| "[<strong>#{x}</strong>]"}.join(', ')}"
+      @result << "Permitted languages are changed to #{permitted_lang.map { |x| "[<strong>#{x}</strong>]" }.join(', ')}"
     end
 
-    #add to groups
+    # add to groups
     if params[:add_group] == '1'
       Group.where(id: params[:group_id]).each do |group|
         ok = []
@@ -252,24 +249,24 @@ class ProblemsController < ApplicationController
           begin
             group.problems << p
             ok << p.full_name
-          rescue => e
+          rescue
             failed << p.full_name
           end
         end
         @result << "Added to group <strong>#{group.name}</strong>"
         @result << "The following problem are already in the group <strong>#{group.name}</strong>: " + failed.join(', ') if failed.count > 0
       end
-      #flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
-      #flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
+      # flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
+      # flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
     end
 
-    @toast[:body] = "<ul> #{@result.map{|x| "<li>#{x}</li>"}.join}  </ul>".html_safe
+    @toast[:body] = "<ul> #{@result.map { |x| "<li>#{x}</li>" }.join}  </ul>".html_safe
     render 'turbo_toast'
 
 
-    #redirect_to :action => 'manage'
-    #@problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
-    #render :manage
+    # redirect_to :action => 'manage'
+    # @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
+    # render :manage
   end
 
   def import
@@ -373,7 +370,7 @@ class ProblemsController < ApplicationController
     end
 
     # load data
-    pi.import_dataset_from_dir( extracted_path, @problem.name,
+    pi.import_dataset_from_dir(extracted_path, @problem.name,
                                 full_name: @problem.full_name,
                                 input_pattern: params[:import][:input_pattern],
                                 sol_pattern: params[:import][:sol_pattern],
@@ -403,8 +400,8 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :submission_filename, :difficulty,:attachment, :statement, :markdown,
-                                      :test_allowed, :output_only, :url, :description, :description, tag_ids:[], group_ids:[])
+                                      :submission_filename, :difficulty, :attachment, :statement, :markdown,
+                                      :test_allowed, :output_only, :url, :description, :description, tag_ids: [], group_ids: [])
     end
 
     def description_params
@@ -441,8 +438,8 @@ class ProblemsController < ApplicationController
       ids = []
       params.keys.each do |k|
         if k.index('prob-')==0
-          #name, id, order = k.split('-')
-          #problems << Problem.find(id)
+          # name, id, order = k.split('-')
+          # problems << Problem.find(id)
           ids << k.split('-')[1]
         end
       end
@@ -452,11 +449,11 @@ class ProblemsController < ApplicationController
     def problem_for_manage(user)
       tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
       ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
-      return@problems = user.problems_for_action(:edit).joins(:datasets)
+      return @problems = user.problems_for_action(:edit).joins(:datasets)
         .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
         .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
         .includes(:tags).order(date_added: :desc).group('problems.id')
-        .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
+        .select("problems.*", "count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
         .select("MIN(MS.ms_count) as ms_count")
         .with_attached_statement
         .with_attached_attachment
@@ -467,5 +464,4 @@ class ProblemsController < ApplicationController
     def set_active_tab
       @active_problem_tab = params[:active_problem_tab]
     end
-
 end

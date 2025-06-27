@@ -39,7 +39,7 @@ class SubmissionsController < ApplicationController
   # Turbo render evaluations as modal popup
   def evaluations
     p = Problem.find(@submission.problem.id)
-    evs = p.live_dataset.testcases.left_joins(:evaluations).where(evaluations: {submission: @submission}).order(:group, :num).select('evaluations.*', 'testcases.*')
+    evs = p.live_dataset.testcases.left_joins(:evaluations).includes(:evaluations).where(evaluations: {submission: @submission}).order(:group, :num).select('evaluations.*', 'testcases.*')
     render partial: 'msg_modal_show', locals: { do_popup: true, header_msg: 'Evaluation Details', body_msg: render_to_string(partial: 'evaluations', locals: {evaluations: evs}) }
   end
 

@@ -53,10 +53,7 @@
       %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
       %span.text-body-tertiary> MB
     .col-5
-      = Evaluation.result_enum_to_code(ev.result)
-      - unless ev.result_text.blank? || ev.result_text == Evaluation.result_enum_to_code(ev.result)
-        %div.grader-comment
-          = ev.result_text
+      = render partial: 'evaluation_result', locals: {ev: ev}
     .col-1.text-end
       = number_to_percentage (ev.score || 0) *100, precision: 0
     .col-1.text-end
