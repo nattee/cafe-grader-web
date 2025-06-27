@@ -10,8 +10,8 @@ Rails.application.routes.draw do
 
   root :to => 'main#login'
 
-  #logins
-  match 'login/login',  to: 'login#login', via: [:get,:post]
+  # logins
+  match 'login/login',  to: 'login#login', via: [:get, :post]
 
   resources :contests do
     member do
@@ -64,7 +64,8 @@ Rails.application.routes.draw do
 
   resources :announcements do
     member do
-      post 'toggle_published','toggle_front'
+      post 'toggle_published'
+      post 'toggle_front'
       delete 'delete_file'
     end
   end
@@ -82,13 +83,17 @@ Rails.application.routes.draw do
       delete 'attachment', action: 'delete_attachment'
       delete 'statement', action: 'delete_statement'
       get 'helpers'
+      # attachment
+      get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
+      delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
       # nested hint
       post 'manage_hint'
       get 'edit_hint(/:hint_id)', action: 'edit_hint', as: 'edit_hint'
       patch 'update_hint/:hint_id', action: 'update_hint', as: 'update_hint'
       get 'show_hint/:hint_id', action: :show_hint, as: :show_hint
     end
-    resources :comments, as: :hint, path: :hint, only: [:edit,:update,:show] do
+    resources :comments, as: :hint, path: :hint, only: [:update, :show] do
+      get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
       post 'manage_problem', on: :collection, as: :manage
       post 'acquire', on: :member
     end
@@ -182,7 +187,7 @@ Rails.application.routes.draw do
     end
   end
 
-  #user admin
+  # user admin
   # ** since :user_admin is SINGULAR, the helper functions will be xxx_user_admin_index_path <-- NOTICE THE *_index*
   resources :user_admin do
     collection do
@@ -202,7 +207,8 @@ Rails.application.routes.draw do
     end
     member do
       get 'clear_last_ip'
-      get 'toggle_activate', 'toggle_enable'
+      get 'toggle_activate'
+      get 'toggle_enable'
       get 'stat'
       get 'stat/contest/:contest_id', to: 'user_admin#stat_contest', as: 'stat_contest'
     end
@@ -214,6 +220,7 @@ Rails.application.routes.draw do
       post 'compiler_msg'
       get 'rejudge'
       get 'set_tag'
+      post 'evaluations'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
@@ -233,9 +240,9 @@ Rails.application.routes.draw do
     end
   end
 
-  #singular resource
-  #---- BEWARE ---- singular resource maps to plural controller by default, we can override by provide controller name directly
-  #report
+  # singular resource
+  # ---- BEWARE ---- singular resource maps to plural controller by default, we can override by provide controller name directly
+  # report
   resource :report, only: [], controller: 'report' do
     get 'max_score'
     post 'show_max_score'
@@ -257,11 +264,11 @@ Rails.application.routes.draw do
     get 'submission'
     post 'submission_query'
   end
-  #get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
-  #get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'
-  #get "report/login"
-  #get 'report/max_score', to: 'report#max_score', as: 'report_max_score'
-  #post 'report/show_max_score', to: 'report#show_max_score', as: 'report_show_max_score'
+  # get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
+  # get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'
+  # get "report/login"
+  # get 'report/max_score', to: 'report#max_score', as: 'report_max_score'
+  # post 'report/show_max_score', to: 'report#show_max_score', as: 'report_show_max_score'
 
   resource :main, only: [], controller: 'main' do
     get 'login'
@@ -272,11 +279,11 @@ Rails.application.routes.draw do
     post 'submit'
     post 'prob_grop'
   end
-  #main
-  #get "main/list"
-  #get 'main/submission(/:id)', to: 'main#submission', as: 'main_submission'
-  #post 'main/submit', to: 'main#submit'
-  #get 'main/announcements', to: 'main#announcements'
+  # main
+  # get "main/list"
+  # get 'main/submission(/:id)', to: 'main#submission', as: 'main_submission'
+  # post 'main/submit', to: 'main#submit'
+  # get 'main/announcements', to: 'main#announcements'
 
   namespace :worker do
     post 'compiled_submission/:id', action: :compiled_submission, as: :compiled_submission
@@ -287,8 +294,8 @@ Rails.application.routes.draw do
 
   get 'heartbeat/:id/edit' => 'heartbeat#edit'
 
-  #grader
-  #get 'graders/list', to: 'graders#list', as: 'grader_list'
+  # grader
+  # get 'graders/list', to: 'graders#list', as: 'grader_list'
   resources :grader_processes, controller: :graders, only: [:index, :update] do
     member do
       post 'edit_job_type'

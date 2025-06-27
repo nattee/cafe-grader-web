@@ -91,7 +91,7 @@ module JudgeBase
 
   # download (via worker controller) files from the web server at url
   # and save to dest (which is a Pathname), raise exception on any error
-  def download_from_web(url,dest,download_type: 'generic' ,chmod_mode: nil, sub_id: nil)
+  def download_from_web(url,dest,download_type: 'generic' ,chmod_mode: nil)
     begin
       uri = URI(url)
 
@@ -118,7 +118,7 @@ module JudgeBase
         end
       end
     rescue Net::HTTPExceptions => he
-      raise GraderError.new("Error download #{download_type} \"#{he}\"",submission_id: sub_id )
+      raise GraderError.new("Error download #{download_type} \"#{he}\"",submission_id: @sub&.id )
     end
   end
 

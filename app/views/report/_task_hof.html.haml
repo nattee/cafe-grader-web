@@ -162,7 +162,7 @@
                       = link_to "(##{value[:first][:sub_id].to_s})", submission_path( value[:first][:sub_id])
 
 :javascript
-  $(function() {
+  window.addEventListener("load", function() {
     data = #{@chart_dataset}
     config = {
       type: 'bar',

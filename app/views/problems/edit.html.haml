@@ -25,6 +25,3 @@
           = render partial: 'datasets/dataset_select', locals: {ds: @problem.live_dataset, problem: @problem}
         -# dataset form
         = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset), data: {'problem-target': 'dataset', 'current-id': @problem.live_dataset.id}
-
-:javascript
-  //page 

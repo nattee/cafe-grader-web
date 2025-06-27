@@ -9,11 +9,10 @@ namespace :grader do
     desc 'Stop any running graders of this worker machine and restart 4 graders'
 
     Grader.make_enabled(0)
-    Grader.watchdog;
-    sleep(1);
+    Grader.watchdog
+    sleep(1)
     puts '-------------'
     Grader.make_enabled(4)
-    Grader.watchdog;
+    Grader.watchdog
   end
-
 end

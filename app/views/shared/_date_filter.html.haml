@@ -20,7 +20,9 @@
             %span.mi event
 
 :javascript
-  $(function() {
-    since_datetime = new TempusDominus(document.getElementById('since_datetime'), cafe.config.td.datetime );
-    until_datetime = new TempusDominus(document.getElementById('until_datetime'), cafe.config.td.datetime );
+  window.addEventListener("load", function() {
+    $(function() {
+      since_datetime = new TempusDominus(document.getElementById('since_datetime'), cafe.config.td.datetime );
+      until_datetime = new TempusDominus(document.getElementById('until_datetime'), cafe.config.td.datetime );
+    })
   })

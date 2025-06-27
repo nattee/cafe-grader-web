@@ -2,10 +2,10 @@
   = "-"
 - else
   - if local_assigns[:show_id]
+    -# show submission id row (with tries and compiler message)
     .row
-      .col-1
-        %span.mi.mi-bs.text-secondary tag
-      .col-auto
+      .col-12
+        %span.me-1.mi.mi-bs.text-secondary tag
         = link_to submission.id, submission_path(submission)
         %span.ms-2
           = "(#{link_to pluralize(sub_count || '-',"try"), problem_submissions_path(submission.problem_id)})"
@@ -18,30 +18,38 @@
             - compiler_msg_class = ''
           = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: compiler_msg_class, data: {turbo: true, turbo_method: :post} }
   - unless submission.graded_at
+    -# show waiting to be graded
     .row
-      .col-md-3.text-secondary= t 'main.submitted_at'
-      .col-md-9
+      .col-12
+        %span.me-1.mi.mi-bs.mr-2.text-secondary hourglass
+        submitted
         %span= time_ago_in_words(submission.submitted_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.submitted_at)})
-  - else
     .row
-      //.col-lg-3.text-secondary= t 'main.graded_at'
-      .col-1
-        %span.mi.mi-bs.text-secondary calendar_clock
-      .col-auto
+      .col-12{ data: ({controller: 'submission-refresh', submission_refresh_delay_value: @delay_value} if local_assigns[:refresh_if_not_graded] && @submission)  }
+        %div{data: {submission_refresh_target: 'waitingText'}} Waiting to be graded...
+        -# hidden link to be clicked by the stimulus action
+        - if @submission
+          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), class: "d-none", data: {turbo_stream: true, submission_refresh_target: 'refreshLink'}
+  - else
+    -# show graded time (and the score if allowed)
+    .row
+      .col-12
+        %span.me-1.mi.mi-bs.mr-2.text-secondary calendar_clock
         %span= time_ago_in_words(submission.graded_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.graded_at)})
     - if GraderConfiguration['ui.show_score']
       .row
         //.col-lg-3.text-secondary=t 'main.score'
-        .col-1
-          %span.mi.mi-bs.text-secondary speed
-        .col-auto
+        .col-12
+          %span.me-1.mi.mi-bs.mr-2.text-secondary speed
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points
           %span.grader-comment.text-break
             = " [#{submission.grader_comment}]"
+          = link_to mdi('ballot'), evaluations_submission_path(submission), data: {turbo: true, turbo_method: :post}
   - if local_assigns[:show_button]
+    -# show links
     - if submission.graded_at
       = link_to "#{t 'main.cmp_msg'}", compiler_msg_submission_path(submission), {class: 'my-1 btn btn-sm btn-info', data: {turbo: true, turbo_method: :post} }
     = link_to "#{t 'main.src_link'}",download_submission_path(submission), class: 'my-1 btn btn-sm btn-info'

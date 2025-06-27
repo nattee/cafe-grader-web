@@ -1,6 +1,6 @@
 class GraderProcess < ApplicationRecord
 
-  enum status: {idle: 0, working: 1}
+  enum :status, {idle: 0, working: 1}
 
   def job_type_array
     return Job.job_types.keys if job_type.blank?

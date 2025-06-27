@@ -46,35 +46,35 @@ class Compiler
   #   err = stderr
   #   status = status text from isolate
   #   meta = meta object from isolate
-  def check_compile_result(out,err,status,meta)
+  def check_compile_result(out, err, status, meta)
     if meta['exitcode'] == 0
-      #compiler finished successfully
+      # compiler finished successfully
       return {success: true, compiler_message: out}
     else
-      #compiler found some error
+      # compiler found some error
       return {success: false, compiler_message: err}
     end
   end
 
   # main compile function
-  def compile(sub,dataset)
+  def compile(sub, dataset)
     @sub = sub
     @working_dataset = dataset
 
     validate
-    #init isolate
+    # init isolate
     setup_isolate(@box_id, isolate_need_cg_by_lang(@sub.language.name))
 
-    #prepare source file
+    # prepare source file
     prepare_submission_directory(@sub)
     prepare_files_for_compile
 
-    #running any precompile script
+    # running any precompile script
     @exec_file = @compile_path + @sub.problem.exec_filename(@sub.language)
     pre_compile
 
     # ------ run the compilation ------
-    #output file
+    # output file
     compile_meta = @compile_result_path + Grader::COMPILE_RESULT_META_FILENAME
     compile_stdout_file = @compile_result_path + Grader::COMPILE_RESULT_STDOUT_FILENAME
     compile_stderr_file = @compile_result_path + Grader::COMPILE_RESULT_STDERR_FILENAME
@@ -85,15 +85,15 @@ class Compiler
     # isolate pathname for executable after compiled
     isolate_bin_file = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
 
-    #calling language specific method to get cmd for compiling
-    cmd_string = build_compile_command(isolate_source_file,isolate_bin_file)
+    # calling language specific method to get cmd for compiling
+    cmd_string = build_compile_command(isolate_source_file, isolate_bin_file)
 
     # prepare params for isolate
-    isolate_args = %w(-p -E PATH)
+    isolate_args = %w[-p -E PATH]
     isolate_args << isolate_options_by_lang(@sub.language.name)
     output = { "#{@isolate_bin_path}": @compile_path.cleanpath}
-    input = {"#{@isolate_source_path}": @source_path.cleanpath, "/source_manager":@manager_path.cleanpath}
-    out,err,status,meta = run_isolate(cmd_string,
+    input = {"#{@isolate_source_path}": @source_path.cleanpath, "/source_manager": @manager_path.cleanpath}
+    out, err, status, meta = run_isolate(cmd_string,
                        time_limit: 10,
                        input: input,
                        output: output,
@@ -101,21 +101,21 @@ class Compiler
                        meta: compile_meta,
                        cg: isolate_need_cg_by_lang(@sub.language.name))
 
-    #save result
-    File.write(compile_stdout_file,out)
-    File.write(compile_stderr_file,err)
+    # save result
+    File.write(compile_stdout_file, out)
+    File.write(compile_stderr_file, err)
 
-    #chmod the compile result
+    # chmod the compile result
     run_isolate("/usr/bin/chmod -R 0777 #{@isolate_bin_path}", output: output)
 
-    #clean up isolate
+    # clean up isolate
     cleanup_isolate
 
     # call language-specific checking of compilation
-    compile_result = check_compile_result(out,err,status,meta)
+    compile_result = check_compile_result(out, err, status, meta)
 
     if compile_result[:success]
-      #run any post compilation
+      # run any post compilation
       begin
         post_compile
       rescue => e
@@ -127,35 +127,35 @@ class Compiler
       begin
         upload_compiled_files
       rescue Net::HTTPExceptions => he
-        raise GraderError.new("Error upload compiled file to server \"#{he}\"",submission_id: @sub.id )
+        raise GraderError.new("Error upload compiled file to server \"#{he}\"", submission_id: @sub.id)
       end
 
-      sub.update(status: :compilation_success,compiler_message: compile_result[:compiler_message].truncate(15000))
+      sub.update(status: :compilation_success, compiler_message: compile_result[:compiler_message].truncate(15000))
       judge_log rb_sub(@sub) + Rainbow(' compilation completed successfully').color(COLOR_COMPILE_SUCCESS)
       return {status: :success, result_description: 'Compiled successfully', compile_result: :success}
     else
       # error in compilation
       judge_log rb_sub(@sub) + Rainbow(' compilation completed with error').color(COLOR_COMPILE_ERROR)
-      sub.update(status: :compilation_error,compiler_message: compile_result[:compiler_message].truncate(15000),
-                 points: 0, grader_comment: 'Compilation error',graded_at: Time.zone.now)
+      sub.update(status: :compilation_error, compiler_message: compile_result[:compiler_message].truncate(15000),
+                 points: 0, grader_comment: 'Compilation error', graded_at: Time.zone.now)
       return {status: :success, result_description: 'Compilation error', compile_result: :error}
     end
   end
 
   # Download (or save from db) source file and any manager files to their respective directory
   def prepare_files_for_compile
-    #prepare the manager files
-    #prepare_worker_dataset(@working_dataset,:managers_only)
-    prepare_worker_dataset(@working_dataset,:all)
+    # prepare the manager files
+    # prepare_worker_dataset(@working_dataset,:managers_only)
+    prepare_worker_dataset(@working_dataset, :all)
 
-    #setup pathname
-    @source_file = @source_path + self.get_submission_filename;
+    # setup pathname
+    @source_file = @source_path + self.get_submission_filename
     @source_main_file = @manager_path + (@working_dataset.main_filename || '')
-    @isolate_source_file = @isolate_source_path + self.get_submission_filename;
+    @isolate_source_file = @isolate_source_path + self.get_submission_filename
     @isolate_main_file = @isolate_source_manager_path + (@working_dataset.main_filename || '')
 
-    #write student files
-    File.write(@source_file.cleanpath,@sub.source)
+    # write student files
+    File.write(@source_file.cleanpath, @sub.source)
     judge_log "Save contestant file to #{@source_file.cleanpath}"
   end
 
@@ -168,21 +168,21 @@ class Compiler
     req['x-api-key'] = Rails.configuration.worker[:worker_passcode]
     files = []
 
-    #load files
+    # load files
     Dir.glob(@compile_path + '*').each do |fn|
-      files << ['compiled_files[]',File.open(fn)]
+      files << ['compiled_files[]', File.open(fn)]
       judge_log "Bundling compiled files #{fn}"
     end
 
     # upload compiled files to server
     req.set_form files, 'multipart/form-data'
-    res = Net::HTTP.start(hostname,port) do |http|
+    res = Net::HTTP.start(hostname, port) do |http|
       resp = http.request(req)
       if resp.kind_of?(Net::HTTPSuccess)
         judge_log "Successful uploading of compiled files to the server"
       else
         judge_log "Error uploading compiled file to the server"
-        #raise the exception
+        # raise the exception
         resp.value
       end
     end
@@ -205,7 +205,7 @@ class Compiler
   end
 
   def self.get_compiler(sub)
-    #TODO: should return appropriate compiler class
+    # TODO: should return appropriate compiler class
     case sub.language.name
     when 'cpp'
       return Compiler::Cpp
@@ -240,5 +240,4 @@ class Compiler
                             submission_id: sub.id)
     end
   end
-
 end

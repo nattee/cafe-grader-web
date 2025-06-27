@@ -5,7 +5,7 @@ $(document).ready(function(e) {
 
   if ($("#editor").length > 0) {
     let editor = ace.edit("editor");
-    editor.setTheme('ace/theme/merbivore');
+    editor.setTheme('ace/theme/merbivore_soft');
     editor.getSession().setTabSize(2);
     editor.getSession().setUseSoftTabs(true);
   }

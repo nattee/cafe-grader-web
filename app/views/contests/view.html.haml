@@ -38,7 +38,7 @@
   let show_detail = true
   const sub_download_link = '#{j link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))}'
   const sub_path = '#{submission_path(-123)}'
-  $(function() {
+  window.addEventListener("load", function() {
     humanize_time_renderer = function(data,type,row,meta) {
       if (!data) return ''
       if (type == 'display' || type == 'filter')

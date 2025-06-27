@@ -1,4 +1,4 @@
-shared:
+default: &default
   adapter: mysql2
   encoding: utf8
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
@@ -12,13 +12,25 @@ user_pass: &user_pass
 
 
 test:
-  <<: [*user_pass]
+  <<: [*user_pass,*default]
   database: grader_test
 
 production:
-  <<: [*user_pass]
-  database: grader
+  primary:
+    <<: [*user_pass,*default]
+    database: grader
+  queue:
+    <<: [*user_pass,*default]
+    host: localhost
+    database: grader_queue
+    migrations_paths: db/queue_migrate
 
 development:
-  <<: [*user_pass]
-  database: grader
+  primary:
+    <<: [*user_pass,*default]
+    database: grader_dev
+  queue:
+    <<: [*user_pass,*default]
+    host: localhost
+    database: grader_dev_queue
+    migrations_paths: db/queue_migrate

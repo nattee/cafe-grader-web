@@ -28,7 +28,7 @@
   - else
     = link_to 'Back', contests_path, class: 'btn btn-outline-secondary mx-2'
 :javascript
-  $(() => {
+  window.addEventListener("load", function() {
     start_datetime = new TempusDominus(document.getElementById('contest_start'), cafe.config.td.datetime );
     stop_datetime = new TempusDominus(document.getElementById('contest_stop'), cafe.config.td.datetime );
   })

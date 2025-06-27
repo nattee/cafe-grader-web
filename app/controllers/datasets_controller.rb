@@ -2,11 +2,11 @@ class DatasetsController < ApplicationController
   include ProblemAuthorization
 
   # list of methods that are for viewing which requires viewable permission
-  # (all others methods except this one are considered UPDATE_METHOD which require editable permission)
-  VIEW_METHOD = %i[ view setting testcases files
+  # (all others methods except these one are considered UPDATE_METHOD which require editable permission)
+  VIEW_METHOD = %i[ view testcases files
                     testcase_input testcase_sol]
 
-  before_action :set_dataset, only: %i[ show edit update destroy
+  before_action :set_dataset, only: %i[ edit update destroy
                                         file_delete file_view file_download
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
@@ -226,7 +226,6 @@ class DatasetsController < ApplicationController
     # we set @dataset_active_tab to the id so that we render it, we can activate the correct tab
     def set_active_tab
       @active_dataset_tab = params[:active_dataset_tab]
-      puts "-------- action [#{action_name}] active tab is [#{@active_dataset_tab}] ----------------"
       @active_dataset_tab = '#settings' if @active_dataset_tab.blank?
     end
 

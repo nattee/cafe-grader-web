@@ -1,17 +1,25 @@
 // Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
 
 
+
 // import Turbo and Stimulus Controller
 // Disable Turbo by default
-import "controllers"
 import { Turbo } from "@hotwired/turbo-rails"
+import "controllers"
 Turbo.session.drive = false
 
-//bootstrap
-//import "bootstrap"
-//window.bootstrap = bootstrap
 
-import "select2"
+// these setup our library
+// even we import setup_datatables and setup_bootstrap BEFORE setup_jquery
+// everything still work fine because in setup_bootstrap and setup_database,
+// we explicitly import setup_jquery as well, so, the browser knows that they
+// must load the setup_jquery first
+import "setup_datatables"
+import "setup_bootstrap"
+import "setup_jquery"
+import "setup_ace"
+
+
 import "chart"
 
 
@@ -33,15 +41,6 @@ import Rails from 'rails-ujs';
 Rails.start()
 
 
-//my own customization
-//import 'custom'
-
-
-//trigger import map ready (no longer used)
-//window.importmapScriptsLoaded = true
-//const import_map_loaded = new CustomEvent('import-map-loaded', { });
-//document.dispatchEvent(import_map_loaded);
-
 //Import cafe-grader global functions into *cafe* object
 import * as cafe from 'cafe_bundle'
 window.cafe = cafe
@@ -51,3 +50,7 @@ window.cafe = cafe
 // this bootbox is non-minified version and is edited by dae
 // since that version does not support importmap, I have to add 'root = root || window'
 import 'bootbox'
+import moment from 'moment'
+window.moment = moment
+
+//import 'ace-haha'

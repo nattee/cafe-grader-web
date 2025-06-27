@@ -2,6 +2,8 @@
 // this file exports functions and constants that can be shared and used globally
 // it is merged with other functions in 'cafe_bundle.js'
 
+import "setup_jquery"
+
 function msi(icon_name, className = '') {
   return `<span class="mi mi-bs ${className}">${icon_name}</span>`
 }

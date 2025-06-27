@@ -2,9 +2,9 @@ class Comment < ApplicationRecord
   belongs_to :commentable, polymorphic: true
   belongs_to :user
 
-  enum kind: {hint: 0, solution: 1, comment: 2, chat_gpt: 3, deepseek: 4}
+  enum :kind, {hint: 0, solution: 1, comment: 2, chat_gpt: 3, deepseek: 4}
 
-  enum cost: {aa: 0, bb: 1}
+  enum :cost, {aa: 0, bb: 1}
 
   has_many :comment_reveals
   has_many :users_who_revealed, through: :comment_reveals, source: :user # More descriptive name

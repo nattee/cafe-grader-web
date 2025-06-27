@@ -67,6 +67,6 @@ class CommentsController < ApplicationController
     end
 
     def set_hint
-      @hint = @problem.hints.where(id: params[:id]).take
+      @hint = @problem.hints.where(id: params[:hint_id]).take
     end
 end
