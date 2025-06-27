@@ -271,7 +271,7 @@ class ProblemImporter
 
   def get_content_of_first_match(glob_pattern, recursive: true, path: '')
     pattern = build_glob(glob_pattern, recursive: recursive, path: path)
-    files = Dir.glob(pattern)
+    files = Dir.glob(pattern).select { |path| File.file?(path) }
     if files.count > 0
       if files.count > 1
         @log << "ERROR: Found multiples of #{glob_pattern} while we expected one"
