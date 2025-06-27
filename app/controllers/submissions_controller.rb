@@ -32,15 +32,17 @@ class SubmissionsController < ApplicationController
     user = User.find(session[:user_id])
     SubmissionViewLog.create(user_id: session[:user_id], submission_id: @submission.id) unless user.admin?
 
-    @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
-      .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
+    # @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
+    #  .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
+    @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
+    @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
   end
 
   # Turbo render evaluations as modal popup
   def evaluations
-    p = Problem.find(@submission.problem.id)
-    evs = p.live_dataset.testcases.left_joins(:evaluations).includes(:evaluations).where(evaluations: {submission: @submission}).order(:group, :num).select('evaluations.*', 'testcases.*')
-    render partial: 'msg_modal_show', locals: { do_popup: true, header_msg: 'Evaluation Details', body_msg: render_to_string(partial: 'evaluations', locals: {evaluations: evs}) }
+    @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
+    @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
+    render partial: 'msg_modal_show', locals: { do_popup: true, header_msg: 'Evaluation Details', body_msg: render_to_string(partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}) }
   end
 
   def download

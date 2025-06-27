@@ -1,7 +1,8 @@
 -#
   show evaluation with respect to the dataset
-  requires *evaluations* which should be
-  Testcase.left_joins(:evaluation).where(submission_id: @submission.id, testcase_id: @dataset.testcases.id)
+  requires 
+    testcases, which should be @submission.problem.live_dataset.testcases.order(:group, :num)
+    evaluations_by_tcid, which should be Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
 -# header row
 .alert.my-0.py-0
   .row
@@ -18,15 +19,16 @@
     .col-1.text-end
       %strong Weight
 -# body row
-- groups = evaluations.pluck(:group_name)
+- groups = testcases.pluck(:group_name)
 - group_count, group_min, group_weight = 0,0,0
-- evaluations.each.with_index do |ev,idx|
+- testcases.each.with_index do |tc,idx|
+  - ev = evaluations_by_tcid[tc.id]
   - group_change = idx == 0 || groups[idx] != groups[idx-1]
   - next_change = idx == groups.count-1 || groups[idx] != groups[idx+1]
   - next_group_has_multiple = idx < groups.count-1 && groups[idx] == groups[idx+1]
   - if group_change
     - group_min = 100
-    - group_weight = ev.weight
+    - group_weight = tc.weight
     - group_count = 0
 
 
@@ -41,23 +43,32 @@
 
   -# process this ev
   - group_count += 1
-  - group_min = [group_min,ev.score || 0].min
+  - group_min = [group_min,ev&.score || 0].min
 
   .row.mb-1
     .col-1.text-end
-      =ev.num
+      =tc.num
     .col-2.text-end
-      %span= (ev.time || 0) / 1000.0
-      %span.text-body-tertiary> s
+      - if ev
+        %span= (ev&.time || 0) / 1000.0
+        %span.text-body-tertiary> s
+      - else
+        = "-"
     .col-2.text-end
-      %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
-      %span.text-body-tertiary> MB
+      - if ev
+        %span= number_with_precision (ev&.memory || 0) / 1024.0, precision: 2
+        %span.text-body-tertiary> MB
+      - else
+        = "-"
     .col-5
-      = render partial: 'evaluation_result', locals: {ev: ev}
+      = render partial: 'evaluation_result', locals: {ev: ev} if ev
     .col-1.text-end
-      = number_to_percentage (ev.score || 0) *100, precision: 0
+      - if ev
+        = number_to_percentage (ev&.score || 0) *100, precision: 0
+      - else
+        = "-"
     .col-1.text-end
-      = ev.weight
+      = tc.weight
 
   - if next_change
     -# end current bundle

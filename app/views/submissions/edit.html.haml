@@ -4,10 +4,7 @@
     %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @source
   .row.mb-2
     .col-lg-8
-      %h4 
-        %span
-          [#{@problem.name}]
-        #{@problem.full_name}
+      = render partial: 'problems/problem_head', locals: {problem: @problem}
       .row
         .col-md-6
           %em
@@ -51,16 +48,17 @@
       .alert.mb-3{class: (@as_binary ? 'alert-warning' : 'alert-info')}
         .mb-2
           - if @as_binary
-            The problem only accept upload of a binary file such as .zip. Select a file using the
-            %strong "Browse"
-            button and click submit.
+            :markdown
+              This problem accepts only a binary file upload, such as a `.zip` file. Please select the
+              file using the **"Browse"** button and click **"submit."**
           - else
             - if @language_forced
-              Write your code in the box above and then click the submit button to submit the code. This problem requires that the submission must be in 
+              Write your code in the box above and then click the **"Submit"** button to submit the code. This problem requires that the submission must be in 
               %strong= @language.pretty_name
               only.
             - else
-              Write your code in the box above, choose a language, and then click the submit button to submit the code.
+              :markdown
+                Write your code in the box above, choose a language, and then click the **"Submit"** button to submit the code.
         = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center', data: {action: 'editor#submit'} do |form|
           = hidden_field_tag 'editor_text', @source, data: {editor_target: 'submitSource'}
           = hidden_field_tag 'submission[problem_id]', @problem.id
@@ -78,18 +76,13 @@
     .col-lg-4{ data: {turbo: true}}
       -# latest submission status
       .card.mb-3.shadow-sm
-        -#
-          .card-header.text-bg-info.border-info
-            Latest Submission Status
-            - if @submission
-              = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", data: {turbo: true, turbo_prefetch: false}
         .card-body
           .row.mb-2
             .col-md-8
               %h5 Latest Submission Status
             .col-md-4.text-md-end
               - if @submission
-                = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-info btn-sm", data: {turbo: true, turbo_prefetch: false}
+                = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-secondary btn-sm", data: {turbo: true, turbo_prefetch: false}
           - if @submission
             = turbo_frame_tag :latest_status,src: get_latest_submission_status_submissions_path(@submission.user,@problem) do
               %div

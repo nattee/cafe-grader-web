@@ -1,0 +1,7 @@
+%h2
+  - if local_assigns[:prefix]
+    %span= prefix
+  %span.font-monospace.text-secondary [#{problem.name}]
+  %span #{problem.full_name}
+  - if local_assigns[:suffix]
+    %span= suffix

@@ -169,7 +169,7 @@ Cheers!
           partial: Partially Correct
           time_limit: Time Limit Exceed
           memory_limit: Memory Limit Exceed
-          crash: Crashed
+          crash: Program Crashed
           unknown_error: UNKNOWN ERROR
           grader_error: GRADER ERROR
 

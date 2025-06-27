@@ -31,6 +31,7 @@ class Checker
   def process_result_cms(out, err)
     score = out.chomp.strip
     err = nil if err.blank?
+    err = nil if ['translate:success', 'translate:wrong'].include? err.chomp.strip   # remove CMS default "translate:success" and "translate:wrong" from the comment
     return report_check(score, err)
   end
 

@@ -2,7 +2,7 @@
   = render 'problem_chooser', {problems: @problems, selected_problem: @problem, target_url_method: :problem_submissions_path}
 
 - if @problem!=nil
-  %h2= "Task: #{@problem.full_name} (#{@problem.name})"
+  = render partial: 'problems/problem_head', locals: {problem: @problem}
 
 - if @submissions!=nil
   - if @submissions.length>0
@@ -15,6 +15,6 @@
         %th Result
         %th{:width => "300px"} Compiler message
         %th
-      = render :partial => 'submission', :collection => @submissions
+      = render partial: 'submission', collection: @submissions
   - else
     No submission
