@@ -86,6 +86,10 @@ class Checker
   def check_for_required_file
     raise "Output file [#{@output_file.cleanpath}] does not exists" unless @output_file.exist?
     raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
+    if ['custom_cms', 'custom_cafe'].include?(@ds.evaluation_type) &&
+        (@prob_checker_file.nil? || @prob_checker_file.exist? == false)
+      raise GraderError.new("Checker file does not exists", submission_id: @sub.id)
+    end
   end
 
   def result_status_with_color(result)
