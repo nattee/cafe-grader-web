@@ -5,6 +5,7 @@
     %span.text-secondary
       %em (#{t(ev.result, scope: "activerecord.enums.order.status")})
 -# show error badge
+-# TODO: FIX THIS!!!! won't work when ev is a testcase
 - if ['grader_error','unknown_error'].include? ev.result
   .badge.text-bg-danger Please notify the admin
 -# render comment if any
