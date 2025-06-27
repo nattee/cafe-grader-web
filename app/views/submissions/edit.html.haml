@@ -77,15 +77,21 @@
 
     .col-lg-4{ data: {turbo: true}}
       -# latest submission status
-      .card.mb-3
-        .card-header.text-bg-info.border-info
-          Latest Submission Status
-          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", data: {turbo: true, editor_delay_value: 3000, editor_target: 'refreshButton'} if @submission
+      .card.mb-3.shadow-sm
+        -#
+          .card-header.text-bg-info.border-info
+            Latest Submission Status
+            - if @submission
+              = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-light btn-sm", data: {turbo: true, turbo_prefetch: false}
         .card-body
-          = turbo_frame_tag :latest_status do
-            %div
-          = turbo_frame_tag :latest_status_text do
-            %div{data: {editor_target: 'waitingText'}}
+          .row.mb-2
+            .col-md-8
+              %h5 Latest Submission Status
+            .col-md-4.text-md-end
+              = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-info btn-sm", data: {turbo: true, turbo_prefetch: false}
+          - if @submission
+            = turbo_frame_tag :latest_status,src: get_latest_submission_status_submissions_path(@submission.user,@problem) do
+              %div
       -# Hint area
       = turbo_frame_tag :problem_helpers, src: helpers_problem_path(@problem) do
         %p Loading...

@@ -27,8 +27,6 @@ export default class extends Controller {
     // refer to the stimulus Controller
     this.reader.onload = this.#readFile;
 
-    this.startRefreshTimer();
-
   }
 
   // attached to the select of a language
@@ -75,38 +73,8 @@ export default class extends Controller {
     this.submitSourceTarget.value = this.editor.getValue()
   }
 
-  // for starting auto refresh latest submission status
-  startRefreshTimer() {
-    // click the refresh button after 5 secs
-    this.remainingSeconds = this.delayValue / 1000
-    this.updateWaitingText()
-    this.refreshTimer = setInterval(() => {
-      this.remainingSeconds--;
-      this.updateWaitingText()
-      if (this.remainingSeconds <= 0) {
-        clearInterval(this.refreshTimer)
-
-        // click the refersh button
-        if (this.hasRefreshButtonTarget) {
-          this.refreshButtonTarget.click();
-        }
-      }
-    }, 1000) // update every second
-  }
-
-  // render the waiting text
-  updateWaitingText() {
-    if (this.hasWaitingTextTarget) {
-      this.waitingTextTarget.textContent = `Checking score in ${this.remainingSeconds} seconds...`;
-    }
-  }
 
   disconnect() {
-    // Clear the timeout if the controller is ever disconnected from the DOM
-    // This prevents memory leaks or unexpected clicks.
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
   }
 
   // --- private function ---
