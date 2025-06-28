@@ -69,7 +69,6 @@ class Evaluator
   # this should be called after execute, it will runs the comparator
   def evaluate(out, meta, err)
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} checking execution result..."
-    result = default_success_result("evaluation completed successfully")
     e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase)
 
     # any error?
@@ -100,7 +99,7 @@ class Evaluator
 
     # save final result
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"
-    return result
+    return EngineResponse::Result.success(result_description: "Evaluation completed successfully")
   end
 
   def prepare_executable

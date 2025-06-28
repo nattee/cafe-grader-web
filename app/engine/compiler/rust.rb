@@ -1,5 +1,5 @@
 class Compiler::Rust < Compiler
-  def build_compile_command(source,bin)
+  def build_compile_command(source, bin)
     cmd = [
       "#{Rails.configuration.worker[:compiler][:rust]}",
       "-o #{bin}",

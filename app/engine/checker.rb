@@ -32,24 +32,24 @@ class Checker
     score = out.chomp.strip
     err = nil if err.blank?
     err = nil if ['translate:success', 'translate:wrong'].include? err.chomp.strip   # remove CMS default "translate:success" and "translate:wrong" from the comment
-    return report_check(score, err)
+    return EngineResponse::CheckerResult.by_score(score: score, comment: err)
   end
 
   def process_result_cafe(out, err)
     arr = out.split("\n")
     if arr.count < 2
-      return report_check_error('(cafe-checker) output from checker is malformed')
+      return EngineResponse::CheckerResult.grader_error(comment: '(cafe-checker) output from checker is malformed')
     end
     score = arr[1].to_d/10
     if arr[0].upcase == "CORRECT"
-      return report_check_correct(score)
+      return EngineResponse::CheckerResult.correct(score: score)
     elsif arr[0].upcase == "INCORRECT"
-      return report_check_wrong(score)
+      return EngineResponse::CheckerResult.wrong(score: score)
     elsif arr[0].split(':')[0].upcase == 'COMMENT'
       comment = arr[0][8...]
-      return report_check_partial(score, comment)
+      return EngineResponse::CheckerResult.partial(score: score, comment: comment)
     else
-      return report_check_error('(cafe-checker) output from checker is malformed')
+      return EngineResponse::CheckerResult.grader_error(comment: '(cafe-checker) output from checker is malformed')
     end
   end
 
@@ -58,9 +58,9 @@ class Checker
     when 'default', 'exact', 'relative'
       # these standard check return 0 when correct
       if status.exitstatus == 0
-        return report_check_correct
+        return EngineResponse::CheckerResult.correct
       else
-        return report_check_wrong
+        return EngineResponse::CheckerResult.wrong
       end
     when 'postgres'
       return process_result_cms(out, err)
@@ -73,12 +73,12 @@ class Checker
         end
       else
         comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
-        return report_check_error(comment)
+        return EngineResponse::CheckerResult.grader_error(comment)
       end
     when 'no_check'
-      return report_check_partial(0)
+      return EngineResponse::CheckerResult.partial(score: 0)
     else
-      return report_check_error('unknown evaluation type')
+      return EngineResponse::CheckerResult.grader_error(comment: 'Unknown evaluation type')
     end
   end
 
@@ -134,50 +134,6 @@ class Checker
     result = process_result(@ds.evaluation_type, out, err, status)
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_status_with_color(result)
     return result
-  end
-
-  def report_check(score, comment)
-    x = {score: score, comment: comment}
-    if score.to_f == 1
-      x[:result] = :correct
-    elsif score.to_f == 0
-      x[:result] = :wrong
-    else
-      x[:result] = :partial
-    end
-    return x
-  end
-
-  def report_check_correct(score = 1.to_d, comment = nil)
-    {
-      result: :correct,
-      score: score,
-      comment: comment
-    }
-  end
-
-  def report_check_wrong(score = 0.to_d, comment = nil)
-    {
-      result: :wrong,
-      score: score,
-      comment: comment
-    }
-  end
-
-  def report_check_partial(score, comment = nil)
-    {
-      result: :partial,
-      score: score,
-      comment: comment
-    }
-  end
-
-  def report_check_error(comment = 'checker error')
-    {
-      result: :grader_error,
-      score: nil,
-      comment: comment
-    }
   end
 
   # return appropriate evaluator class for the submission

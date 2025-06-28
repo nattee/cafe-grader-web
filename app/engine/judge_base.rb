@@ -343,22 +343,6 @@ module JudgeBase
     end
   end
 
-  # --- result hash ---
-  # this is used internally to store status of execution
-  def build_result_hash
-    {status: nil,
-     result_description: nil
-    }
-  end
-
-  def default_success_result(msg = nil)
-    {status: :success, result_description: msg}
-  end
-
-  def error_result(msg)
-    {status: :error, result_description: msg}
-  end
-
   def judge_log(msg, severity = Logger::INFO)
     JudgeLogger.logger.add(severity, msg, judge_log_tag)
   end

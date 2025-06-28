@@ -40,11 +40,11 @@ class Grader
     result = compiler.compile(sub, dataset)
 
     # report compile
-    judge_log "#{@job.to_text} completed with result #{result}"
+    judge_log "#{@job.to_text} completed with result #{result.to_h}"
     @job.report(result)
 
     # add next jobs
-    if result[:compile_result] == :success
+    if result.status == :success
       if dataset.testcases.count > 0
         Job.add_evaluation_jobs(sub, dataset, @job.id, @job.priority)
       else
