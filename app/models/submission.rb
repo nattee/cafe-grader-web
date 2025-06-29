@@ -1,19 +1,24 @@
 class Submission < ApplicationRecord
-
-  enum tag: {default: 0, model: 1}, _prefix: true
-  enum status: {submitted: 0, evaluating: 1, done: 2, compilation_error: 3, compilation_success: 4, grader_error: 5}
+  enum :tag, {default: 0, model: 1}, prefix: true
+  enum :status, {submitted: 0, evaluating: 1, done: 2, compilation_error: 3, compilation_success: 4, grader_error: 5}
 
 
   belongs_to :language
   belongs_to :problem
   belongs_to :user
 
-  has_many :evaluations, :dependent => :destroy
+  has_many :evaluations, dependent: :destroy
+
+  # comments
+  has_many :comments, as: :commentable
+  # Allows you to get all comment reveals for comments belonging to this submission
+  has_many :comment_reveals, through: :comments
+
 
   before_validation :assign_language
   before_save :assign_latest_number_if_new_recond
 
-  validates_length_of :source, :maximum => 1_000_000, :allow_blank => true, :message => 'code too long, the limit is 1,000,000 bytes'
+  validates_length_of :source, maximum: 1_000_000, allow_blank: true, message: 'code too long, the limit is 1,000,000 bytes'
   validate :must_have_valid_problem
   validate :must_specify_language
 
@@ -22,30 +27,30 @@ class Submission < ApplicationRecord
   has_many_attached :compiled_files
 
   # filter submissions in the range
-  scope :in_range, -> (by ,from, to ) {
+  scope :in_range, ->(by, from, to) {
     if by.to_sym == :sub_id
-      #use sub id
+      # use sub id
       from_id = from.to_i
       to_id = to.to_i
       query = self
-      query = query.where('submissions.id >= ?',from_id) if from_id > 0
-      query = query.where('submissions.id <= ?',to_id) if to_id > 0
+      query = query.where('submissions.id >= ?', from_id) if from_id > 0
+      query = query.where('submissions.id <= ?', to_id) if to_id > 0
       return query
     else
-      #use sub time
+      # use sub time
       datetime_range= from..to
       return self.where(submitted_at: datetime_range)
     end
   }
 
-  def add_judge_job(dataset = problem.live_dataset,priority = 0)
+  def add_judge_job(dataset = problem.live_dataset, priority = 0)
     evaluations.delete_all
-    self.update(status: 'submitted', points: nil, grader_comment: nil,graded_at: nil)
-    Job.add_grade_submission_job(self,dataset,priority)
+    self.update(status: 'submitted', points: nil, grader_comment: nil, graded_at: nil)
+    Job.add_grade_submission_job(self, dataset, priority)
   end
 
 
-  def set_grading_complete(point,grading_text,max_time,max_mem)
+  def set_grading_complete(point, grading_text, max_time, max_mem)
     update(points: point, status: :done, graded_at: Time.zone.now, grader_comment: grading_text, max_runtime: max_time, peak_memory: max_mem)
   end
 
@@ -55,7 +60,7 @@ class Submission < ApplicationRecord
 
 
   def self.find_last_by_user_and_problem(user_id, problem_id)
-    where("user_id = ? AND problem_id = ?",user_id,problem_id).last
+    where("user_id = ? AND problem_id = ?", user_id, problem_id).last
   end
 
   def self.find_all_last_by_problem(problem_id)
@@ -69,12 +74,10 @@ class Submission < ApplicationRecord
       "ORDER BY user_id")
   end
 
-  def self.find_in_range_by_user_and_problem(user_id, problem_id,since_id,until_id)
-    records = Submission.where(problem_id: problem_id,user_id: user_id)
-    records = records.where('id >= ?',since_id) if since_id and since_id > 0
-    records = records.where('id <= ?',until_id) if until_id and until_id > 0
-    records.all
+  def revealed_comments_for_user(user)
+    comments.joins(:comment_reveals).where(comment_reveals: { user_id: user.id })
   end
+
 
   def self.find_last_for_all_available_problems(user_id)
     submissions = Array.new
@@ -86,15 +89,17 @@ class Submission < ApplicationRecord
     submissions
   end
 
-  def self.find_by_user_problem_number(user_id, problem_id, number)
-    where("user_id = ? AND problem_id = ? AND number = ?",user_id,problem_id,number).first
-  end
 
   def download_filename
     if self.problem.output_only
       return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
     else
-      return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
+      if self.language.binary?
+        # for binary langauge (such as archive), we extract the extension from the source filename
+        return "#{self.problem.name}-#{self.user.login}-#{self.id}#{Pathname.new(self.source_filename).extname rescue ''}"
+      else
+        return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
+      end
     end
   end
 
@@ -113,15 +118,15 @@ class Submission < ApplicationRecord
   #     sub_#{prob.id}:      # the sub_id of that score
   #     ...
   # }
-  def self.calculate_max_score(records,users,problems)
-    result = {score: Hash.new { |h,k| h[k] = {} }, 
-              stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+  def self.calculate_max_score(records, users, problems)
+    result = {score: Hash.new { |h, k| h[k] = {} },
+              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
 
     # build users
     users.each do |u|
-      result[:score][u.login]['id'] = u.id;
-      result[:score][u.login]['full_name'] = u.full_name;
-      result[:score][u.login]['remark'] = u.remark;
+      result[:score][u.login]['id'] = u.id
+      result[:score][u.login]['full_name'] = u.full_name
+      result[:score][u.login]['remark'] = u.remark
     end
 
 
@@ -136,15 +141,15 @@ class Submission < ApplicationRecord
     end
 
     # calculate stats (min, max, zero, partial)
-    result[:score].each do |k,v|
+    result[:score].each do |k, v|
       sum = 0
-      v.each do |k2,v2|
+      v.each do |k2, v2|
         if k2[0..4] == 'prob_'
-          #v2 is the score
+          # v2 is the score
           prob_name = k2[5...]
           result[:stat][prob_name][:score] << v2
           result[:stat][prob_name][:sum] += v2 || 0
-          sum += v2 || 0;
+          sum += v2 || 0
           if v2 == 0
             result[:stat][prob_name][:zero] += 1
           elsif v2 == 100
@@ -168,6 +173,11 @@ class Submission < ApplicationRecord
     return result
   end
 
+  # deprecated
+  def self.find_by_user_problem_number(user_id, problem_id, number)
+    where("user_id = ? AND problem_id = ? AND number = ?", user_id, problem_id, number).first
+  end
+
 
   protected
 
@@ -189,8 +199,8 @@ class Submission < ApplicationRecord
     return nil
   end
 
-  def self.find_language_in_source(source, source_filename="")
-    langopt = find_option_in_source(/^LANG:/,source)
+  def self.find_language_in_source(source, source_filename = "")
+    langopt = find_option_in_source(/^LANG:/, source)
     if langopt
       return (Language.find_by_name(langopt) ||
               Language.find_by_pretty_name(langopt))
@@ -203,8 +213,8 @@ class Submission < ApplicationRecord
     end
   end
 
-  def self.find_problem_in_source(source, source_filename="")
-    prob_opt = find_option_in_source(/^TASK:/,source)
+  def self.find_problem_in_source(source, source_filename = "")
+    prob_opt = find_option_in_source(/^TASK:/, source)
     if problem = Problem.find_by_name(prob_opt)
       return problem
     else
@@ -241,19 +251,19 @@ class Submission < ApplicationRecord
     return if self.problem!=nil and self.problem.output_only
 
     if self.language == nil
-      errors.add(:source,:invalid,message: "Cannot detect language. Did you submit a correct source file?")
+      errors.add(:source, :invalid, message: "Cannot detect language. Did you submit a correct source file?")
     end
   end
 
   def must_have_valid_problem
     return if self.source==nil
     if self.problem==nil
-      errors.add(:problem,:blank,'aaa')
+      errors.add(:problem, :blank, 'aaa')
     else
-      #admin always have right
+      # admin always have right
       return if self.user.admin?
 
-      #check if user has the right to submit the problem
+      # check if user has the right to submit the problem
       errors[:base] << "Authorization error: you have no right to submit to this problem" if (!self.user.available_problems.include?(self.problem)) and (self.new_record?)
     end
   end
@@ -262,9 +272,8 @@ class Submission < ApplicationRecord
   def assign_latest_number_if_new_recond
     return if !self.new_record?
     latest = Submission.find_last_by_user_and_problem(self.user_id, self.problem_id)
-    self.number = (latest==nil) ? 1 : latest.number + 1;
+    self.number = (latest==nil) ? 1 : latest.number + 1
   end
 
   public
-
 end

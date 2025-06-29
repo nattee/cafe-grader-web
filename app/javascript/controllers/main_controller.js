@@ -30,7 +30,6 @@ export default class extends rowFieldToggle(Controller) {
     //set filter
     const selectedBadge = document.querySelector('.topic-badge.text-bg-secondary')
     const badge_name = (selectedBadge) ? selectedBadge.textContent : ''
-    console.log('filter = '+badge_name)
     table.column(5).search(badge_name).draw()
   }
 

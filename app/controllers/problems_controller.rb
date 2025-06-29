@@ -1,29 +1,30 @@
 class ProblemsController < ApplicationController
+  # concern for problem authorization
+  include ProblemAuthorization
 
-  include ActiveStorage::SetCurrent
-
-  MEMBER_METHOD = [:edit, :update, :destroy, :get_statement, :get_attachment,
-                   :delete_statement, :delete_attachment,
+  MEMBER_METHOD = [:edit, :update, :destroy,
                    :toggle_available, :toggle_view_testcase, :stat,
-                   :add_dataset,:import_testcases,
-                   :download_archive
+                   :add_dataset, :import_testcases,
+                   :download_archive, :helpers, :download_by_type, :delete_by_type,
                   ]
 
   before_action :set_problem, only: MEMBER_METHOD
   before_action :check_valid_login
 
-  #permission
-  before_action :is_group_editor_authorization, except: [:get_statement, :get_attachment]
-  before_action :can_view_problem, only: [:get_statement, :get_attachment]
+  # permission
+  before_action :group_editor_authorization, except: [:download_by_type]
+  before_action :can_view_problem, only: [:download_by_type]
 
   before_action :admin_authorization, only: [:toggle_available, :turn_all_on, :turn_all_off, :download_archive]
   before_action :can_edit_problem, only: [:edit, :update, :destroy,
-                                          :delete_statement, :delete_attachment,
                                           :toggle_view_testcase, :stat,
-                                          :add_dataset,:import_testcases,
+                                          :add_dataset, :import_testcases,
+                                          :delete_by_type,
                                          ]
   before_action :can_report_problem, only: [:stat]
+  before_action :set_active_tab, only: %i[update]
   before_action :stimulus_controller
+
 
   def index
     @problem = problem_for_manage(@current_user)
@@ -40,38 +41,64 @@ class ProblemsController < ApplicationController
     render 'datasets/update'
   end
 
-  #get statement download link
-  def get_statement
-    filename = @problem.name
-    data = @problem.statement.download
-    send_data data, type: 'application/pdf',  disposition: 'inline', filename: filename
+  def download_by_type
+    # Find the attachment on the model
+    attachment_type = params[:attachment_type]
+    unless %w[statement generated_statement attachment].include? attachment_type
+      @error_message = "File is not available in the server."
+      render 'error' and return
+    end
+
+    attachment = @problem.send(attachment_type)
+
+    # build the filename or render error when the type is invalid
+    filename =
+      case attachment_type
+      when 'statement', 'generated_statement' then @problem.name + '.pdf'
+      when 'attachment' then attachment.filename.to_s
+      end
+
+    begin
+      send_data attachment.download,
+                filename: filename,
+                type: attachment.content_type || 'application/octet-stream',
+                disposition: 'inline'
+    rescue  ActiveStorage::FileNotFoundError
+      @error_message = "File is not found in the server."
+      render 'error'
+    end
   end
 
-  #delete attachment
-  def delete_statement
-    @problem.statement.purge
-    redirect_to edit_problem_path(@problem), notice: 'The statement has been deleted'
+  def delete_by_type
+    attachment_to_purge = @problem.send(params[:attachment_type])
+
+    if attachment_to_purge.attached?
+      attachment_to_purge.purge
+      @toast = {title: "Problem #{@problem.name}", body: "The #{params[:attachment_type].humanize} has been deleted."}
+    else
+      @toast = {title: "Problem #{@problem.name}", body: "The specified attachment was not found."}
+    end
+    render :update
   end
 
-  #get attachment
-  def get_attachment
-    filename = @problem.attachment.filename.to_s
-    data = @problem.attachment.download
-    send_data data, disposition: 'inline', filename: filename
+  # -- hint and helpers --
+  # as turbo
+  # render a card displaying all problem helpers (hint, solution, LLM, etc)
+  def helpers
+    respond_to do |format|
+      format.html { render partial: 'helpers' }
+      format.turbo_stream { render 'helpers' }
+    end
   end
+  # -- END hint and helpers --
 
-  #delete attachment
-  def delete_attachment
-    @problem.attachment.purge
-    redirect_to edit_problem_path(@problem), notice: 'The attachment has been deleted'
-  end
 
   def create
     @problem = Problem.new(problem_params)
     if @problem.save
       redirect_to action: :index, notice: 'Problem was successfully created.'
     else
-      render :action => 'new'
+      render action: 'new'
     end
   end
 
@@ -87,7 +114,7 @@ class ProblemsController < ApplicationController
       redirect_to action: :index
     else
       flash[:notice] = 'Error saving problem'
-    redirect_to action: :index
+      redirect_to action: :index
     end
   end
 
@@ -100,7 +127,6 @@ class ProblemsController < ApplicationController
   end
 
   def update
-    
     if @problem.update(problem_params)
       msg = 'Problem was successfully updated. '
       msg += 'A new statement PDF is uploaded' if problem_params[:statement]
@@ -110,22 +136,21 @@ class ProblemsController < ApplicationController
       @problem.permitted_lang = permitted_lang_as_string
       @problem.save
 
-      @toast = {title: "Problem #{@problem.name}",body: "Problem settings updated"}
+      @toast = {title: "Problem #{@problem.name}", body: "Problem settings updated"}
     end
     if problem_params[:statement] && problem_params[:statement].content_type != 'application/pdf'
-      @problem.errors.add(:base,' Uploaded file is not PDF')
+      @problem.errors.add(:base, ' Uploaded file is not PDF')
     end
 
     if @problem.errors.any?
-      error_html = "<ul>#{@problem.errors.full_messages.map {|m| "<li>#{m}</li>"}.join}</ul>"
-      render partial: 'msg_modal_show', locals: {do_popup: true, 
-                                                 header_msg: 'Problem update error', 
+      error_html = "<ul>#{@problem.errors.full_messages.map { |m| "<li>#{m}</li>" }.join}</ul>"
+      render partial: 'msg_modal_show', locals: {do_popup: true,
+                                                 header_msg: 'Problem update error',
                                                  header_class: 'bg-danger-subtle',
                                                  body_msg: error_html.html_safe}
     else
       render :update
     end
-
   end
 
   def destroy
@@ -140,13 +165,13 @@ class ProblemsController < ApplicationController
 
   def toggle_available
     @problem.update(available: !@problem.available)
-    @toast = {title: "Problem #{@problem.name}",body: "Available updated"}
+    @toast = {title: "Problem #{@problem.name}", body: "Available updated"}
     render 'toggle'
   end
 
   def toggle_view_testcase
     @problem.update(view_testcase: !@problem.view_testcase)
-    @toast = {title: "Problem #{@problem.name}",body: "View Testcase updated"}
+    @toast = {title: "Problem #{@problem.name}", body: "View Testcase updated"}
     render 'toggle'
   end
 
@@ -162,27 +187,28 @@ class ProblemsController < ApplicationController
 
   def stat
     unless @problem.available or session[:admin]
-      redirect_to :controller => 'main', :action => 'list'
+      redirect_to controller: 'main', action: 'list'
       return
     end
-    @submissions = Submission.includes(:user).includes(:language).where(problem_id: params[:id]).order(:user_id,:id)
+    @submissions = Submission.includes(:user).includes(:language).where(problem_id: params[:id]).order(:user_id, :id)
 
-    #stat summary
+    # stat summary
     range =65
-    @histogram = { data: Array.new(range,0), summary: {} }
+    @histogram = { data: Array.new(range, 0), summary: {} }
     user = Hash.new(0)
     @submissions.find_each do |sub|
       d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
       @histogram[:data][d.to_i] += 1 if d < range
       user[sub.user_id] = [user[sub.user_id], ((sub.try(:points) || 0) >= 100) ? 1 : 0].max
     end
-    @histogram[:summary][:max] = [@histogram[:data].max,1].max
+    @histogram[:summary][:max] = [@histogram[:data].max, 1].max
 
     @summary = { attempt: user.count, solve: 0 }
     user.each_value { |v| @summary[:solve] += 1 if v == 1 }
 
-    #for new graph
+    # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
+    @can_view_ip =  true
   end
 
   def manage
@@ -190,11 +216,9 @@ class ProblemsController < ApplicationController
   end
 
   def do_manage
-
-
     @result = []
     @error = []
-    problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids )
+    problems = Problem.where(id: get_problems_from_params.ids).where(id: @current_user.problems_for_action(:edit).ids)
 
     @toast = {title: "Bulk Manage #{problems.count} #{'problem'.pluralize(problems.count)}"}
 
@@ -205,18 +229,18 @@ class ProblemsController < ApplicationController
       @result << "Set \"Available\" to <strong>#{params[:enable]}</strong>"
     end
     if params[:add_tags] == '1'
-      problems.each { |p| p.tag_ids += params[:tag_ids] } 
-      tag_names = Tag.where(id:params[:tag_ids]).pluck(:name).map{ |x| "[<strong>#{x}</strong>]"}.join(', ')
+      problems.each { |p| p.tag_ids += params[:tag_ids] }
+      tag_names = Tag.where(id: params[:tag_ids]).pluck(:name).map { |x| "[<strong>#{x}</strong>]" }.join(', ')
       @result << "Add tags #{tag_names}"
     end
 
     if params[:set_languages] == '1'
       permitted_lang = Language.where(id: params[:lang_ids]).pluck(:name)
       problems.update_all(permitted_lang: permitted_lang.join(' '))
-      @result << "Permitted languages are changed to #{permitted_lang.map{ |x| "[<strong>#{x}</strong>]"}.join(', ')}"
+      @result << "Permitted languages are changed to #{permitted_lang.map { |x| "[<strong>#{x}</strong>]" }.join(', ')}"
     end
 
-    #add to groups
+    # add to groups
     if params[:add_group] == '1'
       Group.where(id: params[:group_id]).each do |group|
         ok = []
@@ -225,28 +249,29 @@ class ProblemsController < ApplicationController
           begin
             group.problems << p
             ok << p.full_name
-          rescue => e
+          rescue
             failed << p.full_name
           end
         end
         @result << "Added to group <strong>#{group.name}</strong>"
         @result << "The following problem are already in the group <strong>#{group.name}</strong>: " + failed.join(', ') if failed.count > 0
       end
-      #flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
-      #flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
+      # flash[:success] = "The following problems are added to the group #{group.name}: " + ok.join(', ') if ok.count > 0
+      # flash[:alert] = "The following problems are already in the group #{group.name}: " + failed.join(', ') if failed.count > 0
     end
 
-    @toast[:body] = "<ul> #{@result.map{|x| "<li>#{x}</li>"}.join}  </ul>".html_safe
+    @toast[:body] = "<ul> #{@result.map { |x| "<li>#{x}</li>" }.join}  </ul>".html_safe
     render 'turbo_toast'
 
 
-    #redirect_to :action => 'manage'
-    #@problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
-    #render :manage
+    # redirect_to :action => 'manage'
+    # @problems = @current_user.problems_for_action(:edit).order(date_added: :desc).includes(:tags)
+    # render :manage
   end
 
   def import
     @allow_test_pair_import = allow_test_pair_import?
+    @allow_blank_group = @current_user.admin?
   end
 
 
@@ -260,7 +285,7 @@ class ProblemsController < ApplicationController
     name = params[:problem][:name]
     uploaded_file_path = params[:problem][:file].to_path
 
-    #check valid group
+    # check valid group
     group = Group.find(params[:problem][:groups]) rescue nil
     unless @current_user.admin? || @current_user.groups_for_action(:edit).where(id: group).any?
       @errors = ['You can only upload a problem into a group that you are editor']
@@ -311,7 +336,7 @@ class ProblemsController < ApplicationController
       # (because they cannot set the available) but set the enabled to false
       unless @current_user.admin?
         @problem.update(available: true)
-        GroupProblem.where(group: group, problem: problem).first.update(enabled: false)
+        GroupProblem.where(group: group, problem: @problem).first.update(enabled: false)
       end
     end
   end
@@ -345,7 +370,7 @@ class ProblemsController < ApplicationController
     end
 
     # load data
-    pi.import_dataset_from_dir( extracted_path, @problem.name,
+    pi.import_dataset_from_dir(extracted_path, @problem.name,
                                 full_name: @problem.full_name,
                                 input_pattern: params[:import][:input_pattern],
                                 sol_pattern: params[:import][:sol_pattern],
@@ -375,39 +400,12 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :submission_filename, :difficulty,:attachment, :statement, :markdown,
-                                      :test_allowed, :output_only, :url, :description, :description, tag_ids:[], group_ids:[])
+                                      :submission_filename, :difficulty, :attachment, :statement, :markdown,
+                                      :test_allowed, :output_only, :url, :description, :description, tag_ids: [], group_ids: [])
     end
 
     def description_params
       params.require(:description).permit(:body, :markdowned)
-    end
-
-    def can_edit_problem
-      return true if @current_user.admin?
-      return true if @current_user.problems_for_action(:edit).where(id: @problem).any?
-      unauthorized_redirect(msg: 'You are not authorized to edit this problem')
-    end
-
-    def can_report_problem
-      return true if @current_user.admin?
-      return true if @current_user.problems_for_action(:report).where(id: @problem).any?
-      unauthorized_redirect(msg: 'You are not authorized to analyze this problem')
-    end
-
-    def can_view_problem
-      return true if @current_user.admin?
-
-      #if a user is a reporter or an editor, they can access disabled problem, which is not allowed in problems_for_action(:submit)
-      return true if @current_user.problems_for_action(:report).where(id: @problem).any? 
-      return true if @current_user.problems_for_action(:submit).where(id: @problem).any?
-      unauthorized_redirect(msg: 'You are not authorized to access this problem')
-    end
-
-    def is_group_editor_authorization
-      return true if @current_user.admin?
-      return true if @current_user.groups_for_action(:edit).any?
-      unauthorized_redirect(msg: "You cannot manage any problem");
     end
 
     def allow_test_pair_import?
@@ -417,7 +415,6 @@ class ProblemsController < ApplicationController
         return false
       end
     end
-
 
     # for bulk manage
     def change_date_added(problems)
@@ -441,8 +438,8 @@ class ProblemsController < ApplicationController
       ids = []
       params.keys.each do |k|
         if k.index('prob-')==0
-          #name, id, order = k.split('-')
-          #problems << Problem.find(id)
+          # name, id, order = k.split('-')
+          # problems << Problem.find(id)
           ids << k.split('-')[1]
         end
       end
@@ -452,14 +449,19 @@ class ProblemsController < ApplicationController
     def problem_for_manage(user)
       tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
       ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
-      return@problems = user.problems_for_action(:edit).joins(:datasets)
+      return @problems = user.problems_for_action(:edit).joins(:datasets)
         .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
         .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
         .includes(:tags).order(date_added: :desc).group('problems.id')
-        .select("problems.*","count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
+        .select("problems.*", "count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
         .select("MIN(MS.ms_count) as ms_count")
         .with_attached_statement
         .with_attached_attachment
     end
 
+    # our 'bs-tab' stimulus controller set the hidden input as the HTML id of the showing tab
+    # we set @dataset_active_tab to the id so that we render it, we can activate the correct tab
+    def set_active_tab
+      @active_problem_tab = params[:active_problem_tab]
+    end
 end

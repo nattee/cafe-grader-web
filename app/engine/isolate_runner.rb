@@ -9,15 +9,16 @@ module IsolateRunner
 
     cmd = "#{@isolate_cmd} --init #{'--cg' if cg} -b #{@box_id}"
     judge_log "ISOLATE setup command: #{cmd}", Logger::DEBUG
-    out,err,status = Open3.capture3(cmd)
+    Open3.capture3(cmd)
   end
 
   #  Run isolate,
   #  time_limit, wall_limit are in second, fractional is allowed
   #  mem_limit is in MB
   #  time_limit is in sec
+  #  uid is only available when the command is ran as root
   def run_isolate(prog,input: {},output: {},time_limit: 1, wall_limit: time_limit + 0.5,mem_limit: 1024, 
-                  isolate_args: [], meta: MetaFilename, cg: false)
+                  isolate_args: [], meta: MetaFilename, cg: false, uid: false)
     #mount directory for input /output
     dir_args = []
     output.each { |k,v| dir_args << ['-d',"#{k}=#{v}:rw"] } #these are mounted read/write
@@ -25,6 +26,10 @@ module IsolateRunner
 
     limit_arg = "-t #{time_limit} -x #{wall_limit} -w #{wall_limit} #{cg ? '--cg-mem' : '-m'} #{mem_limit * 1024}"
     all_arg  = "#{limit_arg} #{dir_args.join ' '} #{isolate_args.join ' '}"
+
+    # set uid that runs the isolate so that the file created by the isolate is owned by the current user
+    # this is only possible when isolate is run as root
+    all_arg += " --as-uid=${UID}" if uid == true
 
     cmd = "#{@isolate_cmd} #{'--cg' if cg} --run -b #{@box_id} #{"--meta=#{meta}" if meta} #{all_arg} -- #{prog}"
     judge_log("ISOLATE run command: #{Rainbow(cmd).color(JudgeBase::COLOR_ISOLATE_CMD)}", Logger::DEBUG)

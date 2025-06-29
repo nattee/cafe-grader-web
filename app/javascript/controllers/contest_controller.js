@@ -5,6 +5,7 @@ export default class extends Controller {
   static targets = ["usersCommand", "userForm", "userFormUserID", "userFormCommand" ,
                     "problemsCommand", "problemForm", "problemFormProblemID", "problemFormCommand" ,
                     "contestForm","contestFormContestID","contestFormCommand",
+                    "userExtraTimeForm", "userExtraTimeFormStart", "userExtraTimeFormEnd", "userExtraTimeFormRowID"
                    ]
 
   connect() {
@@ -100,5 +101,48 @@ export default class extends Controller {
       $(`#${tabButton.dataset.tableId}`).DataTable().columns.adjust().draw()
       tabButton.dataset.tableInit == "yes"
     }
+  }
+
+  showExtraTimeDialog(event) {
+    const form = this.userExtraTimeFormTarget
+    const start_offset = this.userExtraTimeFormStartTarget
+    const end_offset = this.userExtraTimeFormEndTarget
+    const user = this.userExtraTimeFormRowIDTarget
+
+    const user_id = event.currentTarget.dataset.rowId
+    user.value = user_id
+
+
+    event.preventDefault()
+
+    bootbox.dialog( {
+      title: `Set extra times fot ${user}`,
+      message: `
+        <div class="form-group">
+          <label for="start-offset">Start offset (second)</label>
+          <input type="number" class="form-control" id="start-offset">
+        </div>
+        <div class="form-group">
+          <label for="end-offset">Finish offset (second)</label>
+          <input type="number" class="form-control" id="end-offset">
+        </div> `,
+      buttons: {
+        cancel: {
+          label: 'Cancel',
+          className: 'btn-secondary'
+        },
+        ok: {
+          label: 'OK',
+          className: 'btn-primary',
+          callback: function() {
+            start_offset.value = $('#start-offset').val()
+            end_offset.value = $('#end-offset').val()
+            form.requestSubmit()
+          }
+        },
+
+      }
+    })
+
   }
 }

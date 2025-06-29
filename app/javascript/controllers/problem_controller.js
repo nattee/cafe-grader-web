@@ -3,14 +3,17 @@ import { rowFieldToggle } from "mixins/row_field_toggle";
 
 export default class extends rowFieldToggle(Controller) {
   static targets = ["toggleAvailableForm", "toggleViewTestcaseForm",
-                    "problemDate","datasetSelect","datasetSelectForm", "activeTab",
+                    "problemDate","datasetSelect","datasetSelectForm", "activeTabInput",
                     "datasetSettings","datasetTestcases","datasetFiles","dataset"
                    ]
   connect() {
-    if (typeof page_init === "function")
-      page_init()
+    //if (typeof page_init === "function")
+    //  page_init()
+    this.element.addEventListener("turbo:frame-load", this.handleFrameHasLoaded);
   }
 
+
+  // for toggling of available and view testcase in the problem index page
   toggle(event) {
     event.target.disabled = true
     const recId = event.target.dataset.rowId
@@ -21,19 +24,15 @@ export default class extends rowFieldToggle(Controller) {
     this.submitToggleForm(form,recId)
   }
 
-  refreshDataset(event) {
-    const dsid = this.datasetSelectTarget.value
-    const frame = this.datasetTarget
-    frame.src = frame.src.replace(frame.dataset.currentId,dsid)
-    frame.dataset.currentId = dsid
-  }
-
+  // ---- Problem/Edit page ---------
+  // on dataset card, activate when a dropdown of a dataset list is changed
+  // submit a form 
   viewDataset(event) {
     const form = this.datasetSelectFormTarget
-    const active = this.activeTabTarget
-    active.value = $('#dataset .tab-pane.active')[0].id
     form.requestSubmit()
   }
+
+  // s
 
   // event handling binded with bulk manage form submit
   bulkManageSubmitEnd(event) {

@@ -54,10 +54,10 @@
                   %li
                     %hr.dropdown-divider
                   %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :grader_configuration)
-                  %li
-                    %hr.dropdown-divider
-                  %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites)
-                  %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
+                %li
+                  %hr.dropdown-divider
+                %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites) if @current_user.admin?
+                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
                 -#
           / report
           - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
@@ -91,7 +91,7 @@
                 %span.mi.mi-bs.md-18 chat
           - if GraderConfiguration['system.user_setting_enabled']
             %li.nav-item
-              %a.nav-link{href: profile_users_path}
+              %a.nav-link{href: profile_users_path, 'data-user-id': @current_user.id}
                 %span.mi.mi-bs.md-18 settings
           %li.nav-item
             %a.nav-link{href: logout_main_path}
@@ -100,12 +100,18 @@
 :javascript
   let server_time_offset_ms = 0
 
-  $(function() {
+  window.addEventListener("load", function() {
     $('.active-with-children').each( (index,obj) => { 
       if ($(obj).siblings('.dropdown-menu').has('.active').length > 0) { 
         $(obj).addClass('active')
       }
     } )
+
+    //make view sub form use go_to_sub()
+    $("#view_sub_form").on('submit',function(e){
+        e.preventDefault();
+        go_to_sub();
+    });
 
   });
 
@@ -116,11 +122,6 @@
     }
   }
 
-  //make view sub form use go_to_sub()
-  $("#view_sub_form").on('submit',function(e){
-      e.preventDefault();
-      go_to_sub();
-  });
 
   // call check_in api and return a string of last check-in time
   function check_in() {

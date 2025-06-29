@@ -8,7 +8,7 @@ class GroupsController < ApplicationController
   before_action :set_group, only: GroupMemberAction
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
-  before_action :is_group_editor_authorization
+  before_action :group_editor_authorization
 
   #only for member action
   before_action :can_edit_group_authorization, only: GroupMemberAction
@@ -206,14 +206,6 @@ class GroupsController < ApplicationController
 
     def set_problem
       @problem = Problem.find(params[:problem_id]) rescue nil
-    end
-
-    # check if the user can manage group
-    # admin always has the right
-    def is_group_editor_authorization
-      return true if @current_user.admin?
-      return true if @current_user.groups_for_action(:edit).any?
-      unauthorized_redirect(msg: "You cannot manage any group");
     end
 
     def can_edit_group_authorization

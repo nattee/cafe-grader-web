@@ -6,7 +6,7 @@
     There are following errors
     %ul
       - @errors.each do |msg|
-        %li= msg
+        %li= msg.html_safe
 
 .row
   .col-md-6
@@ -15,7 +15,7 @@
       = f.input :full_name
       = f.input :time_limit, required: false
       = f.input :memory_limit, required: false
-      = f.input :groups, collection: @current_user.groups_for_action(:edit), label_method: :name, value_method: :id, input_html: {class: 'select2'}, include_blank: false, style: 'width: 100%', wrapper: :horizontal_select
+      = f.input :groups, collection: @current_user.groups_for_action(:edit), label_method: :name, value_method: :id, input_html: {class: 'select2'}, include_blank: @allow_blank_group, style: 'width: 100%', wrapper: :horizontal_select
       .card.mb-2
         .card-body
           %h5.card-title Dataset
@@ -29,11 +29,17 @@
       .card-body
         .card-title
           %h4
-            .mi.mi-bs.fill help
             Usage
-        A Zip file can be uploaded to create a new problem with the given name. 
-        If a problem with the same name already exists,
-        the imported data will be saved as a new dataset of that problem.
+            .mi.mi-bs.fill help
+          %ul
+            %li
+              Upload a ZIP file to create a new problem with your specified name. 
+              If a problem with that name already exists, the system will add the ZIP content as 
+              a new dataset within the existing problem, rather than replacing it.
+            %li
+              You can assign newly imported problems to a specific group by setting the
+              %strong Groups
+              property.
 
         %h5.my-2 Zip File Format
         %ul

@@ -1,32 +1,13 @@
 %h1 Users
 
-.card.border-success.mb-3
-  .card-header.text-bg-success.border-success
-    Quick Add
-  .card-body
-    = form_with url: user_admin_index_path, scope: :user,  class: 'row row-cols-lg-auto g-3 align-items-center'  do |f|
-      .col-12
-        = f.text_field 'login', :size => 10,class: 'form-control', placeholder: 'login'
-      .form-group
-        = f.text_field 'full_name', :size => 10,class: 'form-control', placeholder: 'full name'
-      .form-group
-        = f.password_field 'password', :size => 10,class: 'form-control', placeholder: 'password'
-      .form-group
-        = f.password_field 'password_confirmation', :size => 10,class: 'form-control', placeholder: 'password confirmation'
-      .form-group
-        = f.text_field 'email', :size => 10,class: 'form-control', placeholder: 'email'
-      =submit_tag "Create", class: 'btn btn-success align-items-bottom'
-
 
 %p
   = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success m-1'}
   = link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success m-1'}
   = link_to 'Bulk Manage', { action: :bulk_manage} , { class: 'btn btn-secondary btn-info m-1'}
   = link_to 'View administrators',{ :action => 'admin'}, { class: 'btn btn-secondary m-1'}
-  = link_to 'View active users',{ :action => 'active'}, { class: 'btn btn-secondary m-1'}
-  = link_to 'Mass mailing',{ :action => 'mass_mailing'}, { class: 'btn btn-secondary m-1'}
 
-%table.table.table-hover.table-condense.datatable
+%table#main-table.table.table-hover.table-condense.datatable
   %thead
     %th Login
     %th Full name
@@ -38,32 +19,52 @@
     %th 
       Enabled
       %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'Allow the user to login?' } [?]
-    %th Last IP
-    %th
-    %th
-    %th
-    %th
-  - for user in @users
-    %tr
-      %td= link_to user.login, stat_user_admin_path(user)
-      %td= user.full_name
-      %td= user.email
-      %td= user.remark
-      %td.py-1.align-middle= toggle_button(user.activated?, toggle_activate_user_admin_path(user),"toggle_activate_user_#{user.id}")
-      %td.py-1.align-middle= toggle_button(user.enabled?, toggle_enable_user_admin_path(user),"toggle_enable_user_#{user.id}")
-      %td= user.last_ip
-      %td.py-1.align-middle= link_to 'Clear IP', {:action => 'clear_last_ip', :id => user, :page=>params[:page]}, :confirm => 'This will reset last logging in ip of the user, are you sure?', class: 'btn btn-secondary btn-sm btn-block'
-      %td= link_to 'Show', {:action => 'show', :id => user}
-      %td= link_to 'Edit', {:action => 'edit', :id => user}
-      %td.py-1.align-middle= link_to 'Destroy', {action: :destroy, id: user}, data: {confirm: 'Are you sure?'}, method: :delete, class: 'btn btn-danger btn-sm btn-block'
-%br/
-= link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success '}
-= link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success '}
+    %th Session Clear
+    %th <!-- edit -->
+    %th <!-- destroy -->
+
+-# hidden user action form
+= form_with url: user_action_user_admin_index_path, html: {'data-user-admin--index-target': 'userForm', id: 'do-user-form',
+  data: {turbo: true, action: 'turbo:submit-end->user-admin--index#afterUserAction', 'turbo-confirm': 'placeholder'}} do |f|
+  = f.hidden_field :user_id, 'data-user-admin--index-target': 'userFormUserID'
+  = f.hidden_field :command, 'data-user-admin--index-target': 'userFormCommand'
 
 :javascript
-  $(function() {
-    $('.datatable').DataTable({
+  window.addEventListener("load", function() {
+    $('#main-table').DataTable({
+      processing: true,
+      rowId: 'id',
+      destroy: true,
       'pageLength': 50,
-      columnDefs: [{orderable: false, targets: [4,5,7,8,9,10]} ],
+      ajax: {
+        url: "#{index_query_user_admin_index_path}",
+        type: 'POST',
+        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+        dataSrc: function(json) {
+          return json.data
+        }
+      },
+      layout: {
+        topStart: 'info',
+        topEnd: 'search',
+      },
+      columns: [ 
+        //login with stat link
+        {data: 'login', render: cafe.dt.render.link(null, {path: '#{stat_user_admin_path(-123)}'})},
+        {data: 'full_name'},
+        {data: 'email'},
+        {data: 'remark'},
+        // activated status
+        {data: 'activated', render: cafe.dt.render.yes_no_pill(), className: 'text-center' },
+        // enabled switch
+        {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'user-admin--index#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+        // clear ip action
+        {data: 'id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'user-admin--index#postUserAction', command: 'clear_ip'} )},
+        // edit link
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('edit','md-18')} Edit`, {path: '#{edit_user_admin_path(-123)}' })},
+        // destroy action
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: '#{user_admin_path(-123)}', method: 'delete', confirm: 'Really delete this user?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
+      ],
+      columnDefs: [{orderable: false, targets: [6,7,8]} ],
     });
   })

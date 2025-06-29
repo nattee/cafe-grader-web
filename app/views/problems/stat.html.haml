@@ -1,6 +1,4 @@
-%h1= @problem.full_name
-%h5.font-monospace
-  = @problem.name
+= render partial: 'problems/problem_head', locals: {problem: @problem}
 
 .row.mb-3
   .col-md-8
@@ -45,7 +43,7 @@
         %th Submitted at
         %th Result
         %th Score
-        - if session[:admin]
+        - if @can_view_ip
           %th IP
     %tbody
       - row_odd,curr = true,''
@@ -67,7 +65,7 @@
   No submission
 
 :javascript
-  $(function() {
+  window.addEventListener("load", function() {
     //init datatable
     $("#main_table").DataTable({
       paging: false

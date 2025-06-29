@@ -1,5 +1,3 @@
-require 'csv'
-
 class ReportController < ApplicationController
 
   before_action :check_valid_login

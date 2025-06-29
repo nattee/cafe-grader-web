@@ -37,6 +37,10 @@ class User < ApplicationRecord
   has_many :contests_users, class_name: 'ContestUser'
   has_many :contests, :through => :contests_users
 
+  # comments
+  has_many :comment_reveals
+  has_many :revealed_comments, through: :comment_reveals, source: :comment
+
   scope :activated_users, -> {where activated: true}
 
   validates_presence_of :login
@@ -61,7 +65,7 @@ class User < ApplicationRecord
 
   # these are for ytopc
   # disable for now
-  #validates_presence_of :province
+  # validates_presence_of :province
 
   attr_accessor :password
 
@@ -71,8 +75,10 @@ class User < ApplicationRecord
 
   # ---- problem for the users for specific action ------
   # -- this includes logic of User.role where admin always has right ---
+  # -- this respect the Group Mode
   # -- this also includes logics of mode of the grader (normal, contest, analysis)
   # -- this also consider whether the user is enabled ---
+  # -- In short, PLEASE USE this function for user perspective
   # valid action is either :submit, :report, :edit
   def problems_for_action(action)
     return Problem.all if admin?
@@ -131,6 +137,28 @@ class User < ApplicationRecord
     end
   end
 
+  # ---- groups for the users for specific action ------
+  # * This includes logic of User.role where admin always has right to any group
+  # * This also includes logics of mode of the grader (normal, contest, analysis)
+  # * This also consider whether the user is enabled ---
+  # * This DOES NOT respect group_mode, it always performed as the group mode is enabled
+  #
+  # valid action is either :submit, :edit
+  def contests_for_action(action)
+    return Contest.all if admin?
+    return Contest.none unless enabled?
+    action = action.to_sym
+
+    # normal mode
+    if action == :edit
+      return Contest.editable_by_user(self.id)
+    elsif action == :submit
+      return Contest.submittable_by_user(self.id)
+    else
+      raise ArgumentError.new('action must be one of :edit, :submit')
+    end
+  end
+
   def reportable_users
     return User.all if admin?
     User.where(id: groups_for_action(:report).joins(:users).pluck('groups_users.user_id'))
@@ -158,15 +186,14 @@ class User < ApplicationRecord
     end
   end
 
-
   # authenticate with CU cas
   def authenticated_by_cucas?(password)
-    appid = Rails.application.credentials.dig(:chula,:cas,:app_id)
-    appsecret = Rails.application.credentials.dig(:chula,:cas,:app_secret)
-    path = Rails.application.credentials.dig(:chula,:cas,:authen_path)
-    host = Rails.application.credentials.dig(:chula,:cas,:authen_host)
+    appid = Rails.application.credentials.dig(:chula, :cas, :app_id)
+    appsecret = Rails.application.credentials.dig(:chula, :cas, :app_secret)
+    path = Rails.application.credentials.dig(:chula, :cas, :authen_path)
+    host = Rails.application.credentials.dig(:chula, :cas, :authen_host)
 
-    #simple call
+    # simple call
     begin
       http = Net::HTTP.new(host, 443)
       http.use_ssl = true
@@ -175,7 +202,7 @@ class User < ApplicationRecord
       http.start do |http|
         req = Net::HTTP::Post.new(path)
         param = "appid=#{appid}&appsecret=#{appsecret}&username=#{login}&password=#{password}"
-        resp = http.request(req,param)
+        resp = http.request(req, param)
         result = JSON.parse resp.body
         puts result
       end
@@ -187,7 +214,6 @@ class User < ApplicationRecord
     end
     return false
   end
-
 
   def authenticated?(password)
     if self.activated
@@ -351,6 +377,10 @@ class User < ApplicationRecord
       return false if !p || !sub || sub.points < 100
     end
     return true
+  end
+
+  def last_submission_by_problem(problem)
+    Submission.where(problem: problem).order(:submitted_at).last
   end
 
   # get a list of available problem for submission

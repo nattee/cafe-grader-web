@@ -2,19 +2,23 @@
 %html
   %head
     %title= GraderConfiguration['contest.name']
-    = stylesheet_link_tag "application", params[:controller], :media => "all"
+    = stylesheet_link_tag "application", :media => "all"
+    = stylesheet_link_tag "tempus-dominus/tempus-dominus", :media => "all"
+    = stylesheet_link_tag "select2/select2.min", :media => "all"
+    = stylesheet_link_tag "select2/select2-bootstrap-5-theme.min", :media => "all"
     = stylesheet_link_tag "datatables/datatables-new.min"
     = csrf_meta_tags
     = csp_meta_tag
-    = javascript_include_tag :my_app
+    /= javasc  ript_include_tag :my_app # This is loaded via Sprocket, thus it is loaded first
     = javascript_importmap_tags
+    -# %script{src: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"}
     = content_for :header
     = yield :head
     %meta{name: :viewport, content: "width=device-width, initial-scale=1"}
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  %body{ 'data-controller': @stimulus_controller}
+  %body{ 'data-controller': "initialize #{@stimulus_controller}" }
     - unless local_assigns[:skip_header]
       = render 'layouts/header'
 
@@ -34,7 +38,7 @@
       to respond with additional toast, use
       = turbo_stream.append 'toast-area', partial: 'toast', locals: {toast: @toast}
     = turbo_frame_tag :toast_main, data: {turbo: true} do
-      #toast-area.toast-container.position-fixed.top-0.end-0.p-3
+      #toast-area.toast-container.position-fixed.bottom-0.start-0.p-3
         / place holder
 
     -# -- for appending javascript response --

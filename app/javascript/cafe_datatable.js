@@ -7,18 +7,37 @@ function data_tag_unless_null(value,label) {
 
 }
 
-// return a render function that render a button, a switch or a link
-// with a property of data-row-id  set to *data*
+// This is a DataTable render factory
+//
+// This function returns a renderer ( function(data,type,row,meta) )
+// That renders an element that is supposed to have associated Stimulus action
+// It can renders as a link, a button or a bootstrap switch that has 
+// data-row-id set to *row['data']* and data-action set to *action*
+//
+// We can write a Stimulus methods that handles the click event of this element.
+// Normal use case is to do some action and/or call some AJAX function to the server.
+//
+// If we just want to render a link (with Turbo or not), it is better to use dt_link_renderer instead
+//
+// Here is example usage in a columns: [] configuration of a DataTable
+//    {data: 'user_id', 
+//     render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, 
+//                                     {element_type: 'link', 
+//                                        className: 'link-danger', 
+//                                        action: 'contest#postUserAction', 
+//                                        command: 'remove', 
+//                                        confirm: 'Remove user from contest?'})},
 function dt_button_renderer(label,{element_type = 'button',
                                    className = 'btn-primary', 
+                                   href='#',                       // for 'link' type only
+                                   method = null,                  // for 'link' type only
+                                   checked_data_field = 'enabled', // for 'switch' type only
                                    action = null,
                                    command = null,
                                    confirm = null,
-                                   checked_data_field = 'enabled', // for 'switch' type only
-                                   href='#',                       // for 'link' type only
-                                   method = null,                  // for 'link' type only
                                   } = {}) {
   return function(data,type,row,meta) {
+    // build data-* attributes
     const dataAction = data_tag_unless_null(action,'action')
     const dataCommand = data_tag_unless_null(command,'command')
     const dataConfirm = data_tag_unless_null(confirm,'form-confirm')
@@ -53,7 +72,21 @@ function dt_button_renderer(label,{element_type = 'button',
   }
 }
 
-// render a normal link
+// Another DataTable render factory. This one render a link as <a href=....>
+// It also replace a pattern, default as -123, in the path by the data from row[*replace_field*]
+//
+// A normal use in a columns options of DataTable is
+//
+//     {data: null, render: 
+//      cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {
+//        path: '#{user_admin_path(-123)}', 
+//        method: 'delete', 
+//        confirm: 'Really delete this user?', 
+//        className: 'btn btn-sm btn-danger', }), 
+//      className: 'align-middle py-1'},
+//
+// See that the *data* is not used and the renderer just replace -123 with the row['id'], because the default value of *replace_field* is 'id'
+// In this case, it just renders user_admin/xxx  where xxx is the row['id'] from the DataTable data
 function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '-123', replace_field = 'id', confirm=null, turbo=false, method=null} = {}) {
   return function(data,type,row,meta) {
     const dataMethod = data_tag_unless_null(method,'turbo-method')
@@ -79,7 +112,7 @@ function dt_yes_no_pill_renderer() {
         return 'Yes'
     else if (data == '0' || data == 'false' || data == 0 || data == false)
       if (type == 'display' || type == 'filter')
-        return '<span class="badge text-bg-danger">No</span>'
+        return '<span class="badge text-bg-light border border-danger">No</span>'
       else
         return 'No'
     return ''
@@ -130,7 +163,7 @@ const dt = {
   render_factory: {
     array: dt_array_render_factory,
     badge: dt_array_badge_render_factory,
-  }
+  },
 }
 
 export { dt }

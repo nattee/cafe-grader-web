@@ -1,7 +1,7 @@
 class SubmissionsController < ApplicationController
-  before_action :set_submission, only: [:show,:download,:compiler_msg,:rejudge,:set_tag, :edit]
+  before_action :set_submission, only: [:show, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
   before_action :check_valid_login
-  before_action :submission_authorization, only: [:show, :download, :edit]
+  before_action :submission_authorization, only: [:show, :download, :edit, :evaluations]
   before_action only: [:rejudge, :set_tag] do authorization_by_roles([:ta]) end
 
   # GET /submissions
@@ -28,31 +28,38 @@ class SubmissionsController < ApplicationController
   # GET /submissions/1
   # GET /submissions/1.json
   def show
-    #log the viewing
+    # log the viewing
     user = User.find(session[:user_id])
-    SubmissionViewLog.create(user_id: session[:user_id],submission_id: @submission.id) unless user.admin?
+    SubmissionViewLog.create(user_id: session[:user_id], submission_id: @submission.id) unless user.admin?
 
-    @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
-      .select(:num,:group,:group_name,:weight, :time, :memory, :score, :testcase_id, :result_text, :result)
+    # @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
+    #  .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
+    @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
+    @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
+  end
 
-
+  # Turbo render evaluations as modal popup
+  def evaluations
+    @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
+    @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
+    render partial: 'msg_modal_show', locals: { do_popup: true, header_msg: 'Evaluation Details', body_msg: render_to_string(partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}) }
   end
 
   def download
     if @submission.language.binary? && @submission.binary
       send_data @submission.binary, filename: @submission.download_filename, type: @submission.content_type || 'application/octet-stream', disposition: 'attachment'
-      return 
+      return
     end
 
     # no binary, send the source
-    send_data(@submission.source, {:filename => @submission.download_filename, :type => 'text/plain'})
+    send_data(@submission.source, {filename: @submission.download_filename, type: 'text/plain'})
   end
 
   def compiler_msg
     render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
   end
 
-  #on-site new submission on specific problem
+  # on-site new submission on specific problem
   def direct_edit_problem
     @problem = Problem.find(params[:problem_id])
     unless @current_user.can_view_problem?(@problem)
@@ -62,15 +69,14 @@ class SubmissionsController < ApplicationController
     @source = ''
 
     problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
-
     if @problem.get_permitted_lang_as_ids.count == 1
       @language = problem_lang
-      @as_binary = @language.binary?
     else
       @language = @current_user.default_language || problem_lang || Language.first
-      @as_binary = @language.binary?
     end
 
+    @as_binary = @language.binary?
+    @last_sub = @current_user.last_submission_by_problem(@problem)
 
     render 'edit'
   end
@@ -79,26 +85,43 @@ class SubmissionsController < ApplicationController
   def edit
     @source = @submission.source.to_s
     @problem = @submission.problem
-    @language = @submission.language || @current_user.default_language || Language.first
+
+    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
+    @language_forced = @problem.get_permitted_lang_as_ids.count == 1
+    if @language_forced
+      @language = problem_lang
+    else
+      @language = @submission.language || @current_user.default_language || problem_lang || Language.first
+    end
+
     @as_binary = @language.binary?
+    @last_sub = @current_user.last_submission_by_problem(@problem)
   end
 
 
+  # as Turbo
   def get_latest_submission_status
     @problem = Problem.find(params[:pid])
-    @submission = Submission.find_last_by_user_and_problem(params[:uid],params[:pid])
-    respond_to do |format|
-      format.js
-    end
+    @submission = @current_user.last_submission_by_problem(@problem)
+    @delay_value = (Time.zone.now - @submission.submitted_at).clamp(1,10).to_i * 1000
+    render turbo_stream: [
+      turbo_stream.update("latest_status",
+                           partial: 'submission_short',
+                           locals: {submission: @submission,
+                                    refresh_if_not_graded: true,
+                                    show_id: true,
+                                    sub_count: @submission.number,
+                                    show_button: false })
+    ]
   end
 
   # GET /submissions/:id/rejudge
   def rejudge
-    #@task = @submission.task
-    #@task.status_inqueue! if @task
+    # @task = @submission.task
+    # @task.status_inqueue! if @task
 
-    #add lower priority job
-    @submission.add_judge_job(@submission.problem.live_dataset,-10)
+    # add lower priority job
+    @submission.add_judge_job(@submission.problem.live_dataset, -10)
     respond_to do |format|
       format.js
     end
@@ -112,23 +135,21 @@ class SubmissionsController < ApplicationController
 protected
 
   def submission_authorization
-    #admin always has privileged
+    # admin always has privileged
     return true if @current_user.admin?
-    return true if @current_user.has_role?('ta') && (['show','download'].include? action_name)
+    return true if @current_user.has_role?('ta') && (['show', 'download'].include? action_name)
 
     sub = Submission.find(params[:id])
     if @current_user.available_problems.include? sub.problem
       return true if GraderConfiguration["right.user_view_submission"] or sub.user == @current_user
     end
 
-    #default to NO
+    # default to NO
     unauthorized_redirect
     return false
   end
-  
+
   def set_submission
     @submission = Submission.find(params[:id])
   end
-
-    
 end

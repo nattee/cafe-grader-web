@@ -8,6 +8,14 @@ class Contest < ApplicationRecord
   scope :enabled, -> { where(enabled: true) }
   # scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
 
+  scope :editable_by_user, -> (user_id) {
+    joins(:contests_users).where(contests_users: { user_id: user_id, enabled: true, role: 'editor' })
+  }
+
+  scope :submittable_by_user, -> (user_id) {
+    joins(:contests_users).where(contests_users: { user_id: user_id, enabled: true })
+  }
+
   # new_users are active record relation
   # return a toast reaponse hash
 

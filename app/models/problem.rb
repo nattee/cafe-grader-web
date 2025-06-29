@@ -1,81 +1,100 @@
 class Problem < ApplicationRecord
+  # -- fields --
+  # how the submission should be compiled
+  enum :compilation_type,  { self_contained: 0,
+                             with_managers: 1 }
+  enum :task_type, { batch: 0 }
 
-  #how the submission should be compiled
-  enum compilation_type:  {self_contained: 0,
-                           with_managers: 1}
-  enum task_type: { batch: 0 }
-  #belongs_to :description
+  # belongs_to :description
 
-  has_and_belongs_to_many :contests, :uniq => true
+  # -- association --
+  has_and_belongs_to_many :contests, uniq: true
 
-  #has_and_belongs_to_many :groups
+  # has_and_belongs_to_many :groups
   has_many :groups_problems, class_name: 'GroupProblem', dependent: :destroy
-  has_many :groups, :through => :groups_problems
+  has_many :groups, through: :groups_problems
 
   has_many :problems_tags, class_name: 'ProblemTag', dependent: :destroy
   has_many :tags, through: :problems_tags
 
-  has_many :test_pairs, :dependent => :delete_all
+  has_many :test_pairs, dependent: :delete_all
 
-  #testcase is all the testcases
-  has_many :testcases, :dependent => :destroy
+  # testcase is all the testcases
+  has_many :testcases, dependent: :destroy
 
-  has_many :submissions, :dependent => :destroy
+  has_many :submissions, dependent: :destroy
 
-  has_many :datasets, :dependent => :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
+
+  # This allows you to get all comment reveals for comments belonging to this problem
+  has_many :comment_reveals, through: :comments
+
+  has_many :datasets, dependent: :destroy
   belongs_to :live_dataset, class_name: 'Dataset'
 
+  # -- validations --
   validates_presence_of :name
-  #validates_format_of :name, :with => /\A\w+\z/
+  validates_uniqueness_of :name
+  validates_format_of :name,
+    with: /\A[a-zA-Z\d\-\_\[\]()]+\z/,
+    message: 'contains invalid characters. Only letters, numbers, <code>( )</code>, <code>[ ]</code>, <code>-</code> and <code>_</code> are allowed.'.html_safe
+
   validates_presence_of :full_name
 
+
+  # -- callback --
+  after_save :generate_and_attach_pdf_statement_later, if: :should_generate_pdf?
+
+  # -- scope --
   scope :available, -> { where(available: true) }
 
   # return problems that is enabled and is in an enabled group that has the given user
   # this does not check whether the user is enabled
   #
-  # It always considers groups, regardless of the group mode configuration
+  # It always considers groups, REGARDLESS of the group mode configuration
   # When group mode is false, use Problem.available_problems instead
+  #
+  # please use User#problems_for_action when we want to consider everything
   scope :group_submittable_by_user, ->(user_id) {
     joins(groups_problems: {group: :groups_users})
-      .where(available: true)                   #available problems only
-      .where('groups.enabled': true)            #groups is enabled
-      .where('groups_users.user_id': user_id)   #user is in the group
-      .where('groups_users.enabled': true)      #user in the group is enabled
-      .where('groups_problems.enabled': true)   #problem is enabled
-      .distinct(:id)                            #get distinct
+      .where(available: true)                   # available problems only
+      .where('groups.enabled': true)            # groups is enabled
+      .where('groups_users.user_id': user_id)   # user is in the group
+      .where('groups_users.enabled': true)      # user in the group is enabled
+      .where('groups_problems.enabled': true)   # problem is enabled
+      .distinct(:id)                            # get distinct
   }
 
   # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
   scope :group_reportable_by_user, ->(user_id) {
-    group_actionable_by_user(user_id,['editor','reporter'])
+    group_actionable_by_user(user_id, ['editor', 'reporter'])
   }
 
   # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
   scope :group_editable_by_user, ->(user_id) {
-    group_actionable_by_user(user_id,['editor'])
+    group_actionable_by_user(user_id, ['editor'])
   }
 
-  scope :group_actionable_by_user, ->(user_id,roles = ['editor']) { 
+  scope :group_actionable_by_user, ->(user_id, roles = ['editor']) {
     joins(groups_problems: {group: :groups_users})
-      .where(available: true)                   #available problems only
-      .where('groups.enabled': true)            #groups is enabled
-      .where('groups_users.user_id': user_id)   #user is in the group
-      .where('groups_users.role': roles)        #filter for user with roles
-      .distinct(:id)                            #get distinct
+      .where(available: true)                   # available problems only
+      .where('groups.enabled': true)            # groups is enabled
+      .where('groups_users.user_id': user_id)   # user is in the group
+      .where('groups_users.role': roles)        # filter for user with roles
+      .distinct(:id)                            # get distinct
   }
 
   scope :contests_problems_for_user, ->(user_id) {
     now = Time.zone.now
     joins(contests_problems: {contest: :contests_users})
-      .where(available: true)                   #available problems only
-      .where('contests.enabled': true)          #contests is enabled
-      .where('contests_users.user_id': user_id) #user is in the contest
-      .where('contests_users.enabled': true)    #user in the contest is enabled
-      .where('contests_problems.enabled': true) #problem is enabled
-      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?',now)
-      .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?',now)
-      .distinct(:problem_id)                    #get distinct
+      .where(available: true)                   # available problems only
+      .where('contests.enabled': true)          # contests is enabled
+      .where('contests_users.user_id': user_id) # user is in the contest
+      .where('contests_users.enabled': true)    # user in the contest is enabled
+      .where('contests_problems.enabled': true) # problem is enabled
+      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?', now)
+      .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?', now)
+      .distinct(:problem_id)                    # get distinct
   }
 
   scope :default_order, -> { order(date_added: :desc).order(:name)  }
@@ -86,10 +105,10 @@ class Problem < ApplicationRecord
   # attachment here are the public one,
   # if the user has the right to submit, the user can see the attachments (and statement)
   has_one_attached :statement
-  has_one_attached :attachment  #this is public files seen by contestant
+  has_one_attached :generated_statement # statement generated from the description
+  has_one_attached :attachment  # this is public files seen by contestant
 
   def set_default_value
-
   end
 
   def public_tags
@@ -98,7 +117,7 @@ class Problem < ApplicationRecord
 
 
   def can_view_testcase
-    return GraderConfiguration.show_testcase && self.view_testcase
+    GraderConfiguration.show_testcase && self.view_testcase
   end
 
   def get_jschart_history
@@ -108,19 +127,20 @@ class Problem < ApplicationRecord
     i = 0
     label = []
     value = []
-    while (start_date + i < Time.zone.now.to_date)
+    while start_date + i < Time.zone.now.to_date
       if (start_date+i).day == 1
-        #label << (start_date+i).strftime("%d %b %Y")
-        #label << (start_date+i).strftime("%d")
+        # label << (start_date+i).strftime("%d %b %Y")
+        # label << (start_date+i).strftime("%d")
       else
-        #label << ' '
-        #label << (start_date+i).strftime("%d")
+        # label << ' '
+        # label << (start_date+i).strftime("%d")
       end
       label << (start_date+i).strftime("%d-%b")
       value << (count[start_date+i] || 0)
       i+=1
     end
-    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+    return {labels: label,
+            datasets: [label: 'sub', data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
   end
 
   def get_next_dataset_name(base = 'Dataset')
@@ -134,7 +154,7 @@ class Problem < ApplicationRecord
   end
 
 
-  def self.create_from_import_form_params(params, old_problem=nil)
+  def self.create_from_import_form_params(params, old_problem = nil)
     org_problem = old_problem || Problem.new
     import_params, problem = Problem.extract_params_and_check(params,
                                                               org_problem)
@@ -160,7 +180,7 @@ class Problem < ApplicationRecord
                                      import_params[:memory_limit],
                                      import_params[:checker_name],
                                      import_to_db)
-      problem.errors.add(:base,'Import error.')
+      problem.errors.add(:base, 'Import error.')
     end
 
     return problem, importer.log_msg
@@ -172,16 +192,65 @@ class Problem < ApplicationRecord
 
   def get_submission_stat
     result = Hash.new
-    #total number of submission
+    # total number of submission
     result[:total_sub] = Submission.where(problem_id: self.id).count
     result[:attempted_user] = Submission.where(problem_id: self.id).group(:user_id)
-    result[:pass] = Submission.where(problem_id: self.id).where("points >= ?",100).count
+    result[:pass] = Submission.where(problem_id: self.id).where("points >= ?", 100).count
     return result
   end
 
   def long_name
     "[#{name}] #{full_name}"
   end
+
+  # -- HINT section begin --
+  def hints
+    comments.where(kind: :hint)
+  end
+
+  # indicate weather this problem has a helper
+  def helpers?
+    hints.any?
+  end
+
+  # return a records of all comment with the reveal status
+  # to get all hints, we can use comment_with_reveal_status(user,kind: 'hint')
+  def comments_with_reveal_status(user, kind: nil)
+    query = comments
+    query = query.where(kind: kind) if kind.present?
+    query.left_joins(:comment_reveals).select('comments.*', "CASE WHEN comment_reveals.user_id = #{user.id} THEN TRUE ELSE FALSE END AS is_acquired")
+  end
+
+  # this method is used both in acquiring and viewing
+  def comment_reveal_prerequisite_satisfied?(comment, user)
+    case comment.kind
+    when 'hint'
+      # user want to reveal a hint
+
+      # check if the problem allow hint
+      return false unless self.allow_hint?
+
+      # check if the user has the right to the problem
+      return false unless user.problems_for_action(:submit).where(id: self).any?
+
+      # if the current mode is a contest, also check the contest
+      if GraderConfiguration.contest_mode?
+        # TODO: this is WRONG, need to check actual active time
+        return false unless self.contests.enabled.where(allow_hint: true).any?
+      end
+
+      # pass all checks
+      return true
+    else
+      false
+    end
+  end
+
+  # return the enabled comments of the specified *kind* that are revealed by *user*
+  def revealed_comments_for_user(user, kind)
+    commens.joins(:comment_reveals).where(enabled: true, comment_reveals: {user: user, kind: kind})
+  end
+  # -- HINT section end --
 
   # ids_string is something like ['1','3','7']
   # which correspond to the submitted value from  select2 multiple selection
@@ -191,15 +260,15 @@ class Problem < ApplicationRecord
   end
 
   # return ids array of permitted lang
-  # if permitted_lang is blank, show nil 
+  # if permitted_lang is blank, show nil
   def get_permitted_lang_as_ids(when_blank: Language.ids)
     return when_blank if self.permitted_lang.blank?
     return Language.where(name: self.permitted_lang.split(' ').uniq).ids
   end
 
-  #this function return a content generated for "all_tests.cfg"
-  #  from the legacy code (Aj. Pong's) 
-  #  This is definitely not complete but it works in general cases
+  # this function return a content generated for "all_tests.cfg"
+  # from the legacy code (Aj. Pong's)
+  # This is definitely not complete but it works in general cases
   def build_legacy_config_file
     default = {
       time_limit: 1.0,
@@ -227,16 +296,24 @@ class Problem < ApplicationRecord
     return result.join "\n"
   end
 
+  def self.check_name(replace: false, with: '')
+    Problem.find_each do |problem|
+      unless problem.valid?
+        puts "Problem #{problem.id}: [#{problem.name}] is invalid"
+      end
+    end
+  end
 
-  #TODO: change to language specific
+
+  # TODO: change to language specific
   def exec_filename(language)
     case language.name
     when 'cpp'
       'a.out'
     when 'python'
-      'code.pyc'
-    when 'java','digital'
-      #for java, the compilation create a shell script that runs the file
+      'cafe_code.py'
+    when 'java', 'digital'
+      # for java, the compilation create a shell script that runs the file
       'run.sh'
     else
       'submission'
@@ -249,4 +326,21 @@ class Problem < ApplicationRecord
     pe.export_problem_to_dir(self, zip: true)
   end
 
+  def regenerate_pdf_statement!
+    ProblemPdfGenerator.new(self).call
+  end
+
+  # -- private section --
+  private
+
+  def should_generate_pdf?
+    (new_record? || saved_change_to_attribute?(:description)) && description.present?
+  end
+
+  def generate_and_attach_pdf_statement_later
+    # Pass the entire object to the job, not just the ID.
+    # This avoids another database query in the job if the object is simple.
+    # For very large objects, passing the ID is better: perform(self.id).
+    CreateProblemPdfJob.perform_later(self)
+  end
 end

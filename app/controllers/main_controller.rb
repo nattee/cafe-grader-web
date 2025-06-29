@@ -1,19 +1,13 @@
 class MainController < ApplicationController
 
   before_action :check_valid_login, :except => [:login]
-  before_action :check_viewability, :except => [:index, :login]
+  before_action :check_viewability, :except => [:login]
 
   before_action :default_stimulus_controller
 
   append_before_action :confirm_and_update_start_time,
-                       :except => [:index,
-                                   :login,
+                       :except => [:login,
                                    :confirm_contest_start]
-
-  # to prevent log in box to be shown when user logged out of the
-  # system only in some tab
-  prepend_before_action :reject_announcement_refresh_when_logged_out, 
-                        :only => [:announcements]
 
   #reset login, clear session
   #front page
@@ -91,6 +85,7 @@ class MainController < ApplicationController
       if language.binary?
         @submission.binary = params['file'].read
         @submission.content_type = params['file'].content_type
+        @submission.source_filename = params['file'].original_filename
       else
         @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
         @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')

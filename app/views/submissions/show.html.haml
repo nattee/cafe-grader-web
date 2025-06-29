@@ -1,167 +1,134 @@
-%h2= "Submission: #{@submission.id}"
-
-%textarea#data{style: "display:none;"}
-  :preserve
-    #{@submission.source}
+%h2= "Submission: ##{@submission.id}"
 
 // fluid-container
-.containter
+.containter{'data-controller': :editor}
+  - unless @as_binary
+    -# hidden area that shows the original code
+    %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @submission.source
   .row
-    .col-md-7
-      %h4 Source Code
+    .col-lg-7
+      .row
+        .col-8
+          %h4 Source Code
+        .col-4.text-end
+          = link_to "[ Download ]", download_submission_path(@submission)
       - if @submission.language.binary?
         .alert.alert-warning
           The file is marked as a binary, viewing is impossible. Please
           = link_to 'download', download_submission_path(@submission)
           instead
       - else
-        %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;" }
-        :javascript
-          e = ace.edit("editor")
-          e.setOptions({ maxLines: Infinity })
-          e.setValue($("#data").text())
-          e.gotoLine(1)
-          e.getSession().setMode("#{get_ace_mode(@submission.language)}")
-          e.setReadOnly(true)
-    .col-md-5
-      %h4 Stat
-      %table.table
-        %tr
-          %td.text-end.text-secondary
-            User
-          %td
-            - if @current_user.admin? ||@current_user == @submission.user
-              - if @submission.user
-                = link_to "#{@submission.user.login}", stat_user_admin_path(@submission.user)
-                = @submission.user.full_name
-              - else
-                = "(n/a)"
-            - else
-              = '-- REDACTED --'
-        %tr
-          %td.text-end.text-secondary
-            Problem
-          %td
-            = render partial: 'problems/problem_name', locals: {problem: @submission.problem} if @submission.problem
-            - if @current_user.admin?
-              = link_to 'Edit', edit_problem_path(@submission.problem)
-              |
-              = link_to 'Stat', stat_problem_path(@submission.problem)
-        %tr
-          %td.text-end.text-secondary
-            Tries
-          %td= @submission.number
-        %tr
-          %td.text-end.text-secondary
-            Language
-          %td= @submission.language.pretty_name
-        %tr
-          %td.text-end.text-secondary
-            Submitted
-          %td 
-            #{time_ago_in_words(@submission.submitted_at)} ago 
-            %span.text-secondary (at #{@submission.submitted_at.to_formatted_s(:long)})
-        %tr
-          %td.text-end.text-secondary
-            Graded
-          - if @submission.graded_at
-            %td
-              #{time_ago_in_words(@submission.graded_at)} ago
-              %span.text-secondary (at #{@submission.graded_at.to_formatted_s(:long)})
-          - else
-            %td -
-        %tr
-          %td.text-end.text-secondary
-            Points
-          %td #{@submission.points}/100
-        %tr
-          %td.text-end.text-secondary
-            Comment
-          %td 
-            %tt.grader-comment #{@submission.grader_comment}
-        %tr
-          %td.text-end.text-secondary
-            Runtime
-          %td
-            %span= (@submission.max_runtime || 0)/1000.to_d
-            %span.text-body-tertiary s
-        %tr
-          %td.text-end.text-secondary
-            Memory
-          %td
-            %span= @submission.peak_memory
-            %span.text-body-tertiary kb
-        %tr
-          %td.text-end.text-secondary
-            Compiler result
-          %td
-            %button.btn.btn-info.btn-sm{type: 'button', data: {bs: {toggle: 'modal', target: '#msg_modal'}}}
-              View
-        %tr
-          %td.text-end.text-secondary
-            Grading Task Status
-          %td
-            = @submission.status
-            - if @current_user.admin?
-              = link_to "Rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-warning btn-sm'
-        %tr
-          %td.text-end.text-secondary
-            Download
-          %td
-            = link_to "Download", download_submission_path(@submission), class: 'btn btn-primary btn-sm'
-        - if @current_user.can_view_testcase?(@submission.problem)
-          %tr
-            %td.text-end.text-secondary
-              Testcases
-            %td
-              = link_to "Testcase", show_problem_testcases_path(@submission.problem_id), data: {remote: true}, class: 'btn btn-info btn-sm'
-        - if @current_user.has_role?('ta')
-          %tr
-            %td.text-end.text-secondary
-              IP
-            %td #{@submission.ip_address}
-          %tr
-            %td.text-end.text-secondary
-              Model solution
-            %td
-              - if @submission.tag_model?
-                YES
-                - if @current_user.has_role?('ta')
-                  = link_to "remove model status", set_tag_submission_path(@submission, tag: :default), class: 'btn btn-warning btn-sm'
-              - else
-                No
-                - if @current_user.has_role?('ta')
-                  = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
-      -# evaluation result
-      - if @submission.evaluations.count > 0
-        %h4 Evaluations
-        %table.table
-          %thead
+        .mb-2
+          %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;", data: {editor_mode: :view, editor_target: :editor, language: @submission.language.pretty_name} }
+    .col-lg-5
+      .card.mb-2.shadow-sm
+        .card-body
+          %h4 Submission Detail
+          %table.table
             %tr
-              %th.text-end ID
-              %th.text-end Group
-              %th.text-end Time
-              %th.text-end Memory
-              %th Result
-              %th.text-end Score
-              %th.text-end Weight
-          %tbody
-            - @evaluations.each do |ev|
-              %tr
-                %td.text-end= ev.num
-                %td.text-end= ev.group_name
-                %td.text-end
-                  %span= (ev.time || 0) / 1000.0
-                  %span.text-secondary s
-                %td.text-end
-                  %span= number_with_precision (ev.memory || 0) / 1024.0, precision: 2
-                  %span.text-secondary MB
+              %td.text-end.text-secondary
+                User
+              %td
+                - if @current_user.admin? ||@current_user == @submission.user
+                  - if @submission.user
+                    = link_to "#{@submission.user.login}", stat_user_admin_path(@submission.user)
+                    = @submission.user.full_name
+                  - else
+                    = "(n/a)"
+                - else
+                  = '-- REDACTED --'
+            %tr
+              %td.text-end.text-secondary
+                Problem
+              %td
+                = render partial: 'problems/problem_name', locals: {problem: @submission.problem} if @submission.problem
+                - if @current_user.admin?
+                  = link_to 'Edit', edit_problem_path(@submission.problem)
+                  |
+                  = link_to 'Stat', stat_problem_path(@submission.problem)
+            %tr
+              %td.text-end.text-secondary
+                Tries
+              %td= @submission.number
+            %tr
+              %td.text-end.text-secondary
+                Language
+              %td= @submission.language.pretty_name
+            %tr
+              %td.text-end.text-secondary
+                Submitted
+              %td 
+                #{time_ago_in_words(@submission.submitted_at)} ago 
+                %span.text-secondary (at #{@submission.submitted_at.to_formatted_s(:long)})
+            %tr
+              %td.text-end.text-secondary
+                Graded
+              - if @submission.graded_at
                 %td
-                  = ev.result_as_word
-                  - unless ev.result_text.blank? || ev.result_text == ev.result_as_word
-                    %div.text-secondary
-                      = ev.result_text
-                %td.text-end= number_to_percentage (ev.score || 0) *100, precision: 0
-                %td.text-end= ev.weight
+                  #{time_ago_in_words(@submission.graded_at)} ago
+                  %span.text-secondary (at #{@submission.graded_at.to_formatted_s(:long)})
+              - else
+                %td -
+            %tr
+              %td.text-end.text-secondary
+                Points
+              %td #{@submission.points}/100
+            %tr
+              %td.text-end.text-secondary
+                Comment
+              %td 
+                %tt.grader-comment #{@submission.grader_comment}
+            %tr
+              %td.text-end.text-secondary
+                Runtime
+              %td
+                %span= (@submission.max_runtime || 0)/1000.to_d
+                %span.text-body-tertiary s
+            %tr
+              %td.text-end.text-secondary
+                Memory
+              %td
+                %span= @submission.peak_memory
+                %span.text-body-tertiary kb
+            %tr
+              %td.text-end.text-secondary
+                Compiler result
+              %td
+                %button.btn.btn-info.btn-sm{type: 'button', data: {bs: {toggle: 'modal', target: '#msg_modal'}}}
+                  View
+            %tr
+              %td.text-end.text-secondary
+                Grading Task Status
+              %td
+                = @submission.status
+                - if @current_user.admin?
+                  = link_to "Rejudge", rejudge_submission_path, data: {remote: true}, class: 'btn btn-warning btn-sm'
+            - if @current_user.can_view_testcase?(@submission.problem)
+              %tr
+                %td.text-end.text-secondary
+                  Testcases
+                %td
+                  = link_to "Testcase", show_problem_testcases_path(@submission.problem_id), data: {turbo: false}, class: 'btn btn-info btn-sm'
+            - if @current_user.has_role?('ta')
+              %tr
+                %td.text-end.text-secondary
+                  IP
+                %td #{@submission.ip_address}
+              %tr
+                %td.text-end.text-secondary
+                  Model solution
+                %td
+                  - if @submission.tag_model?
+                    YES
+                    - if @current_user.has_role?('ta')
+                      = link_to "remove model status", set_tag_submission_path(@submission, tag: :default), class: 'btn btn-warning btn-sm'
+                  - else
+                    No
+                    - if @current_user.has_role?('ta')
+                      = link_to "set as model solution", set_tag_submission_path(@submission, tag: :model), class: 'btn btn-success btn-sm'
+      .card.mb-2.shadow-sm
+        .card-body
+          %h4 Evaluations
+          = render partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}
 
 = render partial: 'msg_modal', locals: {header_msg: 'Compiler message', body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}

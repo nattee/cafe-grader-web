@@ -11,23 +11,45 @@ class ApplicationController < ActionController::Base
   before_action :unique_visitor_id
   before_action :active_controller_action
 
+  include ActiveStorage::SetCurrent
+
   MULTIPLE_IP_LOGIN_CONF_KEY = 'right.multiple_ip_login'
   WHITELIST_IGNORE_CONF_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_CONF_KEY = 'right.whitelist_ip'
 
+  # ---------------------------------------------------
+  # ---- migration to Hotwire Stimulus and Turbo ------
+  # ---------------------------------------------------
+  #
+  # We are on the process of moving JavaScript to Stimulus framework.
+  #
   # by default, we DON'T set any stimulus controller
   # To connect a stimulus controllers to a <body> element, just simply set
   # @stimulus_controller = 'xxx' and <body data-controller="xxx"> will be generated
   #
-  # Since most rails controller wants to connect to the same stimulus controller
-  # for all of its full page rendering action, we can simply use
+  # We provide two methods for conveniently connects stimulus controller based on
+  # rails controller: `default_stimulus_controller` and `page_stimuluscontroller`
+  #
+
+
+  # Since most action in the same controller wants to connect to the same 
+  # stimulus controller we can simply use
   #
   #   before_action :default_stimulus_controller
   #
   # to include the stimulus controller that have the same name as the rails controller
   # or we can do any before_action to set the @stimulus_controller manually.
+  # The Stimulus controllers is assumed to be in 'app/javascript/controllers/#{controller_name}.js'
   def default_stimulus_controller
     @stimulus_controller = controller_name
+  end
+
+  # This methods connects to different controller per action
+  # Similar to default_stimulus_controller, this connects to 'app/javascript/controllers/#{controller_name}/#{action_name}.js'
+  def page_stimulus_controller
+    # Stimulus naming convension is that '--' is translated into '/' and using kebab case instead of snake case
+    # that's why we need gsub('_','-')
+    @stimulus_controller = controller_name.gsub('_','-') + '--' + action_name
   end
 
   # report and redirect for unauthorized activities
@@ -94,6 +116,13 @@ class ApplicationController < ActionController::Base
       return false
     end
     return true
+  end
+
+  # check whether the user is an editor of any group
+  def group_editor_authorization
+    return true if @current_user.admin?
+    return true if @current_user.groups_for_action(:edit).any?
+    unauthorized_redirect(msg: "You cannot manage any problem");
   end
 
   # redirect when user does not have specific roles in any group

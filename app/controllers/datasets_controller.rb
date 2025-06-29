@@ -1,20 +1,32 @@
 class DatasetsController < ApplicationController
-  before_action :set_dataset, only: %i[ show edit update destroy
+  include ProblemAuthorization
+
+  # list of methods that are for viewing which requires viewable permission
+  # (all others methods except these one are considered UPDATE_METHOD which require editable permission)
+  VIEW_METHOD = %i[ view testcases files
+                    testcase_input testcase_sol]
+
+  before_action :set_dataset, only: %i[ edit update destroy
                                         file_delete file_view file_download
                                         testcase_input testcase_sol testcase_delete
                                         view set_as_live rejudge set_weight
                                         settings files testcases
                                       ]
-  before_action :admin_authorization
   before_action :check_valid_login
+  before_action :group_editor_authorization
+  before_action :can_view_problem, only: VIEW_METHOD
+  before_action :can_edit_problem, except: VIEW_METHOD
+  before_action :set_active_tab, only: %i[edit view testcase_delete set_weight set_as_live update
+                                          settings files testcases]
 
   # GET /datasets/new
   def new
     @dataset = Dataset.new
   end
 
-  #
-  def show
+  def view
+    @dataset = Dataset.find(params[:null][:dsid])
+    render :update
   end
 
   # GET /datasets/1/edit
@@ -41,13 +53,13 @@ class DatasetsController < ApplicationController
   def update
     respond_to do |format|
       # file attachment
-      @dataset.managers.attach params[:dataset][:managers] if params[:dataset][:managers]
-      @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset][:data_files]
-      @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset][:initializers]
+      @dataset.managers.attach params[:dataset][:managers] if params[:dataset] && params[:dataset][:managers]
+      @dataset.data_files.attach params[:dataset][:data_files] if params[:dataset] && params[:dataset][:data_files]
+      @dataset.initializers.attach params[:dataset][:initializers] if params[:dataset] && params[:dataset][:initializers]
 
       # since checker is downloaded and cached by WorkerDataset, we have to invalidate it
       # when it is updated
-      if params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files]
+      if params[:dataset] && (params[:dataset][:checker] || params[:dataset][:managers] || params[:dataset][:initializers] || params[:dataset][:data_files])
         WorkerDataset.where(dataset_id: @dataset).delete_all
       end
 
@@ -72,6 +84,7 @@ class DatasetsController < ApplicationController
 
     @toast = {title: 'File deleted',
               body: "#{att.name.capitalize} file [#{att.filename}] is deleted."}
+    @active_dataset_tab = "#files"
   end
 
   #POST /dataset/1/file/view/1
@@ -103,14 +116,26 @@ class DatasetsController < ApplicationController
 
   # as turbo
   def testcase_input
-    tc = Testcase.find(params[:tc_id])
-    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'input', body_msg: "<pre>#{tc.inp_file.download}</pre>".html_safe }
+    begin
+      tc = Testcase.find(params[:tc_id])
+      text = tc.inp_file.download
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Input', body_msg: "<pre>#{text}</pre>".html_safe }
+    rescue  ActiveStorage::FileNotFoundError
+      text = "<div class='alert alert-danger'>File NOT Found on the server!!!</div>".html_safe
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Input ERROR', body_msg: text }
+    end
   end
 
   # as turbo
   def testcase_sol
-    tc = Testcase.find(params[:tc_id])
-    render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'answer', body_msg: "<pre>#{tc.ans_file.download}</pre>".html_safe }
+    begin
+      tc = Testcase.find(params[:tc_id])
+      text = tc.ans_file.download
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Answer', body_msg: "<pre>#{text}</pre>".html_safe }
+    rescue  ActiveStorage::FileNotFoundError
+      text = "<div class='alert alert-danger'>File NOT Found on the server!!!</div>".html_safe
+      render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Answer ERROR', body_msg: text }
+    end
   end
 
   # as turbo
@@ -140,11 +165,6 @@ class DatasetsController < ApplicationController
     render :update
   end
 
-  def view
-    @dataset = Dataset.find(params[:null][:dsid])
-    @active_tab = params[:null][:active_tab]
-    render :update
-  end
 
   def set_as_live
     @dataset.problem.update(live_dataset: @dataset)
@@ -192,6 +212,7 @@ class DatasetsController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_dataset
       @dataset = Dataset.find(params[:id])
+      @problem = @dataset.problem
     end
 
     # Only allow a list of trusted parameters through.
@@ -199,6 +220,13 @@ class DatasetsController < ApplicationController
       params.fetch(:dataset, {})
       params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename, 
                                       :checker, :initializer_filename)
+    end
+
+    # our 'bs-tab' stimulus controller set the hidden input as the HTML id of the showing tab
+    # we set @dataset_active_tab to the id so that we render it, we can activate the correct tab
+    def set_active_tab
+      @active_dataset_tab = params[:active_dataset_tab]
+      @active_dataset_tab = '#settings' if @active_dataset_tab.blank?
     end
 
 end

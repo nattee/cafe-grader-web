@@ -27,14 +27,14 @@
 .row
   -# submission history graph
   .col-md-8
-    .card.mb-3
+    .card.mb-3.shadow-sm
       .card-body
         %h2.card-title Submission History
         %canvas#chart{height: '50px'}
 
   -# submission stat card
   .col-md-4
-    .card.mb-3
+    .card.mb-3.shadow-sm
       .card-body
         %h2.card-title General Info
         .row.my-2
@@ -58,7 +58,7 @@
             #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
 .row
   .col-md-4
-    .card.mb-3
+    .card.mb-3.shadow-sm
       .card-body
         %h2.card-title Model Submission
         %table.table.table-hover
@@ -75,7 +75,7 @@
                 %td= sub.user.full_name
   .col-md-8
     - if @best
-      .card.mb-3
+      .card.mb-3.shadow-sm
         .card-body
           %h2.card-title Top Submissions
           %table.table.table-hover
@@ -162,7 +162,7 @@
                       = link_to "(##{value[:first][:sub_id].to_s})", submission_path( value[:first][:sub_id])
 
 :javascript
-  $(function() {
+  window.addEventListener("load", function() {
     data = #{@chart_dataset}
     config = {
       type: 'bar',

@@ -1,6 +1,7 @@
 -# require *ds* as a dataset object
-%h4 Testcases
+%h5.my-2 Testcases
 = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
+  %input{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput'}}
   .col-12
     .form-check
       Testcase config
@@ -58,15 +59,15 @@
     %button.btn-close{data: {'bs-dismiss': :alert}}
 
 .row
-  .col-md-6
+  .col-12
     = simple_form_for :import, url: import_testcases_problem_path(@dataset.problem), html: {multipart: true}, wrapper: :horizontal_form do |f|
+      %input{type: 'hidden', name: 'active_dataset_tab', data: {'bs-tab-target': 'activeTabInput'}}
       = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
       = f.input :input_pattern, input_html: { value: '*.in' }
       = f.input :sol_pattern, input_html: { value: '*.sol' }
       = f.input :target, label: "Import to dataset",  collection: [['As a new dataset','new'],['Into the selected dataset','replace']], checked: :new,  as: :radio_buttons, wrapper: :horizontal_collection, input_html: {onclick: 'update_import_target()'}
       = f.input :dataset, collection: @dataset.problem.datasets, selected: @dataset.problem.live_dataset, wrapper: :horizontal_select
       = f.button :submit, value: 'Import', class: 'btn-primary'
-  .col-md-6
 - if @log
   .row
     .col-sm-12
