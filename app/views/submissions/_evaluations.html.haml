@@ -6,17 +6,17 @@
 -# header row
 .alert.my-0.py-0
   .row
-    .col-1.text-end
+    .col.text-end
       %strong Num
-    .col-2.text-end
+    .col.text-end
       %strong Time
-    .col-2.text-end
+    .col.text-end
       %strong Memory
-    .col-5
+    .col-4
       %strong Result
-    .col-1.text-end
+    .col.text-end
       %strong Score
-    .col-1.text-end
+    .col.text-end
       %strong Weight
 -# body row
 - groups = testcases.pluck(:group_name)
@@ -46,28 +46,28 @@
   - group_min = [group_min,ev&.score || 0].min
 
   .row.mb-1
-    .col-1.text-end
+    .col.text-end
       =tc.num
-    .col-2.text-end
+    .col.text-end
       - if ev
         %span= (ev&.time || 0) / 1000.0
         %span.text-body-tertiary> s
       - else
         = "-"
-    .col-2.text-end
+    .col.text-end
       - if ev
         %span= number_with_precision (ev&.memory || 0) / 1024.0, precision: 2
         %span.text-body-tertiary> MB
       - else
         = "-"
-    .col-5
+    .col-4
       = render partial: 'evaluation_result', locals: {ev: ev} if ev
-    .col-1.text-end
+    .col.text-end
       - if ev
         = number_to_percentage (ev&.score || 0) *100, precision: 0
       - else
         = "-"
-    .col-1.text-end
+    .col.text-end
       = tc.weight
 
   - if next_change

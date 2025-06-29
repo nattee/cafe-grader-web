@@ -31,11 +31,11 @@ class CommentsController < ApplicationController
   def update
     hint_params = params.require(:comment).permit(:body, :title, :cost, :kind)
     if @hint.update(hint_params)
-      @toast = {title: "Problem #{@problem.name}'s hint",body: "Hint #{@hint.title} updated"}
+      @toast = {title: "Problem #{@problem.name}'s hint", body: "Hint #{@hint.title} updated"}
     else
-      error_html = "<ul>#{@hint.errors.full_messages.map {|m| "<li>#{m}</li>"}.join}</ul>"
-      render partial: 'msg_modal_show', locals: {do_popup: true, 
-                                                 header_msg: 'Hint update error', 
+      error_html = "<ul>#{@hint.errors.full_messages.map { |m| "<li>#{m}</li>" }.join}</ul>"
+      render partial: 'msg_modal_show', locals: {do_popup: true,
+                                                 header_msg: 'Hint update error',
                                                  header_class: 'bg-danger-subtle',
                                                  body_msg: error_html.html_safe}
       return
@@ -49,15 +49,15 @@ class CommentsController < ApplicationController
       @toast = {title: "Hint acquired", body: "You received the hint. It can now be viewed at any time."}
       render 'problems/helpers'
     else
-      render partial: 'msg_modal_show', locals: {do_popup: true, 
-                                                 header_msg: 'Hint acquisition failed', 
+      render partial: 'msg_modal_show', locals: {do_popup: true,
+                                                 header_msg: 'Hint acquisition failed',
                                                  header_class: 'bg-danger-subtle',
                                                  body_msg: "You don't have permission to acquire this hint"}
     end
   end
 
   def show
-    #TODO: need to check whether the user can view this hint
+    # TODO: need to check whether the user can view this hint
   end
 
   private
@@ -67,6 +67,6 @@ class CommentsController < ApplicationController
     end
 
     def set_hint
-      @hint = @problem.hints.where(id: params[:hint_id]).take
+      @hint = @problem.hints.where(id: params[:id]).take
     end
 end
