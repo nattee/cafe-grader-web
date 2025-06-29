@@ -85,6 +85,9 @@ class ProblemsController < ApplicationController
   # as turbo
   # render a card displaying all problem helpers (hint, solution, LLM, etc)
   def helpers
+    # submission may be null
+    @submission = Submission.where(id: params[:submission_id]).take
+    @assists = @submission&.comments&.where(kind: 'llm_assist', enabled: true)
     respond_to do |format|
       format.html { render partial: 'helpers' }
       format.turbo_stream { render 'helpers' }

@@ -77,7 +77,6 @@
 
 body {
   font-family: 'Sarabun', 'Noto Sans Thai', Tahoma, "sans-serif";
-  //margin: 10px;
   padding: 5px;
   padding-top: 65px;
 }
@@ -86,24 +85,6 @@ body {
   border-width: 1.5px;
   border-color: #ccc;
 
-}
-
-// ------------------ bootstrap sortable --------------------
-table.sortable th {
-  padding-right: 20px !important;
-
-  span.sign {
-    right: (-15px) !important;
-  }
-
-  &.text-right {
-    padding-left: 20px !important;
-    padding-right: 8px !important;
-
-    &:after, span.sign {
-      left: (-15px) !important;
-    }
-  }
 }
 
 h1 {
@@ -119,17 +100,32 @@ hr {
   border-bottom: 1px solid #eeeeee;
 }
 
-//#a
-//  color: #6666cc
-//  text-decoration: none
-//
-//  &:link, &:visited
-//    color: #6666cc
-//    text-decoration: none
-//
-//  &:hover, &:focus
-//    color: #111166
-//    text-decoration: none
+code {
+  background-color: #ececec;
+  //color: #333;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+pre code {
+  display: block;
+  background-color: #ececec;
+  //color: #000;
+  padding: 1em;
+  border-radius: 6px;
+  font-size: 0.95em;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  border: 1px solid #e2e2e5;
+}
+
+
+
+// --------------- below here are legacy from aj.Jittat ---------------
+
 
 div {
   &.userbar {

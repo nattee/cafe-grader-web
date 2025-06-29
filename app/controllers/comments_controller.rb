@@ -1,14 +1,28 @@
 class CommentsController < ApplicationController
   include ProblemAuthorization
+  include SubmissionAuthorization
 
-  HINT_VIEW_METHOD = %i[ show acquire ]
+  HINT_VIEW_METHOD = %i[ show_hint acquire ]
   HINT_EDIT_METHOD = %i[ edit update ]
+  PROBLEM_METHOD = HINT_VIEW_METHOD + HINT_EDIT_METHOD + %i[ manage_problem ]
+
+
+  SUB_COMMENT_VIEW_METHOD = %i[ show_assist ]
 
   before_action :check_valid_login
-  before_action :set_problem
+
+  # for problem hint
+  before_action :set_problem, only: PROBLEM_METHOD
   before_action :set_hint, only: HINT_EDIT_METHOD + HINT_VIEW_METHOD
-  before_action :can_view_problem, only: HINT_VIEW_METHOD
+
+  # for submission comment
+  before_action :set_submission, only: SUB_COMMENT_VIEW_METHOD
+  before_action :set_sub_comment, only: SUB_COMMENT_VIEW_METHOD
+
+  # authorization
   before_action :can_edit_problem, except: HINT_EDIT_METHOD
+  before_action :can_view_problem, only: HINT_VIEW_METHOD + SUB_COMMENT_VIEW_METHOD
+  before_action :can_view_submission, only: SUB_COMMENT_VIEW_METHOD
 
   # -- problem comment section --
   # -- (this is mainly about hints) --
@@ -56,8 +70,19 @@ class CommentsController < ApplicationController
     end
   end
 
-  def show
+  def show_hint
     # TODO: need to check whether the user can view this hint
+    @header_msg = "Hint #{@hint.title}"
+    @body_msg = @hint.body || '-- blank --'
+    render :show
+  end
+
+  # show LLM assist
+  # need submission and comment_id
+  def show_assist
+    @header_msg = "#{@comment.title}"
+    @body_msg = @comment.body || '-- blank --'
+    render :show
   end
 
   private
@@ -66,7 +91,15 @@ class CommentsController < ApplicationController
       @problem = Problem.find(params[:problem_id])
     end
 
+    def set_submission
+      @submission = Submission.find(params[:submission_id])
+    end
+
     def set_hint
       @hint = @problem.hints.where(id: params[:id]).take
+    end
+
+    def set_sub_comment
+      @comment = @submission.comments.where(id: params[:id]).take
     end
 end
