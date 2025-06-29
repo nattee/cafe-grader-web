@@ -82,7 +82,7 @@ Rails.application.routes.draw do
       post 'import_testcases'
       delete 'attachment', action: 'delete_attachment'
       delete 'statement', action: 'delete_statement'
-      get 'helpers'
+      get 'helpers(/:submission_id)', as: 'helpers', action: 'helpers'
       # attachment
       get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
       delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
@@ -111,7 +111,7 @@ Rails.application.routes.draw do
 
   resources :datasets, only: [:edit, :update, :destroy] do
     member do
-      #turbo render
+      # turbo render
       get 'settings'
       get 'testcases'
       get 'files'

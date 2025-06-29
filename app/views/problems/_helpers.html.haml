@@ -31,7 +31,13 @@
               = link_to 'Get', acquire_problem_hint_path(@problem,hint), data: {turbo_stream: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json}
 
       -# GenAI
-      %h5 Submission Help
+      - if @assists
+        %h5 Submission Assist
+        - @assists.each do |assist|
+          .row
+            .col-8
+              = comment.title
+            .col-4.text-end
 
   -# usage modal
   .modal.fade#helpers_help{tabindex: -1,role: 'dialog'}

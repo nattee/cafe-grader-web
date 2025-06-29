@@ -87,5 +87,5 @@
             = turbo_frame_tag :latest_status,src: get_latest_submission_status_submissions_path(@submission.user,@problem) do
               %div
       -# Hint area
-      = turbo_frame_tag :problem_helpers, src: helpers_problem_path(@problem) do
+      = turbo_frame_tag :problem_helpers, src: helpers_problem_path(@problem,@submission) do
         %p Loading...
