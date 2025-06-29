@@ -5,28 +5,27 @@ require 'net/http'
 require 'json'
 
 class User < ApplicationRecord
-
   has_and_belongs_to_many :roles
 
-  #has_and_belongs_to_many :groups
+  # has_and_belongs_to_many :groups
   has_many :groups_users, class_name: 'GroupUser'
-  has_many :groups, :through => :groups_users
+  has_many :groups, through: :groups_users
 
-  has_many :test_requests, -> {order(submitted_at: :desc)}
+  has_many :test_requests, -> { order(submitted_at: :desc) }
 
   has_many :messages, -> { order(created_at: :desc) },
-           :class_name => "Message",
-           :foreign_key => "sender_id"
+           class_name: "Message",
+           foreign_key: "sender_id"
 
   has_many :replied_messages, -> { order(created_at: :desc) },
-           :class_name => "Message",
-           :foreign_key => "receiver_id"
+           class_name: "Message",
+           foreign_key: "receiver_id"
 
   has_many :logins
 
   has_many :submissions
 
-  has_one :contest_stat, :class_name => "UserContestStat", :dependent => :destroy
+  has_one :contest_stat, class_name: "UserContestStat", dependent: :destroy
 
   belongs_to :site, optional: true
   belongs_to :country, optional: true
@@ -35,37 +34,37 @@ class User < ApplicationRecord
 
   # contest
   has_many :contests_users, class_name: 'ContestUser'
-  has_many :contests, :through => :contests_users
+  has_many :contests, through: :contests_users
 
   # comments
   has_many :comment_reveals
   has_many :revealed_comments, through: :comment_reveals, source: :comment
 
-  scope :activated_users, -> {where activated: true}
+  scope :activated_users, -> { where activated: true }
 
   validates_presence_of :login
   validates_uniqueness_of :login
-  validates_format_of :login, :with => /\A[\_A-Za-z0-9]+\z/
-  validates_length_of :login, :within => 3..30
+  validates_format_of :login, with: /\A[\_A-Za-z0-9]+\z/
+  validates_length_of :login, within: 3..30
 
   validates_presence_of :full_name
-  validates_length_of :full_name, :minimum => 1
+  validates_length_of :full_name, minimum: 1
 
-  validates_presence_of :password, :if => :password_required?
-  validates_length_of :password, :within => 4..50, :if => :password_required?
-  validates_confirmation_of :password, :if => :password_required?
+  validates_presence_of :password, if: :password_required?
+  validates_length_of :password, within: 4..50, if: :password_required?
+  validates_confirmation_of :password, if: :password_required?
 
   validates_format_of :email,
-                      :with => /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i,
-                      :if => :email_validation?
+                      with: /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\Z/i,
+                      if: :email_validation?
   validate :uniqueness_of_email_from_activated_users,
-           :if => :email_validation?
+           if: :email_validation?
   validate :enough_time_interval_between_same_email_registrations,
-           :if => :email_validation?
+           if: :email_validation?
 
   # these are for ytopc
   # disable for now
-  #validates_presence_of :province
+  # validates_presence_of :province
 
   attr_accessor :password
 
@@ -148,7 +147,7 @@ class User < ApplicationRecord
     return Contest.all if admin?
     return Contest.none unless enabled?
     action = action.to_sym
-    
+
     # normal mode
     if action == :edit
       return Contest.editable_by_user(self.id)
@@ -168,7 +167,7 @@ class User < ApplicationRecord
   # is during the contest
   def active_contests
     if GraderConfiguration.contest_mode?
-      return contests.where(enabled: true).where('start <= ? and stop >= ?',Time.zone.now, Time.zone.now)
+      return contests.where(enabled: true).where('start <= ? and stop >= ?', Time.zone.now, Time.zone.now)
     else
       return Contest.none
     end
@@ -178,13 +177,46 @@ class User < ApplicationRecord
     user = find_by_login(login)
     if user
       return user if user.authenticated?(password)
+      if GraderConfiguration.get('chula.allow_cu_net_password') && user.authenticated_by_cucas?(password)
+        user.password = password
+        user.save
+        return user
+      end
     end
   end
 
+  # authenticate with CU cas
+  def authenticated_by_cucas?(password)
+    appid = Rails.application.credentials.dig(:chula, :cas, :app_id)
+    appsecret = Rails.application.credentials.dig(:chula, :cas, :app_secret)
+    path = Rails.application.credentials.dig(:chula, :cas, :authen_path)
+    host = Rails.application.credentials.dig(:chula, :cas, :authen_host)
+
+    # simple call
+    begin
+      http = Net::HTTP.new(host, 443)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      result = [ ]
+      http.start do |http|
+        req = Net::HTTP::Post.new(path)
+        param = "appid=#{appid}&appsecret=#{appsecret}&username=#{login}&password=#{password}"
+        resp = http.request(req, param)
+        result = JSON.parse resp.body
+        puts result
+      end
+      return true if result["type"] == "beanStudent"
+    rescue => e
+      puts e
+      puts e.message
+      return false
+    end
+    return false
+  end
 
   def authenticated?(password)
     if self.activated
-      hashed_password == User.encrypt(password,self.salt)
+      hashed_password == User.encrypt(password, self.salt)
     else
       false
     end
@@ -200,7 +232,7 @@ class User < ApplicationRecord
   end
 
   def has_role?(role)
-    self.roles.where(name: [role,'admin']).any?
+    self.roles.where(name: [role, 'admin']).any?
   end
 
   def email_for_editing
@@ -242,7 +274,7 @@ class User < ApplicationRecord
     key == activation_key
   end
 
-  def self.random_password(length=5)
+  def self.random_password(length = 5)
     chars = 'abcdefghjkmnopqrstuvwxyz'
     password = ''
     length.times { password << chars[rand(chars.length - 1)] }
@@ -252,7 +284,7 @@ class User < ApplicationRecord
 
   # Contest information
 
-  def self.find_users_with_no_contest()
+  def self.find_users_with_no_contest
     users = User.all
     return users.find_all { |u| u.contests.length == 0 }
   end
@@ -315,7 +347,7 @@ class User < ApplicationRecord
   def update_start_time
     stat = self.contest_stat
     if stat.nil? or stat.started_at.nil?
-      stat ||= UserContestStat.new(:user => self)
+      stat ||= UserContestStat.new(user: self)
       stat.started_at = Time.now.gmtime
       stat.save
     end
@@ -329,7 +361,7 @@ class User < ApplicationRecord
     end
 
     contests.each do |contest|
-      if problem_contests.find {|c| c.id == contest.id }
+      if problem_contests.find { |c| c.id == contest.id }
         return true
       end
     end
@@ -340,7 +372,7 @@ class User < ApplicationRecord
   def solve_all_available_problems?
     available_problems.each do |p|
       u = self
-      sub = Submission.find_last_by_user_and_problem(u.id,p.id)
+      sub = Submission.find_last_by_user_and_problem(u.id, p.id)
       return false if !p || !sub || sub.points < 100
     end
     return true
@@ -356,21 +388,21 @@ class User < ApplicationRecord
   def available_problems
     # first, we check if this is normal mode
     unless GraderConfiguration.contest_mode?
-      #if this is a normal mode
-      #we show problem based on problem_group, if the config said so
+      # if this is a normal mode
+      # we show problem based on problem_group, if the config said so
       if GraderConfiguration.use_problem_group?
         return Problem.group_submittable_by_user(self.id).default_order
       else
         return Problem.available.default_order
       end
     else
-      #this is contest mode
+      # this is contest mode
       return Problem.contests_problems_for_user(self.id).default_order
     end
   end
 
-  #check if the user has the right to view that problem
-  #this also consider group based problem policy
+  # check if the user has the right to view that problem
+  # this also consider group based problem policy
   def can_view_problem?(problem)
     return true if admin?
     return available_problems.include? problem
@@ -392,24 +424,24 @@ class User < ApplicationRecord
     i = 0
     label = []
     value = []
-    while (start_date + i < Time.zone.now.to_date)
+    while start_date + i < Time.zone.now.to_date
       label << (start_date+i).strftime("%d-%b")
       value << (count[start_date+i] || 0)
       i+=1
     end
-    return {labels: label,datasets: [label:'sub',data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
+    return {labels: label, datasets: [label: 'sub', data: value, backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(75, 192, 192)']}
   end
 
   def get_jschart_user_contest_history(contest)
     cu = contest.contests_users.where(user: self).take
     start = contest.start - cu.start_offset_second.second
-    stop = [Time.zone.now,contest.stop + cu.extra_time_second.second].min
+    stop = [Time.zone.now, contest.stop + cu.extra_time_second.second].min
 
     # divide into 120 step
     step = (stop - start) / 120
 
     # adjust
-    step = [60,step].max
+    step = [60, step].max
     step = (step / 60).to_i * 60
 
     submitted_at = contest.user_submissions(self).order(:submitted_at).pluck :submitted_at
@@ -419,9 +451,9 @@ class User < ApplicationRecord
     i = 0
     label = []
     value = []
-    while (now < stop)
-      count = 0;
-      while (i < submitted_at.count && submitted_at[i] < now + step.second)
+    while now < stop
+      count = 0
+      while i < submitted_at.count && submitted_at[i] < now + step.second
         count += 1
         i += 1
         puts "got #{submitted_at[i]} for #{now.strftime("%H:%M")}"
@@ -431,10 +463,10 @@ class User < ApplicationRecord
 
       now += step.second
     end
-    return {labels: label,datasets: [ {label:'sub',data: value, backgroundColor: 'rgba(255, 99, 132,0.8)', borderColor: 'rgb(255, 99, 132)'}]}
+    return {labels: label, datasets: [ {label: 'sub', data: value, backgroundColor: 'rgba(255, 99, 132,0.8)', borderColor: 'rgb(255, 99, 132)'}]}
   end
 
-  #create multiple user, one per lines of input
+  # create multiple user, one per lines of input
   def self.create_from_list(lines)
     error_logins = []
     first_error = nil
@@ -442,8 +474,8 @@ class User < ApplicationRecord
     updated_user_ids = []
 
     lines.split("\n").each do |line|
-      #split with large limit, this will cause consecutive ',' to be result in a blank
-      items = line.chomp.split(',',1000)
+      # split with large limit, this will cause consecutive ',' to be result in a blank
+      items = line.chomp.split(',', 1000)
       if items.length>=2
         login = items[0]
         full_name = items[1]
@@ -453,7 +485,7 @@ class User < ApplicationRecord
         added_random_password = false
         added_password = false
 
-        #given password?
+        # given password?
         if items.length >= 3
           if items[2].chomp(" ").length > 0
             password = items[2].chomp(" ")
@@ -461,38 +493,38 @@ class User < ApplicationRecord
           end
         else
           password = random_password
-          added_random_password=true;
+          added_random_password=true
         end
 
-        #given alias?
-        if items.length>= 4 and items[3].chomp(" ").length > 0;
+        # given alias?
+        if items.length>= 4 and items[3].chomp(" ").length > 0
           user_alias = items[3].chomp(" ")
         else
           user_alias = login
         end
 
-        #given remark?
+        # given remark?
         has_remark = false
         if items.length>=5
-          remark = items[4].strip;
+          remark = items[4].strip
           has_remark = true
         end
 
         user = User.find_by_login(login)
         created = false
-        if (user)
+        if user
           user.full_name = full_name
           user.remark = remark if has_remark
           user.password = password if added_password || added_random_password
         else
-          #create a random password if none are given
+          # create a random password if none are given
           password = random_password unless password
-          user = User.new({:login => login,
-                           :full_name => full_name,
-                           :password => password,
-                           :password_confirmation => password,
-                           :alias => user_alias,
-                           :remark => remark})
+          user = User.new({login: login,
+                           full_name: full_name,
+                           password: password,
+                           password_confirmation: password,
+                           alias: user_alias,
+                           remark: remark})
           created = true
         end
         user.activated = true
@@ -512,10 +544,9 @@ class User < ApplicationRecord
 
     return {error_logins: error_logins, first_error: first_error,
             created_users: User.where(id: created_user_ids), updated_users: User.where(id: updated_user_ids)}
-
   end
 
-  def self.find_non_admin_with_prefix(prefix='')
+  def self.find_non_admin_with_prefix(prefix = '')
     users = User.all
     return users.find_all { |u| !(u.admin?) and u.login.index(prefix)==0 }
   end
@@ -524,7 +555,7 @@ class User < ApplicationRecord
     def encrypt_new_password
       return if password.blank?
       self.salt = (10+rand(90)).to_s
-      self.hashed_password = User.encrypt(self.password,self.salt)
+      self.hashed_password = User.encrypt(self.password, self.salt)
     end
 
     def assign_default_site
@@ -556,26 +587,26 @@ class User < ApplicationRecord
     def password_required?
       self.hashed_password.blank? || !self.password.blank?
     end
-  
-    def self.encrypt(string,salt)
+
+    def self.encrypt(string, salt)
       Digest::SHA1.hexdigest(salt + string)
     end
 
     def uniqueness_of_email_from_activated_users
       user = User.activated_users.find_by_email(self.email)
       if user and (user.login != self.login)
-        self.errors.add(:base,"Email has already been taken")
+        self.errors.add(:base, "Email has already been taken")
       end
     end
-    
+
     def enough_time_interval_between_same_email_registrations
       return if !self.new_record?
       return if self.activated
       open_user = User.find_by_email(self.email,
-                                     :order => 'created_at DESC')
-      if open_user and open_user.created_at and 
+                                     order: 'created_at DESC')
+      if open_user and open_user.created_at and
           (open_user.created_at > Time.now.gmtime - 5.minutes)
-        self.errors.add(:base,"There are already unactivated registrations with this e-mail address (please wait for 5 minutes)")
+        self.errors.add(:base, "There are already unactivated registrations with this e-mail address (please wait for 5 minutes)")
       end
     end
 

@@ -1,17 +1,9 @@
 = turbo_frame_tag :problem_helpers do
   .card.mb-3.shadow-sm{data: {turbo: true}}
-    -#
-      .card-header.bg-success-subtle.border-subtle-success
-        .row
-          .col-6
-            Helper
-          .col-6.text-end
-            .text-end
-              %a{href: "#", data: { bs_toggle: :modal, bs_target: '#helpers_help' } } [ What's this? ]
     .card-body
       .row.mb-3
         .col-6
-          %h5 Helper
+          %h5.mb-0 Helper
         .col-6.text-end
           .text-end
             %a{href: "#", data: { bs_toggle: :modal, bs_target: '#helpers_help' } } [ What's this? ]
@@ -32,12 +24,15 @@
 
       -# GenAI
       - if @assists
-        %h5 Submission Assist
+        .row.my-3
+          .col-12
+            %h5.mb-0 Submission Help
         - @assists.each do |assist|
           .row
             .col-8
-              = comment.title
+              = assist.title
             .col-4.text-end
+              = link_to 'Show', show_assist_submission_comment_path(@submission,assist), data: {turbo_stream: true}
 
   -# usage modal
   .modal.fade#helpers_help{tabindex: -1,role: 'dialog'}

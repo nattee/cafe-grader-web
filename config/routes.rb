@@ -86,16 +86,6 @@ Rails.application.routes.draw do
       # attachment
       get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
       delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
-      # nested hint
-      post 'manage_hint'
-      get 'edit_hint(/:hint_id)', action: 'edit_hint', as: 'edit_hint'
-      patch 'update_hint/:hint_id', action: 'update_hint', as: 'update_hint'
-      get 'show_hint/:hint_id', action: :show_hint, as: :show_hint
-    end
-    resources :comments, as: :hint, path: :hint, only: [:update, :show] do
-      get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
-      post 'manage_problem', on: :collection, as: :manage
-      post 'acquire', on: :member
     end
     collection do
       get 'turn_all_off'
@@ -106,6 +96,12 @@ Rails.application.routes.draw do
       get 'quick_create'
       post 'manage', action: 'do_manage'
       post 'do_import'
+    end
+    resources :comments, as: :hint, path: :hint, only: [:update] do
+      get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
+      post 'manage_problem', on: :collection, as: :manage
+      post 'acquire', on: :member
+      get '', on: :member, as: '', action: :show_hint
     end
   end
 
@@ -147,10 +143,6 @@ Rails.application.routes.draw do
       post 'add_problem_by_group'
       post 'do_all_problems'
       post 'do_problem'
-
-    end
-    collection do
-
     end
   end
 
@@ -224,6 +216,9 @@ Rails.application.routes.draw do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
       get 'direct_edit_problem/:problem_id(/:user_id)', to: 'submissions#direct_edit_problem', as: 'direct_edit_problem'
       get 'get_latest_submission_status/:uid/:pid', to: 'submissions#get_latest_submission_status', as: 'get_latest_submission_status'
+    end
+    resources :comments do
+      get 'show_assist', on: :member
     end
   end
 

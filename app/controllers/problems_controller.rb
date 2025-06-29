@@ -87,7 +87,7 @@ class ProblemsController < ApplicationController
   def helpers
     # submission may be null
     @submission = Submission.where(id: params[:submission_id]).take
-    @assist = @submission&.comments&.where(kind: 'llm_assist', enabled: true)
+    @assists = @submission&.comments&.where(kind: 'llm_assist', enabled: true)
     respond_to do |format|
       format.html { render partial: 'helpers' }
       format.turbo_stream { render 'helpers' }

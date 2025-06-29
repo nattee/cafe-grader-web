@@ -39,6 +39,9 @@ gem "solid_cable"
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
 
+# faraday for API call
+gem "faraday"
+
 
 #------------- assset pipeline -----------------
 # Gems used only for assets and not required
