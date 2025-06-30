@@ -26,10 +26,10 @@
       - if @assists
         - @assists.each do |assist|
           .row
-            .col-8
+            .col
               .badge.rounded-pill.text-primary.bg-primary-subtle.me-2 AI
               = assist.title
-            .col-4.text-end
+            .col-auto.text-end
               = link_to 'View', show_assist_submission_comment_path(@submission,assist), data: {turbo_stream: true}
     -# GenAI request
     - if @models && @models.any?
@@ -38,10 +38,10 @@
           .row
             - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: 0,model: model}
             - confirmation = {title: "Confirm Submission for AI Help", body: body_text}
-            .col-10
+            .col
               AI help by
               %code #{model}
-            .col.pb-0.text-end
+            .col-auto.pb-0.text-end
               = link_to "Get", llm_assist_submission_comments_path(@submission,model), data: {turbo: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json }
 
   -# usage modal

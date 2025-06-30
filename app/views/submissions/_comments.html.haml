@@ -2,11 +2,15 @@
 - if @submission.comments.any?
   - kinds = [ 'llm_assist','comment']
   - kinds.each do |kind|
-    - @submission.coments.where(kind: kind).each do |comment|
+    - @submission.comments.where(kind: kind).each do |comment|
       .row
-        .col-8
-          = comment.title
-        .col-4.text-end
-          = link_to 'View', show_assist_submission_comment_path(@submission,assist), data: {turbo_stream: true}
+        .col
+          - if comment.kind == 'llm_assist'
+            .badge.rounded-pill.text-primary.bg-primary-subtle.me-2 AI
+          - elsif comment.kind == 'comment'
+            .badge.rounded-pill.text-info.bg-info-subtle.me-2 Comment
+          %span= comment.title
+        .col-auto.text-end
+          = link_to 'View', submission_comment_path(@submission,comment), data: {turbo: true, turbo_stream: true}
 - else
   %em -- There is no comment for this submission --

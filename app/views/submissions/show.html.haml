@@ -92,7 +92,7 @@
             .col-4.text-end.text-secondary
               Compiler result
             .col
-              %a{href: '#', data: {bs: {toggle: 'modal', target: '#msg_modal'}}}
+              %a{href: '#', data: {bs: {toggle: 'modal', target: '#compiler-msg-modal'}}}
                 View
           .row.mb-2
             .col-4.text-end.text-secondary
@@ -117,7 +117,7 @@
                 IP: #{@submission.ip_address}
       -# Submission Comment
       .card.mb-3.shadow-sm
-        .card-body
+        .card-body{data: {turbo: true}}
           %h4 Submission Comment
           = render partial: 'comments', locals: {submission: @submission}
       -# Evaluation Card
@@ -126,4 +126,4 @@
           %h4 Evaluations
           = render partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}
 
-= render partial: 'msg_modal', locals: {header_msg: 'Compiler message', body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
+= render partial: 'msg_modal', locals: {id: 'compiler-msg-modal', header_msg: 'Compiler message', body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}

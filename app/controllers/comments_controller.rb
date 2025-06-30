@@ -7,7 +7,9 @@ class CommentsController < ApplicationController
   PROBLEM_METHOD = HINT_VIEW_METHOD + HINT_EDIT_METHOD + %i[ manage_problem ]
 
 
-  SUB_COMMENT_VIEW_METHOD = %i[ show_assist ]
+  SUB_COMMENT_VIEW_METHOD = %i[ show_assist show_for_submission ]
+  SUB_COMMENT_EDIT_METHOD = %i[             ]
+  SUB_COMMENT_METHOD = SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD
 
   before_action :check_valid_login
 
@@ -85,7 +87,15 @@ class CommentsController < ApplicationController
     render :show
   end
 
+  # unified show for submissions comment
   def show_for_submission
+    @header_msg = "#{@comment.title}"
+    if @comment.kind == 'llm_assist'
+      @body_msg = render_to_string(partial: 'llm_assist_header').html_safe + "\n" + (@comment.body || '-- blank --')
+    else
+      @body_msg = (@comment.body || '-- blank --')
+    end
+    render :show
   end
 
   private
