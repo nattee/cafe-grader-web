@@ -9,3 +9,16 @@ $primary: #0074d9;
 //$primary: #7d3;
 //$danger: #ff4136;
 
+
+@keyframes highlight-fade {
+  from {
+    background-color: var(--bs-success-bg-subtle); /* A soft yellow highlight from Bootstrap */
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.new-item-highlight {
+  animation: highlight-fade 4s ease-in forwards;
+}

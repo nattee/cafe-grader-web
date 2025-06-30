@@ -217,9 +217,13 @@ Rails.application.routes.draw do
       get 'direct_edit_problem/:problem_id(/:user_id)', to: 'submissions#direct_edit_problem', as: 'direct_edit_problem'
       get 'get_latest_submission_status/:uid/:pid', to: 'submissions#get_latest_submission_status', as: 'get_latest_submission_status'
     end
-    resources :comments, except: [:show] do
-      get 'show_assist', on: :member
-      get 'show', action: 'show_for_submission', on: :member
+    resources :comments, only: [] do
+      post '', action: 'create_for_submission', on: :collection, as: ''
+      member do
+        get '', action: 'show_for_submission', as: ''
+        delete '', action: 'destroy_for_submission'
+        patch '', action: 'update_for_submission'
+      end
     end
   end
 

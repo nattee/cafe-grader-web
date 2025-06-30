@@ -30,7 +30,7 @@
               .badge.rounded-pill.text-primary.bg-primary-subtle.me-2 AI
               = assist.title
             .col-auto.text-end
-              = link_to 'View', show_assist_submission_comment_path(@submission,assist), data: {turbo_stream: true}
+              = link_to 'View', submission_comment_path(@submission,assist), data: {turbo_stream: true}
     -# GenAI request
     - if @models && @models.any?
       .card-footer

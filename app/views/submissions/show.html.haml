@@ -117,13 +117,23 @@
                 IP: #{@submission.ip_address}
       -# Submission Comment
       .card.mb-3.shadow-sm
-        .card-body{data: {turbo: true}}
-          %h4 Submission Comment
-          = render partial: 'comments', locals: {submission: @submission}
+        .card-body{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
+          .row.align-items-center
+            .col
+              %h4 Submission Comment
+            - if @current_user.problems_for_action(:report).where(id: @submission.problem).any?
+              .col-auto.text-end
+                %button.btn.btn-primary.btn-sm{data: { bs_toggle: 'modal', bs_target: '#comment-modal', action: 'submission-comment#prepareFormForCreate'}} Add Comment
+          = turbo_frame_tag :submission_comments do
+            = render partial: 'comments', locals: {submission: @submission}
+          -# add comment modal
+          = render partial: 'add_comment', locals: {submission: @submission}
       -# Evaluation Card
       .card.mb-3.shadow-sm
         .card-body
           %h4 Evaluations
           = render partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}
 
+-# compiler msg modal
 = render partial: 'msg_modal', locals: {id: 'compiler-msg-modal', header_msg: 'Compiler message', body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
+
