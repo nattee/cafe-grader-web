@@ -1,5 +1,5 @@
 class SubmissionsController < ApplicationController
-  before_action :set_submission, only: [:show, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :show_assist]
+  before_action :set_submission, only: [:show, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
   before_action :check_valid_login
   before_action :submission_authorization, only: [:show, :download, :edit, :evaluations]
   before_action only: [:rejudge, :set_tag] do authorization_by_roles([:ta]) end
@@ -36,9 +36,6 @@ class SubmissionsController < ApplicationController
     #  .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
     @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
     @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
-  end
-
-  def show_assist
   end
 
   # Turbo render evaluations as modal popup

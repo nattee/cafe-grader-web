@@ -4,7 +4,6 @@ class Comment < ApplicationRecord
 
   enum :kind, {hint: 0, solution: 1, comment: 2, llm_assist: 3}
 
-
   has_many :comment_reveals
   has_many :users_who_revealed, through: :comment_reveals, source: :user # More descriptive name
 

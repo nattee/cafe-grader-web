@@ -7,8 +7,9 @@ class CommentsController < ApplicationController
   PROBLEM_METHOD = HINT_VIEW_METHOD + HINT_EDIT_METHOD + %i[ manage_problem ]
 
 
-  SUB_COMMENT_VIEW_METHOD = %i[ show_assist ]
-  SUB_COMMENT_EDIT_METHOD = %i[ llm_assist ]
+  SUB_COMMENT_VIEW_METHOD = %i[ show_for_submission ]
+  SUB_COMMENT_EDIT_METHOD = %i[ update_for_submission destroy_for_submission llm_assist]
+  SUB_COMMENT_METHOD = SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD + %i[ create_for_submission ]
 
   before_action :check_valid_login
 
@@ -17,11 +18,11 @@ class CommentsController < ApplicationController
   before_action :set_hint, only: HINT_EDIT_METHOD + HINT_VIEW_METHOD
 
   # for submission comment
-  before_action :set_submission, only: SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD
-  before_action :set_sub_comment, only: SUB_COMMENT_VIEW_METHOD
+  before_action :set_submission, only: SUB_COMMENT_METHOD
+  before_action :set_sub_comment, only: SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD
 
   # authorization
-  before_action :can_edit_problem, except: HINT_EDIT_METHOD
+  before_action :can_edit_problem, only: HINT_EDIT_METHOD + SUB_COMMENT_EDIT_METHOD
   before_action :can_view_problem, only: HINT_VIEW_METHOD + SUB_COMMENT_VIEW_METHOD
   before_action :can_view_submission, only: SUB_COMMENT_VIEW_METHOD
 
@@ -73,21 +74,56 @@ class CommentsController < ApplicationController
 
   def show_hint
     # TODO: need to check whether the user can view this hint
-    @header_msg = "Hint #{@hint.title}"
-    @body_msg = @hint.body || '-- blank --'
+    @header_msg = "Hint: #{@hint.title}"
+    @body_msg = (@hint.body || '-- blank --').html_safe
     render :show
   end
 
-  # -- submission comment section --
-  # -- Both the LLM assist and other comment --
-
-  # show LLM assist
-  # need submission and comment_id
-  def show_assist
-    @header_msg = "#{@comment.title}"
-    @body_msg = render_to_string(partial: 'llm_assist_header').html_safe + (@comment.body || '-- blank --')
+  # unified show for submissions comment
+  def show_for_submission
+    @header_msg = "Comment: #{@comment.title}"
+    if @comment.kind == 'llm_assist'
+      @body_msg = render_to_string(partial: 'llm_assist_header').html_safe + "\n".html_safe + (@comment.body.html_safe || '-- blank --')
+    else
+      @body_msg = (@comment.body || '-- blank --')
+    end
     render :show
   end
+
+  def create_for_submission
+    title = params[:comment_title]
+    @comment = @submission.comments.new({
+      kind: 'comment',
+      user: @current_user,
+      title: title,
+      body: params[:comment_body]
+    })
+
+    if @comment.save
+      @toast = {title: 'Submission Comment', body: "A comment titled: #{title} was successfully created for submission ##{@submission.id}" }
+    else
+      @toast = {title: 'Submission Comment', body: "A comment is failed to be created. (#{@comment.errors.full_messages})", type: 'alert' }
+    end
+    render 'submission_and_toast'
+  end
+
+  def destroy_for_submission
+    @toast = {title: 'Submission Comment', body: "Comment \"#{@comment.title}\" was deleted successfully"}
+    @comment.destroy
+    render 'submission_and_toast'
+  end
+
+  def update_for_submission
+    @comment.title = params[:comment_title]
+    @comment.body = params[:comment_body]
+    if @comment.save
+      @toast = {title: 'Submission Comment', body: "The comment '#{@comment.title}' was successfully updated for submission ##{@submission.id}" }
+    else
+      @toast = {title: 'Submission Comment', body: "A comment is failed to be created. (#{comment.errors.full_messages})", type: 'alert' }
+    end
+    render 'submission_and_toast'
+  end
+
 
   # get the llm assist via job
   def llm_assist
