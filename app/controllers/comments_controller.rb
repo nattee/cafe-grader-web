@@ -85,6 +85,9 @@ class CommentsController < ApplicationController
     render :show
   end
 
+  def show_for_submission
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_problem

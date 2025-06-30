@@ -1,0 +1,12 @@
+-# requires submission
+- if @submission.comments.any?
+  - kinds = [ 'llm_assist','comment']
+  - kinds.each do |kind|
+    - @submission.coments.where(kind: kind).each do |comment|
+      .row
+        .col-8
+          = comment.title
+        .col-4.text-end
+          = link_to 'View', show_assist_submission_comment_path(@submission,assist), data: {turbo_stream: true}
+- else
+  %em -- There is no comment for this submission --

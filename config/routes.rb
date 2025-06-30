@@ -219,6 +219,7 @@ Rails.application.routes.draw do
     end
     resources :comments do
       get 'show_assist', on: :member
+      get 'show', on: :member
     end
   end
 
