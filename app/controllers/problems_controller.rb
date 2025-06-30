@@ -88,6 +88,9 @@ class ProblemsController < ApplicationController
     # submission may be null
     @submission = Submission.where(id: params[:submission_id]).take
     @assists = @submission&.comments&.where(kind: 'llm_assist', enabled: true)
+
+    # LLM models for help
+    @models = ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
     respond_to do |format|
       format.html { render partial: 'helpers' }
       format.turbo_stream { render 'helpers' }

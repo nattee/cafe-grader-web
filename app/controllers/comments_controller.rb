@@ -8,6 +8,7 @@ class CommentsController < ApplicationController
 
 
   SUB_COMMENT_VIEW_METHOD = %i[ show_assist ]
+  SUB_COMMENT_EDIT_METHOD = %i[ llm_assist ]
 
   before_action :check_valid_login
 
@@ -16,7 +17,7 @@ class CommentsController < ApplicationController
   before_action :set_hint, only: HINT_EDIT_METHOD + HINT_VIEW_METHOD
 
   # for submission comment
-  before_action :set_submission, only: SUB_COMMENT_VIEW_METHOD
+  before_action :set_submission, only: SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD
   before_action :set_sub_comment, only: SUB_COMMENT_VIEW_METHOD
 
   # authorization
@@ -77,12 +78,22 @@ class CommentsController < ApplicationController
     render :show
   end
 
+  # -- submission comment section --
+  # -- Both the LLM assist and other comment --
+
   # show LLM assist
   # need submission and comment_id
   def show_assist
     @header_msg = "#{@comment.title}"
-    @body_msg = @comment.body || '-- blank --'
+    @body_msg = render_to_string(partial: 'llm_assist_header').html_safe + (@comment.body || '-- blank --')
     render :show
+  end
+
+  # get the llm assist via job
+  def llm_assist
+    @model = params[:model]
+    # model is validated by the actual service class
+    Llm::GenieAssistJob.perform_later(@submission, model: @model)
   end
 
   private

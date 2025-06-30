@@ -19,7 +19,7 @@ module Llm
       @record = {
         user: @submission.user,
         kind: 'llm_assist',
-        title: "Help by #{provider_name}",
+        title: "Assistance by #{provider_name}",
         cost: 0,    # default to 0 but should be adjusted
         remark: provider_name
         # still need response_body and body

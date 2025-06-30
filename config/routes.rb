@@ -219,10 +219,9 @@ Rails.application.routes.draw do
     end
     resources :comments do
       get 'show_assist', on: :member
+      post 'llm_assist/:model', on: :collection, as: 'llm_assist', action: 'llm_assist'
     end
   end
-
-
 
   resources :contest_management, only: [:index] do
     collection do
