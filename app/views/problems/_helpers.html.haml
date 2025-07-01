@@ -28,7 +28,7 @@
           .row
             .col
               .badge.rounded-pill.text-primary.bg-primary-subtle.me-2 AI
-              = assist.title
+              = assist.title.html_safe
             .col-auto.text-end
               = link_to 'View', submission_comment_path(@submission,assist), data: {turbo_stream: true}
     -# GenAI request
@@ -42,7 +42,9 @@
               AI help by
               %code #{model}
             .col-auto.pb-0.text-end
-              = link_to "Get", llm_assist_submission_comments_path(@submission,model), data: {turbo: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json }
+              - model_id = Llm::GenieAssist::PERMITTED_MODEL.index model
+              = link_to "Get", llm_assist_submission_comments_path(@submission,model_id), 
+                data: {turbo: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json, action: 'turbo:submit-end->submission-comment#handleSuccess'  }
 
   -# usage modal
   .modal.fade#helpers_help{tabindex: -1,role: 'dialog'}

@@ -81,11 +81,12 @@ class CommentsController < ApplicationController
 
   # unified show for submissions comment
   def show_for_submission
-    @header_msg = "Comment: #{@comment.title}"
+    @header_msg = "Comment: #{@comment.title}".html_safe
     if @comment.kind == 'llm_assist'
-      @body_msg = render_to_string(partial: 'llm_assist_header').html_safe + "\n".html_safe + (@comment.body.html_safe || '-- blank --')
+      @body_msg = render_to_string(partial: 'llm_assist_header') + "\n" +
+                  (@comment.body.html_safe || '-- blank --')
     else
-      @body_msg = (@comment.body || '-- blank --')
+      @body_msg = (@comment.body.html_safe || '-- blank --')
     end
     render :show
   end
@@ -127,9 +128,25 @@ class CommentsController < ApplicationController
 
   # get the llm assist via job
   def llm_assist
-    @model = params[:model]
+    model_id = params[:model].to_i
+    model_name = Llm::GenieAssist::PERMITTED_MODEL[model_id]
+
+    @record = @submission.comments.create!({
+      user: @current_user,
+      kind: 'llm_assist',
+      llm_model: model_name,
+      title: "AI #{model_name} is thinking <span class='spinner-border spinner-border-sm'></span>",
+      body: <<~TEXT,
+        ## AI is thinking, please wait
+        * Request started at #{Time.zone.now}, asking for the model #{model_name}
+        * Requested by #{@current_user.full_name}
+      TEXT
+      cost: 0    # default to 0 but should be adjusted when the request finished
+    })
+
     # model is validated by the actual service class
-    Llm::GenieAssistJob.perform_later(@submission, model: @model)
+    Llm::GenieAssistJob.perform_later(@submission, model: model_name, comment: @record)
+    render 'submission_and_toast'
   end
 
   private

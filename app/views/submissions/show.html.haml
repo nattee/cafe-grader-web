@@ -116,8 +116,8 @@
               .col-auto
                 IP: #{@submission.ip_address}
       -# Submission Comment
-      .card.mb-3.shadow-sm
-        .card-body{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
+      .card.mb-3.shadow-sm{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
+        .card-body
           .row.align-items-center
             .col
               %h4 Submission Comment
@@ -128,6 +128,20 @@
             = render partial: 'comments', locals: {submission: @submission}
           -# add comment modal
           = render partial: 'add_comment', locals: {submission: @submission}
+        -# GenAI request
+        - if @models && @models.any?
+          .card-footer
+            - @models.each do |model|
+              .row
+                - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: 0,model: model}
+                - confirmation = {title: "Confirm Submission for AI Help", body: body_text}
+                .col
+                  AI help by
+                  %code #{model}
+                .col-auto.pb-0.text-end
+                  - model_id = Llm::GenieAssist::PERMITTED_MODEL.index model
+                  = link_to "Get", llm_assist_submission_comments_path(@submission,model_id), 
+                    data: {turbo: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json, action: 'turbo:submit-end->submission-comment#handleSuccess'  }
       -# Evaluation Card
       .card.mb-3.shadow-sm
         .card-body

@@ -36,6 +36,9 @@ class SubmissionsController < ApplicationController
     #  .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
     @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
     @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
+
+    # LLM models for help
+    @models = ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
   end
 
   # Turbo render evaluations as modal popup

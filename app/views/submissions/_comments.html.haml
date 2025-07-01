@@ -10,7 +10,7 @@
             .badge.rounded-pill.text-primary.bg-primary-subtle.me-2 AI
           - elsif comment.kind == 'comment'
             .badge.rounded-pill.text-info.bg-info-subtle.me-2 Comment
-          %span= comment.title
+          %span= comment.title.html_safe
         .col-auto.text-end
           = link_to 'View', submission_comment_path(@submission,comment), data: {turbo: true, turbo_stream: true}
           - if @current_user.problems_for_action(:report).where(id: @submission.problem).any?
@@ -19,7 +19,7 @@
               data: {turbo: true, turbo_stream: true, action: 'click->submission-comment#populateFormForUpdate',
                 bs_toggle: 'modal', bs_target: '#comment-modal',
                 submission_comment_comment_param: comment.to_json(only: %i[ id title body ]), 
-                submission_comment_url_param: submission_comment_path(@submission,comment)}
+                submission_comment_url_param: submission_comment_path(@submission, comment)}
             |
             = link_to 'Delete', submission_comment_path(@submission,comment), class: 'text-danger',
               data: {turbo: true, turbo_method: 'DELETE', turbo_stream: true, turbo_confirm: "Are you sure to delete the comment titled '#{comment.title}'"}
