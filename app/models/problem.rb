@@ -16,6 +16,7 @@ class Problem < ApplicationRecord
 
   has_many :problems_tags, class_name: 'ProblemTag', dependent: :destroy
   has_many :tags, through: :problems_tags
+  has_many :public_tags, -> { where(public: true) }, class_name: 'Tag', through: :problems_tags, source: :tag
 
   has_many :test_pairs, dependent: :delete_all
 
@@ -110,11 +111,6 @@ class Problem < ApplicationRecord
 
   def set_default_value
   end
-
-  def public_tags
-    tags.where(public: true)
-  end
-
 
   def can_view_testcase
     GraderConfiguration.show_testcase && self.view_testcase
