@@ -1,5 +1,5 @@
 module Llm
-  class BaseLlmJob < ApplicationJob
+  class SubmissionAssistJob < ApplicationJob
     # retry policies, subclasses can inherit or override.
     retry_on ActiveRecord::Deadlocked, wait: 5.seconds, attempts: 3
     retry_on ActiveRecord::ConnectionTimeoutError, wait: 10.seconds, attempts: 3

@@ -456,6 +456,7 @@ class ProblemsController < ApplicationController
         .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
         .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
         .includes(:tags).order(date_added: :desc).group('problems.id')
+        .includes(live_dataset: {checker_attachment: :blob})
         .select("problems.*", "count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
         .select("MIN(MS.ms_count) as ms_count")
         .with_attached_statement
