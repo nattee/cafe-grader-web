@@ -7,15 +7,9 @@ export default class extends Controller {
 
   connect() {
     this.initializeTooltips()
-    this.element.addEventListener("turbo:frame-load", this.handleFrameHasLoaded);
-    this.element.addEventListener("turbo:frame-render", this.handleFrameHasLoaded);
-    this.element.addEventListener("turbo:load", this.handleFrameHasLoaded);
-    this.element.addEventListener("turbo:render", this.handleFrameHasLoaded);
-    this.element.addEventListener("turbo:visit", this.handleFrameHasLoaded);
   }
 
   handleFrameHasLoaded = () => {
-    console.log("EVENT: turbo:frame-load on:", this.element, this.element.id);
     this.initializeTooltips();
   }
 
@@ -25,7 +19,6 @@ export default class extends Controller {
 
     // Create new tooltip instances for the current content
     this.tooltipInstances = Array.from(tooltipTriggerList).map(tooltipTriggerEl => {
-      console.log('got',tooltipTriggerEl)
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
   }

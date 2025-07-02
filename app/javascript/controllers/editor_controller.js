@@ -57,6 +57,7 @@ export default class extends Controller {
     // set readonly mode, if indicated
     if (this.editorTarget.dataset.editorMode == 'view') {
       //this.editor.setOptions({ maxLines: Infinity })
+      this.editor.setOptions({ maxLines: 49 })
       this.editor.setReadOnly(true)
     }
   }

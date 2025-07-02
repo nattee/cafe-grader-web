@@ -1,23 +1,22 @@
 class MainController < ApplicationController
-
-  before_action :check_valid_login, :except => [:login]
-  before_action :check_viewability, :except => [:login]
+  before_action :check_valid_login, except: [:login]
+  before_action :check_viewability, except: [:login]
 
   before_action :default_stimulus_controller
 
   append_before_action :confirm_and_update_start_time,
-                       :except => [:login,
+                       except: [:login,
                                    :confirm_contest_start]
 
-  #reset login, clear session
-  #front page
+  # reset login, clear session
+  # front page
   def login
-    #saved_notice = flash[:notice]
-    #flash[:notice] = saved_notice
+    # saved_notice = flash[:notice]
+    # flash[:notice] = saved_notice
     @remote_ip = request.remote_ip
 
     @announcements = Announcement.frontpage
-    render :action => 'login', locals: {skip_header: true}
+    render action: 'login', locals: {skip_header: true}
   end
 
   def logout
@@ -36,12 +35,11 @@ class MainController < ApplicationController
     end
 
 
-    @groups = [['All',-1]] + @current_user.groups.pluck(:name,:id)
+    @groups = [['All', -1]] + @current_user.groups.pluck(:name, :id)
     @primary_tags = Tag.where(primary: true)
   end
 
   def prob_group
-
   end
 
   def help
@@ -53,7 +51,6 @@ class MainController < ApplicationController
   #   2. submit via "new" button
   #   4. submit vis "edit" button
   def submit
-    
     # parameter validation
     problem = Problem.where(id: params[:submission][:problem_id]).first
     unless problem
@@ -87,8 +84,8 @@ class MainController < ApplicationController
         @submission.content_type = params['file'].content_type
         @submission.source_filename = params['file'].original_filename
       else
-        @submission.source = File.open(params['file'].path,'r:UTF-8',&:read)
-        @submission.source.encode!('UTF-8','UTF-8',invalid: :replace, replace: '')
+        @submission.source = File.open(params['file'].path, 'r:UTF-8', &:read)
+        @submission.source.encode!('UTF-8', 'UTF-8', invalid: :replace, replace: '')
         @submission.source_filename = params['file'].original_filename
       end
     end
@@ -97,7 +94,7 @@ class MainController < ApplicationController
     # we prioritize editor_text if it exists
     # because a user might choose a file and it is loaded to the editor_text and then
     # the user might edit the editor text later
-    if (params[:editor_text] && !language.binary?)
+    if params[:editor_text] && !language.binary?
       @submission.language = language
       @submission.source = params[:editor_text]
       @submission.source_filename = "live_edit.#{language.ext}"
@@ -118,49 +115,36 @@ class MainController < ApplicationController
 
   def source
     submission = Submission.find(params[:id])
-    if ((submission.user_id == session[:user_id]) and 
-        (submission.problem != nil) and 
-        (submission.problem.available))
-      send_data(submission.source, 
-                {:filename => submission.download_filename, 
-                  :type => 'text/plain'})
+    if (submission.user_id == session[:user_id]) and
+        (submission.problem != nil) and
+        (submission.problem.available)
+      send_data(submission.source,
+                {filename: submission.download_filename,
+                  type: 'text/plain'})
     else
       flash[:notice] = 'Error viewing source'
-      redirect_to :action => 'list'
+      redirect_to action: 'list'
     end
-  end
-
-  def result
-    if !GraderConfiguration.show_grading_result
-      redirect_to :action => 'list' and return
-    end
-    @user = User.find(session[:user_id])
-    @submission = Submission.find(params[:id])
-    if @submission.user!=@user
-      flash[:notice] = 'You are not allowed to view result of other users.'
-      redirect_to :action => 'list' and return
-    end
-    prepare_grading_result(@submission)
   end
 
   def load_output
     if !GraderConfiguration.show_grading_result or params[:num]==nil
-      redirect_to :action => 'list' and return
+      redirect_to action: 'list' and return
     end
     @user = User.find(session[:user_id])
     @submission = Submission.find(params[:id])
     if @submission.user!=@user
       flash[:notice] = 'You are not allowed to view result of other users.'
-      redirect_to :action => 'list' and return
+      redirect_to action: 'list' and return
     end
     case_num = params[:num].to_i
-    out_filename = output_filename(@user.login, 
+    out_filename = output_filename(@user.login,
                                    @submission.problem.name,
                                    @submission.id,
                                    case_num)
     if !FileTest.exists?(out_filename)
       flash[:notice] = 'Output not found.'
-      redirect_to :action => 'list' and return
+      redirect_to action: 'list' and return
     end
 
     if defined?(USE_APACHE_XSENDFILE) and USE_APACHE_XSENDFILE
@@ -168,9 +152,9 @@ class MainController < ApplicationController
       response.headers['Content-Disposition'] = "attachment; filename=\"output-#{case_num}.txt\""
       response.headers["X-Sendfile"] = out_filename
       response.headers['Content-length'] = File.size(out_filename)
-      render :nothing => true
+      render nothing: true
     else
-      send_file out_filename, :stream => false, :filename => "output-#{case_num}.txt", :type => "text/plain"
+      send_file out_filename, stream: false, filename: "output-#{case_num}.txt", type: "text/plain"
     end
   end
 
@@ -182,7 +166,7 @@ class MainController < ApplicationController
     user = User.find(session[:user_id])
     if request.method == 'POST'
       user.update_start_time
-      redirect_to :action => 'list'
+      redirect_to action: 'list'
     else
       @contests = user.contests
       @user = user
@@ -191,7 +175,7 @@ class MainController < ApplicationController
 
   protected
 
-  def prepare_announcements(recent=nil)
+  def prepare_announcements(recent = nil)
     if GraderConfiguration.show_tasks_to?(@user)
       @announcements = Announcement.published(true)
     else
@@ -200,23 +184,23 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
-    @problems = @current_user.available_problems.with_attached_statement
+    @problems = @current_user.available_problems.with_attached_statement.with_attached_attachment.includes(:public_tags)
 
-    #get latest score
-    @prob_submissions = Hash.new { |h,k| h[k] = {count: 0, submission: nil} }
-    last_sub_ids = Submission.where(user: @current_user,problem: @problems).group(:problem_id).pluck('max(id)')
+    # get latest score
+    @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }
+    last_sub_ids = Submission.where(user: @current_user, problem: @problems).group(:problem_id).pluck('max(id)')
     Submission.where(id: last_sub_ids).each do |sub|
       @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
     end
 
-    Submission.where(user: @current_user).group(:problem_id).pluck('problem_id','max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
+    Submission.where(user: @current_user).group(:problem_id).pluck('problem_id', 'max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
   end
 
   def check_viewability
     @user = User.find(session[:user_id])
     if (!GraderConfiguration.show_tasks_to?(@user)) and
         ((action_name=='submission') or (action_name=='submit'))
-      redirect_to :action => 'list' and return
+      redirect_to action: 'list' and return
     end
   end
 
@@ -227,7 +211,7 @@ class MainController < ApplicationController
       # guess task info from problem.full_score
       cases = submission.problem.live_dataset.testcases.count
       grading_info = {
-        'testruns' => cases, 
+        'testruns' => cases,
         'testcases' => cases
       }
     end
@@ -258,17 +242,17 @@ class MainController < ApplicationController
   def grading_result_dir(user_name, problem_name, submission_id, case_num)
     return "#{GRADING_RESULT_DIR}/#{user_name}/#{problem_name}/#{submission_id}/test-result/#{case_num}"
   end
-  
+
   def output_filename(user_name, problem_name, submission_id, case_num)
-    dir = grading_result_dir(user_name,problem_name, submission_id, case_num)
+    dir = grading_result_dir(user_name, problem_name, submission_id, case_num)
     return "#{dir}/output.txt"
   end
 
   def read_grading_result(user_name, problem_name, submission_id, case_num)
-    dir = grading_result_dir(user_name,problem_name, submission_id, case_num)
+    dir = grading_result_dir(user_name, problem_name, submission_id, case_num)
     result_file_name = "#{dir}/result"
     if !FileTest.exists?(result_file_name)
-      return {:num => case_num, :msg => 'program did not run'}
+      return {num: case_num, msg: 'program did not run'}
     else
       results = File.open(result_file_name).readlines
       run_stat = extract_running_stat(results)
@@ -282,19 +266,19 @@ class MainController < ApplicationController
       end
 
       return {
-        :num => case_num,
-        :msg => results[0],
-        :run_stat => run_stat,
-        :output => output_file,
-        :output_size => output_size
+        num: case_num,
+        msg: results[0],
+        run_stat: run_stat,
+        output: output_file,
+        output_size: output_size
       }
-    end  
+    end
   end
-  
+
   # copied from grader/script/lib/test_request_helper.rb
   def extract_running_stat(results)
     running_stat_line = results[-1]
-    
+
     # extract exit status line
     run_stat = ""
     if !(/[Cc]orrect/.match(results[0]))
@@ -302,7 +286,7 @@ class MainController < ApplicationController
     else
       run_stat = 'Program exited normally'
     end
-    
+
     logger.info "Stat line: #{running_stat_line}"
 
     # extract running time
@@ -313,34 +297,31 @@ class MainController < ApplicationController
       seconds = nil
       time_stat = "Time used: n/a sec."
     end
-    
+
     # extract memory usage
     if res = /s(.*)m/.match(running_stat_line)
       memory_used = res[1].to_i
     else
       memory_used = -1
     end
-    
+
     return {
-      :msg => "#{run_stat}\n#{time_stat}",
-      :running_time => seconds,
-      :exit_status => run_stat,
-      :memory_usage => memory_used
+      msg: "#{run_stat}\n#{time_stat}",
+      running_time: seconds,
+      exit_status: run_stat,
+      memory_usage: memory_used
     }
   end
 
   def confirm_and_update_start_time
     user = User.find(session[:user_id])
-    if (GraderConfiguration.indv_contest_mode? and 
+    if GraderConfiguration.indv_contest_mode? and
         GraderConfiguration['contest.confirm_indv_contest_start'] and
-        !user.contest_started?)
-      redirect_to :action => 'confirm_contest_start' and return
+        !user.contest_started?
+      redirect_to action: 'confirm_contest_start' and return
     end
     if not GraderConfiguration.analysis_mode?
       user.update_start_time
     end
   end
-
-
 end
-

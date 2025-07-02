@@ -17,10 +17,6 @@
           = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
       %ul.list-group.list-group-flush
         = render :partial => 'announcement', :collection => @announcements
--#
-  %script{:type => 'text/javascript'}
-    = "Announcement.refreshUrl = '#{url_for :controller => 'main', :action => 'announcements'}';".html_safe
-    Announcement.registerRefreshEventTimer();
 
 :javascript
   function filter_tag() {

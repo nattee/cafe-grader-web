@@ -81,24 +81,6 @@ class ProblemsController < ApplicationController
     render :update
   end
 
-  # -- hint and helpers --
-  # as turbo
-  # render a card displaying all problem helpers (hint, solution, LLM, etc)
-  def helpers
-    # submission may be null
-    @submission = Submission.where(id: params[:submission_id]).take
-    @assists = @submission&.comments&.where(kind: 'llm_assist', enabled: true)
-
-    # LLM models for help
-    @models = ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
-    respond_to do |format|
-      format.html { render partial: 'helpers' }
-      format.turbo_stream { render 'helpers' }
-    end
-  end
-  # -- END hint and helpers --
-
-
   def create
     @problem = Problem.new(problem_params)
     if @problem.save
@@ -459,6 +441,7 @@ class ProblemsController < ApplicationController
         .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
         .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
         .includes(:tags).order(date_added: :desc).group('problems.id')
+        .includes(live_dataset: {checker_attachment: :blob})
         .select("problems.*", "count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
         .select("MIN(MS.ms_count) as ms_count")
         .with_attached_statement

@@ -99,6 +99,7 @@ class SubmissionsController < ApplicationController
 
     @as_binary = @language.binary?
     @last_sub = @current_user.last_submission_by_problem(@problem)
+    @models = ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
   end
 
 
