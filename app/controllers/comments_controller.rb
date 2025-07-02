@@ -63,7 +63,10 @@ class CommentsController < ApplicationController
     if @hint.acquirable_by?(@current_user)
       @hint.comment_reveals.create(user: @current_user)
       @toast = {title: "Hint acquired", body: "You received the hint. It can now be viewed at any time."}
-      render 'problems/helpers'
+      render turbo_stream: [
+        turbo_stream.update('problem_hints', partial: 'problems/hints', locals: {problem: @problem}),
+        turbo_stream.append('toast-area', partial: 'toast', locals: {toast: @toast})
+      ]
     else
       render partial: 'msg_modal_show', locals: {do_popup: true,
                                                  header_msg: 'Hint acquisition failed',
