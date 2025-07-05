@@ -4,7 +4,6 @@ require 'yaml'
 # This class also contains various login of the system.
 #
 class GraderConfiguration < ApplicationRecord
-
   SYSTEM_MODE_CONF_KEY = 'system.mode'
   TEST_REQUEST_EARLY_TIMEOUT_KEY = 'contest.test_request.early_timeout'
   MULTICONTESTS_KEY = 'system.multicontests'
@@ -15,7 +14,7 @@ class GraderConfiguration < ApplicationRecord
   SYSTEM_USE_PROBLEM_GROUP = 'system.use_problem_group'
   SYSTEM_MINIMUM_LAST_LOGIN_TIME = 'system.min_last_login_time'
 
-  class_attribute :config_cache
+  # class_attribute :config_cache
   cattr_accessor :task_grading_info_cache
   cattr_accessor :contest_time_str
   cattr_accessor :contest_time
@@ -24,23 +23,12 @@ class GraderConfiguration < ApplicationRecord
   GraderConfiguration.task_grading_info_cache = nil
 
   def self.get(key)
-    if GraderConfiguration.config_cache.nil?
+    if @config_cache.nil?
       self.read_config
-      #raise "CONFIG ERROR #{key}"
     end
 
-    return GraderConfiguration.config_cache[key]
-
-
-    # old cache logic
-    # if GraderConfiguration.config_cached?
-    #   if GraderConfiguration.config_cache == nil
-    #     self.read_config
-    #   end
-    #   return GraderConfiguration.config_cache[key]
-    # else
-    #   return GraderConfiguration.read_one_key(key)
-    # end
+    # return GraderConfiguration.config_cache[key]
+    return @config_cache[key]
   end
 
   def self.[](key)
@@ -50,12 +38,12 @@ class GraderConfiguration < ApplicationRecord
   def self.minimum_last_login_time
     time_text = self.get(SYSTEM_MINIMUM_LAST_LOGIN_TIME)
     return Time.new(time_text) if time_text
-    return Date.new(1,1,1)
+    return Date.new(1, 1, 1)
   end
 
   def self.update_min_last_login
     conf = GraderConfiguration.find_or_create_by(key: SYSTEM_MINIMUM_LAST_LOGIN_TIME)
-    conf.update(value: Time.zone.now,value_type: 'string')
+    conf.update(value: Time.zone.now, value_type: 'string')
   end
 
   #
@@ -68,9 +56,9 @@ class GraderConfiguration < ApplicationRecord
   end
 
   def self.show_tasks_to?(user)
-    #if time_limit_mode?
+    # if time_limit_mode?
     #  return false if not user.contest_started?
-    #end
+    # end
     return true
   end
 
@@ -85,10 +73,10 @@ class GraderConfiguration < ApplicationRecord
   def self.allow_test_request(user)
     mode = get(SYSTEM_MODE_CONF_KEY)
     early_timeout = get(TEST_REQUEST_EARLY_TIMEOUT_KEY)
-    if (mode=='contest') 
-      return false if ((user.site!=nil) and 
-        ((user.site.started!=true) or 
-         (early_timeout and (user.site.time_left < 30.minutes))))
+    if mode=='contest'
+      return false if (user.site!=nil) and
+        ((user.site.started!=true) or
+         (early_timeout and (user.site.time_left < 30.minutes)))
     end
     return false if mode=='analysis'
     return true
@@ -119,7 +107,7 @@ class GraderConfiguration < ApplicationRecord
 
   def self.time_limit_mode?
     mode = get(SYSTEM_MODE_CONF_KEY)
-    return ((mode == 'contest') or (mode == 'indv-contest')) 
+    return ((mode == 'contest') or (mode == 'indv-contest'))
   end
 
   def self.analysis_mode?
@@ -151,23 +139,23 @@ class GraderConfiguration < ApplicationRecord
       else
         GraderConfiguration.contest_time = nil
       end
-    end  
+    end
     return GraderConfiguration.contest_time
   end
 
   def self.set_exam_mode(exam = true)
     value = exam ? 'false' : 'true'
 
-    GraderConfiguration.where(key: "right.bypass_agreement").update(value: value);
-    GraderConfiguration.where(key: "right.multiple_ip_login").update(value: value);
-    GraderConfiguration.where(key: "right.user_hall_of_fame").update(value: value);
-    GraderConfiguration.where(key: "right.user_view_submission").update(value: value);
-    GraderConfiguration.where(key: "right.view_testcase").update(value: value);
+    GraderConfiguration.where(key: "right.bypass_agreement").update(value: value)
+    GraderConfiguration.where(key: "right.multiple_ip_login").update(value: value)
+    GraderConfiguration.where(key: "right.user_hall_of_fame").update(value: value)
+    GraderConfiguration.where(key: "right.user_view_submission").update(value: value)
+    GraderConfiguration.where(key: "right.view_testcase").update(value: value)
   end
 
   protected
 
-  def self.convert_type(val,type)
+  def self.convert_type(val, type)
     case type
     when 'string'
       return val
@@ -181,28 +169,30 @@ class GraderConfiguration < ApplicationRecord
   end
 
   def self.read_config
-    GraderConfiguration.config_cache = {}
+    @config_cache = {}
+    # GraderConfiguration.config_cache = {}
     GraderConfiguration.all.each do |conf|
       key = conf.key
       val = conf.value
-      GraderConfiguration.config_cache[key] = GraderConfiguration.convert_type(val,conf.value_type)
+      GraderConfiguration.config_cache[key] = GraderConfiguration.convert_type(val, conf.value_type)
+      @config_cache[key] = GraderConfiguration.convert_type(val, conf.value_type)
     end
-    return GraderConfiguration.config_cache
+    return @config_cache
+    # return GraderConfiguration.config_cache
   end
 
-  #def self.read_one_key(key)
+  # def self.read_one_key(key)
   #  conf = GraderConfiguration.find_by_key(key)
   #  if conf
   #    return GraderConfiguration.convert_type(conf.value,conf.value_type)
   #  else
   #    return nil
   #  end
-  #end
+  # end
 
   def self.read_grading_info
     f = File.open(TASK_GRADING_INFO_FILENAME)
     GraderConfiguration.task_grading_info_cache = YAML.load(f)
     f.close
   end
-
 end
