@@ -1,6 +1,4 @@
 class UserAdminController < ApplicationController
-  include MailHelperMethods
-
   before_action :admin_authorization
 
   # Stimulus controller connection
@@ -339,7 +337,7 @@ class UserAdminController < ApplicationController
     lines.split("\n").each do |line|
       user = User.find_by_login(line.chomp)
       if user
-        send_mail(user.email, mail_subject, mail_body)
+        MailSender.send_mail(user.email, mail_subject, mail_body)
         note << user.login
       end
     end
@@ -495,7 +493,7 @@ class UserAdminController < ApplicationController
                   })
 
     logger.info mail_body
-    send_mail(user.email, mail_subject, mail_body)
+    MailSender.send_mail(user.email, mail_subject, mail_body)
   end
 
   def find_contest_and_user_from_contest_id(id)

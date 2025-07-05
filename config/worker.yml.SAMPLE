@@ -30,7 +30,7 @@ shared:
 
   #hosts
   hosts:
-    web: http://grader.example.com
+    web: http://localhost
 
 development:
   server_key: c2f7966dee

@@ -333,6 +333,4 @@ class ApplicationController < ActionController::Base
     result = Time.zone.local(md[3].to_i,md[2].to_i,md[1].to_i,md[4].to_i,md[5].to_i) rescue default
     return result
   end
-  
-
 end

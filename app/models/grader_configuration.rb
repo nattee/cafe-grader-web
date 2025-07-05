@@ -19,7 +19,7 @@ class GraderConfiguration < ApplicationRecord
   cattr_accessor :contest_time_str
   cattr_accessor :contest_time
 
-  GraderConfiguration.config_cache = nil
+  # GraderConfiguration.config_cache = nil
   GraderConfiguration.task_grading_info_cache = nil
 
   def self.get(key)
@@ -174,7 +174,7 @@ class GraderConfiguration < ApplicationRecord
     GraderConfiguration.all.each do |conf|
       key = conf.key
       val = conf.value
-      GraderConfiguration.config_cache[key] = GraderConfiguration.convert_type(val, conf.value_type)
+      # GraderConfiguration.config_cache[key] = GraderConfiguration.convert_type(val, conf.value_type)
       @config_cache[key] = GraderConfiguration.convert_type(val, conf.value_type)
     end
     return @config_cache
