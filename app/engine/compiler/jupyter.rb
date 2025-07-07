@@ -30,6 +30,8 @@ class Compiler::Jupyter < Compiler
         if line.start_with?("# +!+=")
           fname = line.split("=").last
           code << "if '___cafe_jupyter__checker___#{fname}' in dir(): ___cafe_jupyter__checker___#{fname}()"
+        elsif line.start_with?("%")
+          code << "#  #{line}"
         else
           code << line
         end
