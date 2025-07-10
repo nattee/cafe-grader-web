@@ -131,8 +131,11 @@ class CommentsController < ApplicationController
 
   # get the llm assist via job
   def llm_assist
+    # get the service class that responsible for the model
     model_id = params[:model].to_i
-    model_name = Llm::GenieAssist::PERMITTED_MODEL[model_id]
+    model_name = Rails.configuration.llm[:provider].keys[model_id]
+    llm_assist_job_class = (Rails.configuration.llm[:provider][model_name] + 'Job').constantize
+
 
     @record = @submission.comments.create!({
       user: @current_user,
@@ -147,8 +150,8 @@ class CommentsController < ApplicationController
       cost: 0    # default to 0 but should be adjusted when the request finished
     })
 
-    # model is validated by the actual service class
-    Llm::GenieAssistJob.perform_later(@submission, model: model_name, comment: @record)
+    # model_name is also validated by the actual service class
+    llm_assist_job_class.perform_later(@submission, model: model_name, comment: @record)
     render 'submission_and_toast'
   end
 

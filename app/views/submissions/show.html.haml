@@ -129,7 +129,7 @@
           -# add comment modal
           = render partial: 'add_comment', locals: {submission: @submission}
         -# GenAI request
-        - if @models && @models.any?
+        - if @models && @models.any? && GraderConfiguration['system.llm_assist']
           .card-footer
             = render partial: 'add_assist', locals: {models: @models}
       -# Evaluation Card

@@ -38,7 +38,8 @@ class SubmissionsController < ApplicationController
     @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
 
     # LLM models for help
-    @models = ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
+    # See config/llm.yml
+    @models = Rails.configuration.llm[:provider].keys
   end
 
   # Turbo render evaluations as modal popup
@@ -99,7 +100,7 @@ class SubmissionsController < ApplicationController
 
     @as_binary = @language.binary?
     @last_sub = @current_user.last_submission_by_problem(@problem)
-    @models = ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
+    @models = Rails.configuration.llm[:provider].keys
   end
 
 
