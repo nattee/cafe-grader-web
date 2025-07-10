@@ -8,7 +8,7 @@ class CommentsController < ApplicationController
 
 
   SUB_COMMENT_VIEW_METHOD = %i[ show_for_submission ]
-  SUB_COMMENT_EDIT_METHOD = %i[ update_for_submission destroy_for_submission ]
+  SUB_COMMENT_EDIT_METHOD = %i[ update_for_submission destroy_for_submission llm_assist]
   SUB_COMMENT_METHOD = SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD + %i[ create_for_submission ]
 
   before_action :check_valid_login
@@ -84,11 +84,12 @@ class CommentsController < ApplicationController
 
   # unified show for submissions comment
   def show_for_submission
-    @header_msg = "Comment: #{@comment.title}"
+    @header_msg = "Comment: #{@comment.title}".html_safe
     if @comment.kind == 'llm_assist'
-      @body_msg = render_to_string(partial: 'llm_assist_header').html_safe + "\n".html_safe + (@comment.body.html_safe || '-- blank --')
+      @body_msg = render_to_string(partial: 'llm_assist_header') + "\n" +
+                  (@comment.body.html_safe || '-- blank --')
     else
-      @body_msg = (@comment.body || '-- blank --')
+      @body_msg = (@comment.body.html_safe || '-- blank --')
     end
     render :show
   end
@@ -124,6 +125,33 @@ class CommentsController < ApplicationController
     else
       @toast = {title: 'Submission Comment', body: "A comment is failed to be created. (#{comment.errors.full_messages})", type: 'alert' }
     end
+    render 'submission_and_toast'
+  end
+
+
+  # get the llm assist via job
+  def llm_assist
+    # get the service class that responsible for the model
+    model_id = params[:model].to_i
+    model_name = Rails.configuration.llm[:provider].keys[model_id]
+    llm_assist_job_class = (Rails.configuration.llm[:provider][model_name] + 'Job').constantize
+
+
+    @record = @submission.comments.create!({
+      user: @current_user,
+      kind: 'llm_assist',
+      llm_model: model_name,
+      title: "AI #{model_name} is thinking <span class='spinner-border spinner-border-sm'></span>",
+      body: <<~TEXT,
+        ## AI is thinking, please wait
+        * Request started at #{Time.zone.now}, asking for the model #{model_name}
+        * Requested by #{@current_user.full_name}
+      TEXT
+      cost: 0    # default to 0 but should be adjusted when the request finished
+    })
+
+    # model_name is also validated by the actual service class
+    llm_assist_job_class.perform_later(@submission, model: model_name, comment: @record)
     render 'submission_and_toast'
   end
 

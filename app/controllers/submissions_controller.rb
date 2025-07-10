@@ -36,6 +36,10 @@ class SubmissionsController < ApplicationController
     #  .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
     @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
     @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
+
+    # LLM models for help
+    # See config/llm.yml
+    @models = Rails.configuration.llm[:provider].keys
   end
 
   # Turbo render evaluations as modal popup
@@ -96,6 +100,7 @@ class SubmissionsController < ApplicationController
 
     @as_binary = @language.binary?
     @last_sub = @current_user.last_submission_by_problem(@problem)
+    @models = Rails.configuration.llm[:provider].keys
   end
 
 

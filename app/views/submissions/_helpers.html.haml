@@ -17,15 +17,7 @@
   -# GenAI request
   - if @models && @models.any? && GraderConfiguration['system.llm_assist']
     .card-footer
-      - @models.each do |model|
-        .row
-          - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: 0,model: model}
-          - confirmation = {title: "Confirm Submission for AI Help", body: body_text}
-          .col
-            AI help by
-            %code #{model}
-          .col-auto.pb-0.text-end
-            = link_to "Get", llm_assist_submission_comments_path(@submission,model), data: {turbo: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json }
+      = render partial: 'add_assist', locals: {models: @models}
 
 -# usage modal
 .modal.fade#helpers_help{tabindex: -1,role: 'dialog'}

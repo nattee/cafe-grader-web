@@ -116,8 +116,8 @@
               .col-auto
                 IP: #{@submission.ip_address}
       -# Submission Comment
-      .card.mb-3.shadow-sm
-        .card-body{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
+      .card.mb-3.shadow-sm{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
+        .card-body
           .row.align-items-center
             .col
               %h4 Submission Comment
@@ -128,6 +128,10 @@
             = render partial: 'comments', locals: {submission: @submission}
           -# add comment modal
           = render partial: 'add_comment', locals: {submission: @submission}
+        -# GenAI request
+        - if @models && @models.any? && GraderConfiguration['system.llm_assist']
+          .card-footer
+            = render partial: 'add_assist', locals: {models: @models}
       -# Evaluation Card
       .card.mb-3.shadow-sm
         .card-body

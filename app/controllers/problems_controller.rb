@@ -5,7 +5,7 @@ class ProblemsController < ApplicationController
   MEMBER_METHOD = [:edit, :update, :destroy,
                    :toggle_available, :toggle_view_testcase, :stat,
                    :add_dataset, :import_testcases,
-                   :download_archive, :helpers, :download_by_type, :delete_by_type,
+                   :download_archive, :download_by_type, :delete_by_type,
                   ]
 
   before_action :set_problem, only: MEMBER_METHOD

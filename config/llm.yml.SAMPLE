@@ -1,0 +1,20 @@
+# This list the available llm service and its subclass that provide the service
+
+
+
+# key is the classname, value is the available models (as comma separated)
+# For example:
+#   ChatGTP: ChatGPT ChatGPT-4o,ChatGPT-o3
+# means that the class Llm::ChatGTP provides a services for ChatGPT-4o and ChatGPT-o3 models.
+# We also assume that there is a class Llm::GenieAssistJob which is the active job class for the task
+#
+# Also see config/initializer/cafe_grader.rb
+llm_services: &services
+  # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
+  # GenieAssist: gemini-2.5-pro,Claude-3.5-Sonnet
+
+development:
+  <<: *services
+
+production:
+  <<: *services
