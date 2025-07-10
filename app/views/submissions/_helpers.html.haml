@@ -15,7 +15,7 @@
     = turbo_frame_tag :submission_comments do
       = render partial: 'submissions/comments', locals: {submisssion: @submission, no_edit: true}
   -# GenAI request
-  - if @models && @models.any?
+  - if @models && @models.any? && GraderConfiguration['system.llm_assist']
     .card-footer
       - @models.each do |model|
         .row

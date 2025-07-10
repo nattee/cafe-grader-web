@@ -1,6 +1,5 @@
-module MailHelperMethods
-
-  def send_mail(mail_to, mail_subject, mail_body)
+class MailSender
+  def self.send_mail(mail_to, mail_subject, mail_body)
     mail_from = GraderConfiguration['system.online_registration.from']
     smtp_server = GraderConfiguration['system.online_registration.smtp']
 
@@ -23,19 +22,17 @@ Subject: #{mail_subject}
     end
 
     mail_option = {
-      :address => smtp_server,
-#      :domain => nil,
-#      :port => 25,
-#      :user_name => nil,
-#      :password => nil,
-#      :authentication=>'plain',
-#      :enable_starttls_auto => true
+      address: smtp_server
+      # :domain => nil,
+      # :port => 25,
+      # :user_name => nil,
+      # :password => nil,
+      # :authentication=>'plain',
+      # :enable_starttls_auto => true
     }
 
     mail.delivery_method :smtp, mail_option
 
     mail.deliver
   end
-
 end
-

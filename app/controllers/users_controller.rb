@@ -1,9 +1,6 @@
 require 'net/smtp'
 
 class UsersController < ApplicationController
-
-  include MailHelperMethods
-
   before_action :check_valid_login, :except => [:new,
                                            :register,
                                            :confirm,
@@ -159,7 +156,7 @@ class UsersController < ApplicationController
 
     logger.info mail_body
 
-    send_mail(user.email, mail_subject, mail_body)
+    MailSender.send_mail(user.email, mail_subject, mail_body)
   end
   
   def send_new_password_email(user)
@@ -175,7 +172,7 @@ class UsersController < ApplicationController
 
     logger.info mail_body
 
-    send_mail(user.email, mail_subject, mail_body)
+    MailSender.send_mail(user.email, mail_subject, mail_body)
   end
 
   # allow viewing of regular user profile only when options allow so

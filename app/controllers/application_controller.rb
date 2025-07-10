@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   # Returns the current logged-in user (if any).
   def current_user
     return nil unless session[:user_id]
-    @current_user ||= User.find(session[:user_id]) rescue nil
+    @current_user ||= User.includes(:roles).find(session[:user_id]) rescue nil
   end
 
   # return the current contest of the user
@@ -333,6 +333,4 @@ class ApplicationController < ActionController::Base
     result = Time.zone.local(md[3].to_i,md[2].to_i,md[1].to_i,md[4].to_i,md[5].to_i) rescue default
     return result
   end
-  
-
 end
