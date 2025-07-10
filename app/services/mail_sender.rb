@@ -1,5 +1,5 @@
-module MailSender
-  def send_mail(mail_to, mail_subject, mail_body)
+class MailSender
+  def self.send_mail(mail_to, mail_subject, mail_body)
     mail_from = GraderConfiguration['system.online_registration.from']
     smtp_server = GraderConfiguration['system.online_registration.smtp']
 

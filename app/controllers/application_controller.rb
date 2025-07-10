@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   # Returns the current logged-in user (if any).
   def current_user
     return nil unless session[:user_id]
-    @current_user ||= User.find(session[:user_id]) rescue nil
+    @current_user ||= User.includes(:roles).find(session[:user_id]) rescue nil
   end
 
   # return the current contest of the user
