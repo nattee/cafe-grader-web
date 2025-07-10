@@ -218,6 +218,7 @@ Rails.application.routes.draw do
       get 'get_latest_submission_status/:uid/:pid', to: 'submissions#get_latest_submission_status', as: 'get_latest_submission_status'
     end
     resources :comments, only: [] do
+      post 'llm_assist/:model', on: :collection, as: 'llm_assist', action: 'llm_assist'
       post '', action: 'create_for_submission', on: :collection, as: ''
       member do
         get '', action: 'show_for_submission', as: ''
@@ -226,8 +227,6 @@ Rails.application.routes.draw do
       end
     end
   end
-
-
 
   resources :contest_management, only: [:index] do
     collection do

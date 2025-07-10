@@ -15,15 +15,8 @@ module Llm
       @error = nil
       @other_args = args
 
-      # comment to be saved
-      @record = {
-        user: @submission.user,
-        kind: 'llm_assist',
-        title: "Help by #{provider_name}",
-        cost: 0,    # default to 0 but should be adjusted
-        remark: provider_name
-        # still need response_body and body
-      }
+      # Create a placeholder comment
+      @record = @other_args[:comment]
     end
 
     def call
@@ -79,14 +72,18 @@ module Llm
 
     # Can be a common implementation or overridden
     def handle_response(response)
-      @record.merge!({cost: 10, llm_response: response.body})
+      @record.cost = 10
+      @record.llm_response = response.body
+
+      # prepare the @parsed_body for the parse_response of the subclasses
       @parsed_body = JSON.parse(response.body)
-      @submission.comments.create!(@record.merge(parse_response))
+      @record.update(parse_response)
     end
 
     def handle_error
       @record.merge!({cost: 0, body: @error})
-      @submission.comments.create!(@record)
+      @response.body += "* #{@error}\n* Request finished at #{Time.zone.now}"
+      @response.save
     end
 
     def provider_name
