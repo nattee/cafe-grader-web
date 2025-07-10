@@ -131,6 +131,10 @@ class CommentsController < ApplicationController
 
   # get the llm assist via job
   def llm_assist
+    unless GraderConfiguration['system.llm_assist']
+      @toast = {title: 'LLM Assist Error', body: "The system does not allow LLM Assist at the moment", type: 'alert' }
+      render 'submission_and_toast' and return
+    end
     # get the service class that responsible for the model
     model_id = params[:model].to_i
     model_name = Rails.configuration.llm[:provider].keys[model_id]
