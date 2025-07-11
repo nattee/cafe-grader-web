@@ -9,18 +9,25 @@
         - if GraderConfiguration.analysis_mode?
           %div.btn.btn-success#countdown= "ANALYSIS MODE"
         - elsif GraderConfiguration.time_limit_mode?
-          - if @current_contest&.contest_status == :ended
-            %div.btn.btn-danger#countdown= "Contest is over"
-          - elsif !@current_contest&.contest_status == :later
-            %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
-          - elsif @current_contest
-            %div.btn.btn-dark#countdown
-            :javascript
-              $(() => {
-                too_early_count = 0
-                setInterval(updateRemainingTime,500)
-                setTimeout(checkInLoop,1000)
-              })
+          - if @current_contest
+            -# we have a contest
+            - if @current_contest.stop + @current_contest_user.extra_time_second < Time.zone.now
+              -# contest is over
+              %div.btn.btn-danger#countdown= "Contest is over"
+            - elsif !@current_contest&.contest_status == :later
+              -# contest is not started
+              %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
+            - else
+              -# during a contest
+              %div.btn.btn-dark#countdown
+              :javascript
+                window.addEventListener("load", function() {
+                  too_early_count = 0
+                  setInterval(updateRemainingTime,500)
+                  setTimeout(checkInLoop,1000)
+                })
+          - else
+            %div.btn.btn-dark#countdown NO CONTEST
       %button.navbar-toggler{ type: :button, data: {bs: {toggle: 'collapse', target: '#navbar-collapse'}} }
         %span.navbar-toggler-icon
       .collapse.navbar-collapse#navbar-collapse
@@ -189,7 +196,8 @@
     if (!contestEndTime) return; // No contest end time to display
 
     const now = (new Date())
-    const remainingTime = contestEndTime - now + server_time_offset_ms
+    const extraTime = #{ @current_user.contests_users.where(contest: @current_contest).take&.extra_time_second || 0}
+    const remainingTime = contestEndTime - now + server_time_offset_ms + (extraTime * 1000)
 
     if (remainingTime > 0) {
       const hours = Math.floor(remainingTime / (1000 * 60 * 60));

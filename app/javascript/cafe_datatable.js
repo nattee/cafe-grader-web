@@ -48,10 +48,11 @@ function dt_button_renderer(label,{element_type = 'button',
     if (element_type == 'switch') {
       // as <input type="switch">
       const checked_text = row[checked_data_field] ? "checked" : "";
-      return `
+      return `<div class="d-flex justify-content-center align-items-center">
         <div class="form-check form-switch">
           <input type="checkbox" class="form-check-input" data-row-id="${data}"
           ${dataAction} ${dataCommand} ${dataConfirm} ${checked_text} ${dataField}>
+        </div>
         </div>
       `
     } else if (element_type == 'button') {

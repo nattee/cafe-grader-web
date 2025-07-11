@@ -1,5 +1,4 @@
 class Contest < ApplicationRecord
-
   has_many :contests_problems, class_name: 'ContestProblem', dependent: :destroy
   has_many :contests_users, class_name: 'ContestUser', dependent: :destroy
   has_many :problems, through: :contests_problems

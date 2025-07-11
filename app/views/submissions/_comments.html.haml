@@ -1,5 +1,5 @@
 -# requires submission
-- if @submission.comments.any?
+- if @submission&.comments&.any?
   - kinds = [ 'llm_assist','comment']
   - kinds.each do |kind|
     - @submission.comments.where(kind: kind).each do |comment|

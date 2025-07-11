@@ -16,20 +16,20 @@ class Compiler
                           submission_id: @sub.id) unless @working_dataset
   end
 
-  # Each langauge specific sub-class MUST implement this method
+  # Each language specific sub-class MUST implement this method
   # it should return shell command that do the compilation
   #   [isolate_source] is a full pathname to the source file (in isolate env.) to be compiled
   #   [isolate_bin] is a full pathname to the source file (in isolate env.) to store the compiled file
   def build_compile_command(isolate_source, isolate_bin)
   end
 
-  # Each langauge specific sub-class MAY implement this method
+  # Each language specific sub-class MAY implement this method
   # it will be run BEFORE a compilation is success
   # normal use case is for java when we have to detect the classname of the file
   def pre_compile
   end
 
-  # Each langauge specific sub-class MAY implement this method
+  # Each language specific sub-class MAY implement this method
   # it will be run after a compilation is success
   # normal use case is for scripting language
   # where compilation is actually linting and
@@ -39,7 +39,7 @@ class Compiler
   def post_compile
   end
 
-  # Each langauge specific sub-class MAY override this method
+  # Each language specific sub-class MAY override this method
   # This should return {success: true, compiler_message: xxx}
   #   out = stdout
   #   err = stderr

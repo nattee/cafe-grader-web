@@ -1,7 +1,15 @@
 class SubmissionsController < ApplicationController
+  include ProblemAuthorization
+  include SubmissionAuthorization
+
   before_action :set_submission, only: [:show, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
   before_action :check_valid_login
-  before_action :submission_authorization, only: [:show, :download, :edit, :evaluations]
+  before_action :set_problem, only: %i[ edit direct_edit_problem ]
+  before_action :can_view_submission, only: [:show, :download, :edit, :evaluations]
+  before_action :can_view_problem, only: [ :direct_edit_problem ]
+
+  before_action :set_language, only: %i[ edit direct_edit_problem ]
+
   before_action only: [:rejudge, :set_tag] do authorization_by_roles([:ta]) end
 
   # GET /submissions
@@ -9,7 +17,7 @@ class SubmissionsController < ApplicationController
   # Show problem selection and user's submission of that problem
   def index
     @user = @current_user
-    @problems = @user.available_problems
+    @problems = @user.problems_for_action(:submit)
 
     if params[:problem_id]==nil
       @problem = nil
@@ -42,6 +50,34 @@ class SubmissionsController < ApplicationController
     @models = Rails.configuration.llm[:provider].keys
   end
 
+  # on-site new submission on specific problem
+  def direct_edit_problem
+    @last_sub = @current_user.last_submission_by_problem(@problem)
+    @models = [] # won't allow llm models on the first submission
+    render 'edit'
+  end
+
+  # GET /submissions/1/edit
+  def edit
+    @last_sub = @current_user.last_submission_by_problem(@problem)
+    @models = Rails.configuration.llm[:provider].keys
+  end
+
+  # as Turbo
+  def get_latest_submission_status
+    @problem = Problem.find(params[:pid])
+    @submission = @current_user.last_submission_by_problem(@problem)
+    @delay_value = (Time.zone.now - @submission.submitted_at).clamp(1, 10).to_i * 1000
+    render turbo_stream: [
+      turbo_stream.update("latest_status",
+                           partial: 'submission_short',
+                           locals: {submission: @submission,
+                                    refresh_if_not_graded: true,
+                                    show_id: true,
+                                    sub_count: @submission.number,
+                                    show_button: false })
+    ]
+  end
   # Turbo render evaluations as modal popup
   def evaluations
     @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
@@ -63,63 +99,6 @@ class SubmissionsController < ApplicationController
     render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
   end
 
-  # on-site new submission on specific problem
-  def direct_edit_problem
-    @problem = Problem.find(params[:problem_id])
-    unless @current_user.can_view_problem?(@problem)
-      unauthorized_redirect
-      return
-    end
-    @source = ''
-
-    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
-    if @problem.get_permitted_lang_as_ids.count == 1
-      @language = problem_lang
-    else
-      @language = @current_user.default_language || problem_lang || Language.first
-    end
-
-    @as_binary = @language.binary?
-    @last_sub = @current_user.last_submission_by_problem(@problem)
-
-    render 'edit'
-  end
-
-  # GET /submissions/1/edit
-  def edit
-    @source = @submission.source.to_s
-    @problem = @submission.problem
-
-    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
-    @language_forced = @problem.get_permitted_lang_as_ids.count == 1
-    if @language_forced
-      @language = problem_lang
-    else
-      @language = @submission.language || @current_user.default_language || problem_lang || Language.first
-    end
-
-    @as_binary = @language.binary?
-    @last_sub = @current_user.last_submission_by_problem(@problem)
-    @models = Rails.configuration.llm[:provider].keys
-  end
-
-
-  # as Turbo
-  def get_latest_submission_status
-    @problem = Problem.find(params[:pid])
-    @submission = @current_user.last_submission_by_problem(@problem)
-    @delay_value = (Time.zone.now - @submission.submitted_at).clamp(1,10).to_i * 1000
-    render turbo_stream: [
-      turbo_stream.update("latest_status",
-                           partial: 'submission_short',
-                           locals: {submission: @submission,
-                                    refresh_if_not_graded: true,
-                                    show_id: true,
-                                    sub_count: @submission.number,
-                                    show_button: false })
-    ]
-  end
-
   # GET /submissions/:id/rejudge
   def rejudge
     # @task = @submission.task
@@ -138,23 +117,27 @@ class SubmissionsController < ApplicationController
   end
 
 protected
-
-  def submission_authorization
-    # admin always has privileged
-    return true if @current_user.admin?
-    return true if @current_user.has_role?('ta') && (['show', 'download'].include? action_name)
-
-    sub = Submission.find(params[:id])
-    if @current_user.available_problems.include? sub.problem
-      return true if GraderConfiguration["right.user_view_submission"] or sub.user == @current_user
-    end
-
-    # default to NO
-    unauthorized_redirect
-    return false
-  end
-
   def set_submission
     @submission = Submission.find(params[:id])
+  end
+
+  def set_problem
+    @problem = @submission.problem if @submission
+    @problem = Problem.find(params[:problem_id]) unless @problem
+  end
+
+  # need set_problem first
+  def set_language
+    problem_lang = Language.find(@problem.get_permitted_lang_as_ids[0]) rescue nil
+    @language_forced = @problem.get_permitted_lang_as_ids.count == 1
+    if @language_forced
+      @language = problem_lang
+    else
+      @language = nil
+      # this maybe called when @submission is nil
+      @language = @submission&.language || @current_user.default_language || problem_lang || Language.first
+    end
+
+    @as_binary = @language.binary?
   end
 end

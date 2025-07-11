@@ -14,6 +14,9 @@ class Problem < ApplicationRecord
   has_many :groups_problems, class_name: 'GroupProblem', dependent: :destroy
   has_many :groups, through: :groups_problems
 
+  has_many :contests_problems, class_name: 'ContestProblem', dependent: :destroy
+  has_many :contests, through: :contests_problems
+
   has_many :problems_tags, class_name: 'ProblemTag', dependent: :destroy
   has_many :tags, through: :problems_tags
   has_many :public_tags, -> { where(public: true) }, class_name: 'Tag', through: :problems_tags, source: :tag
@@ -53,7 +56,6 @@ class Problem < ApplicationRecord
   # this does not check whether the user is enabled
   #
   # It always considers groups, REGARDLESS of the group mode configuration
-  # When group mode is false, use Problem.available_problems instead
   #
   # please use User#problems_for_action when we want to consider everything
   scope :group_submittable_by_user, ->(user_id) {
@@ -85,6 +87,7 @@ class Problem < ApplicationRecord
       .distinct(:id)                            # get distinct
   }
 
+  # This returns all Problem that is submittable by the user
   scope :contests_problems_for_user, ->(user_id) {
     now = Time.zone.now
     joins(contests_problems: {contest: :contests_users})
@@ -93,9 +96,9 @@ class Problem < ApplicationRecord
       .where('contests_users.user_id': user_id) # user is in the contest
       .where('contests_users.enabled': true)    # user in the contest is enabled
       .where('contests_problems.enabled': true) # problem is enabled
-      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?', now)
+      .where('ADDTIME(contests.start,-contests_users.start_offset_second) <= ?', now)
       .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?', now)
-      .distinct(:problem_id)                    # get distinct
+      .distinct('problems.id')
   }
 
   scope :default_order, -> { order(date_added: :desc).order(:name)  }

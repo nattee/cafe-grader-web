@@ -5,7 +5,7 @@ class Checker
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-  # A langauge specific sub-class may override this method
+  # A language specific sub-class may override this method
   # it should return shell command that do the comparison
   def check_command(evaluation_type, input_file, output_file, ans_file)
     case evaluation_type

@@ -115,7 +115,7 @@
                   %th Seat
                   %th Remark
                   %th Extra Time (s)
-                  %th Enable
+                  %th.text-center Enable
                   %th Remove
                   %th Set Role
           -# ==========================================
@@ -170,7 +170,8 @@
                       %th Name
                       %th Full name
                       %th.text-center Global Available
-                      %th Enable
+                      %th.text-center Enable
+                      %th.text-center Allow LLM
                       %th Action
           -# ==========================================
           -# ---------- import users ------------------
@@ -231,7 +232,10 @@
   }
 
   function start_stop_offset_render(data,type,row,meta) {
-    return `${row['start_offset_second']} : ${row['extra_time_second']} <a href='#' data-row-id="${row['id']}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
+    const start_offset = row['start_offset_second']
+    const extra_time = row['extra_time_second']
+    return `${start_offset} : ${extra_time} ` +
+      `<a href='#' data-row-id="${row['id']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
   }
 
   function role_action_button(data,type,row,meta) {
@@ -278,7 +282,7 @@
         {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
         {data: 'user_id', render: role_action_button},
       ],
-      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [5,6]} ],
+      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [5,6,7,8]} ],
       orderFixed: [user_role_column,'asc'],
       drawCallback: function (settings) {
         // we assume that the row are sorted by users' role (by 'orderFixed' and 'order' options)
@@ -332,12 +336,13 @@
         {data: 'full_name'},
         {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
         {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+        {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm'})},
         {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
         {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
         {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
       ],
       columnDefs: [{visible: false, targets: [0]},
-                   {orderable: false, targets: [1,2,3,4,5,6,7]}],
+                   {orderable: false, targets: [1,2,3,4,5,6,7,8]}],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

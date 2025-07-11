@@ -95,7 +95,7 @@ class Submission < ApplicationRecord
       return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
     else
       if self.language.binary?
-        # for binary langauge (such as archive), we extract the extension from the source filename
+        # for binary language (such as archive), we extract the extension from the source filename
         return "#{self.problem.name}-#{self.user.login}-#{self.id}#{Pathname.new(self.source_filename).extname rescue ''}"
       else
         return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
@@ -264,7 +264,7 @@ class Submission < ApplicationRecord
       return if self.user.admin?
 
       # check if user has the right to submit the problem
-      errors[:base] << "Authorization error: you have no right to submit to this problem" if (!self.user.available_problems.include?(self.problem)) and (self.new_record?)
+      errors[:base] << "Authorization error: you have no right to submit to this problem" if (!self.user.problems_for_action(:submit).include?(self.problem)) and (self.new_record?)
     end
   end
 
