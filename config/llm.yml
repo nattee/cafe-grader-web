@@ -11,7 +11,7 @@
 # Also see config/initializer/cafe_grader.rb
 llm_services: &services
   # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
-  GenieAssist: gemini-2.5-pro,Claude-3.5-Sonnet
+  # GenieAssist: gemini-2.5-pro,Claude-3.5-Sonnet
 
 development:
   <<: *services
