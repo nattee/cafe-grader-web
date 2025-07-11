@@ -110,21 +110,24 @@ export default class extends Controller {
     const user = this.userExtraTimeFormRowIDTarget
 
     const user_id = event.currentTarget.dataset.rowId
+    const currentStartOffset = event.currentTarget.dataset.startOffset
+    const currentExtraTime = event.currentTarget.dataset.extraTime
     user.value = user_id
 
 
     event.preventDefault()
+    const element = event.target
 
     bootbox.dialog( {
       title: `Set extra times fot ${user}`,
       message: `
         <div class="form-group">
           <label for="start-offset">Start offset (second)</label>
-          <input type="number" class="form-control" id="start-offset">
+          <input type="number" class="form-control" id="start-offset" value="${currentStartOffset}">
         </div>
         <div class="form-group">
           <label for="end-offset">Finish offset (second)</label>
-          <input type="number" class="form-control" id="end-offset">
+          <input type="number" class="form-control" id="end-offset" value="${currentExtraTime}" >
         </div> `,
       buttons: {
         cancel: {

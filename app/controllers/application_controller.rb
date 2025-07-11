@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   # Returns the current logged-in user (if any).
   def current_user
     return nil unless session[:user_id]
-    @current_user ||= User.includes(:roles).find(session[:user_id]) rescue nil
+    @current_user ||= User.includes(:roles).includes(:contests_users).find(session[:user_id]) rescue nil
   end
 
   # return the current contest of the user
@@ -74,21 +74,24 @@ class ApplicationController < ActionController::Base
     return nil unless @current_user
     unless GraderConfiguration.contest_mode?
       session[:contest_id] = nil
-      return @current_contest = nil 
+      return @current_contest = nil
     end
 
     @current_contest ||= Contest.where(id: session[:contest_id]).first
-    
-    #if the session contest is disabled, pick the earliest enabled one (or nil)
+
+    # if the session contest is disabled, pick the earliest enabled one (or nil)
     unless @current_contest && @current_contest.enabled?
-      @current_contest = @current_user.contests.where(enabled: true).where('stop >= ?',Time.zone.now).order(:stop).first 
-      session[:contest_id] = @current_contest&.id if @current_contest
+      @current_contest = @current_user.contests.where(enabled: true).order(:stop).first
+      session[:contest_id] = @current_contest.id if @current_contest
     end
+
+    # get the current contests_users
+    @current_contest_user = @current_contest.contests_users.where(user: @current_user).take if @current_contest
     return @current_contest
   end
 
   def read_grader_configuration
-    #read all config into a hash and store at BOTH @grader_config of the controller and the class variable of GraderConfiguration
+    # read all config into a hash and store at BOTH @grader_config of the controller and the class variable of GraderConfiguration
     if @grader_configuration.nil?
       @grader_configuration = GraderConfiguration.read_config
     end

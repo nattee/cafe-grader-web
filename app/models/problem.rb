@@ -96,7 +96,7 @@ class Problem < ApplicationRecord
       .where('contests_users.user_id': user_id) # user is in the contest
       .where('contests_users.enabled': true)    # user in the contest is enabled
       .where('contests_problems.enabled': true) # problem is enabled
-      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?', now)
+      .where('ADDTIME(contests.start,-contests_users.start_offset_second) <= ?', now)
       .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?', now)
       .distinct('problems.id')
   }

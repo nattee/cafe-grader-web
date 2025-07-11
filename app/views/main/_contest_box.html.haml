@@ -22,7 +22,12 @@
               %td
                 = format_start_stop(contest.start,contest.stop).html_safe
               %td
-                .time-counter{data: {contest_timer_target: 'counter', start: contest.start.iso8601,stop: contest.stop.iso8601}}
+                .time-counter{data: {
+                  contest_timer_target: 'counter', 
+                  start: contest.start.iso8601,
+                  stop: contest.stop.iso8601, 
+                  start_offset: @current_user.contests_users.where(contest_id: contest).first.start_offset_second, 
+                  extra_time: @current_user.contests_users.where(contest_id: contest).first.extra_time_second}}
               %td
                 - unless contest == @current_contest
                   = link_to 'Set as active', set_active_contest_path(contest)
