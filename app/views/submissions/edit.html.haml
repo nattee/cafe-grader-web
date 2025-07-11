@@ -1,7 +1,7 @@
 .container{data: {controller: 'editor', editor_delay_value: 4000, editor_as_binary_value: @as_binary }}
   - unless @as_binary
     -# hidden area that shows the original code
-    %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @source
+    %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @submission&.source
   .row.mb-2
     .col-lg-8
       = render partial: 'problems/problem_head', locals: {problem: @problem}
@@ -60,7 +60,7 @@
               :markdown
                 Write your code in the box above, choose a language, and then click the **"Submit"** button to submit the code.
         = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center', data: {action: 'editor#submit'} do |form|
-          = hidden_field_tag 'editor_text', @source, data: {editor_target: 'submitSource'}
+          = hidden_field_tag 'editor_text', @submission&.source, data: {editor_target: 'submitSource'}
           = hidden_field_tag 'submission[problem_id]', @problem.id
           .col-auto
             = form.label :language_id, 'Language'

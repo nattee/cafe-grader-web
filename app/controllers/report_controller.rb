@@ -130,7 +130,7 @@ class ReportController < ApplicationController
   def problem_hof
     # gen problem list
     @user = User.find(session[:user_id])
-    @problems = @user.available_problems
+    @problems = @user.problems_for_action(:submit)
 
     # get selected problems or the default
     if params[:id]

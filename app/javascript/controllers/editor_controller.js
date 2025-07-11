@@ -52,14 +52,16 @@ export default class extends Controller {
 
     // init the syntax highlight
     this.#setEditorHighlight(this.editorTarget.dataset.language)
-    this.editor.setOptions({ maxLines: 40 })
 
     // set readonly mode, if indicated
     if (this.editorTarget.dataset.editorMode == 'view') {
       //this.editor.setOptions({ maxLines: Infinity })
       this.editor.setOptions({ maxLines: 49 })
       this.editor.setReadOnly(true)
+    } else {
+      this.editor.setOptions({ maxLines: 40, minLines: 40 })
     }
+
   }
 
   // attached to the file input, load the file

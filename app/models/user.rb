@@ -370,7 +370,7 @@ class User < ApplicationRecord
 
 
   def solve_all_available_problems?
-    available_problems.each do |p|
+    problems_for_action(:submit).each do |p|
       u = self
       sub = Submission.find_last_by_user_and_problem(u.id, p.id)
       return false if !p || !sub || sub.points < 100
@@ -382,36 +382,64 @@ class User < ApplicationRecord
     Submission.where(problem: problem).order(:submitted_at).last
   end
 
-  # get a list of available problem for submission
-  # this works with both contest and normal mode
-  #   and for both group and non-group mode
-  def available_problems
-    # first, we check if this is normal mode
-    unless GraderConfiguration.contest_mode?
-      # if this is a normal mode
-      # we show problem based on problem_group, if the config said so
-      if GraderConfiguration.use_problem_group?
-        return Problem.group_submittable_by_user(self.id).default_order
-      else
-        return Problem.available.default_order
-      end
-    else
-      # this is contest mode
-      return Problem.contests_problems_for_user(self.id).default_order
-    end
-  end
+  #
+  # -- permission methods ---
+  #
 
   # check if the user has the right to view that problem
   # this also consider group based problem policy
   def can_view_problem?(problem)
+    # admin always has right
     return true if admin?
-    return available_problems.include? problem
+
+    # if a user is a reporter or an editor, they can access disabled problem, which is not allowed in problems_for_action(:submit)
+    # we need both :report and :submit action because :report is not the super set of :submit
+    # For example, a user can be a reporter (or an editor) for some group while being a normal user on some group
+    return true if problems_for_action(:report).where(id: problem.id).any?
+
+    # the final step is for submit
+    return problems_for_action(:submit).where(id: problem.id).any?
   end
 
-  def can_view_testcase?(problem)
+  def can_report_problem?(problem)
+    # admin always has right
     return true if admin?
+
+    return problems_for_action(:report).where(id: problem.id).any?
+  end
+
+  def can_edit_problem?(problem)
+    # admin always has right
+    return true if admin?
+    return problems_for_action(:edit).where(id: problem).any?
+  end
+
+  def can_view_submission?(submission)
+    # admin always has right
+    return true if admin?
+
+    # For group mode, reporters can always view the submission of the problem
+    return true if problems_for_action(:report).include? submission.problem
+
+    # Here, we knows that the user does not have special privileges to the problem
+    # problem available is required
+    return false unless problems_for_action(:submit).include? submission.problem
+
+    return (submission.user == self) || (GraderConfiguration["right.user_view_submission"])
+  end
+
+
+  def can_view_testcase?(problem)
+    # admin always has right
+    return true if admin?
+
     return can_view_problem?(problem) && GraderConfiguration["right.view_testcase"]
   end
+
+  #
+  # -- end permission methods --
+  #
+
 
   def self.clear_last_login
     User.update_all(last_ip: nil)

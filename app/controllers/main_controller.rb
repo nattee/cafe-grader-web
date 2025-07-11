@@ -24,6 +24,7 @@ class MainController < ApplicationController
     redirect_to root_path
   end
 
+  # this is the main page for users
   def list
     prepare_list_information
     prepare_announcements
@@ -184,7 +185,7 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
-    @problems = @current_user.available_problems.with_attached_statement.with_attached_attachment.includes(:public_tags)
+    @problems = @current_user.problems_for_action(:submit).with_attached_statement.with_attached_attachment.includes(:public_tags)
 
     # get latest score
     @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }

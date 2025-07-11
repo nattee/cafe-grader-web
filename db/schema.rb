@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_29_104116) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_11_030331) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -104,6 +104,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_29_104116) do
     t.integer "number"
     t.float "weight", default: 1.0
     t.boolean "enabled", default: true
+    t.boolean "allow_llm", default: false
     t.index ["contest_id"], name: "index_contests_problems_on_contest_id"
     t.index ["problem_id"], name: "index_contests_problems_on_problem_id"
   end

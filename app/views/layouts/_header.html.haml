@@ -16,7 +16,7 @@
           - elsif @current_contest
             %div.btn.btn-dark#countdown
             :javascript
-              $(() => {
+              window.addEventListener("load", function() {
                 too_early_count = 0
                 setInterval(updateRemainingTime,500)
                 setTimeout(checkInLoop,1000)

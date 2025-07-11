@@ -8,8 +8,8 @@ class CommentsController < ApplicationController
 
 
   SUB_COMMENT_VIEW_METHOD = %i[ show_for_submission ]
-  SUB_COMMENT_EDIT_METHOD = %i[ update_for_submission destroy_for_submission llm_assist]
-  SUB_COMMENT_METHOD = SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD + %i[ create_for_submission ]
+  SUB_COMMENT_EDIT_METHOD = %i[ update_for_submission destroy_for_submission ]
+  SUB_COMMENT_METHOD = SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD + %i[ create_for_submission llm_assist ]
 
   before_action :check_valid_login
 
@@ -25,6 +25,7 @@ class CommentsController < ApplicationController
   before_action :can_edit_problem, only: HINT_EDIT_METHOD + SUB_COMMENT_EDIT_METHOD
   before_action :can_view_problem, only: HINT_VIEW_METHOD + SUB_COMMENT_VIEW_METHOD
   before_action :can_view_submission, only: SUB_COMMENT_VIEW_METHOD
+  before_action :can_request_llm, only: %i[ llm_assist ]
 
   # -- problem comment section --
   # -- (this is mainly about hints) --
@@ -131,10 +132,6 @@ class CommentsController < ApplicationController
 
   # get the llm assist via job
   def llm_assist
-    unless GraderConfiguration['system.llm_assist']
-      @toast = {title: 'LLM Assist Error', body: "The system does not allow LLM Assist at the moment", type: 'alert' }
-      render 'submission_and_toast' and return
-    end
     # get the service class that responsible for the model
     model_id = params[:model].to_i
     model_name = Rails.configuration.llm[:provider].keys[model_id]
@@ -175,5 +172,19 @@ class CommentsController < ApplicationController
 
     def set_sub_comment
       @comment = @submission.comments.where(id: params[:id]).take
+    end
+
+    def can_request_llm
+      # check global allow llm
+      unless GraderConfiguration['system.llm_assist']
+        @toast = {title: 'LLM Assist Error', body: "The system does not allow LLM Assist at the moment", type: 'alert' }
+        render 'submission_and_toast' and return
+      end
+
+      # in contest mode, we also check if allow_llm is true
+      if GraderConfiguration.contest_mode? && ContestProblem.from_available_contests_problems_for_user(@current_user.id).where(problem: @submission.problem).pluck(:allow_llm).select { |x| x == true }.blank?
+        @toast = {title: 'LLM Assist Error', body: "LLM Assist are not allow for this problem", type: 'alert' }
+        render 'submission_and_toast' and return
+      end
     end
 end
