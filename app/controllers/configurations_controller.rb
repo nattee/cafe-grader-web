@@ -47,11 +47,7 @@ class ConfigurationsController < ApplicationController
 
   def set_exam_right
     value = params[:value] || 'false'
-    GraderConfiguration.where(key: "right.bypass_agreement").update(value: value)
-    GraderConfiguration.where(key: "right.multiple_ip_login").update(value: value)
-    GraderConfiguration.where(key: "right.user_hall_of_fame").update(value: value)
-    GraderConfiguration.where(key: "right.user_view_submission").update(value: value)
-    GraderConfiguration.where(key: "right.view_testcase").update(value: value)
+    GraderConfiguration.set_exam_mode(value)
     redirect_to action: 'index'
   end
 
