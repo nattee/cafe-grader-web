@@ -154,13 +154,10 @@
                 -# help for group problem
                 .card.bg-warning-subtle.shadow-sm
                   .card-body
-                    %ul
-                      %li
-                        If you want to add several problem to a contest, it may be easier to bulk manage them in the
-                        = link_to 'Bulk Manage Problems', manage_problems_path
-                        page.
-                      %li
-                        A problem is available to a user only if it is globally available and enabled in the contest.
+                    :markdown
+                      * If you want to add multiple problems to a contest at once, you may find it easier to use the [Bulk Manage Problems](#{manage_problems_path}) page.
+                      * A problem is only shown to users if it's **globally available** and **enabled** in the contest.
+                      * The **LLM Assistant** can be enabled individually for each problem.
             .row
               .col-12
                 %table#problem_table.table.datatable.table-hover

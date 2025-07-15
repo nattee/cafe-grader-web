@@ -175,20 +175,6 @@ class UsersController < ApplicationController
     MailSender.send_mail(user.email, mail_subject, mail_body)
   end
 
-  # allow viewing of regular user profile only when options allow so
-  # only admins can view admins profile
-  def profile_authorization
-    #if view admins' profile, allow only admin
-    return false unless(params[:id])
-    user = User.find(params[:id])
-    return false unless user
-    return admin_authorization if user.admin?
-    return true if GraderConfiguration["right.user_view_submission"]
-
-    #finally, we allow only admin
-    admin_authorization
-  end
-
   private
     def user_params
       params.require(:user).permit(:login, :full_name, :email)

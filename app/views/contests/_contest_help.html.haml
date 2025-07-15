@@ -3,8 +3,12 @@
     .card-title
       %h4 What is a contest?
     :markdown
-      Contest is a specific time span where a set of users are challenged with a set of problems. It is designed to accomodate management of exam or competition. Contest is a lot like group where users and problems are associated with a contest. However, a contest provides a way to manage and record what happens during the contest period.
+      A contest is a defined time period during which a specific group of users is challenged with a set of problems. 
+      It is designed to support the management of exams or competitions. A contest functions similarly to a group, 
+      where users and problems are associated with it. However, contests offer additional tools to track and manage activity during the contest period.
+      For example, you can use a contest to monitor user participation, observe how scores progress throughout the contest, and record finalized scores once the contest ends.
 
-      For example, we can use contest to view if any users missing from the contest and how the score progress during the contest.It also stores the finalized score at the end of the contest.
+      Every contest must be configured with a **start** and **end time**. A contest becomes active when it is enabled and the current time falls within its defined time span.
+      When a contest is active and the system is in **Contest Mode**, only users assigned to the contest can log in, and only the problems included in the contest are visible to them.
 
-      A contest must be prepared with start and finish time. A contest is considered active when it is enabled and the current time is between the start and finish time. When a contest is active and the system mode must be set to **Contest mode**, only users in the contest can login and only the problem in the active contest are shown to the user.
+      Switching between **Normal Mode** and **Contest Mode** automatically updates various system settings to reflect the selected mode.

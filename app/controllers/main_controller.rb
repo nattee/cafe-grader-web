@@ -1,6 +1,5 @@
 class MainController < ApplicationController
   before_action :check_valid_login, except: [:login]
-  before_action :check_viewability, except: [:login]
 
   before_action :default_stimulus_controller
 
@@ -197,14 +196,6 @@ class MainController < ApplicationController
     Submission.where(user: @current_user).group(:problem_id).pluck('problem_id', 'max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
   end
 
-  def check_viewability
-    @user = User.find(session[:user_id])
-    if (!GraderConfiguration.show_tasks_to?(@user)) and
-        ((action_name=='submission') or (action_name=='submit'))
-      redirect_to action: 'list' and return
-    end
-  end
-
   def prepare_grading_result(submission)
     if GraderConfiguration.task_grading_info.has_key? submission.problem.name
       grading_info = GraderConfiguration.task_grading_info[submission.problem.name]
@@ -312,17 +303,5 @@ class MainController < ApplicationController
       exit_status: run_stat,
       memory_usage: memory_used
     }
-  end
-
-  def confirm_and_update_start_time
-    user = User.find(session[:user_id])
-    if GraderConfiguration.indv_contest_mode? and
-        GraderConfiguration['contest.confirm_indv_contest_start'] and
-        !user.contest_started?
-      redirect_to action: 'confirm_contest_start' and return
-    end
-    if not GraderConfiguration.analysis_mode?
-      user.update_start_time
-    end
   end
 end
