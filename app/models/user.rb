@@ -177,41 +177,7 @@ class User < ApplicationRecord
     user = find_by_login(login)
     if user
       return user if user.authenticated?(password)
-      if GraderConfiguration.get('chula.allow_cu_net_password') && user.authenticated_by_cucas?(password)
-        user.password = password
-        user.save
-        return user
-      end
     end
-  end
-
-  # authenticate with CU cas
-  def authenticated_by_cucas?(password)
-    appid = Rails.application.credentials.dig(:chula, :cas, :app_id)
-    appsecret = Rails.application.credentials.dig(:chula, :cas, :app_secret)
-    path = Rails.application.credentials.dig(:chula, :cas, :authen_path)
-    host = Rails.application.credentials.dig(:chula, :cas, :authen_host)
-
-    # simple call
-    begin
-      http = Net::HTTP.new(host, 443)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      result = [ ]
-      http.start do |http|
-        req = Net::HTTP::Post.new(path)
-        param = "appid=#{appid}&appsecret=#{appsecret}&username=#{login}&password=#{password}"
-        resp = http.request(req, param)
-        result = JSON.parse resp.body
-        puts result
-      end
-      return true if result["type"] == "beanStudent"
-    rescue => e
-      puts e
-      puts e.message
-      return false
-    end
-    return false
   end
 
   def authenticated?(password)
