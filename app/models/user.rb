@@ -495,6 +495,7 @@ class User < ApplicationRecord
   end
 
   # create multiple user, one per lines of input
+  # This one is used in the import of Users in the bulk manage user page
   def self.create_from_list(lines)
     error_logins = []
     first_error = nil
@@ -572,11 +573,6 @@ class User < ApplicationRecord
 
     return {error_logins: error_logins, first_error: first_error,
             created_users: User.where(id: created_user_ids), updated_users: User.where(id: updated_user_ids)}
-  end
-
-  def self.find_non_admin_with_prefix(prefix = '')
-    users = User.all
-    return users.find_all { |u| !(u.admin?) and u.login.index(prefix)==0 }
   end
 
   protected
