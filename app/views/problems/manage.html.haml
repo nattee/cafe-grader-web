@@ -15,7 +15,7 @@
         %li= r
 
 = form_with url: manage_problems_path, class: 'align-items-center',
-  data: {turbo: true, action: 'turbo:submit-end->problem#bulkManageSubmitEnd' } do |f|
+  data: {turbo: true, action: 'turbo:submit-end->problem#bulkManageSubmitEnd',controller: 'init-ui-component' } do |f|
   .card.border-primary.mb-2
     .card-header.text-bg-primary.border-primary
       Action

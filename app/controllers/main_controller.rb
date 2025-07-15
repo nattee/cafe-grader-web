@@ -3,10 +3,6 @@ class MainController < ApplicationController
 
   before_action :default_stimulus_controller
 
-  append_before_action :confirm_and_update_start_time,
-                       except: [:login,
-                                   :confirm_contest_start]
-
   # reset login, clear session
   # front page
   def login

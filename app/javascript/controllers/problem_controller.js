@@ -9,7 +9,7 @@ export default class extends rowFieldToggle(Controller) {
   connect() {
     //if (typeof page_init === "function")
     //  page_init()
-    this.element.addEventListener("turbo:frame-load", this.handleFrameHasLoaded);
+    //this.element.addEventListener("turbo:frame-load", this.handleFrameHasLoaded);
   }
 
 
@@ -31,8 +31,6 @@ export default class extends rowFieldToggle(Controller) {
     const form = this.datasetSelectFormTarget
     form.requestSubmit()
   }
-
-  // s
 
   // event handling binded with bulk manage form submit
   bulkManageSubmitEnd(event) {

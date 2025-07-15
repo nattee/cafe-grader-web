@@ -1,6 +1,6 @@
 - if hint
   = simple_form_for hint, url: problem_hint_path(@problem,hint), wrapper: :horizontal_form, multipart: true do |f|
-    .row{'data-controller': 'bs-init-tooltip'}
+    .row{'data-controller': 'init-ui-component'}
       .col-12
         %h5.my-2 Hint Detail
         = f.input :title

@@ -9,6 +9,7 @@ function msi(icon_name, className = '') {
 }
 
 function initSelect2() {
+  console.log('deprecated: should convert to Stimulus')
   $(".select2").select2({
     theme: "bootstrap-5",
   });
