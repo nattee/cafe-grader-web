@@ -49,20 +49,20 @@ class TagsController < ApplicationController
   # POST /tags/1/toggle_public
   def toggle_public
     @tag.update(public: !@tag.public)
-    @toast = {title: "Tag #{@tag.name}",body: "public updated"}
+    @toast = {title: "Tag #{@tag.name}", body: "public updated"}
     render 'turbo_toast'
   end
 
   # POST /tags/1/toggle_public
   def toggle_primary
     @tag.update(primary: !@tag.primary)
-    @toast = {title: "Tag #{@tag.name}",body: "primary updated"}
+    @toast = {title: "Tag #{@tag.name}", body: "primary updated"}
     render 'turbo_toast'
   end
 
   # DELETE /tags/1
   def destroy
-    #remove any association
+    # remove any association
     ProblemTag.where(tag_id: @tag.id).destroy_all
     @tag.destroy
     redirect_to tags_url, notice: 'Tag was successfully destroyed.'
@@ -82,6 +82,6 @@ class TagsController < ApplicationController
 
     # Only allow a trusted parameter "white list" through.
     def tag_params
-      params.require(:tag).permit(:name, :description, :public, :color)
+      params.require(:tag).permit(:name, :description, :public, :color, :kind, :param)
     end
 end

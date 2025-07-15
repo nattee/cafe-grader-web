@@ -11,25 +11,10 @@
     %tr
       %th Name
       %th Description
-      %th Public
-      %th Primary
+      %th.text-center Public
+      %th Type
       %th
       %th
-
--#
-  %tbody
-    - @tags.each do |tag|
-      %tr
-        %td
-          - if tag.color.blank?
-            .badge.text-bg-secondary= tag.name
-          - else
-            .badge{style: "background-color: #{tag.color}"}= tag.name
-        %td= tag.description
-        %td= tag.public
-        %td= link_to 'Edit', edit_tag_path(tag)
-        %td= button_to 'Destroy', tag, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-sm btn-danger'
-
 -# hidden form for tag toggle
 = form_with url: toggle_public_tag_path(-123), html: {data: {turbo: true, 'tag-target': 'togglePublicForm', action: 'turbo:submit-end->tag#resetToggleForm', 'table-reload-id': 'tag_table'}} do
   /
@@ -70,7 +55,7 @@
         {data: 'name', render: tag_render},
         {data: 'description'},
         {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'tag#toggle', checked_data_field: 'public'})},
-        {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'tag#toggle', checked_data_field: 'primary'})},
+        {data: 'kind'},
         {data: null, render: cafe.dt.render.link(`Edit`, {path: '#{edit_tag_path(-123)}'})},
         {data: null, render: cafe.dt.render.link(`Delete`, {path: '#{tag_path(-123)}', className: 'btn btn-danger btn-sm', confirm: 'Really delete the tag?', method: 'delete'}), className: 'align-middle py-1'},
       ],
