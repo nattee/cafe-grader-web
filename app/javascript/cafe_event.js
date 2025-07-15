@@ -1,17 +1,4 @@
 //global initialization
-$(document).ready(function(e) {
-  cafe.initSelect2();
-  $('[data-bs-toggle="tooltip"]').tooltip()
-
-  if ($("#editor").length > 0) {
-    let editor = ace.edit("editor");
-    editor.setTheme('ace/theme/merbivore_soft');
-    editor.getSession().setTabSize(2);
-    editor.getSession().setUseSoftTabs(true);
-  }
-
-});
-
 
 $(document).on('change', '.btn-file :file', function() {
   var input, label, numFiles;

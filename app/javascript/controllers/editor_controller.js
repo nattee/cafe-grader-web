@@ -46,6 +46,11 @@ export default class extends Controller {
     // load the ace editor
     this.editor = ace.edit(this.editorTarget.id)
 
+    // set theme * tabsize
+    this.editor.setTheme('ace/theme/merbivore_soft');
+    this.editor.getSession().setTabSize(2);
+    this.editor.getSession().setUseSoftTabs(true);
+
     // load the source code from the element
     this.editor.setValue(this.sourceTarget.value)
     this.editor.gotoLine(1)

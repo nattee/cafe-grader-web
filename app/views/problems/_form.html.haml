@@ -1,5 +1,5 @@
 - @active_problem_tab = '#general' unless %w[#general #description #hint].include? @active_problem_tab
-=turbo_frame_tag :problem, data: {controller: 'bs-init-tooltip bs-tab', turbo: true} do
+=turbo_frame_tag :problem, data: {controller: 'init-ui-component bs-tab', turbo: true} do
   %ul.nav.nav-tabs
     %li.nav-item
       %button.nav-link{data: {bs: {toggle: :tab, target: "#general"}},class: ('active' if @active_problem_tab == '#general') } General
@@ -40,7 +40,7 @@
         = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
         = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
         = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: 'Blank value means any language can be used'
-        = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%m/%Y")}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
+        = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%b/%Y"), class: 'tempus-dominus'}, wrapper: :horizontal_form, as: :string, tooltip: 'Date added is use as a main sorting order for problems in the main page'
         = form.input :available, wrapper: :horizontal_boolean, label: 'Globally Available', tooltip: 'If "Globally available" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.' , disabled: @current_user.admin? == false
         = form.input :view_testcase, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false
         = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
@@ -82,10 +82,10 @@
 
 :javascript
   function problem_form_init() {
-    let td_options = structuredClone(cafe.config.td.date)
-    td_options['localization']['format'] = 'dd/MM/yyyy'
-    new TempusDominus(document.getElementById('problem_date_added'), td_options );
-    cafe.initSelect2()
+    //let td_options = structuredClone(cafe.config.td.date)
+    //td_options['localization']['format'] = 'dd/MM/yyyy'
+    //new TempusDominus(document.getElementById('problem_date_added'), td_options );
+    //cafe.initSelect2()
   }
 
 

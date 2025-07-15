@@ -1,7 +1,7 @@
 -# require *ds* as a dataset object
 -#= turbo_frame_tag 'dataset_settings', data: {'problem-target': 'datasetSettings', 'base-url': settings_dataset_path(-123)} do
 = simple_form_for ds, wrapper: :horizontal_form, multipart: true do |f|
-  %div{'data-controller': 'bs-init-tooltip'}
+  %div{'data-controller': 'init-ui-component'}
     %input{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput'}}
     .row
       .col-12
@@ -12,5 +12,5 @@
         = f.input :score_type, collection: [['[SUM] The score is the sum of all testcase','sum'],['[GROUP MIN] The score is summation of minimum of each group','group_min']], include_blank: false, wrapper: :horizontal_select
         = f.input :evaluation_type, collection: Dataset.evaluation_types.keys, include_blank: false, wrapper: :horizontal_select
         = f.input :main_filename, collection: ds.managers.joins(:blob).pluck(:filename), include_blank: false, wrapper: :horizontal_select, disabled: ds.problem.compilation_type == 'self_contained'
-        = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: true, wrapper: :horizontal_select, disabled: ds.initializers.blank?
+        = f.input :initializer_filename, collection: ds.initializers.joins(:blob).pluck(:filename), include_blank: '-- No initializers --', wrapper: :horizontal_select, disabled: ds.initializers.blank?
         = f.button :submit, class: 'btn-primary'
