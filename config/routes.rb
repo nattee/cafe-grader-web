@@ -207,6 +207,7 @@ Rails.application.routes.draw do
   resources :submissions do
     member do
       get 'download'
+      get 'show_comments'
       post 'compiler_msg'
       get 'rejudge'
       get 'set_tag'

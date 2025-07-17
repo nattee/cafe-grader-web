@@ -119,8 +119,12 @@
       .card.mb-3.shadow-sm{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
         .card-body
           .row.align-items-center
+            .col-auto
+              %h4
+                Submission Comment
+            .col-auto
+              = link_to 'Refresh', show_comments_submission_path(@submission), data: {turbo: true}, class: 'btn btn-sm btn-outline-secondary'
             .col
-              %h4 Submission Comment
             - if @current_user.problems_for_action(:report).where(id: @submission.problem).any?
               .col-auto.text-end
                 %button.btn.btn-primary.btn-sm{data: { bs_toggle: 'modal', bs_target: '#comment-modal', action: 'submission-comment#prepareFormForCreate'}} Add Comment

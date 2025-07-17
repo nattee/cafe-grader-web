@@ -2,10 +2,10 @@ class SubmissionsController < ApplicationController
   include ProblemAuthorization
   include SubmissionAuthorization
 
-  before_action :set_submission, only: [:show, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
   before_action :check_valid_login
+  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
   before_action :set_problem, only: %i[ edit direct_edit_problem ]
-  before_action :can_view_submission, only: [:show, :download, :edit, :evaluations]
+  before_action :can_view_submission, only: [:show, :show_comments, :download, :edit, :evaluations]
   before_action :can_view_problem, only: [ :direct_edit_problem ]
 
   before_action :set_language, only: %i[ edit direct_edit_problem ]
@@ -48,6 +48,12 @@ class SubmissionsController < ApplicationController
     # LLM models for help
     # See config/llm.yml
     @models = Rails.configuration.llm[:provider].keys
+  end
+
+  # as Turbo
+  # show all comments
+  def show_comments
+    render turbo_stream: turbo_stream.update(:submission_comments, partial: 'comments', locals: {submission: @submission})
   end
 
   # on-site new submission on specific problem

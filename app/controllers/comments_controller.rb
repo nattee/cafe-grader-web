@@ -76,6 +76,7 @@ class CommentsController < ApplicationController
     end
   end
 
+  # show hint as a modal
   def show_hint
     # TODO: need to check whether the user can view this hint
     @header_msg = "Hint: #{@hint.title}"
@@ -83,7 +84,7 @@ class CommentsController < ApplicationController
     render :show
   end
 
-  # unified show for submissions comment
+  # unified show for submissions comment as a modal
   def show_for_submission
     @header_msg = "Comment: #{@comment.title}".html_safe
     if @comment.kind == 'llm_assist'
@@ -129,8 +130,7 @@ class CommentsController < ApplicationController
     render 'submission_and_toast'
   end
 
-
-  # get the llm assist via job
+  # request the llm assist via job
   def llm_assist
     # get the service class that responsible for the model
     model_id = params[:model].to_i
