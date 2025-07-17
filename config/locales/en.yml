@@ -161,6 +161,11 @@ Cheers!
       comment:
         kinds:
           hint: Hint
+      tag:
+        kinds:
+          normal: Normal tag
+          topic: Topic tag
+          llm_prompt: Prompt For LLM Assist
       evaluation:
         results:
           waiting: Judging

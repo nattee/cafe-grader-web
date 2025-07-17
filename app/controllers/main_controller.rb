@@ -32,7 +32,7 @@ class MainController < ApplicationController
 
 
     @groups = [['All', -1]] + @current_user.groups.pluck(:name, :id)
-    @primary_tags = Tag.where(primary: true)
+    @primary_tags = Tag.where(kind: 'topic')
   end
 
   def prob_group

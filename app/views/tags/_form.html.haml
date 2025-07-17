@@ -3,7 +3,10 @@
   = f.input :name
   = f.input :description
   = f.input :public
-  = f.input :primary
+  = f.input :kind, collection: Tag.kinds.keys.map { |key| [I18n.t("activerecord.attributes.tag.kinds.#{key}"), key] }, include_blank: false, wrapper: :horizontal_form
   = f.input :color, as: :color, input_html: {class: 'form-control-color'}
+  -# kind specifc params
+  - if @tag.kind == 'llm_prompt'
+    = f.input :params, label: 'LLM Prompt'
   = f.submit class: 'btn btn-primary'
   = link_to 'Back', tags_path, class: 'btn btn-outline-secondary mx-2'
