@@ -23,6 +23,7 @@ module Llm
     # required implementation from SubmissionAssist
     def execute_call(data)
       token = Llm::TokenManager.fetch_chula_genie_token
+
       unless token
         @error = "Could not obtain authentication token for ChulaGenie. Aborting."
         handle_error
@@ -110,83 +111,13 @@ module Llm
     end
 
     def build_system_content_array
-      my_custom_prompt = <<~TEXT
-        There is a programming exercise for a university student. You are
-        here to help the user (a student) doing the exercise.
+      # following text are the example prompt
+      # the actual prompt is retrieved from the llm tags via
 
-        Each exercise is a programming task in a format similar to a
-        competitive programming such as IOI, CodeForces, LeetCode problem.
-        The task describe the requirement of the program that the user
-        must write. It gives precise description of input and output that
-        the program must follow.
-
-        The program of the user is graded by running it against several
-        testcases. Each testcase is a pair of predefined input and the
-        correct answer. The input is given to the program of the user and
-        the program is allowed to run in an allotted time, usually 1 second
-        and the result of the running is used to calculate the score. This
-        process is performed on every testcase and each testcase may have
-        different verdict according to how the program performed.
-
-        If the program finished in the given time, the output of the program
-        is compared to the correct answer. If it is the same, the score is
-        given to the user. This case is represented by a verdict "P".
-        However, if the program cannot produce the output in the allotted
-        time, the program is deemed "Time Limit Exceed", represented by a
-        verdict "T". If the program produces output in time but not correct,
-        the verdict is "-" which means wrong. Finally, if the program
-        crashed during the run, the verdict is "x". Each testcase has equal
-        point and only verdict "P" awards the point to the user for that
-        testcase. The evaluation of all testcases are given as a string of
-        these verdict, for example "PPP---TTxx" means that the first 3
-        testcases, the program works correctly in the allotted time. The
-        next 3 testcases are wrong. The next 2 take too much time and the
-        for the last two testcases, the program crashed. The full score is
-        always 100.
-
-        For some problem, there might be subtasks which give additional
-        details about some of the testcases. The verdicts are always given
-        in the same order of the subtask. For example, if the first subtask
-        is 30%, the first 30% of the verdicts belongs to the testcases that
-        matches this first subtask.
-
-        The user will give you the problem statement (in PDF), the program of the user
-        and the verdicts of all testcases. Your task is to help the user
-        improve the program. You must focus on "WHERE IN THE PROGRAM IS
-        WRONG", describe the nature of the bug and give overview of how to
-        solve it. Focus on improving the understanding of the problem. Use
-        rhetoric question to guide the user.
-
-        Please pay attention to the follow point.
-
-        1. does the program read the input correctly, i.e., all values are
-        read appropriately.
-
-        2. does the program write the output in the correct format.
-
-        3. does the program use the correct algorithm that should give full
-        points.
-
-        Your response MUST always be in English. The response must be worded
-        as speak directly to the user. Be encourage. Be nice.
-
-        Finally, DO NOT write the entire code for the user. Focus on
-        giving the "recommendation" rather than writing the actual program.
-        You can write short code that makes the user understand the bug
-        or how to fix it.
-      TEXT
-
-      content_array = [
-        {
-          type: "text",
-          text: my_custom_prompt
-        },
-      ]
-
-      # pdf_attachment = build_pdf_attachment
-      # content_array << pdf_attachment if pdf_attachment
-
-      content_array
+      prompt_array = get_prompts_from_problem_tags
+      result = prompt_array.map { |prompt| {type: 'text', text: prompt} }
+      raise RuntimeError.new("There is no LLM Prompt for the problem") if result.blank?
+      return result
     end
 
     # Main logic to encode the attached problem statement PDF into a Base64 object.
@@ -213,7 +144,9 @@ module Llm
       }
     rescue => e
       # Log the error if the attachment process fails for any reason.
-      Rails.logger.error "Failed to build PDF attachment for Problem ##{problem.id}: #{e.message}"
+      msg = "Failed to build PDF attachment for Problem ##{problem.id}: #{e.message}"
+      Rails.logger.error msg
+      raise RuntimeError.new(msg)
       nil
     end
   end

@@ -1,36 +1,35 @@
-default: &default
-  adapter: mysql2
-  encoding: utf8
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: localhost
-  socket: /var/run/mysqld/mysqld.sock
-
-#change this to your setting
+# change this to your setting
 user_pass: &user_pass
   username: grader
   password: grader
 
+default: &default
+  adapter: mysql2
+  encoding: utf8mb4
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: localhost
+  socket: /var/run/mysqld/mysqld.sock
+
 
 test:
-  <<: [*user_pass,*default]
+  <<: [*user_pass]
+  adapter: mysql2
   database: grader_test
 
 production:
   primary:
-    <<: [*user_pass,*default]
+    <<: [*user_pass, *default]
     database: grader
   queue:
-    <<: [*user_pass,*default]
-    host: localhost
+    <<: [*user_pass, *default]
     database: grader_queue
     migrations_paths: db/queue_migrate
 
 development:
   primary:
-    <<: [*user_pass,*default]
-    database: grader_dev
+    <<: [*user_pass, *default]
+    database: grader
   queue:
-    <<: [*user_pass,*default]
-    host: localhost
-    database: grader_dev_queue
+    <<: [*user_pass, *default]
+    database: grader_queue
     migrations_paths: db/queue_migrate

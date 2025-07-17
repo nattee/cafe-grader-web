@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_15_155808) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_17_145356) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -54,7 +54,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_15_155808) do
     t.index ["group_id"], name: "index_announcements_on_group_id"
   end
 
-  create_table "comment_reveals", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "comment_reveals", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "comment_id", null: false
     t.bigint "user_id", null: false
     t.boolean "enabled", default: true
@@ -64,7 +64,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_15_155808) do
     t.index ["user_id"], name: "index_comment_reveals_on_user_id"
   end
 
-  create_table "comments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "comments", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.string "commentable_type", null: false
     t.bigint "commentable_id", null: false
     t.bigint "user_id", null: false
