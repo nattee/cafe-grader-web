@@ -13,7 +13,7 @@
           %span= comment.title.html_safe
         .col-auto.text-end
           = link_to 'View', submission_comment_path(@submission,comment), data: {turbo: true, turbo_stream: true}
-          - if @no_edit == false && @current_user.problems_for_action(:report).where(id: @submission.problem).any?
+          - if @no_edit == nil && @current_user.problems_for_action(:report).where(id: @submission.problem).any?
             |
             = link_to 'Edit', '#',
               data: {turbo: true, turbo_stream: true, action: 'click->submission-comment#populateFormForUpdate',
