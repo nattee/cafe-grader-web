@@ -4,6 +4,7 @@
     %title= GraderConfiguration['contest.name']
     = stylesheet_link_tag "application", :media => "all"
     = stylesheet_link_tag "tempus-dominus/tempus-dominus", :media => "all"
+    = stylesheet_link_tag "highlight/felipec.min"
     = stylesheet_link_tag "select2/select2.min", :media => "all"
     = stylesheet_link_tag "select2/select2-bootstrap-5-theme.min", :media => "all"
     = stylesheet_link_tag "datatables/datatables-new.min"
@@ -18,6 +19,11 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    /cdn
+    /<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/felipec.min.css">
+    /<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/panda-syntax-light.min.css">
+    /<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/tokyo-night-light.min.css">
   %body{ 'data-controller': "initialize #{@stimulus_controller}" }
     - unless local_assigns[:skip_header]
       = render 'layouts/header'

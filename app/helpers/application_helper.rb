@@ -233,8 +233,17 @@ TITLEBAR
   end
 
   def markdown(text)
-    markdown = RDiscount.new(text)
-    markdown.to_html.html_safe
+    # rdiscount
+    # markdown = RDiscount.new(text)
+    # markdown.to_html.html_safe
+
+    # redcarpet
+    renderer = Redcarpet::Render::HTML.new(prettify: true)
+    markdown = Redcarpet::Markdown.new(renderer, fenced_code_blocks: true)
+    markdown.render(text).html_safe
+
+    # kramdown
+    # Kramdown::Document.new(text).to_html.html_safe
   end
 
 

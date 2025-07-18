@@ -90,6 +90,7 @@ gem "simple_form"
 gem "mail"
 gem "rdiscount"  # markdown
 gem "redcarpet"  # new markdown
+gem "kramdown"
 gem "rainbow"
 
 gem "whenever", require: false

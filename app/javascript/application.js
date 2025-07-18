@@ -19,7 +19,6 @@ import "setup_bootstrap"
 import "setup_jquery"
 import "setup_ace"
 
-
 import "chart"
 
 
@@ -53,4 +52,10 @@ import 'bootbox'
 import moment from 'moment'
 window.moment = moment
 
-//import 'ace-haha'
+// -- IMPORTANT --
+// I use highligh.js CommonJS build (not the ES-Build!!!)
+// So I have to modify it by adding "export default hljs"
+// 
+// THIS HAVE TO BE DONE EVERY TIME I REDOWNLOAD THE highlighjs
+import hljs from 'highlight'
+window.hljs = hljs
