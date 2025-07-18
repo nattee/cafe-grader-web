@@ -51,17 +51,21 @@ pin "setup_jquery"
 pin "setup_bootstrap"
 pin "setup_datatables"
 pin "setup_ace"
+pin "setup_highlight"
 pin "moment" # @2.30.1
 pin "ace-builds" # @1.42.0
 
 # --- ace editor pin ---
 # pin_all_from does not works so I have to pin each individual files that is required by ace editor
 # however, we also have to import all of these as well, see setup_ace
-ace_mode = %w[c_cpp pascal ruby python java rust golang php haskell sql xml]
-ace_theme =%w[merbivore merbivore_soft dracula]
+ace_mode = %w[ c_cpp pascal ruby python java rust golang php haskell sql xml ]
+ace_theme =%w[ merbivore merbivore_soft dracula ]
 
 ace_mode.each { |mod| pin "ace-mode-#{mod}", to: "ace-noconflict/mode-#{mod}.js" }
 ace_theme.each { |theme| pin "ace-theme-#{theme}", to: "ace-noconflict/theme-#{theme}.js" }
 
 # pin "ace-theme-merbivore", to: 'ace-noconflict/theme-merbivore.js'
 # pin "ace-mode-c_cpp", to: 'ace-noconflict/mode-c_cpp.js'
+
+# pin_all_from "vendor/javascript/highlight", under: "highlight"
+pin "highlight", to: 'highlight/highlight.js', preload: true
