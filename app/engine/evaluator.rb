@@ -54,7 +54,7 @@ class Evaluator
     run_isolate('/usr/bin/chmod 0666 '+@isolate_stdout_file.to_s, output: output, meta: nil, cg: need_cg)
 
     # clean up isolate
-    cleanup_isolate
+    cleanup_isolate(need_cg)
 
     # there should be nothing in "out" because we redirect it by -o
     # save isolate's stderr to disk

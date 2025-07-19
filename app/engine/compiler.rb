@@ -64,7 +64,8 @@ class Compiler
     validate
 
     # init isolate
-    setup_isolate(@box_id, isolate_need_cg_by_lang(@sub.language.name))
+    need_cg = isolate_need_cg_by_lang(@sub.language.name)
+    setup_isolate(@box_id, need_cg)
 
     # prepare source file
     prepare_submission_directory(@sub)
@@ -100,7 +101,7 @@ class Compiler
                        output: output,
                        isolate_args: isolate_args,
                        meta: compile_meta,
-                       cg: isolate_need_cg_by_lang(@sub.language.name))
+                       cg: need_cg)
 
     # save result
     File.write(compile_stdout_file, out)
@@ -110,7 +111,7 @@ class Compiler
     run_isolate("/usr/bin/chmod -R 0777 #{@isolate_bin_path}", output: output)
 
     # clean up isolate
-    cleanup_isolate
+    cleanup_isolate(need_cg)
 
     # call language-specific checking of compilation
     compile_result = check_compile_result(out, err, status, meta)
