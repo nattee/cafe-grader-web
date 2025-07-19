@@ -73,14 +73,19 @@ class User < ApplicationRecord
   before_save :assign_default_contest
 
   # ---- problem for the users for specific action ------
-  # -- this includes logic of User.role where admin always has right ---
+  # -- this includes logic of User.role where the admin always has right ---
   # -- this respect the Group Mode
   # -- this also includes logics of mode of the grader (normal, contest, analysis)
   # -- this also consider whether the user is enabled ---
   # -- In short, PLEASE USE this function for user perspective
+  #
+  # The respect_admin, when true, will make this function return all problems for an admin
+  # The only place that respect_admin: false should be used is in the main page where the admin
+  # is treat as a normal user
+  #
   # valid action is either :submit, :report, :edit
-  def problems_for_action(action)
-    return Problem.all if admin?
+  def problems_for_action(action, respect_admin: true)
+    return Problem.all if admin? && respect_admin
     return Problem.none unless enabled?
 
     action = action.to_sym
