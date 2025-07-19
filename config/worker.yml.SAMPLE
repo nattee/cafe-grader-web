@@ -18,7 +18,7 @@ shared:
     cpp: /usr/bin/g++
     c: <%= `which gcc`.strip %>
     ruby: <%= `which ruby`.strip %>
-    python: <%= `which python3`.strip %>
+    python: /venv/grader/bin/python3
     javac: <%= `which javac`.strip %>
     java: <%= `which java`.strip %>
     digital: <%= Rails.root.join 'lib','language', 'digital','Digital.jar' %>
