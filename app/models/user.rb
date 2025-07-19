@@ -350,7 +350,7 @@ class User < ApplicationRecord
   end
 
   def last_submission_by_problem(problem)
-    Submission.where(problem: problem).order(:submitted_at).last
+    submissions.where(problem: problem).order(:submitted_at).last
   end
 
   #

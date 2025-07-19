@@ -7,6 +7,25 @@ export default class extends Controller {
     // This 'connect' method runs when the controller is attached to an element.
     // For this global override, you'd attach it to <body> or <html>.
     this.setupTurboConfirm();
+    document.body.addEventListener('copy', this.strip_zws_from_copy)
+  }
+
+  // this is a new handler for copying, it will remove all zero width space
+  strip_zws_from_copy(event) {
+    // Get the text that the browser would normally copy
+    const selectedText = window.getSelection().toString();
+
+    // Define the Zero-Width Space character (U+200B)
+    const zeroWidthSpace = '\u200b';
+
+    // Remove all instances of ZWS from the selected text
+    const cleanedText = selectedText.replace(new RegExp(zeroWidthSpace, 'g'), '');
+
+    // Prevent the default copy behavior
+    event.preventDefault();
+
+    // Set the clipboard data to the cleaned text
+    event.clipboardData.setData('text/plain', cleanedText);
   }
 
   // this setup the Turbo confirmation to use Bootstrap Modal
@@ -115,5 +134,6 @@ export default class extends Controller {
       });
     }
   }
+
 
 }

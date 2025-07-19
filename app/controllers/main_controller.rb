@@ -180,7 +180,7 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
-    @problems = @current_user.problems_for_action(:submit, respect_admin: false).with_attached_statement.with_attached_attachment.includes(:public_tags)
+    @problems = @current_user.problems_for_action(:submit, respect_admin: false).with_attached_statement.with_attached_attachment.includes(:public_tags).default_order
 
     # get latest score
     @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }
