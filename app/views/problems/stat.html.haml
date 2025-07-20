@@ -14,7 +14,7 @@
         .row.my-2
           .col-sm-6.text-end.text-secondary
             Name
-          .col-sm-6
+          .col-sm-6{data: {controller: 'problem-name'}}
             = render partial: 'problem_name', locals: {problem: @problem}
             - if @current_user.admin?
               = link_to 'Edit', edit_problem_path(@problem)

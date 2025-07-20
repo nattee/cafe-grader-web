@@ -17,7 +17,7 @@
           %div#editor{ style: "font-size: 14px; height: 400px; border-radius:5px;", data: {editor_mode: :view, editor_target: :editor, language: @submission.language.pretty_name} }
     .col-lg-5
       -# Submission detail card
-      .card.mb-3.shadow-sm
+      .card.mb-3.shadow-sm{data: {controller: 'problem-name'}}
         .card-body
           %h4 Submission Detail
           .row.mb-2

@@ -16,6 +16,6 @@
       %th Best Score
       %th.all Latest Results
       %th.all
-  %tbody
+  %tbody{data: {controller: 'problem-name'}}
     - @numbering = 1
     = render partial: 'problem', collection: problems
