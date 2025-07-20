@@ -18,8 +18,6 @@
 -# hidden form for tag toggle
 = form_with url: toggle_public_tag_path(-123), html: {data: {turbo: true, 'tag-target': 'togglePublicForm', action: 'turbo:submit-end->tag#resetToggleForm', 'table-reload-id': 'tag_table'}} do
   /
-= form_with url: toggle_primary_tag_path(-123), html: {data: {turbo: true, 'tag-target': 'togglePrimaryForm', action: 'turbo:submit-end->tag#resetToggleForm', 'table-reload-id': 'tag_table'}} do
-  /
 
 %br
 

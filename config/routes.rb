@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  resources :languages, except: [:show]
 
   resources :tags do
     post :toggle_public, on: :member
@@ -8,7 +9,7 @@ Rails.application.routes.draw do
 
   get "sources/direct_edit"
 
-  root :to => 'main#login'
+  root to: 'main#login'
 
   # logins
   match 'login/login',  to: 'login#login', via: [:get, :post]

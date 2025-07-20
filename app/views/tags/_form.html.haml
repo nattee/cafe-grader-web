@@ -2,7 +2,7 @@
   = f.error_notification
   = f.input :name
   = f.input :description
-  = f.input :public
+  = f.input :public, wrapper: :horizontal_boolean
   = f.input :kind, collection: Tag.kinds.keys.map { |key| [I18n.t("activerecord.attributes.tag.kinds.#{key}"), key] }, include_blank: false, wrapper: :horizontal_form
   = f.input :color, as: :color, input_html: {class: 'form-control-color'}
   -# kind specifc params
