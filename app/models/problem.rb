@@ -52,10 +52,14 @@ class Problem < ApplicationRecord
   # -- scope --
   scope :available, -> { where(available: true) }
 
+  # These group_xxx scopes ALWAYS take groups into account
+  # REGARDLESS of the group mode configuration
+  # It also NEGLECT admin privileges, i.e., you won't get any special treatment if you are an admin
+  #
+  # Please use User.problems_for_action if you want config and admin to be taken into account
+
   # return problems that is enabled and is in an enabled group that has the given user
   # this does not check whether the user is enabled
-  #
-  # It always considers groups, REGARDLESS of the group mode configuration
   #
   # please use User#problems_for_action when we want to consider everything
   scope :group_submittable_by_user, ->(user_id) {
@@ -87,7 +91,13 @@ class Problem < ApplicationRecord
       .distinct(:id)                            # get distinct
   }
 
-  # This returns all Problem that is submittable by the user
+  # These contest_xxx scope ALWAYS take contest into account
+  # REGARDLESS of the contest mode configuration
+  # It also NEGLECT admin privileges, i.e., you won't get any special treatment if you are an admin
+  #
+  # Please use User.problems_for_action if you want config and admin to be taken into account
+  #
+  # This returns all Problem that is submittable by the user in a contest
   scope :contests_problems_for_user, ->(user_id) {
     now = Time.zone.now
     joins(contests_problems: {contest: :contests_users})

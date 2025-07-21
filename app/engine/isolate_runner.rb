@@ -40,7 +40,7 @@ module IsolateRunner
   end
 
   def cleanup_isolate(cg = false)
-    cmd = "#{@isolate_cmd} --cleanup -b #{@box_id} #{--cg if cg}"
+    cmd = "#{@isolate_cmd} --cleanup -b #{@box_id} #{'--cg' if cg}"
     judge_log "ISOLATE cleanup command: #{cmd}", Logger::DEBUG
     system(cmd)
   end

@@ -1,0 +1,44 @@
+.row.mb-3
+  .col-md-4
+    %h1 Languages
+    = link_to 'New Language', new_language_path, class: 'btn btn-success'
+  .col-md-8
+
+%table#table.table.table-hover
+  %thead
+    %tr
+      %th Name
+      %th Pretty Name
+      %th Default Ext
+      %th Other Ext
+      %th
+      %th
+  %tbody
+    - @languages.each do |language|
+      %tr
+        %td= language.name
+        %td= language.pretty_name
+        %td= language.ext
+        %td= language.common_ext
+        %td= link_to 'Edit', edit_language_path(language)
+        %td= link_to 'Destroy', language, method: :delete, class: 'btn btn-danger btn-sm', data: { turbo_confirm: 'Are you sure?' }
+
+.mb-3
+
+:javascript
+
+  function init_page() {
+    config = {
+      paging: false,
+      responsive: true,
+      destroy: true,
+      columnDefs: [{orderable: false, targets: [4,5]} ],
+    }
+
+    // init the table
+    table = $('#table').DataTable(config)
+  }
+
+  window.addEventListener("load", function() {
+    init_page();
+  })

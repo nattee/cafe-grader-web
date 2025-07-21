@@ -73,14 +73,14 @@ class SubmissionsController < ApplicationController
   def get_latest_submission_status
     @problem = Problem.find(params[:pid])
     @submission = @current_user.last_submission_by_problem(@problem)
-    @delay_value = (Time.zone.now - @submission.submitted_at).clamp(1, 10).to_i * 1000
+    @delay_value = @submission.nil? ? -1 : (Time.zone.now - @submission.submitted_at).clamp(1, 10).to_i * 1000
     render turbo_stream: [
       turbo_stream.update("latest_status",
                            partial: 'submission_short',
                            locals: {submission: @submission,
-                                    refresh_if_not_graded: true,
+                                    refresh_if_not_graded: @delay_value > 0,
                                     show_id: true,
-                                    sub_count: @submission.number,
+                                    sub_count: @submission&.number,
                                     show_button: false })
     ]
   end

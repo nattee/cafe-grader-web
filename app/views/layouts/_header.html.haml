@@ -60,11 +60,12 @@
                 - if @current_user.admin?
                   %li
                     %hr.dropdown-divider
-                  %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :grader_configuration)
+                  %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :configurations)
                 %li
                   %hr.dropdown-divider
                 %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites) if @current_user.admin?
                 %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
+                %li= link_to 'Languages', languages_path, class: 'dropdown-item'+active_class_when(controller: :languages) if @current_user.admin?
                 -#
           / report
           - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
