@@ -12,18 +12,22 @@
         %h4 Groups
         .card.bg-warning-subtle
           .card-body
-            Add / Remove user from the group in the management page of the group by clicking on the group name.
+            Add/Remove user from the group in the management page of the group by clicking on the group name.
         %table.table
           %thead
             %tr
               %th Group
               %th Description
+              %th Enabled
               %th Role
           %tbody
             - @user.groups_users.each do |gu|
               %tr
                 %td= link_to gu.group.name, group_path(gu.group)
                 %td= gu.group.description
+                %td
+                  - if gu.group.enabled
+                    %span.badge.text-bg-success Yes
+                  - else
+                    %span.badge.text-bg-danger No
                 %td= gu.role
-    
-
