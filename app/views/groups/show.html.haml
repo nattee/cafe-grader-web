@@ -5,7 +5,7 @@
   ]
 .row
   .col-md-6
-    .card.shadow-sm.my-2
+    .card.shadow-sm
       .card-body
         %h4 Group details
         .row.mb-3
@@ -237,11 +237,12 @@
       columns: [ 
         {data: 'name'},
         {data: 'full_name'},
+        {data: 'date_added'},
         {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'problem_id', render: cafe.dt.render.button(`${cafe.msi('delete','md-18')} Remove`,{element_type: 'link',  className: 'link-danger', action: 'group#postProblemAction', command: 'remove', confirm: 'Remove problem from group?'})},
       ],
       columnDefs: [{orderable: false, targets: [2,3]} ],
-      order: [[0,'asc']],
+      order: [[2,'desc']],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

@@ -10,7 +10,7 @@ class GroupsController < ApplicationController
   before_action :set_problem, only: [:do_problem]
   before_action :group_editor_authorization
 
-  #only for member action
+  # only for member action
   before_action :can_edit_group_authorization, only: GroupMemberAction
 
   # GET /groups
@@ -23,11 +23,11 @@ class GroupsController < ApplicationController
   end
 
   def show_users_query
-    render json: {data: @group.groups_users.joins(:user).select(:id,:user_id,:role,:enabled, :full_name, :login, :remark)}
+    render json: {data: @group.groups_users.joins(:user).select(:id, :user_id, :role, :enabled, :full_name, :login, :remark)}
   end
 
   def show_problems_query
-    render json: {data: @group.groups_problems.joins(:problem).select(:id,:problem_id,:enabled, :name, :full_name, :date_added)}
+    render json: {data: @group.groups_problems.joins(:problem).select(:id, :problem_id, :enabled, :name, :full_name, :date_added).order(date_added: :desc).order(:name)}
   end
 
   # GET /groups/new
@@ -71,7 +71,7 @@ class GroupsController < ApplicationController
 
   def toggle
     @group.update(enabled:  !@group.enabled?)
-    @toast = {title: "Group #{@group.name}",body: "Enabled updated"}
+    @toast = {title: "Group #{@group.name}", body: "Enabled updated"}
     render 'toggle'
   end
 
@@ -149,7 +149,7 @@ class GroupsController < ApplicationController
 
   def add_user
     begin
-      users = User.where(id: params[:user_ids]) #this find multiple users
+      users = User.where(id: params[:user_ids]) # this find multiple users
       @toast = @group.add_users_skip_existing(users)
       render 'turbo_toast'
     rescue => e
@@ -168,9 +168,9 @@ class GroupsController < ApplicationController
   end
 
   def add_problem
-    #find return arrays of objecs
+    # find return arrays of objecs
     begin
-      problems = Problem.find(params[:problem_ids]) #this find multiple problems
+      problems = Problem.find(params[:problem_ids]) # this find multiple problems
       @group.problems << problems
       @toast = {title: "Group #{@group.name}", body: "#{problems.count} problem(s) were added."}
       render 'turbo_toast'
@@ -211,7 +211,7 @@ class GroupsController < ApplicationController
     def can_edit_group_authorization
       return true if @current_user.admin?
       return true if @current_user.groups_for_action(:edit).where(id: @group).any?
-      unauthorized_redirect(msg: "You cannot manage group #{@group.name}.");
+      unauthorized_redirect(msg: "You cannot manage group #{@group.name}.")
     end
 
     # Only allow a trusted parameter "white list" through.
