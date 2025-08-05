@@ -2,10 +2,10 @@ class Group < ApplicationRecord
   # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
-  has_many :groups_problems, class_name: 'GroupProblem'
+  has_many :groups_problems, class_name: 'GroupProblem', dependent: :destroy
   has_many :problems, :through => :groups_problems
 
-  has_many :groups_users, class_name: 'GroupUser'
+  has_many :groups_users, class_name: 'GroupUser', dependent: :destroy
   has_many :users, :through => :groups_users
 
   scope :editable_by_user, -> (user_id) {
