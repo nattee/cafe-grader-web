@@ -8,6 +8,8 @@ class GroupsController < ApplicationController
   before_action :set_group, only: GroupMemberAction
   before_action :set_user, only: [:do_user]
   before_action :set_problem, only: [:do_problem]
+
+  before_action :check_valid_login
   before_action :group_editor_authorization
 
   # only for member action

@@ -1,8 +1,8 @@
 %h1 Logins detail
 
-.row
-  .col-md-4
-    .card.bg-warning-subtle.mt-2
+.row{data: { controller: 'init-ui-component'}}
+  .col-md-4.mb-3
+    .card.bg-warning-subtle
       .card-body
         .card-title
           %h4
@@ -15,9 +15,9 @@
             to reload the data.
           %li Detail tab shows each logins separately.
           %li Summary tab shows logins summary of each user.
-  .col-md-4
+  .col-md-4.mb-3
     = render partial: 'shared/date_filter'
-  .col-md-4
+  .col-md-4.mb-3
     = render partial: 'user_select'
 
 .row.mb-3

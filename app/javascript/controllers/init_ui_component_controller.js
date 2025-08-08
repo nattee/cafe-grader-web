@@ -10,7 +10,6 @@ export default class extends Controller {
   }
 
   handleFrameHasLoaded = () => {
-    console.log('hahaha')
     this.initializeTooltips();
     this.initializeSelect2();
     this.initializeTempusDominus();
