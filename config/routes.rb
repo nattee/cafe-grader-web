@@ -300,6 +300,10 @@ Rails.application.routes.draw do
       post 'edit_job_type'
       post 'set_enabled/:enabled', as: :set_enabled, action: :set_enabled
     end
+    collection do
+      get 'queues'
+      post 'queues_query'
+    end
   end
 
 

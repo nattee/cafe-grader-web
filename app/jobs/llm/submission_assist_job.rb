@@ -23,6 +23,10 @@ module Llm
       raise e # Re-raise to let the job runner mark it as failed.
     end
 
+    def display_arguments
+      return 'xx'
+    end
+
     private
 
     # This is the "template method" that all subclasses MUST implement.
