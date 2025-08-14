@@ -1,6 +1,6 @@
 %h1 Best Score
 
-= form_with url: show_max_score_report_path, data: {turbo: true} do |f|
+= form_with url: show_max_score_report_path, data: {turbo: true, controller: 'init-ui-component'} do |f|
   .row
     .col-lg-4
       = render partial: 'problem_select'

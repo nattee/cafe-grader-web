@@ -103,7 +103,7 @@ class Grader
           # we don't know how to process this job, report so
           @job.report({status: :error, result_description: 'grader does not have handler for this job_type'})
         end
-      rescue GraderError => ge
+      rescue GraderError, ActiveRecord::RecordNotFound => ge
         # When the job raise an error, log the error and set
         # the main comment to the error message (so that the user can see it)
         judge_log Rainbow('(GraderError)').bg(COLOR_ERROR).color(:yellow) + " " + ge.message, Logger::ERROR

@@ -1,7 +1,7 @@
 %h1 Submissions detail
 
 = form_with url: '#', id: 'filter_form' do |f|
-  .row
+  .row{data: {controller: 'init-ui-component'}}
     .col-lg-4.mt-2
       = render partial: 'problem_select', locals: {all: true}
     .col-lg-4.mt-2

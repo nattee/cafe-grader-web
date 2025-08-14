@@ -1,4 +1,4 @@
-%h2 Contest management
+%h3 Contest management
 .mb-3
   [
   = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1'
@@ -27,7 +27,7 @@
           * The site must be in the **Contest Mode** for a contest to be displayed to users
           * A contest is shown to users only if it is enabled and the current time falls within its start and stop time range.
           * When a contest is **finalized**, users cannot submit to the contest and the contests can no longer be modified.
-.row.my-3{data: {controller: 'contest'}}
+.row.my-3{data: {controller: 'contest init-ui-component'}}
   .col-12
     .card.shadow-sm
       .card-body

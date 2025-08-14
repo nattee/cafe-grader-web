@@ -1,0 +1,11 @@
+%h1 Solid Queue (Latest jobs)
+
+%div{ data: { turbo: true,
+      controller: 'datatables--init init-ui-component',
+      'datatables--init-config-name-value': 'solidQueueJob',
+      'datatables--init-ajax-url-value': queues_query_grader_processes_path
+    }
+  }
+  %table#table
+    %thead
+      %tr
