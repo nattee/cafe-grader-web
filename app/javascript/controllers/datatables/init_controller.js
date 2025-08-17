@@ -27,8 +27,6 @@ export default class extends Controller {
     }
 
     // include ajax url, if any
-    console.log('xxx')
-    console.log(this.hasAjaxUrlValue)
     let finalConfig = { ...config }
     if (this.hasAjaxUrlValue && typeof config.ajax === 'object') {
       // merge the url to ajax option using Stimulus controller value

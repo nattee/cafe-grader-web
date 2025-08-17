@@ -54,7 +54,8 @@ class GradersController < ApplicationController
       jobs_scope = jobs_scope
     end
 
-    @jobs = jobs_scope.order(created_at: :desc).first(10)
+    raw_jobs = jobs_scope.order(created_at: :desc).first(100)
+    @jobs = raw_jobs.map { |job| SubmissionAssistJobPresenter.new(job) }
   end
 
   private

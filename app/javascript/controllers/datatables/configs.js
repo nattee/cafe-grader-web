@@ -1,9 +1,5 @@
 import { columns } from 'controllers/datatables/columns'
 
-console.log('columns')
-window.xxx = columns
-console.log(columns)
-
 const baseConfig = {
   responsive: true,
   processing: true,
@@ -30,11 +26,14 @@ export const configs = {
   default: { ...baseConfig },
   solidQueueJob: {
     ...baseConfig,
+    pageLength: 25,
     columns: [
       columns.id,
       columns.solidQueueJob.queue,
       columns.solidQueueJob.class,
       columns.solidQueueJob.status,
+      columns.solidQueueJob.submissionId,
+      columns.solidQueueJob.detail,
       columns.solidQueueJob.createdAt,
     ],
     ajax: { ...baseAjax }, //use spread so that it is copied
