@@ -178,7 +178,7 @@
       },
       rowId: 'id',
       columns: [ 
-        {data: 'login'},
+        {data: 'login', render: function(data,type,row,meta) { return `<a href="/user_admin/${row['user_id']}/stat" data-turbo="false"> ${data}</a>` } },
         {data: 'full_name'},
         {data: 'role'},
         {data: 'remark'},
@@ -234,15 +234,16 @@
         },
       },
       rowId: 'id',
-      columns: [ 
-        {data: 'name'},
+      columns: [
+        {data: 'name', render: function(data,type,row,meta) { return `<a href="/problems/${row['id']}/edit" data-turbo="false"> ${data}</a>` } },
         {data: 'full_name'},
+        {data: 'tags', render: cafe.dt.render_factory.badge()},
         {data: 'date_added'},
         {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'problem_id', render: cafe.dt.render.button(`${cafe.msi('delete','md-18')} Remove`,{element_type: 'link',  className: 'link-danger', action: 'group#postProblemAction', command: 'remove', confirm: 'Remove problem from group?'})},
       ],
       columnDefs: [{orderable: false, targets: [2,3]} ],
-      order: [[2,'desc']],
+      order: [[3,'desc']],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()
