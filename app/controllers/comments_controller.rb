@@ -164,6 +164,7 @@ class CommentsController < ApplicationController
 
     def set_submission
       @submission = Submission.find(params[:submission_id])
+      @problem = @submission.problem
     end
 
     def set_hint
