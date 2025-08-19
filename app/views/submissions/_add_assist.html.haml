@@ -2,7 +2,7 @@
   which is an array of llm names, e.g., ["gemini-2.5-pro", "Claude-3.5-Sonnet"]
 - models.each do |model|
   .row
-    - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: 0,model: model}
+    - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: 10,model: model}
     - confirmation = {title: "Confirm Submission for AI Help", body: body_text}
     .col
       AI help by

@@ -55,7 +55,7 @@ class MainController < ApplicationController
 
     # check if the problem is submittable
     # the problems_for_action already include the logic for admin privilege
-    unless @current_user.problems_for_action(:submit).where(id: problem).any?
+    unless @current_user.problems_for_action(:submit).where(id: problem).any? || @current_user.problems_for_action(:edit).where(id: problem).any?
       redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available for you" and return
     end
 
@@ -198,15 +198,23 @@ class MainController < ApplicationController
 
     # calculate ai assist used for the problems
     Submission.joins(:comments)
-      .where(problem: @problems,user: @current_user)
+      .where(problem: @problems, user: @current_user)
       .group(:problem_id)
-      .count.each { |prob_id,count| @prob_submissions[prob_id][:ai_assist] = count}
+      .select('problem_id', 'count(comments.id) as count', 'sum(comments.cost) as cost')
+      .each do |row|
+        @prob_submissions[row.problem_id][:ai_assist_count] = row.count
+        @prob_submissions[row.problem_id][:ai_assist_cost] = row.cost
+      end
 
     # calculate hint acquired
     Problem.joins(comments: :comment_reveals)
       .where(id: @problems.ids, comment_reveals: {user: @current_user})
       .group(:id)
-      .count.each { |prob_id,count| @prob_submissions[prob_id][:hint] = count}
+      .select('problems.id', 'count(comments.id) as count', 'sum(comments.cost) as cost')
+      .each do |row|
+        @prob_submissions[row.id][:hint_count] = row.count
+        @prob_submissions[row.id][:hint_cost] = row.cost
+      end
   end
 
   def prepare_grading_result(submission)
