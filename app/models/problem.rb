@@ -212,12 +212,14 @@ class Problem < ApplicationRecord
     "[#{name}] #{full_name}"
   end
 
+  # ------------------------
   # -- HINT section begin --
+  # ------------------------
   def hints
     comments.where(kind: :hint)
   end
 
-  # indicate weather this problem has a helper
+  # indicate weather this problem has a helper (hints, comments)
   def helpers?
     hints.any?
   end
@@ -255,11 +257,17 @@ class Problem < ApplicationRecord
     end
   end
 
+  def helpers_cost(user,contest)
+    Comment.cost_summary_for(user,contest)
+  end
+
   # return the enabled comments of the specified *kind* that are revealed by *user*
   def revealed_comments_for_user(user, kind)
     commens.joins(:comment_reveals).where(enabled: true, comment_reveals: {user: user, kind: kind})
   end
+  # ----------------------
   # -- HINT section end --
+  # ----------------------
 
   # ids_string is something like ['1','3','7']
   # which correspond to the submitted value from  select2 multiple selection

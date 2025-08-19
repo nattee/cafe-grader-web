@@ -10,7 +10,7 @@ class Submission < ApplicationRecord
   has_many :evaluations, dependent: :destroy
 
   # comments
-  has_many :comments, as: :commentable
+  has_many :comments, as: :commentable, dependent: :destroy
   # Allows you to get all comment reveals for comments belonging to this submission
   has_many :comment_reveals, through: :comments
 
