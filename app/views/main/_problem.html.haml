@@ -21,6 +21,7 @@
     - ai_count = @prob_submissions[problem.id][:ai_assist_count]
     - ai_cost = @prob_submissions[problem.id][:ai_assist_cost] || 0
     - sum_cost += ai_cost
+    - sum_cost = [100, sum_cost].min
     - text << "AI Assist: #{ai_count}" if ai_count
     -# display progress bar
     - adjusted_score = [100 - sum_cost, score].min
