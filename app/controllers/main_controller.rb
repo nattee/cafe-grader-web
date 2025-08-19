@@ -180,16 +180,33 @@ class MainController < ApplicationController
   end
 
   def prepare_list_information
+    # list of problems for this user, considering the current mode
     @problems = @current_user.problems_for_action(:submit, respect_admin: false).with_attached_statement.with_attached_attachment.includes(:public_tags).default_order
 
-    # get latest score
+    # calculate latest submission & submission count
     @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }
     last_sub_ids = Submission.where(user: @current_user, problem: @problems).group(:problem_id).pluck('max(id)')
     Submission.where(id: last_sub_ids).each do |sub|
       @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
     end
 
-    Submission.where(user: @current_user).group(:problem_id).pluck('problem_id', 'max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
+    # calculate max score
+    Submission
+      .where(user: @current_user)
+      .group(:problem_id)
+      .pluck('problem_id', 'max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
+
+    # calculate ai assist used for the problems
+    Submission.joins(:comments)
+      .where(problem: @problems,user: @current_user)
+      .group(:problem_id)
+      .count.each { |prob_id,count| @prob_submissions[prob_id][:ai_assist] = count}
+
+    # calculate hint acquired
+    Problem.joins(comments: :comment_reveals)
+      .where(id: @problems.ids, comment_reveals: {user: @current_user})
+      .group(:id)
+      .count.each { |prob_id,count| @prob_submissions[prob_id][:hint] = count}
   end
 
   def prepare_grading_result(submission)
