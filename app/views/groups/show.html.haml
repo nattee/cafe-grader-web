@@ -239,6 +239,7 @@
         {data: 'full_name'},
         {data: 'tags', render: cafe.dt.render_factory.badge()},
         {data: 'date_added'},
+        {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
         {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'group#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
         {data: 'problem_id', render: cafe.dt.render.button(`${cafe.msi('delete','md-18')} Remove`,{element_type: 'link',  className: 'link-danger', action: 'group#postProblemAction', command: 'remove', confirm: 'Remove problem from group?'})},
       ],
