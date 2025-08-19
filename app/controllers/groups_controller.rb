@@ -30,11 +30,9 @@ class GroupsController < ApplicationController
 
   def show_problems_query
     # render json: {data: @group.groups_problems.joins(:problem).select(:id, :problem_id, :enabled, :name, :full_name, :date_added).order(date_added: :desc).order(:name)}
-    @problems = @group.problems.joins(:groups_problems).includes(:tags)
+    @problems = Problem.joins(:groups_problems).where('groups_problems.group': @group).includes(:tags)
       .select(:id, 'groups_problems.enabled', :name, :full_name, :date_added, :difficulty, :permitted_lang, :available, :view_testcase)
       .order(date_added: :desc).order(:name)
-
-    render 'problems/manage_problem'
   end
 
   # GET /groups/new
