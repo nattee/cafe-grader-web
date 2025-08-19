@@ -9,18 +9,30 @@
   %td
     = render partial: 'problems/problem_name', locals: {problem: problem}
   -# score column
-  - score = @prob_submissions[problem.id][:max_score];
+  - score = @prob_submissions[problem.id][:max_score] || 0;
   - cc =  score == 100 ? 'bg-success' : 'bg-warning text-dark'
   %td{style: "width: 12em; vertical-align: middle", 'data-order': score || 0}
-    .progress
-      .progress-bar{style: "width: #{score}%", class: cc}
-        = number_with_precision score, precision: 2
     - text = []
-    - hint_count = @prob_submissions[problem.id][:hint]
+    - sum_cost = 0
+    - hint_count = @prob_submissions[problem.id][:hint_count]
+    - hint_cost = @prob_submissions[problem.id][:hint_cost] || 0
     - text << "Hint: #{hint_count}" if hint_count
-    - ai_count = @prob_submissions[problem.id][:ai_assist]
+    - sum_cost +=  hint_cost
+    - ai_count = @prob_submissions[problem.id][:ai_assist_count]
+    - ai_cost = @prob_submissions[problem.id][:ai_assist_cost] || 0
+    - sum_cost += ai_cost
     - text << "AI Assist: #{ai_count}" if ai_count
-    = text.join(', ')
+    -# display progress bar
+    - adjusted_score = [100 - sum_cost, score].min
+    .progress
+      .progress-bar{style: "width: #{adjusted_score}%", class: cc}
+        = number_with_precision adjusted_score, precision: 2
+      .progress-bar{style: "width: #{score - adjusted_score}%", class: 'bg-danger'}
+        = number_with_precision score - adjusted_score, precision: 2
+    %div
+      %small= text.join(', ')
+    %div
+      %small= "Full score reduced by #{sum_cost}" if sum_cost > 0
   -# last submission column
   %td
     = render partial: 'submission_short',
