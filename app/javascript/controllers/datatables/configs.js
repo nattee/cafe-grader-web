@@ -33,6 +33,8 @@ export const configs = {
       columns.solidQueueJob.class,
       columns.solidQueueJob.status,
       columns.solidQueueJob.submissionId,
+      columns.solidQueueJob.user,
+      columns.solidQueueJob.problem,
       columns.solidQueueJob.detail,
       columns.solidQueueJob.createdAt,
     ],

@@ -1,22 +1,31 @@
 class SubmissionAssistJobPresenter < SimpleDelegator
   # Use SimpleDelegator to forward all standard method calls to the original job object
 
+  attr_reader :user_name, :problem_name
+
   def initialize(job)
     # The __setobj__ method is from SimpleDelegator
     __setobj__(job)
     @job_class = class_name.safe_constantize
     @arguments = job.arguments['arguments']
+
+    # initialize submission for submission based job
+    if @job_class && @job_class < Llm::SubmissionAssistJob && arguments.present?
+      gid_string = @arguments.first.values.last
+      if gid_string.is_a?(String)
+        @submission = GlobalID::Locator.locate(gid_string) rescue nil
+      end
+
+      if @submission
+        @user_name = @submission.user.full_name
+        @problem_name = @submission.problem.full_name
+      end
+    end
   end
 
   # for SubmissionAssistJob, the first argument is a submission
   def submission_id
-    return nil unless @job_class && @job_class < Llm::SubmissionAssistJob && arguments.present?
-
-    gid_string = @arguments.first.values.last
-    if gid_string.is_a?(String)
-      submission = GlobalID::Locator.locate(gid_string)
-      submission&.id
-    end
+    @submission&.id
   end
 
   # You can also wrap other logic here
@@ -32,9 +41,12 @@ class SubmissionAssistJobPresenter < SimpleDelegator
   def detail_html
     h = detail
     return '' if h.empty?
+
+    # add model detail
     html = <<~HTML
       <strong>Model:</strong> #{h['model']}
     HTML
+
     return html.html_safe
   end
 
