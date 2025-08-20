@@ -7,6 +7,8 @@ export const columns = {
   solidQueueJob: {
     queue: { data: 'queue_name', title: 'Queue'},
     class: { data: 'class_name', title: 'Job Type'},
+    problem: { data: 'problem_name', title: 'Problem'},
+    user: { data: 'user_name', title: 'User'},
     status: { data: 'status', title: 'Status'},
     submissionId: { data: 'submission_id', title: 'Submission', render: function(data,type,row,meta) {
       if (data === null) return ''
