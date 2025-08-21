@@ -26,7 +26,13 @@
     = render partial: 'contest_help'
 
 .card.shadow-sm{data: {controller: 'contest'}}
-  .card-body
+  .card-body{data: {
+      controller: 'datatables--init init-ui-component',
+      'datatables--init-config-name-value': 'contestIndex',
+      'datatables--init-ajax-url-value': index_query_contests_path,
+      action: 'datatable:reload@window->datatables--init#reload',
+    }
+  }
     %h3 Contests
     %p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
     %table#contest_table.table.table-striped
@@ -102,6 +108,6 @@
       },
     }
 
-    table = $('#contest_table').DataTable(table_config)
+    table = $('#contest_tablexxx').DataTable(table_config)
 
   })

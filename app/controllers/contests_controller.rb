@@ -301,6 +301,9 @@ class ContestsController < ApplicationController
   # DELETE /contests/1.xml
   def destroy
     @contest.destroy
+
+    render turbo_stream: turbo_stream.append('toast-area', partial: 'event_dispatcher', 
+      locals: {event_name: 'datatable:reload', event_detail: { "h": 1} } )
   end
 
   def set_system_mode
