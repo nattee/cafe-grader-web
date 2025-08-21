@@ -135,7 +135,10 @@ class ContestsController < ApplicationController
     else
       @toast[:body] = "Unknown command"
     end
-    render 'turbo_toast'
+    render turbo_stream: [
+      turbo_stream.append('toast-area', partial: 'toast', locals: {toast: @toast}),
+      turbo_stream.append('toast-area', partial: 'event_dispatcher', locals: {event_name: 'datatable:reload', event_detail: { "h": 1}}),
+    ]
   end
 
   # --- users & problems ---
@@ -302,8 +305,8 @@ class ContestsController < ApplicationController
   def destroy
     @contest.destroy
 
-    render turbo_stream: turbo_stream.append('toast-area', partial: 'event_dispatcher', 
-      locals: {event_name: 'datatable:reload', event_detail: { "h": 1} } )
+    render turbo_stream: turbo_stream.append('js-response', partial: 'event_dispatcher',
+      locals: {event_name: 'datatable:reload', event_detail: { "h": 1}})
   end
 
   def set_system_mode

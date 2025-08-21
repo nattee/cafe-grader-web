@@ -47,7 +47,7 @@ export default class extends Controller {
 
   // this functions 
   reload(event) {
-    //console.log("Received datatable:reload event. Payload:", event.detail)
+    // console.log("Received datatable:reload event. Payload:", event.detail)
 
     this.tables.forEach(table => {
       // 'null, false' reloads data from the server but keeps the user on the current page

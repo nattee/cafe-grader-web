@@ -91,10 +91,6 @@ export default class extends Controller {
     form.requestSubmit()
   }
 
-  afterContestAction(event) {
-    $("#contest_table").DataTable().ajax.reload()
-  }
-
   tabChange(event) {
     const tabButton = event.target
     if (tabButton.dataset.tableInit == "no") {
