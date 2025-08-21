@@ -96,6 +96,7 @@ class ContestsController < ApplicationController
   # POST /contests.xml
   def create
     @contest = Contest.new(contests_params)
+    @contest.add_users(User.where(id: @current_user.id), role: 'editor')
 
     respond_to do |format|
       if @contest.save
@@ -300,11 +301,6 @@ class ContestsController < ApplicationController
   # DELETE /contests/1.xml
   def destroy
     @contest.destroy
-
-    respond_to do |format|
-      format.html { redirect_to(contests_url) }
-      format.xml  { head :ok }
-    end
   end
 
   def set_system_mode

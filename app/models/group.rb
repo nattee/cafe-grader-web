@@ -22,6 +22,10 @@ class Group < ApplicationRecord
 
   scope :enabled, -> { where(enabled: true) }
 
+  # validates the name, (also using custom validator)
+  validates :name, presence: true, uniqueness: true, name_format: true
+
+
   # has_and_belongs_to_many :problems
   # has_and_belongs_to_many :users
 
