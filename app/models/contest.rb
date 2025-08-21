@@ -7,11 +7,12 @@ class Contest < ApplicationRecord
   scope :enabled, -> { where(enabled: true) }
   # scope :active, -> (time = Time.zone.now) { where(enabled: true).where('start <= ? and stop >= ?',time,time)}
 
-  scope :editable_by_user, -> (user_id) {
+
+  scope :editable_by_user, ->(user_id) {
     joins(:contests_users).where(contests_users: { user_id: user_id, enabled: true, role: 'editor' })
   }
 
-  scope :submittable_by_user, -> (user_id) {
+  scope :submittable_by_user, ->(user_id) {
     joins(:contests_users).where(contests_users: { user_id: user_id, enabled: true })
   }
 
@@ -21,6 +22,9 @@ class Contest < ApplicationRecord
   # need pluralize helper function
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
+  # validates the name, (also using custom validator)
+  validates :name, presence: true, uniqueness: true, name_format: true
+
   # return an ActiveRecord relation of users that is submittable for this con
   def submittable_users(current_time = Time.zone.now)
     return User.none unless enabled?
@@ -28,7 +32,7 @@ class Contest < ApplicationRecord
     Users.where(id: user_ids, enabled: true)
   end
 
-  def add_users(new_users)
+  def add_users(new_users, role: 'user')
     return {title: 'Contest users are NOT changed', body: 'No new users given.'} if new_users.count == 0
 
     # remove already existing users
@@ -36,18 +40,20 @@ class Contest < ApplicationRecord
     num_actual_add = to_be_added.count
     num_request_add = new_users.count
 
-    self.users << to_be_added
+    to_be_added.each do |user|
+      self.contests_users.build(user: user, role: role)
+    end
     if num_actual_add == 0
       return {title: 'Contest users are NOT changed', body: 'All users given are already in the contest.'}
     elsif num_actual_add == num_request_add
       return {title: 'Contest users changed', body: "All given #{pluralize num_actual_add, 'user'} were added to the contest."}
     else
       return {title: 'Contest users changed',
-              body: %Q"
-                From given #{pluralize num_request_add,'user'},
+              body: %Q(
+                From given #{pluralize num_request_add, 'user'},
                 #{pluralize num_actual_add, 'user'} were added to the contest
                 while the other #{pluralize (num_request_add - num_actual_add), 'user'} are already in the contest.
-              "}
+              )}
     end
   end
 
@@ -57,15 +63,15 @@ class Contest < ApplicationRecord
     added_users = []
 
     lines.split("\n").each do |line|
-      #split with large limit, this will cause consecutive ',' to be result in a blank instead of nil
-      items = line.chomp.split(',',1000)
+      # split with large limit, this will cause consecutive ',' to be result in a blank instead of nil
+      items = line.chomp.split(',', 1000)
 
       login = items[0]
       remark = items.length >= 2 ? items[1] : nil
       seat = items.length >= 3 ? items[2] : nil
 
       user = User.where(login: login).first
-      
+
       unless user
         error_logins << "'#{login}'"
         next
@@ -97,7 +103,7 @@ class Contest < ApplicationRecord
 
     latest_num = self.contests_problems.maximum(:number) || 1
     to_be_added.ids.each do |new_prob_id|
-      contests_problems.create(problem_id: new_prob_id,number: latest_num)
+      contests_problems.create(problem_id: new_prob_id, number: latest_num)
       latest_num += 1
     end
 
@@ -107,24 +113,23 @@ class Contest < ApplicationRecord
       return {title: 'Contest problems changed', body: "All given #{pluralize num_actual_add, 'problem'} were added to the contest."}
     else
       return {title: 'Contest problems changed',
-              body: %Q"
-                From given #{pluralize num_request_add,'problem'},
+              body: %Q(
+                From given #{pluralize num_request_add, 'problem'},
                 #{pluralize num_actual_add, 'problem'} were added to the contest
                 while the other #{pluralize (num_request_add - num_actual_add), 'problem'} are already in the contest.
-              "}
+              )}
     end
-
   end
 
   # set the number of the problem to *number* and rearrage other
-  def set_problem_number(problem,number)
+  def set_problem_number(problem, number)
     num = 1
-    self.contests_problems.where.not(problem_id: problem.id).order(:number).each do |cp,idx|
+    self.contests_problems.where.not(problem_id: problem.id).order(:number).each do |cp, idx|
       offset = (num) >= number ? 1 : 0
       cp.update(number: num+offset)
       num += 1
     end
-    self.contests_problems.where(problem_id: problem.id).first.update(number: [self.contests_problems.count,[1,number.round].max].min)
+    self.contests_problems.where(problem_id: problem.id).first.update(number: [self.contests_problems.count, [1, number.round].max].min)
   end
 
   # return :later, :pre, :during, :post, :ended
@@ -145,10 +150,10 @@ class Contest < ApplicationRecord
   # this includes extra_time_second and start_offset_second as well
   def submissions
     Submission.joins(user: :contests_users)
-      .where('contest_id = ?',self.id)
+      .where('contest_id = ?', self.id)
       .where(user: users, problem: problems)
-      .where('submitted_at >= DATE_SUB(?,INTERVAL start_offset_second SECOND)',start)
-      .where('submitted_at <= DATE_ADD(?,INTERVAL extra_time_second SECOND)',stop)
+      .where('submitted_at >= DATE_SUB(?,INTERVAL start_offset_second SECOND)', start)
+      .where('submitted_at <= DATE_ADD(?,INTERVAL extra_time_second SECOND)', stop)
   end
 
   def user_submissions(user)
@@ -156,8 +161,8 @@ class Contest < ApplicationRecord
     actual_start = start - cu.start_offset_second.second
     actual_stop = stop + cu.extra_time_second.second
     Submission.where(user: user, problem: problems)
-      .where('submitted_at >= ?',actual_start)
-      .where('submitted_at <= ?',actual_stop)
+      .where('submitted_at >= ?', actual_start)
+      .where('submitted_at <= ?', actual_stop)
   end
 
   #
@@ -182,7 +187,7 @@ class Contest < ApplicationRecord
       .select('submissions.problem_id,submissions.user_id')
 
 
-    return Submission.calculate_max_score(records,users,problems)
+    return Submission.calculate_max_score(records, users, problems)
   end
 
   protected
@@ -198,11 +203,10 @@ class Contest < ApplicationRecord
   #     prob_#{prob.name}:, time_#{prob.name}
   #     ...
   # }
-  def self.build_score_result(records,users)
-
+  def self.build_score_result(records, users)
     # init score hash
-    result = {score: Hash.new { |h,k| h[k] = {} }, 
-              stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+    result = {score: Hash.new { |h, k| h[k] = {} },
+              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
 
     # populate users
     users.each { |u| result[:score][u.login] = {id: u.id, full_name: u.full_name, remark: u.remark} }
@@ -214,6 +218,4 @@ class Contest < ApplicationRecord
 
     return result
   end
-
-
 end

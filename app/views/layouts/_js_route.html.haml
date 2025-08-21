@@ -1,0 +1,8 @@
+:javascript
+  // generate path to be used in js
+  // for any parameterized id, the id is replaced with -123 to be gsubbed, later
+  window.AppRoute = {
+    contest: "#{contest_path(-123)}",
+    view_contest: "#{view_contest_path(-123)}",
+    clone_contest: "#{clone_contest_path(-123)}",
+  }

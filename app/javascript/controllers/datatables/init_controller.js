@@ -8,22 +8,21 @@ export default class extends Controller {
 
   }
 
-  // Use a static property to hold the array of table instances
-  static tables = [];
-
   connect() {
+    // tables is an array of DataTable object
+
+    this.tables = [];
     //get the config using stimulus value
     const config = configs[this.configNameValue] || configs.default
 
-    // array of tables to be initialized
-    let tables;
 
+    let table_elements
     // Case 1: Controller attached to the table itself.
     if (this.element.tagName.toLowerCase() === 'table') {
-      tables = [this.element];
+      table_elements = [this.element];
     } else {
       // Case 2: Controller attached to enclosing elements
-      tables = this.element.querySelectorAll('table');
+      table_elements = this.element.querySelectorAll('table');
     }
 
     // include ajax url, if any
@@ -38,14 +37,23 @@ export default class extends Controller {
         ...finalConfig,
         ajax: ajaxOptions
       };
-    } else {
-      console.log("No AJAX URL found, initializing as client-side table.");
     }
 
     // Initialize DataTable for each table found.
-    tables.forEach(table => {
-      this.table = $(table).DataTable(finalConfig);
+    table_elements.forEach(element => {
+      this.tables.push($(element).DataTable(finalConfig));
     });
+  }
+
+  // this functions 
+  reload(event) {
+    // console.log("Received datatable:reload event. Payload:", event.detail)
+
+    this.tables.forEach(table => {
+      // 'null, false' reloads data from the server but keeps the user on the current page
+      table.ajax.reload(null, false)
+    })
+
   }
 
 }

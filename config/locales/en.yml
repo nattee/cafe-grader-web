@@ -177,6 +177,9 @@ Cheers!
           crash: Program Crashed
           unknown_error: UNKNOWN ERROR
           grader_error: GRADER ERROR
+  errors:
+    messages:
+      name_format: contains invalid characters. Only letters, numbers, <code>( )</code>, <code>[ ]</code>, <code>-</code> and <code>_</code> are allowed.
 
 
 
