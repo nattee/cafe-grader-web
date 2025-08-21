@@ -178,6 +178,17 @@ class User < ApplicationRecord
     end
   end
 
+  # return datetime range of active contests
+  def active_contests_range
+    start = Date.new(9999, 1, 1).to_time
+    stop = Date.new(1, 1, 1).to_time
+    active_contests.each do |contest|
+      start = [start, contest.start].min
+      stop = [stop, contest.stop].max
+    end
+    return start..stop
+  end
+
   def self.authenticate(login, password)
     user = find_by_login(login)
     if user

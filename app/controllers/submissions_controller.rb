@@ -30,6 +30,16 @@ class SubmissionsController < ApplicationController
         return
       end
       @submissions = Submission.where(user: @user, problem: @problem).order(id: :desc)
+
+      # when in contest mode, show only submission during this contest
+      @submissions = @submissions.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
+
+      @sub_details = Hash.new { |h,k| h[k] = {} }
+      Comment
+        .where(kind: ['llm_assist'], commentable_id: @submissions.ids)
+        .group(:commentable_id)
+        .select(:commentable_id, "count(comments.id) as llm_count", "sum(comments.cost) as llm_cost")
+        .each { |row| @sub_details[row.commentable_id] = { count: row.llm_count, cost: row.llm_cost } }
     end
   end
 

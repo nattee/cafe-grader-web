@@ -43,6 +43,14 @@ class Submission < ApplicationRecord
     end
   }
 
+  scope :with_llm_stat_by_problem, ->  {
+    joins(:comments)
+      .where('comments.kind': 'llm_assist')
+      .group(:problem_id)
+      .select('problem_id', 'count(comments.id) as count', 'sum(comments.cost) as cost')
+  }
+
+
   def add_judge_job(dataset = problem.live_dataset, priority = 0)
     evaluations.delete_all
     self.update(status: 'submitted', points: nil, grader_comment: nil, graded_at: nil)

@@ -53,7 +53,6 @@
         %td.text-end= number_with_precision(super_sum, delimiter: ',', precision: 0)
         %td.text-end= number_with_precision(super_pass, delimiter: ',', precision: 0)
   :javascript
-    window.addEventListener("load", function() {
       $('#score-table').DataTable({
         paging: false,
         layout: {
@@ -116,6 +115,8 @@
         },
       }
 
+      window.xxx = config
+
       //clone the config to be used in the second graph
       //this has to be done before we construct the chart.js object,
       //else the config is already changed
@@ -140,4 +141,3 @@
       //Chart.defaults.font.family = 'Sarabun Light'
       chart1 = new Chart($('#chart'),config)
       chart2 = new Chart($('#chart_2'),config2)
-    })

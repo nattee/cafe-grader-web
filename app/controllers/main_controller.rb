@@ -183,25 +183,24 @@ class MainController < ApplicationController
     # list of problems for this user, considering the current mode
     @problems = @current_user.problems_for_action(:submit, respect_admin: false).with_attached_statement.with_attached_attachment.includes(:public_tags).default_order
 
+    # calculate range of time (in contest mode)
+    submissions = Submission.where(user: @current_user, problem: @problems)
+    submissions = submissions.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
+
     # calculate latest submission & submission count
     @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }
-    last_sub_ids = Submission.where(user: @current_user, problem: @problems).group(:problem_id).pluck('max(id)')
+    last_sub_ids = submissions.group(:problem_id).pluck('max(id)')
     Submission.where(id: last_sub_ids).each do |sub|
       @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
     end
 
     # calculate max score
-    Submission
-      .where(user: @current_user)
+    submissions
       .group(:problem_id)
       .pluck('problem_id', 'max(points)').each { |data| @prob_submissions[data[0]][:max_score] = data[1] }
 
     # calculate ai assist used for the problems
-    Submission.joins(:comments)
-      .where(problem: @problems, user: @current_user)
-      .group(:problem_id)
-      .select('problem_id', 'count(comments.id) as count', 'sum(comments.cost) as cost')
-      .each do |row|
+    submissions.with_llm_stat_by_problem.each do |row|
         @prob_submissions[row.problem_id][:ai_assist_count] = row.count
         @prob_submissions[row.problem_id][:ai_assist_cost] = row.cost
       end
