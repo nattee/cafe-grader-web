@@ -10,7 +10,9 @@ class Comment < ApplicationRecord
   # limit to only HINT
   HINT_KIND = self.kinds.select { |k| k[0...4] == 'hint' }
 
-  scope :chargeable_for, -> (user, time_range) { where(user: user, updated_at: time_range, kind: ['hint', 'llm_assist'])  }
+  scope :chargeable_for, ->(user, time_range) { where(user: user, updated_at: time_range, kind: ['hint', 'llm_assist'])  }
+
+  validates :title, presence: true
 
   def to_label
     "#{kind}: #{title}"
@@ -26,13 +28,11 @@ class Comment < ApplicationRecord
     commentable.comment_reveal_prerequisite_satisfied?(self, user)
   end
 
-  def self.cost_summary_for(user, contest) 
-    comments = chargeable_for( user, (contest.start)..(contest.stop) )
-    { 
+  def self.cost_summary_for(user, contest)
+    comments = chargeable_for(user, (contest.start)..(contest.stop))
+    {
       count: comments.count,
       total_cost: comments.sum(:cost)
     }
   end
-
-
 end

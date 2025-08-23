@@ -28,21 +28,18 @@ export default class extends Controller {
   // when clicking on the "add comment", we set the form action to the 
   // create path set by the value of the controller
   prepareFormForCreate(event) {
-    console.log('for create')
     const formUrl = this.createUrlValue
     this.formTarget.action = formUrl
     this.formTarget.method = 'post'
   }
 
   handleSuccess(event) {
+    // Close the Bootstrap modal
+    this.modal.hide();
     if (event.detail.success) {
-      console.log("Turbo form submission was successful!");
-      // Close the Bootstrap modal
-      this.modal.hide();
+      this.formTarget.reset();
     } else {
-      console.log("Turbo form submission failed.");
-      // You could potentially handle form redisplays with errors here,
-      // though Turbo Frames often handles that automatically.
+      // don't reset the form
     }
 
   }

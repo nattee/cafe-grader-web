@@ -137,16 +137,6 @@ class ApplicationController < ActionController::Base
     unauthorized_redirect(msg: "You cannot #{action} on any group")
   end
 
-  def authorization_by_roles(allowed_roles)
-    return false unless check_valid_login
-    return true if @current_user.admin?
-    roles.each do |r|
-      return true if @current_user.has_role?(r)
-    end
-    unauthorized_redirect
-  end
-
-
   def unique_visitor_id
     unless cookies.encrypted[:uuid]
       value = SecureRandom.uuid

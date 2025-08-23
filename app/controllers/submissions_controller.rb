@@ -3,14 +3,14 @@ class SubmissionsController < ApplicationController
   include SubmissionAuthorization
 
   before_action :check_valid_login
-  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
-  before_action :set_problem, only: %i[ edit direct_edit_problem ]
-  before_action :can_view_submission, only: [:show, :show_comments, :download, :edit, :evaluations]
-  before_action :can_view_problem, only: [ :direct_edit_problem ]
 
+  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations]
+  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag ]
   before_action :set_language, only: %i[ edit direct_edit_problem ]
 
-  before_action only: [:rejudge, :set_tag] do authorization_by_roles([:ta]) end
+  before_action :can_view_submission, only: [:show, :show_comments, :download, :edit, :evaluations]
+  before_action :can_view_problem, only: [ :direct_edit_problem ]
+  before_action :can_edit_problem, only: [:rejudge, :set_tag]
 
   # GET /submissions
   # GET /submissions.json

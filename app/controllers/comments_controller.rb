@@ -22,7 +22,8 @@ class CommentsController < ApplicationController
   before_action :set_sub_comment, only: SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD
 
   # authorization
-  before_action :can_edit_problem, only: HINT_EDIT_METHOD + SUB_COMMENT_EDIT_METHOD
+  # only editor is allowed to create a comment, but a user can create llm_assist
+  before_action :can_edit_problem, only: HINT_EDIT_METHOD + SUB_COMMENT_EDIT_METHOD + %i[ create_for_submission ]
   before_action :can_view_problem, only: HINT_VIEW_METHOD + SUB_COMMENT_VIEW_METHOD
   before_action :can_view_submission, only: SUB_COMMENT_VIEW_METHOD
   before_action :can_request_llm, only: %i[ llm_assist ]
@@ -107,10 +108,11 @@ class CommentsController < ApplicationController
 
     if @comment.save
       @toast = {title: 'Submission Comment', body: "A comment titled: #{title} was successfully created for submission ##{@submission.id}" }
+      render 'submission_and_toast', status: :created
     else
-      @toast = {title: 'Submission Comment', body: "A comment is failed to be created. (#{@comment.errors.full_messages})", type: 'alert' }
+      @toast = {title: 'Submission Comment', body: "Could not create a comment.", errors: @comment.errors.full_messages, type: 'alert' }
+      render 'submission_and_toast', status: :unprocessable_entity
     end
-    render 'submission_and_toast'
   end
 
   def destroy_for_submission
@@ -124,10 +126,11 @@ class CommentsController < ApplicationController
     @comment.body = params[:comment_body]
     if @comment.save
       @toast = {title: 'Submission Comment', body: "The comment '#{@comment.title}' was successfully updated for submission ##{@submission.id}" }
+      render 'submission_and_toast'
     else
-      @toast = {title: 'Submission Comment', body: "A comment is failed to be created. (#{comment.errors.full_messages})", type: 'alert' }
+      @toast = {title: 'Submission Comment', body: "Could not update the comment.", errors: @comment.errors.full_messages, type: 'alert' }
+      render 'submission_and_toast', status: :unprocessable_entity
     end
-    render 'submission_and_toast'
   end
 
   # request the llm assist via job
