@@ -99,7 +99,8 @@
               Grading Task Status
             .col
               = @submission.status
-        - if @current_user.admin?
+        -# if @current_user.admin?
+        - if @current_user.can_edit_problem?(@submission.problem)
           .card-footer
             .row.align-items-center.g-2
               .col-auto

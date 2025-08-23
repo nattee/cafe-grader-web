@@ -4,7 +4,8 @@
   type: :notice, 
   title: nil, 
   subtitle: Time.zone.now.strftime("%H:%M:%S"), 
-  autohide: true}
+  autohide: true,
+  errors: local_assigns.fetch(:errors,[]) }
 - toast_params.merge!( local_assigns.fetch(:toast, {}))
 - toast_header_class = case toast_params[:type].to_sym
   - when :notice then 'bg-info-subtle'
@@ -18,6 +19,10 @@
     %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "toast", :type => "button"}
   .toast-body.py-1
     = toast_params[:body]
+    - if toast_params[:errors].any?
+      %ul
+        - toast_params[:errors].each do |error|
+          %li= error
 :javascript
   // select unhide toast
   toast_elements = document.querySelectorAll('.toast:not(.hide)')
