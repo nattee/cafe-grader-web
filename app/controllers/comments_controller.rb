@@ -190,5 +190,11 @@ class CommentsController < ApplicationController
         @toast = {title: 'LLM Assist Error', body: "LLM Assist are not allow for this problem", type: 'alert' }
         render 'submission_and_toast' and return
       end
+
+      # check whether the problem has attached llm_prompt
+      unless @submission.problem.tags.where(kind: 'llm_prompt').any?
+        @toast = {title: 'LLM Assist Error', body: "There is no <code>llm_prompt</code> tag associated with this problem.".html_safe, errors: ['Please notify the staff'], type: 'alert' }
+        render 'submission_and_toast' and return
+      end
     end
 end
