@@ -165,7 +165,7 @@ class User < ApplicationRecord
 
   def reportable_users
     return User.all if admin?
-    User.where(id: groups_for_action(:report).joins(:users).pluck('groups_users.user_id'))
+    User.joins(:groups).where(groups: {id: groups_for_action(:report)}).distinct
   end
 
   # return contests of this user that is both enabled and the current time
