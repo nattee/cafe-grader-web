@@ -34,7 +34,7 @@ class SubmissionsController < ApplicationController
       # when in contest mode, show only submission during this contest
       @submissions = @submissions.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
 
-      @sub_details = Hash.new { |h,k| h[k] = {} }
+      @sub_details = Hash.new { |h, k| h[k] = {} }
       Comment
         .where(kind: ['llm_assist'], commentable_id: @submissions.ids)
         .group(:commentable_id)

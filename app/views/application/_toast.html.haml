@@ -17,7 +17,7 @@
     %strong.me-auto= toast_params[:title]
     %small= toast_params[:subtitle]
     %button.btn-close{"aria-label" => "Close", "data-bs-dismiss" => "toast", :type => "button"}
-  .toast-body.py-1
+  .toast-body.py-1{ class: (toast_header_class if toast_params[:type].to_sym != :notice)}
     = toast_params[:body]
     - if toast_params[:errors].any?
       %ul
