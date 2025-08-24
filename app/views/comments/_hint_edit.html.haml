@@ -6,7 +6,7 @@
         = f.input :title
         = f.input :body
         = f.input :cost
-        = f.input :kind, collection: Comment::HINT_KIND.keys.map { |key| [I18n.t("activerecord.attributes.comment.kinds.#{key}"), key] }, include_blank: false, wrapper: :horizontal_form
+        -# = f.input :kind, collection: Comment::HINT_KIND.keys.map { |key| [I18n.t("activerecord.attributes.comment.kinds.#{key}"), key] }, include_blank: false, wrapper: :horizontal_form
         = f.button :submit, class: 'btn btn-primary me-2'
 - else
   %em -- There is no hint for this problem. Click "Add" to add a hint. --

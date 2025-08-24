@@ -7,7 +7,7 @@ class CommentsController < ApplicationController
   PROBLEM_METHOD = HINT_VIEW_METHOD + HINT_EDIT_METHOD + %i[ manage_problem ]
 
 
-  SUB_COMMENT_VIEW_METHOD = %i[ show_for_submission ]
+  SUB_COMMENT_VIEW_METHOD = %i[ show_for_submission index_partial ]
   SUB_COMMENT_EDIT_METHOD = %i[ update_for_submission destroy_for_submission ]
   SUB_COMMENT_METHOD = SUB_COMMENT_VIEW_METHOD + SUB_COMMENT_EDIT_METHOD + %i[ create_for_submission llm_assist ]
 
@@ -28,12 +28,28 @@ class CommentsController < ApplicationController
   before_action :can_view_submission, only: SUB_COMMENT_VIEW_METHOD
   before_action :can_request_llm, only: %i[ llm_assist ]
 
+  # render comments partial
+  def index_partial
+    if params[:for] == 'edit'
+      render turbo_stream: [
+        turbo_stream.update(:problem_hints, partial: 'problems/hints', locals: {problem: @submission.problem}),
+        turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, no_edit: true})
+      ]
+    else
+      render turbo_stream: turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, no_edit: false})
+    end
+  end
+
   # -- problem comment section --
   # -- (this is mainly about hints) --
   def manage_problem
     @hint = Comment.find(params[:null][:hint_id]) rescue nil
     if params[:button] == 'add'
-      @hint = @problem.hints.create(user: @current_user, kind: 'hint')
+      # create without title (this will fail to be saved unless we set a title)
+      @hint = @problem.hints.new(user: @current_user, kind: 'hint')
+
+      @hint.set_default_hint_title
+      @hint.save
     elsif params[:button] == 'delete'
       @hint.destroy if @hint
       @hint = @problem.hints.first

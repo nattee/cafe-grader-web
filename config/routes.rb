@@ -208,7 +208,6 @@ Rails.application.routes.draw do
   resources :submissions do
     member do
       get 'download'
-      get 'show_comments'
       post 'compiler_msg'
       get 'rejudge'
       get 'set_tag'
@@ -221,7 +220,8 @@ Rails.application.routes.draw do
     end
     resources :comments, only: [] do
       post 'llm_assist/:model', on: :collection, as: 'llm_assist', action: 'llm_assist'
-      post '', action: 'create_for_submission', on: :collection, as: ''
+      get '', to: 'index_partial', as: '', on: :collection
+      post '', action: 'create_for_submission', on: :collection
       member do
         get '', action: 'show_for_submission', as: ''
         delete '', action: 'destroy_for_submission'
