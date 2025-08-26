@@ -34,11 +34,11 @@ class CommentsController < ApplicationController
       # this one renders for the submission edit page
       render turbo_stream: [
         turbo_stream.update(:problem_hints, partial: 'problems/hints', locals: {problem: @submission.problem}),
-        turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, no_edit: true})
+        turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: false})
       ]
     else
       # this one renders for the submission view pages
-      render turbo_stream: turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, no_edit: false})
+      render turbo_stream: turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: true})
     end
   end
 
