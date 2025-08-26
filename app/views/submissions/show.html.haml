@@ -117,14 +117,14 @@
               .col-auto
                 IP: #{@submission.ip_address}
       -# Submission Comment
-      .card.mb-3.shadow-sm{data: {turbo: true, controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
+      .card.mb-3.shadow-sm{data: {turbo: "true", controller: 'submission-comment', submission_comment_create_url_value: submission_comments_path(@submission) }}
         .card-body
           .row.align-items-center
             .col-auto
               %h4
                 Submission Comment
             .col-auto
-              = link_to 'Refresh', show_comments_submission_path(@submission), data: {turbo: true}, class: 'btn btn-sm btn-outline-secondary'
+              = link_to 'Refresh', submission_comments_path(@submission), data: {turbo: "true", turbo_prefetch: false}, class: 'btn btn-outline-secondary btn-sm'
             .col
             - if @current_user.problems_for_action(:report).where(id: @submission.problem).any?
               .col-auto.text-end

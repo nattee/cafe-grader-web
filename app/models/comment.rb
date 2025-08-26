@@ -35,4 +35,19 @@ class Comment < ApplicationRecord
       total_cost: comments.sum(:cost)
     }
   end
+
+  def set_default_hint_title
+    return if title.present?
+
+    # Find the highest existing hint number for the same problem
+    scope = Comment.where(commentable: self.commentable).where("title LIKE ?", "Hint %")
+
+    # The SQL fragment extracts the number after "Hint " and converts it to an integer.
+    last_hint_number = scope.maximum("CAST(SUBSTRING(title FROM 6) AS UNSIGNED)")
+
+    # Calculate the next number. If no hints exist, it defaults to 0 + 1 = 1.
+    next_number = (last_hint_number || 0) + 1
+
+    self.title = "Hint #{next_number}"
+  end
 end

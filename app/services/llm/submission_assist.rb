@@ -29,8 +29,8 @@ module Llm
     # This is the "template method". The Job will call this method (via self.call)
     # it calls methods that must be implemented by the subclass
     def call
-      data = prepare_data
-      response = execute_call(data)
+      data = prepare_data                # subclass must implement
+      response = execute_call(data)      # subclass must implement
       handle_response(response)
     rescue Faraday::Error => e
       @error = "API Communication Error: #{e.message}"
@@ -62,21 +62,26 @@ module Llm
     #
     # May use @parsed_body
     def parse_response
-      raise NotImplementedError, "#{self.class} must implement #parse_specific_data"
+      raise NotImplementedError, "#{self.class} must implement #parse_response"
     end
 
     # Can be a common implementation or overridden
     def handle_response(response)
       @record.cost = 10
+      @record.status = 'ok'
+
       @record.llm_response = response.body
 
       # prepare the @parsed_body for the parse_response of the subclasses
       @parsed_body = JSON.parse(response.body)
-      @record.update(parse_response)
+      @record.update(parse_response)             # subclass must implement parse_response
     end
 
     def handle_error
       @record.title = "Assistant Error"
+      @record.cost = 10
+      @record.status = 'error'
+
       @record.body += "* #{@error}\n* Request finished at #{Time.zone.now}\n"
       @record.body += "<div class='alert alert-danger'> Request finished with ERROR </div>"
       @record.save

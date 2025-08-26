@@ -2,7 +2,9 @@
   .card-body
     .row.mb-3
       .col-6
-        %h5.mb-0 Helper
+        %h5.mb-0 
+          Helper
+          = link_to 'Refresh', submission_comments_path(@submission,{for: 'edit'}), data: {turbo: "true", turbo_prefetch: false}, class: 'btn btn-outline-secondary btn-sm'
       .col-6.text-end
         .text-end
           %a{href: "#", data: { bs_toggle: :modal, bs_target: '#helpers_help' } } [ What's this? ]
@@ -13,7 +15,7 @@
 
     -# Submission comments section (AI assist / actual comment)
     = turbo_frame_tag :submission_comments do
-      = render partial: 'submissions/comments', locals: {submisssion: @submission, no_edit: true}
+      = render partial: 'submissions/comments', locals: {submission: @submission, no_edit: true}
   -# GenAI request
   - if @models && @models.any? && GraderConfiguration['system.llm_assist']
     .card-footer
