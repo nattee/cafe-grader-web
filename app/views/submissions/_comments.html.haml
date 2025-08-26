@@ -1,16 +1,33 @@
 -# requires submission
+- has_waiting = local_assigns.fetch(:has_waiting,false)
 - if submission&.comments&.any?
+  -# wrap with refresh controller
+  %div{ data: {
+    controller: 'refresh',
+    data_refresh_delay_value: ( has_waiting ? 10_1000 : -1),
+    data_refresh_waiting_text_value: 'Checking AI in {{second}} seconds.'
+  }}
   - kinds = [ 'llm_assist','comment']
   - kinds.each do |kind|
     - submission.comments.where(kind: kind).each do |comment|
       // add highligh class to the new item, if exists
       .row{class: ('new-item-highlight' if comment.id == @comment&.id)}
         .col
+          -# render a row of comment title
           - if comment.kind == 'llm_assist'
             .badge.rounded-pill.text-primary.bg-primary-subtle.me-2 AI
+            %span= comment.title.html_safe
           - elsif comment.kind == 'comment'
+            -# for AI assist, if the job is waiting, we also render a small div for displaying stopwatch
             .badge.rounded-pill.text-info.bg-info-subtle.me-2 Comment
-          %span= comment.title.html_safe
+            %span
+              = comment.title.html_safe
+              - if comment.status == 'waiting'
+                %div{data: {
+                  refresh_target: 'stopwatchText',
+                  start_time: '',
+                  template: '({{second}}s)'
+                }}
         .col-auto.text-end
           = link_to 'View', submission_comment_path(submission,comment), data: {turbo: true, turbo_stream: true}
           - if @current_user.problems_for_action(:report).where(id: submission.problem).any? && local_assigns.fetch(:no_edit, false) == false
@@ -23,5 +40,7 @@
             |
             = link_to 'Delete', submission_comment_path(submission,comment), class: 'text-danger',
               data: {turbo: true, turbo_method: 'DELETE', turbo_stream: true, turbo_confirm: "Are you sure to delete the comment titled '#{comment.title}'"}
+  - if has_waiting
+    %div{data: {refresh_target: 'waitingText'}} Waiting to be graded...
 - else
   %em -- There is no comment for this submission --

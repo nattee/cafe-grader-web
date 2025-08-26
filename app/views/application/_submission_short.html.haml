@@ -26,11 +26,11 @@
         %span= time_ago_in_words(submission.submitted_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.submitted_at)})
     .row
-      .col-12{ data: ({controller: 'submission-refresh', submission_refresh_delay_value: @delay_value} if local_assigns[:refresh_if_not_graded] && @submission)  }
-        %div{data: {submission_refresh_target: 'waitingText'}} Waiting to be graded...
+      .col-12{ data: ({controller: 'refresh', refresh_delay_value: @delay_value} if local_assigns[:refresh_if_not_graded] && @submission)  }
+        %div{data: {refresh_target: 'waitingText'}} Waiting to be graded...
         -# hidden link to be clicked by the stimulus action
         - if @submission
-          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), class: "d-none", data: {turbo_stream: true, submission_refresh_target: 'refreshLink'}
+          = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), class: "d-none", data: {turbo_stream: true, refresh_target: 'refreshLink'}
   - else
     -# show graded time (and the score if allowed)
     .row

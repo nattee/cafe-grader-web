@@ -78,11 +78,11 @@
       .card.mb-3.shadow-sm
         .card-body
           .row.mb-2
-            .col-md-8
-              %h5 Latest Submission Status
-            .col-md-4.text-md-end
-              - if @submission
-                = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-secondary btn-sm", data: {turbo: true, turbo_prefetch: false}
+            .col-md-12
+              %h5 
+                Latest Submission Status
+                - if @submission
+                  = link_to "Refresh",get_latest_submission_status_submissions_path(@submission.user,@problem), id: 'refresh', class: "btn btn-outline-secondary btn-sm", data: {turbo: true, turbo_prefetch: false}
           - if @submission
             = turbo_frame_tag :latest_status,src: get_latest_submission_status_submissions_path(@submission.user,@problem) do
               %div
