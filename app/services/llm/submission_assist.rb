@@ -26,11 +26,11 @@ module Llm
       raise ArgumentError.new("Comment object is needed") unless @record
     end
 
-    # This is the "template method". The Job will call this method (via self.call)
-    # it calls methods that must be implemented by the subclass
+    # This is the "template method". The ActiveJob will call this method (via self.call)
+    # This will invoke other methods that must be implemented by the subclass
     def call
-      data = prepare_data                # subclass must implement
-      response = execute_call(data)      # subclass must implement
+      data = prepare_data               # need to be implemented by the subclass
+      response = execute_call(data)     # need to be implemented by the subclass
       handle_response(response)
     rescue Faraday::Error => e
       @error = "API Communication Error: #{e.message}"
@@ -68,9 +68,8 @@ module Llm
     # Can be a common implementation or overridden
     def handle_response(response)
       @record.cost = 10
-      @record.status = 'ok'
-
       @record.llm_response = response.body
+      @record.status = 'ok'
 
       # prepare the @parsed_body for the parse_response of the subclasses
       @parsed_body = JSON.parse(response.body)
@@ -79,11 +78,9 @@ module Llm
 
     def handle_error
       @record.title = "Assistant Error"
-      @record.cost = 10
-      @record.status = 'error'
-
       @record.body += "* #{@error}\n* Request finished at #{Time.zone.now}\n"
       @record.body += "<div class='alert alert-danger'> Request finished with ERROR </div>"
+      @record.status = 'error'
       @record.save
     end
 
