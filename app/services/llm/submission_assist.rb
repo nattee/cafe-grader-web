@@ -78,8 +78,8 @@ module Llm
 
     def handle_error
       @record.title = "Assistant Error"
-      @record.body += "* #{@error}\n* Request finished at #{Time.zone.now}\n"
-      @record.body += "<div class='alert alert-danger'> Request finished with ERROR </div>"
+      @record.body += "* Request finished at `#{Time.zone.now}`\n"
+      @record.body += "<div class='alert alert-danger'> <h5>Request failed</h5> #{error} </div>"
       @record.status = 'error'
       @record.save
     end

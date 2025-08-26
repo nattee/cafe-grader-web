@@ -97,7 +97,6 @@ class Submission < ApplicationRecord
     submissions
   end
 
-
   def download_filename
     if self.problem.output_only
       return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
@@ -109,6 +108,10 @@ class Submission < ApplicationRecord
         return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
       end
     end
+  end
+
+  def has_processing_comments?
+    comments.where(status: 'processing').any?
   end
 
   #
