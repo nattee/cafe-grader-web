@@ -3,7 +3,7 @@ class Comment < ApplicationRecord
   belongs_to :user
 
   enum :kind, {hint: 0, solution: 1, comment: 2, llm_assist: 3}
-  enum :status, {ok: 0, waiting: 1, error: 2} # used to indicate whether this comment is waiting to be updated (such as from AI API call)
+  enum :status, {ok: 0, processing: 1, error: 2} # used to indicate whether this comment is waiting to be updated (such as from AI API call)
 
   has_many :comment_reveals
   has_many :users_who_revealed, through: :comment_reveals, source: :user # More descriptive name

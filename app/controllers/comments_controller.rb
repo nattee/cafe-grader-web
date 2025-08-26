@@ -164,10 +164,11 @@ class CommentsController < ApplicationController
       title: "AI #{model_name} is thinking <span class='spinner-border spinner-border-sm'></span>",
       body: <<~TEXT,
         ## AI is thinking, please wait
-        * Request started at #{Time.zone.now}, asking for the model #{model_name}
-        * Requested by #{@current_user.full_name}
+        * Request started at `#{Time.zone.now}`, using the model `#{model_name}`
+        * Request initiated by `#{@current_user.full_name}`
       TEXT
-      cost: 0    # default to 0 but should be adjusted when the request finished
+      cost: 0,    # default to 0 but should be adjusted when the request finished
+      status: 'processing'
     })
 
     # model_name is also validated by the actual service class
