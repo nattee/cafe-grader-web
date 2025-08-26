@@ -246,7 +246,8 @@ class ContestsController < ApplicationController
   def add_user
     begin
       users = User.where(id: params[:user_ids])
-      @toast = @contest.add_users users
+      result = @contest.add_users users
+      @toast = save_adding_and_build_toast(result, User.name.downcase)
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
@@ -255,9 +256,9 @@ class ContestsController < ApplicationController
 
   def add_user_by_group
     begin
-      user_ids = GroupUser.where(group_id: params[:user_group_ids]).where.not(user_id: @contest.users.ids).pluck :user_id
       user_ids = GroupUser.where(group_id: params[:user_group_ids]).pluck :user_id
-      @toast = @contest.add_users User.where(id: user_ids)
+      result = @contest.add_users User.where(id: user_ids)
+      @toast = save_adding_and_build_toast(result, User.name.downcase)
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
@@ -280,9 +281,10 @@ class ContestsController < ApplicationController
     begin
       # this find multiple problems that matches the ID that is also editable by the user
       problems = @current_user.problems_for_action(:edit).where(id: params[:problem_ids])
-      @toast = @contest.add_problems_and_assign_number(problems)
+      result = @contest.add_problems_and_assign_number(problems)
+      @toast = save_adding_and_build_toast(result, Problem.name.downcase)
       render 'turbo_toast'
-    rescue
+    rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
@@ -291,9 +293,10 @@ class ContestsController < ApplicationController
     begin
       problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @contest.problems.ids).pluck :problem_id
       problems = Problem.group_editable_by_user(@current_user).where(id: problem_ids)
-      @toast = @contest.add_problems_and_assign_number(problems)
+      result = @contest.add_problems_and_assign_number(problems)
+      @toast = save_adding_and_build_toast(result, Problem.name.downcase)
       render 'turbo_toast'
-    rescue
+    rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
     end
   end
@@ -382,6 +385,34 @@ class ContestsController < ApplicationController
     def check_finalized
       if @contest.finalized?
         render partial: 'error_modal', locals: {title: 'Contest update error', body: 'The contest is finalized. It cannot be modified unless it is de-finalized first'}
+      end
+    end
+
+    def save_adding_and_build_toast(result, association_name)
+      if @contest.save
+        if result.added == 0
+          if result.skipped == 0
+            return {title: "Contest's #{association_name.pluralize} are NOT changed", body: "No #{association_name.pluralize} are given."}
+          else
+            return {title: "Contest's #{association_name.pluralize} are NOT changed", body: "All given #{association_name.pluralize} are already in the contest."}
+          end
+        else
+          if result.skipped == 0
+            return {title: "Contest's #{association_name.pluralize} changed", body: "All given #{association_name.pluralize} have been added to the contest."}
+          else
+            return {title: "Contest's #{association_name.pluralize} changed",
+                    body: %Q(
+                      From given #{pluralize(result.added + result.skipped, association_name)},
+                      #{pluralize(result.added, association_name)} were added to the contest
+                      while the other #{pluralize(result.skipped, association_name)} are already in the contest.
+                    )}
+          end
+        end
+      else
+        return {title: "Contest Update Error!",
+                body: "Contest <code>#{@contest.name}</code> cannot be updated",
+                errors: @contest.errors.full_messages,
+                type: :alert}
       end
     end
 end

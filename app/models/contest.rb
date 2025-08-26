@@ -25,6 +25,8 @@ class Contest < ApplicationRecord
   # validates the name, (also using custom validator)
   validates :name, presence: true, uniqueness: true, name_format: true
 
+  AddResult = Struct.new(:added, :skipped, :status, :model)
+
   # return an ActiveRecord relation of users that is submittable for this con
   def submittable_users(current_time = Time.zone.now)
     return User.none unless enabled?
@@ -33,28 +35,19 @@ class Contest < ApplicationRecord
   end
 
   def add_users(new_users, role: 'user')
-    return {title: 'Contest users are NOT changed', body: 'No new users given.'} if new_users.count == 0
+    return AddResult.new(added: 0, skipped: 0) if new_users.blank?
 
     # remove already existing users
-    to_be_added = new_users.where.not(id: self.users)
-    num_actual_add = to_be_added.count
-    num_request_add = new_users.count
+    requested_user_ids = new_users.pluck(:id)
+    user_ids_to_add = requested_user_ids - self.user_ids
 
-    to_be_added.each do |user|
-      self.contests_users.build(user: user, role: role)
+    num_added = user_ids_to_add.count
+    num_skipped = requested_user_ids.count - num_added
+
+    user_ids_to_add.each do |user_id|
+      self.contests_users.build(user_id: user_id, role: role)
     end
-    if num_actual_add == 0
-      return {title: 'Contest users are NOT changed', body: 'All users given are already in the contest.'}
-    elsif num_actual_add == num_request_add
-      return {title: 'Contest users changed', body: "All given #{pluralize num_actual_add, 'user'} were added to the contest."}
-    else
-      return {title: 'Contest users changed',
-              body: %Q(
-                From given #{pluralize num_request_add, 'user'},
-                #{pluralize num_actual_add, 'user'} were added to the contest
-                while the other #{pluralize (num_request_add - num_actual_add), 'user'} are already in the contest.
-              )}
-    end
+    return AddResult.new(added: num_added, skipped: num_skipped)
   end
 
   def add_users_from_csv(lines)
@@ -94,31 +87,23 @@ class Contest < ApplicationRecord
   end
 
   def add_problems_and_assign_number(new_problems)
-    return {title: 'Contest problems are NOT changed', body: 'No new problem given.'} if new_problems.count == 0
+    return AddResult.new(added: 0, skipped: 0) if new_problems.blank?
 
     # remove already existing problems
-    to_be_added = new_problems.where.not(id: self.problems)
-    num_actual_add = to_be_added.count
-    num_request_add = new_problems.count
+    requested_problem_ids = new_problems.pluck(:id)
+    problem_ids_to_add = requested_problem_ids - self.problem_ids
+
+    num_added = problem_ids_to_add.count
+    num_skipped = requested_problem_ids.count - num_added
+
 
     latest_num = self.contests_problems.maximum(:number) || 1
-    to_be_added.ids.each do |new_prob_id|
-      contests_problems.create(problem_id: new_prob_id, number: latest_num)
+    problem_ids_to_add.each do |new_prob_id|
+      self.contests_problems.build(problem_id: new_prob_id, number: latest_num)
       latest_num += 1
     end
 
-    if num_actual_add == 0
-      return {title: 'Contest problems are NOT changed', body: 'All problems given are already in the contest.'}
-    elsif num_actual_add == num_request_add
-      return {title: 'Contest problems changed', body: "All given #{pluralize num_actual_add, 'problem'} were added to the contest."}
-    else
-      return {title: 'Contest problems changed',
-              body: %Q(
-                From given #{pluralize num_request_add, 'problem'},
-                #{pluralize num_actual_add, 'problem'} were added to the contest
-                while the other #{pluralize (num_request_add - num_actual_add), 'problem'} are already in the contest.
-              )}
-    end
+    return AddResult.new(added: num_added, skipped: num_skipped)
   end
 
   # set the number of the problem to *number* and rearrage other
