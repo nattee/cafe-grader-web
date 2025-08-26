@@ -12,10 +12,11 @@ export default class extends Controller {
   }
 
   connect() {
-    if (this.delayValue > 0)
+    if (this.delayValue > 0) {
       this.startTimer();
-    else
-      console.log('Timer not started.');
+    } else  {
+      //console.log('Timer not started.');
+    }
   }
 
   // for starting auto refresh latest submission status
@@ -40,6 +41,7 @@ export default class extends Controller {
 
       // click the refresh button when countdown finishes
       if (this.remainingSeconds <= 0) {
+        //console.log('clicking...')
         clearInterval(this.refreshTimer)
 
         // click the refersh button
