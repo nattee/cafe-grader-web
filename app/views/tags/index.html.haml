@@ -53,11 +53,11 @@
         {data: 'name', render: tag_render},
         {data: 'description'},
         {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'tag#toggle', checked_data_field: 'public'})},
-        {data: 'kind'},
+        {data: 'kind_text'},
         {data: null, render: cafe.dt.render.link(`Edit`, {path: '#{edit_tag_path(-123)}'})},
         {data: null, render: cafe.dt.render.link(`Delete`, {path: '#{tag_path(-123)}', className: 'btn btn-danger btn-sm', confirm: 'Really delete the tag?', method: 'delete'}), className: 'align-middle py-1'},
       ],
-      columnDefs: [{orderable: false, targets: [2,3]} ],
+      columnDefs: [{orderable: false, targets: [2,4,5]} ],
       drawCallback: function (settings) {
         var api = this.api();
         api.columns.adjust()

@@ -5,7 +5,7 @@ json.data do
     json.extract! prob, :available, :view_testcase
     json.tags prob.tags.pluck(:name)
     json.statement_attached prob.statement.attached?
-    json.statement_path download_by_type_problem_path(prob, 'statement', prob.name + ".pdf")
+    json.statement_path download_by_type_problem_path(prob, 'statement')
     json.attachment_attached prob.attachment.attached?
     json.attachment_path download_by_type_problem_path(prob, 'attachment')
   end
