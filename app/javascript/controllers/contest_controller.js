@@ -115,7 +115,7 @@ export default class extends Controller {
     const element = event.target
 
     bootbox.dialog( {
-      title: `Set extra times fot ${user}`,
+      title: `Set extra times for ${user}`,
       message: `
         <div class="form-group">
           <label for="start-offset">Start offset (second)</label>

@@ -130,7 +130,7 @@
               .col-auto.text-end
                 %button.btn.btn-primary.btn-sm{data: { bs_toggle: 'modal', bs_target: '#comment-modal', action: 'submission-comment#prepareFormForCreate'}} Add Comment
           = turbo_frame_tag :submission_comments do
-            = render partial: 'comments', locals: {submission: @submission}
+            = render partial: 'comments', locals: {submission: @submission, show_edit: true}
           -# add comment modal
           = render partial: 'add_comment', locals: {submission: @submission}
         -# GenAI request

@@ -22,6 +22,9 @@
         .alert.alert-success.text-center
           %strong.h4.mx-2 #{@wait_count['score'] || 0}
           to be scored
+    .row
+      .col-auto
+        = link_to 'Solid Queue status', queues_grader_processes_path
     %h4.mt-3 Worker and Grader
     %table.table
       %thead

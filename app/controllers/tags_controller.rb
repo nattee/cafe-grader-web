@@ -10,7 +10,7 @@ class TagsController < ApplicationController
   end
 
   def index_query
-    render json: {data: Tag.all}
+    @tags = Tag.all
   end
 
   # GET /tags/1

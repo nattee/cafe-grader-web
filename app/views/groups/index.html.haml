@@ -1,4 +1,4 @@
-.row
+.row.mb-3
   .col-md-4
     %h1 Groups
     %p
@@ -6,26 +6,28 @@
   .col-md-8
     = render partial: 'group_help'
 
-%table#group-table.table.table-hover
-  %thead
-    %tr
-      %th Name
-      %th Description
-      %th Enabled?
-      %th
-      %th
-  %tbody
-    - @groups.each do |group|
-      %tr{:class => "#{(group.enabled?) ? "success" : "danger"}", id: "group-#{group.id}"}
-        %td= group.name
-        %td= group.description
-        %td
-          .form-check.form-switch
-            %input.form-check-input{id: "group-#{group.id}-enabled-switch", checked: group.enabled, type: "checkbox", data: {action: 'group#toggle', 'row-id': group.id}}
-        %td
-          = link_to mdi('settings','md-18') + ' Manage', group
-        %td.py-1.align-middle
-          = link_to 'Destroy', group, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger btn-sm'
+.card.shadow-sm
+  .card-body
+    %table#group-table.table.table-hover
+      %thead
+        %tr
+          %th Name
+          %th Description
+          %th Enabled?
+          %th
+          %th
+      %tbody
+        - @groups.each do |group|
+          %tr{:class => "#{(group.enabled?) ? "success" : "danger"}", id: "group-#{group.id}"}
+            %td= group.name
+            %td= group.description
+            %td
+              .form-check.form-switch
+                %input.form-check-input{id: "group-#{group.id}-enabled-switch", checked: group.enabled, type: "checkbox", data: {action: 'group#toggle', 'row-id': group.id}}
+            %td
+              = link_to mdi('settings','md-18') + ' Manage', group
+            %td.py-1.align-middle
+              = link_to 'Destroy', group, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-danger btn-sm'
 
 -# hidden form for group toggle
 = form_with url: toggle_group_path(-123), html: {data: {turbo: true, 'group-target': 'toggleForm', action: 'turbo:submit-end->group#resetToggleForm'}} do

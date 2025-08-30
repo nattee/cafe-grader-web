@@ -1,11 +1,12 @@
 -# requires submission
 - has_processing = local_assigns.fetch(:has_processing,false)
+- show_edit = local_assigns.fetch(:show_edit, false)
 - if submission&.comments&.any?
   -# wrap with refresh controller
   %div{ data: {
     controller: 'refresh',
-    data_refresh_delay_value: ( has_processing ? 10_1000 : -1),
-    data_refresh_waiting_text_value: 'Checking AI in {{second}} seconds.'
+    refresh_delay_value: ( has_processing ? 5_000 : -1),
+    refresh_waiting_text_value: 'Checking AI in {{second}} seconds.'
   }}
     - kinds = [ 'llm_assist','comment']
     - kinds.each do |kind|
@@ -31,7 +32,7 @@
               %span= comment.title.html_safe
           .col-auto.text-end
             = link_to 'View', submission_comment_path(submission,comment), data: {turbo: true, turbo_stream: true}
-            - if @current_user.problems_for_action(:report).where(id: submission.problem).any? && local_assigns.fetch(:show_edit, true)
+            - if @current_user.problems_for_action(:report).where(id: submission.problem).any? && show_edit
               |
               = link_to 'Edit', '#',
                 data: {turbo: true, turbo_stream: true, action: 'click->submission-comment#populateFormForUpdate',
@@ -44,7 +45,8 @@
     - if has_processing
       //%div{data: {refresh_target: 'waitingText'}} Waiting to be graded...
       -# hidden refresh link for the controller to click
-      = link_to 'Refresh', submission_comments_path(@submission,{for: 'edit'}), class: 'd-none', data: {turbo: "true", turbo_prefetch: false, refresh_target: 'refreshLink'}
+      -# if we render for an edit page, we won't show edit button
+      = link_to 'Refresh', submission_comments_path(@submission,{for: (show_edit ? '' : 'edit')}), class: 'd-none', data: {turbo: "true", turbo_prefetch: false, refresh_target: 'refreshLink'}
 
 - else
   %em -- There is no comment for this submission --

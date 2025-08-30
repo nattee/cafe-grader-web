@@ -34,7 +34,7 @@ class CommentsController < ApplicationController
       # this one renders for the submission edit page
       render turbo_stream: [
         turbo_stream.update(:problem_hints, partial: 'problems/hints', locals: {problem: @submission.problem}),
-        turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: false})
+        turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: false, has_processing: @submission.has_processing_comments?})
       ]
     else
       # this one renders for the submission view pages
@@ -123,6 +123,7 @@ class CommentsController < ApplicationController
       title: title,
       body: params[:comment_body]
     })
+    @show_edit = true
 
     if @comment.save
       @toast = {title: 'Submission Comment', body: "A comment titled: #{title} was successfully created for submission ##{@submission.id}" }
@@ -136,12 +137,14 @@ class CommentsController < ApplicationController
   def destroy_for_submission
     @toast = {title: 'Submission Comment', body: "Comment \"#{@comment.title}\" was deleted successfully"}
     @comment.destroy
+    @show_edit = true
     render 'submission_and_toast'
   end
 
   def update_for_submission
     @comment.title = params[:comment_title]
     @comment.body = params[:comment_body]
+    @show_edit = true
     if @comment.save
       @toast = {title: 'Submission Comment', body: "The comment '#{@comment.title}' was successfully updated for submission ##{@submission.id}" }
       render 'submission_and_toast'
