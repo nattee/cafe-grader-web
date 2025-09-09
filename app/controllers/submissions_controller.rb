@@ -50,6 +50,10 @@ class SubmissionsController < ApplicationController
     user = User.find(session[:user_id])
     SubmissionViewLog.create(user_id: session[:user_id], submission_id: @submission.id) unless user.admin?
 
+    if (user.id != @submission.user.id) && !user.admin? && GraderConfiguration.get('system.mode') == "contest"
+      unauthorized_redirect(msg: "You are not authorized to view this submission")
+    end
+
     # @evaluations = @submission.evaluations.joins(:testcase).includes(:testcase).order(:group, :num)
     #  .select(:num, :group, :group_name, :weight, :time, :memory, :score, :testcase_id, :result_text, :result)
     @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
@@ -76,6 +80,12 @@ class SubmissionsController < ApplicationController
   # GET /submissions/1/edit
   def edit
     @last_sub = @current_user.last_submission_by_problem(@problem)
+    user = User.find(session[:user_id])
+
+    if (user.id != @submission.user.id) && !user.admin? && GraderConfiguration.get('system.mode') == "contest"
+      unauthorized_redirect(msg: "You are not authorized to view this submission")
+    end
+
     @models = Rails.configuration.llm[:provider].keys
   end
 
