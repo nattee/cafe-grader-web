@@ -73,7 +73,7 @@ class Checker
         end
       else
         comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
-        return EngineResponse::CheckerResult.grader_error(comment)
+        return EngineResponse::CheckerResult.grader_error(comment: comment)
       end
     when 'no_check'
       return EngineResponse::CheckerResult.partial(score: 0)
