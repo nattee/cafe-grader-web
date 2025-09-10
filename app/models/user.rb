@@ -422,7 +422,6 @@ class User < ApplicationRecord
     return (submission.user == self) || (GraderConfiguration["right.user_view_submission"])
   end
 
-
   def can_view_testcase?(problem)
     # admin always has right
     return true if admin?
