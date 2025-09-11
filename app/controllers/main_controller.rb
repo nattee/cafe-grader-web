@@ -6,11 +6,9 @@ class MainController < ApplicationController
   # reset login, clear session
   # front page
   def login
-    # saved_notice = flash[:notice]
-    # flash[:notice] = saved_notice
     @remote_ip = request.remote_ip
 
-    @announcements = Announcement.frontpage
+    @announcements = Announcement.frontpage.consider_contest.default_order
     render action: 'login', locals: {skip_header: true}
   end
 
@@ -22,7 +20,8 @@ class MainController < ApplicationController
   # this is the main page for users
   def list
     prepare_list_information
-    prepare_announcements
+
+    @announcements = Announcement.mainpage.consider_contest.viewable_by_user(@current_user).default_order
 
     if GraderConfiguration.contest_mode?
       @contests = @current_user.contests.enabled
@@ -170,14 +169,6 @@ class MainController < ApplicationController
   end
 
   protected
-
-  def prepare_announcements(recent = nil)
-    if GraderConfiguration.show_tasks_to?(@user)
-      @announcements = Announcement.published(true)
-    else
-      @announcements = Announcement.published
-    end
-  end
 
   def prepare_list_information
     # list of problems for this user, considering the current mode

@@ -4,6 +4,7 @@ class AnnouncementsController < ApplicationController
                     ]
 
   before_action :set_announcement, only: MEMBER_METHOD
+  before_action :check_valid_login
 
   before_action :group_editor_authorization
   before_action :can_edit_announcement, only: MEMBER_METHOD
@@ -12,21 +13,20 @@ class AnnouncementsController < ApplicationController
   # GET /announcements
   # GET /announcements.xml
   def index
-    @announcements = Announcement.order(created_at: :desc)
+    @announcements = Announcement.viewable_by_user(@current_user).default_order
 
     respond_to do |format|
       format.html # index.html.erb
-      format.xml  { render :xml => @announcements }
+      format.xml  { render xml: @announcements }
     end
   end
 
   # GET /announcements/1
   # GET /announcements/1.xml
   def show
-
     respond_to do |format|
       format.html # show.html.erb
-      format.xml  { render :xml => @announcement }
+      format.xml  { render xml: @announcement }
     end
   end
 
@@ -37,7 +37,7 @@ class AnnouncementsController < ApplicationController
 
     respond_to do |format|
       format.html # new.html.erb
-      format.xml  { render :xml => @announcement }
+      format.xml  { render xml: @announcement }
     end
   end
 
@@ -58,7 +58,7 @@ class AnnouncementsController < ApplicationController
     # check if the user can, and has, set group
     unless @current_user.admin?
       editor_groups = @current_user.groups_for_action(:edit)
-      unless (!@announcement.nil? || editor_groups.include?(@announcement.group))
+      unless !@announcement.nil? || editor_groups.include?(@announcement.group)
         @announcement.group = editor_groups.take
       end
     end
@@ -66,10 +66,10 @@ class AnnouncementsController < ApplicationController
       if @announcement.save
         flash[:notice] = 'Announcement was successfully created.'
         format.html { redirect_to(@announcement) }
-        format.xml  { render :xml => @announcement, :status => :created, :location => @announcement }
+        format.xml  { render xml: @announcement, status: :created, location: @announcement }
       else
-        format.html { render :action => "new" }
-        format.xml  { render :xml => @announcement.errors, :status => :unprocessable_entity }
+        format.html { render action: "new" }
+        format.xml  { render xml: @announcement.errors, status: :unprocessable_entity }
       end
     end
   end
@@ -79,27 +79,26 @@ class AnnouncementsController < ApplicationController
   def update
     respond_to do |format|
       if @announcement.update(announcement_params)
-        flash[:notice] = 'Announcement was successfully updated.'
         format.html { redirect_to(@announcement) }
-        format.js   {}
+        format.js   { }
         format.xml  { head :ok }
       else
-        format.html { render :action => "edit" }
-        format.js   {}
-        format.xml  { render :xml => @announcement.errors, :status => :unprocessable_entity }
+        format.html { render action: "edit" }
+        format.js   { }
+        format.xml  { render xml: @announcement.errors, status: :unprocessable_entity }
       end
     end
   end
 
   def toggle_published
-    @announcement.update( published:  !@announcement.published? )
-    @toast = {title: "Annnouncement",body: "published updated"}
+    @announcement.update(published:  !@announcement.published?)
+    @toast = {title: "Annnouncement", body: "published updated"}
     render 'toggle'
   end
 
   def toggle_front
-    @announcement.update( frontpage:  !@announcement.frontpage? )
-    @toast = {title: "Announcement",body: "front updated"}
+    @announcement.update(frontpage:  !@announcement.frontpage?)
+    @toast = {title: "Announcement", body: "front updated"}
     render 'toggle'
   end
 
@@ -124,8 +123,7 @@ class AnnouncementsController < ApplicationController
     end
 
     def can_edit_announcement
-      return true if @current_user.admin?
-      return true if @current_user.groups_for_action(:edit).where(id: @announcement.group).any?
+      return true if @current_user.can_edit_announcement(@announcement)
       unauthorized_redirect(msg: 'You are not authorized to edit this announcement')
     end
 

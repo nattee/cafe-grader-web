@@ -180,6 +180,22 @@ class User < ApplicationRecord
     User.joins(:groups).where(groups: {id: groups_for_action(:report)}).distinct
   end
 
+  # ---- announcement for users for specific action -----
+  # valid action is either :view, :edit
+  def announcement_for_action(action)
+    return Announcement.all if admin?
+    return Announcement.none unless enabled?
+    action = action.to_sym
+
+    if action == :view
+      return Announcement.viewable_by_user(self)
+    elsif action == :edit
+      return Announcement.editable_by_user(self)
+    else
+      raise ArgumentError.new('action must be one of :edit, :submit')
+    end
+  end
+
   # return contests of this user that is both enabled and the current time
   # is during the contest
   def active_contests
@@ -428,6 +444,17 @@ class User < ApplicationRecord
 
     return can_view_problem?(problem) && GraderConfiguration["right.view_testcase"]
   end
+
+  def can_edit_announcement(announcement)
+    # admin always has right
+    return true if admin?
+
+    # if the announcement is not group specific or is in a group t
+    return true if Announcement.editable_by_user(self).where(id: announcement).any?
+
+    return false
+  end
+
 
   #
   # -- end permission methods --
