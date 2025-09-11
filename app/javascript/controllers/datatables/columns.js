@@ -8,6 +8,23 @@ export const renderers = {
       return uc+' : '+pc
 
     return parseFloat(`${uc}.${pc}`)
+  },
+  // -------- contests render -------------
+  startStopOffsetRender: (data,type,row,meta) => {
+    const start_offset = row['start_offset_second']
+    const extra_time = row['extra_time_second']
+    return `${start_offset} : ${extra_time} ` +
+      `<a href='#' data-row-id="${row['id']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
+  },
+  roleActionButton: (data,type,row,meta) => {
+    let result = ''
+    if (row['role'] != 'editor') 
+      result += cafe.dt.render.button('as editor',{element_type: 'link', className: 'link-success', action: 'contest#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
+    if (row['role'] != 'user') {
+      if (result != '') result += ' | '
+      result += cafe.dt.render.button('as user',{element_type: 'link', className: 'link-info', action: 'contest#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
+    }
+    return result
   }
 }
 

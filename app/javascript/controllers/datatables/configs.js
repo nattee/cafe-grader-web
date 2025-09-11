@@ -1,4 +1,4 @@
-import { columns } from 'controllers/datatables/columns'
+import { columns, renderers } from 'controllers/datatables/columns'
 
 const baseConfig = {
   responsive: true,
@@ -97,11 +97,11 @@ export const configs = {
       {data: 'role'},  // this is user role column, index 2, must be hidden and has fixed ordering
       {data: 'remark'},
       {data: 'seat'},
-      {data: null, render: start_stop_offset_render},
+      {data: null, render: renderers.startStopOffsetRender},
       {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
       {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'contest#postUserAction', command: 'clear_ip'} )},
       {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
-      {data: 'user_id', render: role_action_button},
+      {data: 'user_id', render: renderers.roleActionButton},
     ],
     columnDefs: [{visible: false, targets: 2}, {orderable: false, targets: [5,6,7,8,9]} ],
     orderFixed: [2,'asc'],

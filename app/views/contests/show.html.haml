@@ -121,7 +121,7 @@
                   %th Full name
                   %th Role (hidden)
                   %th Seat
-                  %th Remark
+                  %th Contest Remark
                   %th Extra Time (s)
                   %th.text-center Enable
                   %th Clear Session
@@ -220,6 +220,8 @@
                         or
                         %span.rounded.bg-light.p-1.font-monospace remark
                         is empty (but not missing), the original value will be used.
+                      %li
+                        The remark here is a remark for this particular contest. It is not the same as the user's global remark.
                     .card-title
                       %h5 Example
                     %ul
@@ -240,13 +242,6 @@
   function clear_problem_form() {
     $('#problem_group_id').val(null).trigger('change')
     $('#problem_id').val(null).trigger('change')
-  }
-
-  function start_stop_offset_render(data,type,row,meta) {
-    const start_offset = row['start_offset_second']
-    const extra_time = row['extra_time_second']
-    return `${start_offset} : ${extra_time} ` +
-      `<a href='#' data-row-id="${row['id']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
   }
 
   function role_action_button(data,type,row,meta) {
