@@ -4,7 +4,7 @@
 }
 
 
-//for google material icon
+//---- google material icon -----
 .mi-bs {
   vertical-align: middle;
   position: relative;
@@ -75,6 +75,7 @@
 }
 
 
+// --------------- bootstrap adjustment ----------------------
 body {
   font-family: 'Sarabun', 'Noto Sans Thai', Tahoma, "sans-serif";
   padding: 5px;
@@ -121,6 +122,13 @@ pre code {
   word-break: break-word;
   line-height: 1.5;
   border: 1px solid #e2e2e5;
+}
+
+
+.markdown-content {
+  p {
+    margin-bottom: 0.25rem
+  }
 }
 
 

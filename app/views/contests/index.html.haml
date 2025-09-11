@@ -1,5 +1,5 @@
 .row.mb-3
-  .col-md-4
+  .col-md-5
     .card.shadow-sm.mb-3
       .card-body
         %h3 System Mode
@@ -10,7 +10,7 @@
               %strong
                 = mode_to_text
                 Mode
-        .row
+        .row.mb-2
           .col-auto.col-form-label
             Change mode to
           .col-auto.p-1
@@ -22,8 +22,35 @@
               = button_to "Individual Contest", set_system_mode_contests_path, params: {mode: 'indv-contest'}, class: 'btn btn-sm btn-outline-warning'
           .col-auto.p-1
             = button_to "Analysis", set_system_mode_contests_path, params: {mode: 'analysis'}, class: 'btn btn-sm btn-outline-info'
-  .col-md-8
-    = render partial: 'contest_help'
+        .row
+          .col
+            .alert.alert-info.markdown-content
+              :markdown
+                A user's session is stored in a browser cookie and is locked to the first device and browser they use to log in. 
+                This prevents them from signing in on another computer or a different browser simultaneously.
+                If a user needs to switch devices or gets locked out. You have two options:
+
+                  * Use the **"Clear All User Sessions"** button to reset the session for every user.
+                  * For a single user, navigate to that contest's management page.
+              = link_to 'Clear all users session', clear_user_ip_grader_configuration_index_path, class: 'btn btn-secondary m-1', data: {turbo: true, 'turbo-method': 'post'}
+  .col-md-7
+    .card.bg-warning-subtle.shadow-sm
+      .card-body.markdown-content
+        :markdown
+          #### How Contests Work
+          A contest is a timed event, like an exam or competition, that challenges a specific group of users with a set of problems.
+
+          * **Time-Bound:** Every contest must have a defined `Start Time` and `End Time`.
+          * **Scoped Access:** Assign specific users and problems to isolate the contest environment.
+          * **Live Monitoring:** Track user participation and score progression in real-time.
+          * **Finalized Scoring:** Record official scores once the contest concludes.
+
+          The entire system operates in one of two modes, which must be toggled by an Administrator.
+
+          * **Normal Mode:** Problem visibility is determined by the user's **Group memberships**.
+          * **Contest Mode:** Problem visibility is strictly limited to the probvlems within a user's assigned **active contest**. A contest is considered **active** if it is enabled and the current time is within its scheduled start and end times. This mode also applies several key restrictions to ensure fairness:
+            * __Single Session Login__: Users can only be logged in from one browser session at a time.
+            * __Disabled Features__: Access to pages like Submissions History and Hall of Fame is disabled. The ability for users to view problem test cases is turned off.
 
 .card.shadow-sm{data: {controller: 'contest'}}
   .card-body{data: {
