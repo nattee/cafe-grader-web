@@ -163,8 +163,12 @@ class ContestsController < ApplicationController
     elsif params[:command] == 'remove'
       @contest.users.clear
       @toast[:body] = "All users were removed."
+    elsif params[:command] == 'clear_ip'
+      @contest.users.update_all(last_ip: nil)
+      @toast[:body] = "Clear all users session."
     else
       @toast[:body] = "ERROR: Unknown command"
+      @toast[:type] = :alert
     end
     render 'turbo_toast'
   end
@@ -179,6 +183,9 @@ class ContestsController < ApplicationController
       gu = @contest.contests_users.where(user: @user).first
       gu.update(enabled: !gu.enabled?)
       @toast[:body] = 'User was updated.'
+    when 'clear_ip'
+      @user.update(last_ip: nil)
+      @toast[:body] = 'User session was cleared.'
     when 'make_editor', 'make_user'
       target_role = params[:command].split('_')[1]
 

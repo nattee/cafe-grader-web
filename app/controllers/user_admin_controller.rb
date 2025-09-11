@@ -56,8 +56,7 @@ class UserAdminController < ApplicationController
   #
   def clear_last_ip
     @user = User.find(params[:id])
-    @user.last_ip = nil
-    @user.save
+    @user.update(last_ip: nil)
     redirect_to action: 'index', page: params[:page]
   end
 

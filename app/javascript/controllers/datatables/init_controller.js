@@ -1,11 +1,26 @@
 import { Controller } from "@hotwired/stimulus";
 import { configs } from "controllers/datatables/configs"
 
+/**
+ * usage: connect this controller to an enclosing tag that contains a table element
+ *   that will be made into a datatable, like the following HAML
+ *
+ *       .tab-content{ data: {
+ *           controller: 'datatables--init',
+ *           'datatables--init-config-name-value': 'contestManageUser',
+ *           'datatables--init-ajax-url-value': show_users_query_contest_path(@contest),
+ *           action: 'datatable:reload@window->datatables--init#reload'
+ *
+ *  Write a config in /app/javascript/controllers/datatables/configs.js
+ *  which may include columns from /app/javascript/controllers/datatables/columns.js
+ *
+ *  If ajax is needed, we can put the url helper as data-datatables--init-ajax-url-value
+ *  since we cannot use url helper inside the javascript
+ */
 export default class extends Controller {
   static values = { 
     configName: String,
     ajaxUrl: String,
-
   }
 
   connect() {
@@ -51,6 +66,7 @@ export default class extends Controller {
 
     this.tables.forEach(table => {
       // 'null, false' reloads data from the server but keeps the user on the current page
+      console.log(`reloading $(table)`)
       table.ajax.reload(null, false)
     })
 

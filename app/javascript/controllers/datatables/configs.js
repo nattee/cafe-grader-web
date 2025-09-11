@@ -77,5 +77,93 @@ export const configs = {
       var api = this.api();
       api.columns.adjust()
     },
+  },
+  contestManageUser: {
+    ...baseConfig,
+    paging: false,
+    order: [[0,'asc']],
+    ajax: {
+      url: "#{show_users_query_contest_path(@contest)}",
+      type: 'POST',
+      headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+    },
+    layout: {
+      topStart: 'info',
+      topEnd: 'search',
+    },
+    columns: [ 
+      {data: 'login'},
+      {data: 'full_name'},
+      {data: 'role'},  // this is user role column, index 2, must be hidden and has fixed ordering
+      {data: 'remark'},
+      {data: 'seat'},
+      {data: null, render: start_stop_offset_render},
+      {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
+      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'contest#postUserAction', command: 'clear_ip'} )},
+      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
+      {data: 'user_id', render: role_action_button},
+    ],
+    columnDefs: [{visible: false, targets: 2}, {orderable: false, targets: [5,6,7,8,9]} ],
+    orderFixed: [2,'asc'],
+    drawCallback: function (settings) {
+      // we assume that the row are sorted by users' role (by 'orderFixed' and 'order' options)
+      // this render a header rows when two adjacent rows has their roles differ
+      var api = this.api();
+      var rows = api.rows({ page: 'current' }).nodes();
+      var last_role = null;
+      api.column(2, { page: 'current' })
+        .data()
+        .each(function (role, i) {
+            if (last_role !== role) {
+              // set text for role row
+              let role_text
+              if (role == 'editor') {
+                role_text = '<tr class="table-success"><td colspan="9"> Editors (Can edit the contest) </td></tr>'
+              } else {
+                role_text = '<tr class="table-info"><td colspan="9"> Users (Can only submit to the contest) </td></tr>'
+              }
+
+              //prepend row
+              $(rows).eq(i).before(role_text);
+              last_role = role;
+            }
+        });
+      //since columns size changed, we call adjust
+      //but not .draw() !!! else, infinite recursion
+      api.columns.adjust()
+    },
+  },
+  contestManageProblem: {
+    responsive: true,
+    processing: true,
+    rowId: 'id',
+    destroy: true,
+    paging: false,
+    order: [[0,'asc']],
+    ajax: {
+      type: 'POST',
+      headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+    },
+    layout: {
+      topStart: 'info',
+      topEnd: 'search',
+    },
+    columns: [ 
+      {data: 'number'},
+      {data: 'name'},
+      {data: 'full_name'},
+      {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
+      {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
+      {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm'})},
+      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
+      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
+      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
+    ],
+    columnDefs: [{visible: false, targets: [0]},
+                 {orderable: false, targets: [1,2,3,4,5,6,7,8]}],
+    drawCallback: function (settings) {
+      var api = this.api();
+      api.columns.adjust()
+    },
   }
 };
