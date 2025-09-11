@@ -86,11 +86,11 @@
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# hidden user action form
                 = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'placeholder'}} do |f|
+                  data: {turbo: true, 'turbo-confirm': 'placeholder'}} do |f|
                   = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
                 = form_with url: extra_time_user_contest_path, html: {'data-contest-target': 'userExtraTimeForm', id: 'extra-time-user-form',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}} do |f|
+                  data: {turbo: true}} do |f|
                   = f.hidden_field :row_id, 'data-contest-target': 'userExtraTimeFormRowID'
                   = f.hidden_field :start_offset, 'data-contest-target': 'userExtraTimeFormStart'
                   = f.hidden_field :end_offset, 'data-contest-target': 'userExtraTimeFormEnd'
@@ -99,14 +99,14 @@
                   .col-md-3
                   .col-md-9
                     = button_to 'Enable All', do_all_users_contest_path(@contest), class: 'btn btn-primary m-1', value: 'enable', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                      form: {style: 'display: inline',data: {turbo: true}}
                     = button_to 'Disable All', do_all_users_contest_path(@contest), class: 'btn btn-primary m-1', value: 'disable', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                      form: {style: 'display: inline',data: {turbo: true}}
                     = button_to 'Remove All', do_all_users_contest_path(@contest), class: 'btn btn-danger m-1', value: 'remove', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction',
+                      form: {style: 'display: inline',data: {turbo: true,
                       'turbo-confirm': 'Really remove all users from the contest?'}}
                     = button_to 'Clear Session All', do_all_users_contest_path(@contest), class: 'btn btn-warning m-1', value: 'clear_ip', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                      form: {style: 'display: inline',data: {turbo: true}}
               .col-md-6
                 -# help for GroupUser
                 .card.bg-warning-subtle.shadow-sm
@@ -147,7 +147,7 @@
                     .col-md-3
                       =label_tag :problem_ids, "Problem",class: 'col-form-label'
                     .col-md-7
-                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :problem_ids, options_from_collection_for_select(@current_user.problems_for_action(:edit),'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-auto
                       =submit_tag "Add",class: 'btn btn-primary my-1', 'data-group-target': 'asdf'
                 =form_tag add_problem_by_group_contest_path(@contest), class: 'mb-1 form-inline',
@@ -156,12 +156,12 @@
                     .col-md-3
                       =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
                     .col-md-7
-                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-md-2
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# hidden problem action form
                 = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'}} do |f|
+                  data: {turbo: true}} do |f|
                   = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
                   = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
               .col-md-6
@@ -231,28 +231,3 @@
                       %li.mb-2
                         .rounded.bg-light.p-1.font-monospace user1,room 403-8,
                         will add the user with login "user1" and and set the seating to "room 403" and set the remark to an empty string. If the user is already in the contest, the seat and remark fields updated.
-
-
-:javascript
-  function clear_user_form() {
-    $('#user_group_id').val(null).trigger('change')
-    $('#user_id').val(null).trigger('change')
-  }
-
-  function clear_problem_form() {
-    $('#problem_group_id').val(null).trigger('change')
-    $('#problem_id').val(null).trigger('change')
-  }
-
-  function role_action_button(data,type,row,meta) {
-    result = ''
-    if (row['role'] != 'editor') 
-      result += cafe.dt.render.button('as editor',{element_type: 'link', className: 'link-success', action: 'contest#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
-    if (row['role'] != 'user') {
-      if (result != '') result += ' | '
-      result += cafe.dt.render.button('as user',{element_type: 'link', className: 'link-info', action: 'contest#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
-    }
-    return result
-
-  }
-

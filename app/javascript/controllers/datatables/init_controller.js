@@ -60,16 +60,28 @@ export default class extends Controller {
     });
   }
 
-  // this functions 
+  // this functions reload a datatable in this.table that has it's node() id in event.detail.table
+  // Canonically, we can trigger this function by connecting it to an action but mostly we connect it
+  // with  action: 'datatable:reload@window->datatables--init#reload'
+  // and let the `event_dispatcher` turbo_stream fire the datatable:reload event with event_detail parameters
   reload(event) {
-    // console.log("Received datatable:reload event. Payload:", event.detail)
+    // Get the string of space-separated table names.
+    const targetNamesStr = event.detail?.table;
+
+    // If a string of names is provided, split it into an array.
+    // Otherwise, targetTables will be null.
+    const targetTables = targetNamesStr ? targetNamesStr.split(' ') : null;
+    console.log(`targetTables = ${targetTables}`)
 
     this.tables.forEach(table => {
-      // 'null, false' reloads data from the server but keeps the user on the current page
-      console.log(`reloading $(table)`)
-      table.ajax.reload(null, false)
-    })
-
+      // 1. No specific tables were targeted (targetTables is null).
+      // 2. This table's id is included in the list of targeted tables.
+      if (!targetTables || targetTables.includes(table.table().node().id)) {
+        // 'null, false' reloads data from the server but keeps the user on the current page
+        table.ajax.reload(null, false)
+        console.log(`reloading = ${table.table().node().id}`)
+      }
+    });
   }
 
 }
