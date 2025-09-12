@@ -1,4 +1,4 @@
-.row.mb-3
+.row.mt-2
   .col-md-5
     .card.shadow-sm.mb-3
       .card-body
@@ -34,7 +34,7 @@
                   * For a single user, navigate to that contest's management page.
               = link_to 'Clear all users session', clear_user_ip_grader_configuration_index_path, class: 'btn btn-secondary m-1', data: {turbo: true, 'turbo-method': 'post'}
   .col-md-7
-    .card.bg-warning-subtle.shadow-sm
+    .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body.markdown-content
         :markdown
           #### How Contests Work

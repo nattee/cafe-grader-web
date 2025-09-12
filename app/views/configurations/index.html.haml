@@ -10,10 +10,10 @@
 
 = turbo_frame_tag "stream_js"
 
-- @group.each do |g|
+- @group.each do |group|
   .row
     .col-md-12
-      %h2= g
+      %h2= group.capitalize
       %table.table.table-striped
         %thead
           %th{style: 'width: 25%'} Key
@@ -21,7 +21,7 @@
           %th{style: 'width: 15%'} Value
           %th Description
         - @configurations.each do |conf|
-          - next if conf.key[0...(conf.key.index('.'))] != g
+          - next if conf.key[0...(conf.key.index('.'))] != group
           %tr
             %td
               = conf.key

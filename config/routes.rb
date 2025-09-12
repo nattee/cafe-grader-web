@@ -99,7 +99,7 @@ Rails.application.routes.draw do
       post 'do_import'
     end
     resources :comments, as: :hint, path: :hint, only: [:update] do
-      get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
+      get 'edit(/:id)', on: :collection, action: :edit, as: :edit
       post 'manage_problem', on: :collection, as: :manage
       post 'acquire', on: :member
       get '', on: :member, as: '', action: :show_hint

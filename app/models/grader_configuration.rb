@@ -151,6 +151,8 @@ class GraderConfiguration < ApplicationRecord
     GraderConfiguration.where(key: "right.user_hall_of_fame").update(value: value)
     GraderConfiguration.where(key: "right.user_view_submission").update(value: value)
     GraderConfiguration.where(key: "right.view_testcase").update(value: value)
+
+    User.update_all(last_ip: false)
   end
 
   protected
