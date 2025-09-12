@@ -141,6 +141,10 @@ class Submission < ApplicationRecord
     end
 
 
+    # iterates each sub and extract
+    #   max score
+    #   id and time of last submission with that max score
+    #   cost of llm, count of llm
     records.each do |sub|
       result[:score][sub.login]["prob_#{sub.problem_id}"] = sub.max_score || 0
 
@@ -148,6 +152,8 @@ class Submission < ApplicationRecord
       unless (result[:score][sub.login]["time_#{sub.problem_id}"] || Date.new) > sub.submitted_at
         result[:score][sub.login]["time_#{sub.problem_id}"] = sub.submitted_at
         result[:score][sub.login]["sub_#{sub.problem_id}"] = sub.sub_id
+        result[:score][sub.login]["llm_count_#{sub.problem_id}"] = sub.llm_count
+        result[:score][sub.login]["llm_cost_#{sub.problem_id}"] = sub.llm_cost
       end
     end
 

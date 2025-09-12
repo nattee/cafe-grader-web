@@ -153,23 +153,35 @@ class Contest < ApplicationRecord
   #
   # -------- report ---------------
   #
+  # This is for reporting the maximum score of each problem of each user
   def score_report
     # calculate submission with max score
     max_records = self.submissions
       .group('submissions.user_id,submissions.problem_id')
       .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
 
+    llm_assist_count = Comment.llm_assists_for_submissions(self.submissions)
+      .select('SUM(comments.cost) as llm_cost')
+      .select('COUNT(comments.id) as llm_count')
+
     # records having the same score as the max record
-    records = self.submissions.joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
-                               'submissions.points = MAX_RECORD.max_score AND ' +
-                               'submissions.user_id = MAX_RECORD.user_id AND ' +
-                               'submissions.problem_id = MAX_RECORD.problem_id ').joins(:problem)
+    records = self.submissions
+      .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+                   'submissions.points = MAX_RECORD.max_score AND ' +
+                   'submissions.user_id = MAX_RECORD.user_id AND ' +
+                   'submissions.problem_id = MAX_RECORD.problem_id ')
+      .joins(:problem)
+      .joins("LEFT JOIN (#{llm_assist_count.to_sql}) LLM_ASSIST ON " +
+        "submissions.user_id = LLM_ASSIST.user_id AND " +
+        "submissions.problem_id = LLM_ASSIST.problem_id "
+       )
       .select('submissions.user_id,users_submissions.login,users_submissions.full_name,users_submissions.remark')
       .select('problems.name')
       .select('max_score')
       .select('submitted_at')
       .select('submissions.id as sub_id')
       .select('submissions.problem_id,submissions.user_id')
+      .select('LLM_ASSIST.llm_cost, LLM_ASSIST.llm_count')
 
 
     return Submission.calculate_max_score(records, users, problems)
