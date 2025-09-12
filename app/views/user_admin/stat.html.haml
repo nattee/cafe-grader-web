@@ -2,60 +2,71 @@
   User stats
   - if @contest
     %span.text-body-tertiary.fs-2
-      %i (for Contest #{@contest.name})
+      (for Contest #{@contest.name})
 
 .row.my-3
   .col-md-8
-    .card
+    .card.mb-3
       .card-body
         %h2.card-title Submission History
         %canvas#chart{height: '50px'}
 
   .col-md-4
-    .card
+    .card.mb-3
       .card-body
-        %h2.card-title General Info
         .row
-          .col-sm-6.text-secondary.text-end
+          .col-6.text-secondary.text-end
             Login
-          .col-sm-6
+          .col-6
             = @user.login
             - if @contest
               = link_to "(view full stat)", stat_user_admin_path(@user)
         .row
-          .col-sm-6.text-secondary.text-end
+          .col-6.text-secondary.text-end
             Full name
-          .col-sm-6
+          .col-6
             = @user.full_name
         .row
-          .col-sm-6.text-secondary.text-end
+          .col-6.text-secondary.text-end
             Subs
-          .col-sm-6
+          .col-6
             = @summary[:count]
         .row
-          .col-sm-6.text-secondary.text-end
+          .col-6.text-secondary.text-end
             Solved/Attempted Problem
-          .col-sm-6
+          .col-6
             #{@summary[:solve]}/#{@summary[:count]} (#{(@summary[:solve]*100.0/@summary[:count]).round(1)}%)
+        .row
+          .col-6.text-secondary.text-end
+            Hints
+          .col-6
+            = @summary[:hint]
+        .row
+          .col-6.text-secondary.text-end
+            AI Assist
+          .col-6
+            = @summary[:llm_assist]
+
+
         -# contest info (if exists)
         - if @contest
           .row
             .col
               %hr
           .row
-            .col-sm-6.text-secondary.text-end
+            .col-6.text-secondary.text-end
               Contest
-            .col-sm-6
+            .col-6
               = @contest.name
           .row
-            .col-sm-6.text-secondary.text-end
+            .col-6.text-secondary.text-end
               Start
-            .col-sm-6
+            .col-6
               = @contest.start.strftime("%Y-%m-%d %H:%M")
           .row
-            .col-sm-6.text-secondary.text-end
+            .col-6.text-secondary.text-end
               Stop
-            .col-sm-6
+            .col-6
               = @contest.stop.strftime("%Y-%m-%d %H:%M")
 
 
@@ -94,7 +105,8 @@
   window.addEventListener("load", function() {
     //init datatable
     $("#main_table").DataTable({
-      paging: false
+      paging: false,
+      responsive: true,
     });
 
     //history graph

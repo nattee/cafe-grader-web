@@ -40,7 +40,6 @@ class ContestsController < ApplicationController
                   probCount: ContestProblem.where(contest_id: @contests_for_manage.ids).group('contest_id').count('problem_id') }
   end
 
-
   # GET /contests/1
   # GET /contests/1.xml
   def show
@@ -346,7 +345,7 @@ class ContestsController < ApplicationController
     end
   end
 
-  # ---- useraction ----
+  # ---- user action ----
   def set_active
     # validate
     unless @contest.users.include?(@current_user) && @contest.enabled?

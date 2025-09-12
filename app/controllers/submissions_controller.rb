@@ -16,7 +16,6 @@ class SubmissionsController < ApplicationController
   # GET /submissions.json
   # Show problem selection and user's submission of that problem
   def index
-    @user = @current_user
     @problems = @user.problems_for_action(:submit)
 
     if params[:problem_id]==nil
@@ -24,15 +23,20 @@ class SubmissionsController < ApplicationController
       @submissions = nil
     else
       @problem = Problem.find(params[:problem_id]) rescue nil
-      if (@problem == nil) || (! @user.can_view_problem?(@problem))
+      if (@problem == nil) || (! @current_user.can_view_problem?(@problem))
         redirect_to list_main_path
         flash[:error] = 'Authorization error: You have no right to view submissions for this problem'
         return
       end
-      @submissions = Submission.where(user: @user, problem: @problem).order(id: :desc)
 
-      # when in contest mode, show only submission during this contest
-      @submissions = @submissions.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
+
+      if GraderConfiguration.contest_mode?
+        # when in contest mode, show only submission during this contest
+        @submissions = @submissions.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
+      else
+        @submissions = Submission.where(user: @current_user, problem: @problem).order(id: :desc)
+      end
+
 
       @sub_details = Hash.new { |h, k| h[k] = {} }
       Comment

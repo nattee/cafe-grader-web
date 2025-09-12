@@ -3,6 +3,8 @@ class UserAdminController < ApplicationController
 
   # Stimulus controller connection
   before_action :page_stimulus_controller, only: %w[admin index]
+  before_action :set_user, only: %w[ clear_last_ip toggle_enable toggle_activate
+                                     edit update stat stat_contest ]
 
   def index
     @user_count = User.count
@@ -55,13 +57,11 @@ class UserAdminController < ApplicationController
   # --- member function
   #
   def clear_last_ip
-    @user = User.find(params[:id])
     @user.update(last_ip: nil)
     redirect_to action: 'index', page: params[:page]
   end
 
   def toggle_activate
-    @user = User.find(params[:id])
     @user.update(activated:  !@user.activated?)
     respond_to do |format|
       format.js { render partial: 'toggle_button',
@@ -70,7 +70,6 @@ class UserAdminController < ApplicationController
   end
 
   def toggle_enable
-    @user = User.find(params[:id])
     @user.update(enabled:  !@user.enabled?)
     respond_to do |format|
       format.js { render partial: 'toggle_button',
@@ -79,25 +78,18 @@ class UserAdminController < ApplicationController
   end
 
   def stat
-    @user = User.find(params[:id])
     @submission = Submission.joins(:problem).includes(:problem).includes(:language).where(user_id: params[:id])
 
-    max_score = Submission.where(user_id: params[:id]).group(:problem_id).pluck('problem_id, max(points) as max_point')
-    @summary = {count: max_score.count,
-                solve: max_score.select { |x| x[1] == 100 }.count}
+    build_stat
 
     @chart_dataset = @user.get_jschart_user_sub_history.to_json.html_safe
   end
 
   def stat_contest
-    @user = User.find(params[:id])
     @contest = Contest.find(params[:contest_id])
-
     @submission = @contest.user_submissions(@user)
 
-    max_score = @submission.group(:problem_id).pluck('problem_id, max(points) as max_point')
-    @summary = {count: max_score.count,
-                solve: max_score.select { |x| x[1] == 100 }.count}
+    build_stat
 
     @chart_dataset = @user.get_jschart_user_contest_history(@contest).to_json.html_safe
 
@@ -133,11 +125,9 @@ class UserAdminController < ApplicationController
   end
 
   def edit
-    @user = User.find(params[:id])
   end
 
   def update
-    @user = User.find(params[:id])
     if @user.update(user_params)
       redirect_to edit_user_admin_path(@user), notice: 'User was successfully updated.'
     else
@@ -513,5 +503,27 @@ class UserAdminController < ApplicationController
   private
     def user_params
       params.require(:user).permit(:login, :password, :password_confirmation, :email, :alias, :full_name, :remark, :enabled, group_ids: [])
+    end
+
+    def set_user
+      @user = User.find(params[:id])
+    end
+
+    # for action stat and user_stat
+    def build_stat
+      # when @contest is null, `chargeable_for` will ignore contest filtering
+      if @contest
+        range = (@contest.start)..(@contest.stop)
+        comment_count = Comment.chargeable_for(@user, range).group(:kind).count
+      else
+        comment_count = Comment.chargeable_for(@user).group(:kind).count
+      end
+
+      # count solve / attempted
+      max_score = @submission.group(:problem_id).pluck('problem_id, max(points) as max_point')
+      @summary = {count: max_score.count,
+                  solve: max_score.select { |x| x[1] == 100 }.count,
+                  hint: comment_count["hint"],
+                  llm_assist: comment_count["llm_assist"]}
     end
 end
