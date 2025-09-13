@@ -55,10 +55,21 @@
         if (type == 'display' || type == 'filter') {
           if (show_detail) {
             // render the score, along with the time and link to the sub
-            sub_col = `sub_${prob_id}`
-            time_col = `time_${prob_id}`
+            sub_col = `sub_${prob_id}`     // column name that contains submission number
+            time_col = `time_${prob_id}`   // column name that contains the latest submission time
             sub_link = `<a href=${sub_path.replace(-123,row[sub_col])}>[ ${moment(row[time_col]).format('HH:mm:ss')} ]</a>`
-            st = `${data} </br> ${sub_link} | ${sub_download_link.replace(-123,row[sub_col])}`
+
+            // llm & hint col
+            llm_cost_col = `llm_cost_${prob_id}`
+            llm_count_col = `llm_count_${prob_id}`
+            hint_cost_col = `hint_cost_${prob_id}`
+            hint_count_col = `hint_count_${prob_id}`
+
+            st = `${data} </br> ${sub_link} | ${sub_download_link.replace(-123,row[sub_col])}` +
+              `</br> LLM Count: ${row[llm_count_col] || '-'}` +
+              `</br> LLM Cost: ${row[llm_cost_col] || '-'}` +
+              `</br> Hint Count: ${row[hint_count_col] || '-'}` +
+              `</br> Hint Cost: ${row[hint_cost_col] || '-'}`
             return st
           } else {
             return data
@@ -89,16 +100,32 @@
       //{data: 'pass'}
     ])
 
-    //function that combines and render graph
-    //return the data table
+    /** 
+     * main data transform function
+     * json here is the payload returned from the server and the ajax property of
+     * the DataTable calls this function to transform json
+     * 
+     * See Contest.score_report for the detail of the json but basically, it includes
+     * Two major object, json.data which is an array of each row. However, it is not populated
+     * with the score of the submission. The score is stored in json.result
+     * This function copy some data from json.result to json.data in the correct row
+     * 
+     * The json.result is also transformed into a data for chart.js to be displayed as well.
+     *
+     * Return json.data as this function is used as a final step in ajax options of the DataTable
+     */
     function score_display(json) {
       //combine score into user record
-      // at start json.data[i] is a user data (id,login,name,remark,seat, etc)
+      // originally, json.data[i] is the i-th row containing user data (id,login,name,remark,seat, etc)
+
+      // indicate whether we should render details scoring in each cell
       show_detail = document.getElementById("show-load").checked
+
       for (let i = 0, ien = json.data.length; i < ien; i++) {
         login = json.data[i].login
 
-        //we loop over each problems (in json.problems)
+        // we loop over each problems (in json.problems)
+        // we also sum the score of each user here
         sum_score = 0.0
         json.problem.forEach ( (prob) => {
 
@@ -107,10 +134,19 @@
 
           prob_id = `prob_${prob.id}`
           prob_score = (score_result) ? score_result[prob_id] || '' : ''
+
+          // copy the detail of the submissions
+
+          // if we have some result (which indicates that a user has submitted something)
           if (prob_score.length > 0) {
+          
             prob_score = parseFloat(prob_score).toFixed(1)
             json.data[i][`sub_${prob.id}`] = score_result[`sub_${prob.id}`]
             json.data[i][`time_${prob.id}`] = score_result[`time_${prob.id}`]
+            json.data[i][`llm_count_${prob.id}`] = score_result[`llm_count_${prob.id}`]
+            json.data[i][`llm_cost_${prob.id}`] = score_result[`llm_cost_${prob.id}`]
+            json.data[i][`hint_count_${prob.id}`] = score_result[`hint_count_${prob.id}`]
+            json.data[i][`hint_cost_${prob.id}`] = score_result[`hint_cost_${prob.id}`]
           }
           json.data[i][`prob_${prob.id}`] = prob_score
 
@@ -151,10 +187,20 @@
         type: 'POST',
         headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
         dataSrc: function (json) {
+          /**
+           * json here contains two major keys: json.data which is the main DataTables row
+           * but in contains only user's basic info such as name, full_name, seat, etc. No scoring data here
+           * The score is stored in json.result (see Contest.score_report)
+           * 
+           * This functions will aggregate the grand total of each problem and also call
+           * "score_display" which copies data from json.result to json.data so that it includes all related info
+           */
+          
           // add placeholder data for row numbering
           json.data.forEach( (item,index) =>  { item.row_number = 1} )
 
-          // change the summation value
+          // calculate and set the summation value of each problem
+          // on the footer row
           let grand_total = 0
           Object.entries(json.result.stat).forEach( ([key,value]) => {
             grand_total += Number(value.sum)
@@ -165,7 +211,7 @@
           $(`#grand_total`).text(grand_total.toLocaleString(undefined, {minimumFractionDigits: 1}))
 
 
-          // render the graph and also return the data
+          // transform the data from json.result and json.problem to json.data so that DataTable can correctly render it
           return score_display(json)
         }
       },

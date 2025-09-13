@@ -148,35 +148,37 @@ class Submission < ApplicationRecord
     records.each do |sub|
       result[:score][sub.login]["prob_#{sub.problem_id}"] = sub.max_score || 0
 
-      # we pick the latest
+      # we pick the latest and save all related info
       unless (result[:score][sub.login]["time_#{sub.problem_id}"] || Date.new) > sub.submitted_at
         result[:score][sub.login]["time_#{sub.problem_id}"] = sub.submitted_at
         result[:score][sub.login]["sub_#{sub.problem_id}"] = sub.sub_id
         result[:score][sub.login]["llm_count_#{sub.problem_id}"] = sub.llm_count
         result[:score][sub.login]["llm_cost_#{sub.problem_id}"] = sub.llm_cost
+        result[:score][sub.login]["hint_count_#{sub.problem_id}"] = sub.hint_count
+        result[:score][sub.login]["hint_cost_#{sub.problem_id}"] = sub.hint_cost
       end
     end
 
-    # calculate stats (min, max, zero, partial)
-    result[:score].each do |k, v|
+    # calculate aggregated stats (min, max, zero, partial)
+    result[:score].each do |user_id, user_hash|
       sum = 0
-      v.each do |k2, v2|
-        if k2[0..4] == 'prob_'
-          # v2 is the score
-          prob_name = k2[5...]
-          result[:stat][prob_name][:score] << v2
-          result[:stat][prob_name][:sum] += v2 || 0
-          sum += v2 || 0
-          if v2 == 0
+      user_hash.each do |field_name, field_value|
+        if field_name[0..4] == 'prob_'
+          # field_value is the score
+          prob_name = field_name[5...]
+          result[:stat][prob_name][:score] << field_value
+          result[:stat][prob_name][:sum] += field_value || 0
+          sum += field_value || 0
+          if field_value == 0
             result[:stat][prob_name][:zero] += 1
-          elsif v2 == 100
+          elsif field_value == 100
             result[:stat][prob_name][:full] += 1
           else
             result[:stat][prob_name][:partial] += 1
           end
         end
       end
-      v[:user_sum] = sum
+      user_hash[:user_sum] = sum
     end
 
     # summary graph result

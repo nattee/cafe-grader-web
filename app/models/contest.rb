@@ -163,6 +163,13 @@ class Contest < ApplicationRecord
     llm_assist_count = Comment.llm_assists_for_submissions(self.submissions)
       .select('SUM(comments.cost) as llm_cost')
       .select('COUNT(comments.id) as llm_count')
+      .select('comments.commentable_id as submission_id')
+
+    hint_reveal = Comment.hint_reveal_for_problems(self.problems)
+      .select('comment_reveals.user_id as user_id')
+      .select('comments.commentable_id as problem_id')
+      .select('SUM(comments.cost) as hint_cost')
+      .select('count(comments.id) as hint_count')
 
     # records having the same score as the max record
     records = self.submissions
@@ -170,11 +177,14 @@ class Contest < ApplicationRecord
                    'submissions.points = MAX_RECORD.max_score AND ' +
                    'submissions.user_id = MAX_RECORD.user_id AND ' +
                    'submissions.problem_id = MAX_RECORD.problem_id ')
-      .joins(:problem)
       .joins("LEFT JOIN (#{llm_assist_count.to_sql}) LLM_ASSIST ON " +
-        "submissions.user_id = LLM_ASSIST.user_id AND " +
-        "submissions.problem_id = LLM_ASSIST.problem_id "
+        "submissions.id = LLM_ASSIST.submission_id"
        )
+      .joins("LEFT JOIN (#{hint_reveal.to_sql}) HINT_REVEAL ON " +
+        "submissions.user_id = HINT_REVEAL.user_id AND " +
+        "submissions.problem_id = HINT_REVEAL.problem_id "
+       )
+      .joins(:problem)
       .select('submissions.user_id,users_submissions.login,users_submissions.full_name,users_submissions.remark')
       .select('problems.name')
       .select('max_score')
@@ -182,6 +192,7 @@ class Contest < ApplicationRecord
       .select('submissions.id as sub_id')
       .select('submissions.problem_id,submissions.user_id')
       .select('LLM_ASSIST.llm_cost, LLM_ASSIST.llm_count')
+      .select('HINT_REVEAL.hint_cost, HINT_REVEAL.hint_count')
 
 
     return Submission.calculate_max_score(records, users, problems)

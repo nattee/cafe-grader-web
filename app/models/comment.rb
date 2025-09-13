@@ -20,13 +20,13 @@ class Comment < ApplicationRecord
   }
 
   scope :hint_reveal_for_problems, ->(problems) {
-    Comment.where(commentable: problems, commentable_type: 'Problem').joins(:comment_reveals).group(:commentable_id)
+    Comment.where(commentable: problems, commentable_type: 'Problem').joins(:comment_reveals).group('comment_reveals.user_id', :commentable_id)
   }
 
   scope :hints, -> { where(kind: HINT_KIND.keys) }
 
   scope :llm_assists_for_submissions, ->(submissions) {
-    Comment.where(commentable: submissions, commentable_type: 'Submission').joins(:comment_reveals).group(:commentable_id)
+    Comment.where(commentable: submissions, commentable_type: 'Submission').group(:commentable_id)
   }
 
   validates :title, presence: true
