@@ -38,7 +38,7 @@ class CommentsController < ApplicationController
       ]
     else
       # this one renders for the submission view pages
-      render turbo_stream: turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: true})
+      render turbo_stream: turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: true, has_processing: @submission.has_processing_comments?})
     end
   end
 
