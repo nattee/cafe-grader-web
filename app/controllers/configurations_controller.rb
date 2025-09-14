@@ -4,7 +4,10 @@ class ConfigurationsController < ApplicationController
 
   def index
     @configurations = GraderConfiguration.order(:key)
+
+    # pick the first key of the group name
     @group = GraderConfiguration.pluck("grader_configurations.key").map { |x| x[0...(x.index('.'))] }.uniq.sort
+    @group.delete('contest')
   end
 
   def edit

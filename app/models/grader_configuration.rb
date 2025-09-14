@@ -46,6 +46,10 @@ class GraderConfiguration < ApplicationRecord
     conf.update(value: Time.zone.now, value_type: 'string')
   end
 
+  def self.site_name
+    return GraderConfiguration.get('ui.site_name')
+  end
+
   #
   # View decision
   #

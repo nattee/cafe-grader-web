@@ -3,7 +3,7 @@
     .container-fluid
       %a.navbar-brand{href: list_main_path}
         %span.mi.mi-bs home
-        MAIN
+        = GraderConfiguration.site_name.html_safe || 'MAIN'
       .navbar-expand
         / display MODE button (with countdown in contest mode)
         - if GraderConfiguration.analysis_mode?
@@ -64,7 +64,7 @@
                 %li
                   %hr.dropdown-divider
                 %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites) if @current_user.admin?
-                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
+                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contests)
                 %li= link_to 'Languages', languages_path, class: 'dropdown-item'+active_class_when(controller: :languages) if @current_user.admin?
                 -#
           / report

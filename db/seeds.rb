@@ -26,6 +26,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'ui.site_name',
+     value_type: 'string',
+     default_value: 'cafe-grader',
+     description: 'The name of the site, shown at the start of the top navigation bar.'
+   },
+
+   {
      key: 'contest.time_limit',
      value_type: 'string',
      default_value: 'unlimited',
