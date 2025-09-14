@@ -16,7 +16,7 @@ class SubmissionsController < ApplicationController
   # GET /submissions.json
   # Show problem selection and user's submission of that problem
   def index
-    @problems = @user.problems_for_action(:submit)
+    @problems = @current_user.problems_for_action(:submit)
 
     if params[:problem_id]==nil
       @problem = nil
