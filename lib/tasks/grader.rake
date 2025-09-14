@@ -1,4 +1,4 @@
-namespace :grader do
+namespace :cafe do
   task :migrate_to_2023 do
     puts "start migrating to 2023"
     Dataset.migrate_old_testcases
@@ -29,5 +29,4 @@ namespace :grader do
     puts "You must set the api key for cucas in credentials.yml.enc"
     puts "(see credentials.yml.SAMPLE)"
   end
-
 end
