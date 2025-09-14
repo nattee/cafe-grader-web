@@ -19,6 +19,7 @@ export default class extends Controller {
   }
 
   postUserAction(event) {
+    event.preventDefault()
     // event.target is the dom that emits the event
     // the parameter for the action is in data-* of that dom
     // we copy the parameter and set the appropriate input
@@ -36,15 +37,9 @@ export default class extends Controller {
     form.requestSubmit()
   }
 
-  afterUserAction(event) {
-    $("#user_table").DataTable().ajax.reload()
-  }
-
   afterUsersAdd(event) {
     $('#user_ids').val(null).trigger("change");
     $('#user_group_ids').val(null).trigger("change");
-    const dt = $("#user_table").DataTable()
-    dt.ajax.reload()
   }
 
   setProblemsCommand(event) {
@@ -62,14 +57,9 @@ export default class extends Controller {
     form.requestSubmit()
   }
 
-  afterProblemAction(event) {
-    $("#problem_table").DataTable().ajax.reload()
-  }
-
   afterProblemsAdd(event) {
     $('#problem_ids').val(null).trigger("change");
     $('#problem_group_ids').val(null).trigger("change");
-    $("#problem_table").DataTable().ajax.reload()
   }
 
   //for contest

@@ -34,7 +34,7 @@
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
             %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'},
-              action: 'shown.bs.tab->contest#tabChange', table: {id: 'problem_table',init: 'no'}}}
+              action: 'shown.bs.tab->contest#tabChange', table: {id: 'user_table',init: 'no'}}}
               %span.mi.mi-bs
                 person
               Users
@@ -54,7 +54,13 @@
           -# ==========================================
           -# ---------- users pane ------------------
           -# ==========================================
-          #tab-contest-user.tab-pane.fade.show.active
+          #tab-contest-user.tab-pane.fade.show.active{ data: {
+            controller: 'datatables--init',
+            'datatables--init-config-name-value': 'contestManageUser',
+            'datatables--init-ajax-url-value': show_users_query_contest_path(@contest),
+            action: 'datatable:reload@window->datatables--init#reload',
+          }}
+
             .row
               .col-md-6
                 %h5.mb-2.card-subtitle.text-body-secondary List of users in this contest
@@ -80,11 +86,11 @@
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# hidden user action form
                 = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction', 'turbo-confirm': 'placeholder'}} do |f|
+                  data: {turbo: true, 'turbo-confirm': 'placeholder'}} do |f|
                   = f.hidden_field :user_id, 'data-contest-target': 'userFormUserID'
                   = f.hidden_field :command, 'data-contest-target': 'userFormCommand'
                 = form_with url: extra_time_user_contest_path, html: {'data-contest-target': 'userExtraTimeForm', id: 'extra-time-user-form',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}} do |f|
+                  data: {turbo: true}} do |f|
                   = f.hidden_field :row_id, 'data-contest-target': 'userExtraTimeFormRowID'
                   = f.hidden_field :start_offset, 'data-contest-target': 'userExtraTimeFormStart'
                   = f.hidden_field :end_offset, 'data-contest-target': 'userExtraTimeFormEnd'
@@ -93,12 +99,14 @@
                   .col-md-3
                   .col-md-9
                     = button_to 'Enable All', do_all_users_contest_path(@contest), class: 'btn btn-primary m-1', value: 'enable', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                      form: {style: 'display: inline',data: {turbo: true}}
                     = button_to 'Disable All', do_all_users_contest_path(@contest), class: 'btn btn-primary m-1', value: 'disable', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction'}}
+                      form: {style: 'display: inline',data: {turbo: true}}
                     = button_to 'Remove All', do_all_users_contest_path(@contest), class: 'btn btn-danger m-1', value: 'remove', name: 'command',
-                      form: {style: 'display: inline',data: {turbo: true, action: 'turbo:submit-end->contest#afterUserAction',
+                      form: {style: 'display: inline',data: {turbo: true,
                       'turbo-confirm': 'Really remove all users from the contest?'}}
+                    = button_to 'Clear Session All', do_all_users_contest_path(@contest), class: 'btn btn-warning m-1', value: 'clear_ip', name: 'command',
+                      form: {style: 'display: inline',data: {turbo: true}}
               .col-md-6
                 -# help for GroupUser
                 .card.bg-warning-subtle.shadow-sm
@@ -113,15 +121,21 @@
                   %th Full name
                   %th Role (hidden)
                   %th Seat
-                  %th Remark
+                  %th Contest Remark
                   %th Extra Time (s)
                   %th.text-center Enable
+                  %th Clear Session
                   %th Remove
                   %th Set Role
           -# ==========================================
           -# ---------- problem pane ------------------
           -# ==========================================
-          #tab-contest-problem.tab-pane.fade
+          #tab-contest-problem.tab-pane.fade{ data: {
+            controller: 'datatables--init',
+            'datatables--init-config-name-value': 'contestManageProblem',
+            'datatables--init-ajax-url-value': show_problems_query_contest_path(@contest),
+            action: 'datatable:reload@window->datatables--init#reload',
+          }}
             .row
               .col-md-6
                 %h5.mb-2.card-subtitle.text-body-secondary List of problems in this contest
@@ -133,7 +147,7 @@
                     .col-md-3
                       =label_tag :problem_ids, "Problem",class: 'col-form-label'
                     .col-md-7
-                      =select_tag :problem_ids, options_from_collection_for_select(Problem.all,'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :problem_ids, options_from_collection_for_select(@current_user.problems_for_action(:edit),'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-auto
                       =submit_tag "Add",class: 'btn btn-primary my-1', 'data-group-target': 'asdf'
                 =form_tag add_problem_by_group_contest_path(@contest), class: 'mb-1 form-inline',
@@ -142,12 +156,12 @@
                     .col-md-3
                       =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
                     .col-md-7
-                      =select_tag :problem_group_ids, options_from_collection_for_select(Group.all,'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
+                      =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
                     .col-md-2
                       =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
                 -# hidden problem action form
                 = form_with url: do_problem_contest_path, html: {'data-contest-target': 'problemForm',
-                  data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemAction'}} do |f|
+                  data: {turbo: true}} do |f|
                   = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
                   = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
               .col-md-6
@@ -187,166 +201,19 @@
                       = f.text_area :user_list, value: nil, class: 'form-control', style: 'height: 30rem'
               .col-md-6
                 .card.bg-warning-subtle.shadow-sm
-                  .card-body
-                    .card-title
-                    Add users to the contest from a csv text. One user per line.
-                    %ul
-                      %li
-                        Each line must be in the following format. A square bracket indicates that the parameter is optional.
-                        %span.rounded.bg-light.p-1.font-monospace user_id[,seat[,remark]]]
-                      %li
-                        If the users with the same user_id already exists, existing information will be overwritten.
-                      %li
-                        The columns
-                        %span.rounded.bg-light.p-1.font-monospace seat
-                        and
-                        %span.rounded.bg-light.p-1.font-monospace remark
-                        are optional. When
-                        %span.rounded.bg-light.p-1.font-monospace seat
-                        or
-                        %span.rounded.bg-light.p-1.font-monospace remark
-                        is empty (but not missing), the original value will be used.
-                    .card-title
-                      %h5 Example
-                    %ul
-                      %li.mb-2
-                        .rounded.bg-light.p-1.font-monospace user1
-                        will add the user with login "user1" to the contest. If the user already exists, no change is made to the contest user
-                      %li.mb-2
-                        .rounded.bg-light.p-1.font-monospace user1,room 403-8,
-                        will add the user with login "user1" and and set the seating to "room 403" and set the remark to an empty string. If the user is already in the contest, the seat and remark fields updated.
+                  .card-body.markdown-content
+                    :markdown
+                      Add or update users by providing a list of user logins in the text area below. Each user must be on a new line
+                      and each line must follow this comma-separated format: `user_login[,contest_seat[,contest_remark]]`
 
+                      * `contest_seat` and `contest_remark` are optional.
+                      * `contest_remark` is a note specific to this user for this contest only (this does not change the user's main profile remark)
 
-:javascript
-  function clear_user_form() {
-    $('#user_group_id').val(null).trigger('change')
-    $('#user_id').val(null).trigger('change')
-  }
+                      #### Updating Rules
+                      * If a `user_id` already exists in the contest, their information will be updated.
+                      * To update a user but keep their existing seat or remark, simply omit that field.
 
-  function clear_problem_form() {
-    $('#problem_group_id').val(null).trigger('change')
-    $('#problem_id').val(null).trigger('change')
-  }
-
-  function start_stop_offset_render(data,type,row,meta) {
-    const start_offset = row['start_offset_second']
-    const extra_time = row['extra_time_second']
-    return `${start_offset} : ${extra_time} ` +
-      `<a href='#' data-row-id="${row['id']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
-  }
-
-  function role_action_button(data,type,row,meta) {
-    result = ''
-    if (row['role'] != 'editor') 
-      result += cafe.dt.render.button('as editor',{element_type: 'link', className: 'link-success', action: 'contest#postUserAction', command: 'make_editor'})(row['user_id'],type,row,meta)
-    if (row['role'] != 'user') {
-      if (result != '') result += ' | '
-      result += cafe.dt.render.button('as user',{element_type: 'link', className: 'link-info', action: 'contest#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
-    }
-    return result
-
-  }
-
-
-
-  window.addEventListener("load", function() {
-    //user table
-    user_role_column = 2
-    user_table_config = {
-      responsive: true,
-      processing: true,
-      rowId: 'id',
-      destroy: true,
-      paging: false,
-      order: [[0,'asc']],
-      ajax: {
-        url: "#{show_users_query_contest_path(@contest)}",
-        type: 'POST',
-        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
-      },
-      layout: {
-        topStart: 'info',
-        topEnd: 'search',
-      },
-      columns: [ 
-        {data: 'login'},
-        {data: 'full_name'},
-        {data: 'role'},
-        {data: 'remark'},
-        {data: 'seat'},
-        {data: null, render: start_stop_offset_render},
-        {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
-        {data: 'user_id', render: role_action_button},
-      ],
-      columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [5,6,7,8]} ],
-      orderFixed: [user_role_column,'asc'],
-      drawCallback: function (settings) {
-        // we assume that the row are sorted by users' role (by 'orderFixed' and 'order' options)
-        // this render a header rows when two adjacent rows has their roles differ
-        var api = this.api();
-        var rows = api.rows({ page: 'current' }).nodes();
-        var last_role = null;
-        api.column(user_role_column, { page: 'current' })
-          .data()
-          .each(function (role, i) {
-              if (last_role !== role) {
-
-                // set text for role row
-                if (role == 'editor') {
-                  role_text = '<tr class="table-success"><td colspan="8"> Editors (Can edit the contest) </td></tr>'
-                } else {
-                  role_text = '<tr class="table-info"><td colspan="8"> Users (Can only submit to the contest) </td></tr>'
-                }
-
-                //prepend row
-                $(rows).eq(i).before(role_text);
-                last_role = role;
-              }
-          });
-        //since columns size changed, we call adjust
-        //but not .draw() !!! else, infinite recursion
-        api.columns.adjust()
-      },
-    }
-
-    //problem table
-    problem_table_config = {
-      responsive: true,
-      processing: true,
-      rowId: 'id',
-      destroy: true,
-      paging: false,
-      order: [[0,'asc']],
-      ajax: {
-        url: "#{show_problems_query_contest_path(@contest)}",
-        type: 'POST',
-        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
-      },
-      layout: {
-        topStart: 'info',
-        topEnd: 'search',
-      },
-      columns: [ 
-        {data: 'number'},
-        {data: 'name'},
-        {data: 'full_name'},
-        {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
-        {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm'})},
-        {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
-        {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
-        {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
-      ],
-      columnDefs: [{visible: false, targets: [0]},
-                   {orderable: false, targets: [1,2,3,4,5,6,7,8]}],
-      drawCallback: function (settings) {
-        var api = this.api();
-        api.columns.adjust()
-      },
-    }
-
-    //initialize the table
-    $('#user_table').DataTable(user_table_config)
-    $('#problem_table').DataTable(problem_table_config)
-  });
+                      #### Example
+                      * `user1` adds user1 to the contest. If they already exist, no changes are made.
+                      * `user1,Room 403-8` adds user1 with the given seat. If user1 is already in the contest, seat will be updated but the existing remark is unchanged.
+                      * `user1,,late entry` adds user1 with a blank seat and "late entry" remark, If user1 is already in the contest, the remark remark will be updated while the seat is set to blank.

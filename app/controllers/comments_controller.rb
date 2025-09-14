@@ -46,6 +46,7 @@ class CommentsController < ApplicationController
   # -- (this is mainly about hints) --
   def manage_problem
     @hint = Comment.find(params[:null][:hint_id]) rescue nil
+    @hint = @problem.hint.first unless @hint
     if params[:button] == 'add'
       # create without title (this will fail to be saved unless we set a title)
       @hint = @problem.hints.new(user: @current_user, kind: 'hint')

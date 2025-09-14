@@ -37,7 +37,7 @@
           = message
           %button.btn-close{type: 'button', 'data-bs-dismiss': :alert}
       = yield
-    
+
     -# for msg modal, we have a turbo_frame, ready to be shown via turbo
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
     = turbo_frame_tag :msg_modal_main, data: {turbo: true}
@@ -59,8 +59,10 @@
       #js-response
         / place holder
 
-  %footer.footer.mt-auto.py-2.bg-light.fixed-bottom.border-top
+  %footer.footer.mt-5.py-2.bg-light.fixed-bottom.border-top
     .container.text-center
       %span.text-muted
-        &copy; #{Time.now.year} cafe-grader | Revision: 4.1.0cu
+        &copy; #{Time.now.year}
+        %a{href: 'https://github.com/nattee/cafe-grader-web'} cafe-grader
+        | Revision: 4.1.1cu
 

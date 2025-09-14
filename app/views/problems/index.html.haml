@@ -51,7 +51,7 @@
       %th.text-end
         A - D(T)
         = render partial: 'tooltip', locals: {title: 'number of attachments, datasets, testcases of the problem'}
-      %th.text-end Model Solution
+      %th.text-end Solution/Hint
       %th Tags
       %th
         Submit
@@ -79,18 +79,18 @@
         %td.text-end
           = problem.live_dataset.checker.attached? ? mdi(:checkbook) : ''
           = "#{problem.attachment.attached? ? 1 : 0} - #{problem.dataset_count}(#{problem.tc_count})"
-        %td.text-end= "#{problem.ms_count}"
+        %td.text-end= "#{problem.ms_count || '-'}/#{problem.hint_count || '-'}"
         %td
           - problem.tags.each do |t|
             %span.badge.text-bg-secondary.bg-opacity-100= t.name
         %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
         %td= problem.date_added
         %td
-          .form-check.form-switch
+          .form-check.form-switch.d-flex.justify-content-center
             %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available', readonly: @current_user.admin? ? 'false' : 'true'}, disabled: @current_user.admin? == false}
         %td 
           -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
-          .form-check.form-switch
+          .form-check.form-switch.d-flex.justify-content-center
             %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
         %td= link_to "#{mdi(:finance)}Stat".html_safe, {:action => 'stat', :id => problem.id}
         %td= link_to 'Edit', {:action => 'edit', :id => problem}

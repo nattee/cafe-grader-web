@@ -2,15 +2,16 @@
 .row.mb-3
   .col-md-5.mb-3
     = link_to '+ Add announcement', new_announcement_path, class: 'btn btn-success'
-  .col-md-7.mb-3
+  .col-md-7
     .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body
-        %ul.mb-0
-          %li 
-            Announcement can be written using #{link_to 'markdown syntax', 'https://www.markdownguide.org/basic-syntax/'}.
-          %li Public announcement is shown to everyone.
-          %li If a group is specified, the announcements will be shown to the users of that group only.
-          %li Only site admins can create public announcement.
+        :markdown
+          ### How Announcements Work
+          1. __Formatting & Status__: All announcements can be formatted using **[Markdown](https://www.markdownguide.org/basic-syntax/)**. To make an announcement visible, you must set its status to **Published**. Drafts are never shown to users.
+          2. __Audience Targeting__: You can control who sees an announcement by setting its visibility:
+            * **Front Page Announcements:* These are visible to **everyone** who visits the site, even before they log in. Use this for system-wide notices.
+            * **Public Announcements:* These are visible to **any user who is logged in**. This is the default for internal communications. Note: Only Administrators can create this type of announcement.
+            * **Group-Specific Announcements:* To restrict an announcement to a specific audience, assign it to a user group. Only members of that group will see the announcement after logging in.
 
 %table.table.table-striped
   %thead

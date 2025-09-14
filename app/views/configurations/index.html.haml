@@ -1,18 +1,19 @@
 .row
   .col-md-12
     %h1 System configuration
-.row
-  .col-md-12
-    = link_to 'Set exam mode', set_exam_right_grader_configuration_index_path('false'), class: 'btn btn-warning m-1'
-    = link_to 'Set practice mode', set_exam_right_grader_configuration_index_path('true'), class: 'btn btn-info m-1'
-    = link_to 'Clear IP all users', clear_user_ip_grader_configuration_index_path, class: 'btn btn-secondary m-1', data: {turbo: true, 'turbo-method': 'post'}
+-#
+  .row
+    .col-md-12
+      = link_to 'Set exam mode', set_exam_right_grader_configuration_index_path('false'), class: 'btn btn-warning m-1'
+      = link_to 'Set practice mode', set_exam_right_grader_configuration_index_path('true'), class: 'btn btn-info m-1'
+      = link_to 'Clear IP all users', clear_user_ip_grader_configuration_index_path, class: 'btn btn-secondary m-1', data: {turbo: true, 'turbo-method': 'post'}
 
 = turbo_frame_tag "stream_js"
 
-- @group.each do |g|
+- @group.each do |group|
   .row
     .col-md-12
-      %h2= g
+      %h2= group.capitalize
       %table.table.table-striped
         %thead
           %th{style: 'width: 25%'} Key
@@ -20,7 +21,7 @@
           %th{style: 'width: 15%'} Value
           %th Description
         - @configurations.each do |conf|
-          - next if conf.key[0...(conf.key.index('.'))] != g
+          - next if conf.key[0...(conf.key.index('.'))] != group
           %tr
             %td
               = conf.key

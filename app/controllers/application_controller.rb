@@ -183,7 +183,9 @@ class ApplicationController < ActionController::Base
     end
 
     # check if user ip is allowed
-    unless @current_user.admin? || GraderConfiguration[WHITELIST_IGNORE_CONF_KEY]
+    unless @current_user.admin? ||
+        GraderConfiguration[WHITELIST_IGNORE_CONF_KEY] ||   # if the config allows any IP
+        @current_user.problems_for_action(:edit).any?       # if the user has "editing" right on any problem
       unless is_request_ip_allowed?
         unauthorized_redirect(msg: 'Your IP is not allowed to log in at this time.', logout: true)
         return false
@@ -191,7 +193,10 @@ class ApplicationController < ActionController::Base
     end
 
     # check unique visitor id
-    unless @current_user.admin? || GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY]
+    unless @current_user.admin? ||
+        GraderConfiguration[MULTIPLE_IP_LOGIN_CONF_KEY] ||  # if we allow multiple sessions
+        @current_user.problems_for_action(:edit).any?       # if the user has "editing" right on any problem
+
       visitor_id = unique_visitor_id
       if @current_user.last_ip && @current_user.last_ip != visitor_id
         redirect_to login_main_path, alert: "You cannot login from two different places"

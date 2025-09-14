@@ -111,6 +111,19 @@ class Problem < ApplicationRecord
       .distinct('problems.id')
   }
 
+  # return all problem that the user has "editing" rights in a contest
+  #   if the user is an editor of the contest, they can always see the problems
+  #   even if the contest is not "enabled"
+  scope :contests_editable_problems_for_user, ->(user_id) {
+    joins(contests_problems: {contest: :contests_users})
+      .where(available: true)                   # available problems only
+      .where('contests.enabled': true)          # contests is enabled
+      .where('contests_users.user_id': user_id) # user is in the contest
+      .where('contests_users.enabled': true)    # user in the contest is enabled
+      .where('contests_users.role': 'editor')   # user must have 'editor' role
+      .distinct('problems.id')
+  }
+
   scope :default_order, -> { order(date_added: :desc).order(:name)  }
 
   DEFAULT_TIME_LIMIT = 1

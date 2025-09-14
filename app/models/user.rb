@@ -73,17 +73,25 @@ class User < ApplicationRecord
   before_save :assign_default_contest
 
   # ---- problem for the users for specific action ------
-  # -- this includes logic of User.role where the admin always has right ---
-  # -- this respect the Group Mode
-  # -- this also includes logics of mode of the grader (normal, contest, analysis)
-  # -- this also consider whether the user is enabled ---
-  # -- In short, PLEASE USE this function for user perspective
+  # Determines which problems a user is authorized to perform the specified action on.
   #
-  # The respect_admin, when true, will make this function return all problems for an admin
+  # This should be the MAIN authorization filter for problem-related action and
+  # should be used to scope problem lookups from the user's perspective.
+  #
+  # It considers following logics
+  # * User's special global role of admin (admins always have right)
+  # * The mode of the grader
+  #   * the Group Mode and user's role and the enable property in the group
+  #   * the Contest Mode and the user's role and the enable property in the contest
+  # * The global enable property of the user
+  #
+  # In short, PLEASE USE this function when we need authorization of a user
+  #
+  # The respect_admin, when true, will cause this function to return all problems for an admin
   # The only place that respect_admin: false should be used is in the main page where the admin
-  # is treat as a normal user
+  # is treated as a normal user
   #
-  # valid action is either :submit, :report, :edit
+  # valid action are :submit, :report, or :edit
   def problems_for_action(action, respect_admin: true)
     return Problem.all if admin? && respect_admin
     return Problem.none unless enabled?
@@ -93,7 +101,11 @@ class User < ApplicationRecord
     if GraderConfiguration.multicontests?
       # legacy mode, have not been implemented yet
     elsif GraderConfiguration.contest_mode?
-      return Problem.contests_problems_for_user(self.id)
+      if [:edit, :report].include? action
+        return Problem.contests_editable_problems_for_user(self.id)
+      else
+        return Problem.contests_problems_for_user(self.id)
+      end
     else
       # normal mode
       if GraderConfiguration.use_problem_group?
@@ -166,6 +178,22 @@ class User < ApplicationRecord
   def reportable_users
     return User.all if admin?
     User.joins(:groups).where(groups: {id: groups_for_action(:report)}).distinct
+  end
+
+  # ---- announcement for users for specific action -----
+  # valid action is either :view, :edit
+  def announcement_for_action(action)
+    return Announcement.all if admin?
+    return Announcement.none unless enabled?
+    action = action.to_sym
+
+    if action == :view
+      return Announcement.viewable_by_user(self)
+    elsif action == :edit
+      return Announcement.editable_by_user(self)
+    else
+      raise ArgumentError.new('action must be one of :edit, :submit')
+    end
   end
 
   # return contests of this user that is both enabled and the current time
@@ -444,13 +472,23 @@ class User < ApplicationRecord
     return (submission.user == self) || (GraderConfiguration["right.user_view_submission"])
   end
 
-
   def can_view_testcase?(problem)
     # admin always has right
     return true if admin?
 
     return can_view_problem?(problem) && GraderConfiguration["right.view_testcase"]
   end
+
+  def can_edit_announcement(announcement)
+    # admin always has right
+    return true if admin?
+
+    # if the announcement is not group specific or is in a group t
+    return true if Announcement.editable_by_user(self).where(id: announcement).any?
+
+    return false
+  end
+
 
   #
   # -- end permission methods --

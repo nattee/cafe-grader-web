@@ -1,5 +1,5 @@
 class TestcasesController < ApplicationController
-  before_action :set_testcase, only: [:download_input,:download_sol]
+  before_action :set_testcase, only: [:download_input, :download_sol]
   before_action :set_problem, only: [:show_problem, :download_manager]
   before_action :testcase_authorization
 
@@ -23,7 +23,7 @@ class TestcasesController < ApplicationController
     @managers = @problem.live_dataset.managers
     unless @current_user.admin? or @problem.view_testcase
       flash[:error] = 'You cannot view the testcase of this problem'
-      redirect_to :controller => 'main', :action => 'list'
+      redirect_to controller: 'main', action: 'list'
     end
   end
 
@@ -45,7 +45,7 @@ class TestcasesController < ApplicationController
     end
 
     def testcase_authorization
-      #admin always has privileged
-      unauthorized_redirect unless @current_user.can_view_testcase?(@problem)
+      # admin always has privileged
+      unauthorized_redirect unless @current_user&.can_view_testcase?(@problem)
     end
 end

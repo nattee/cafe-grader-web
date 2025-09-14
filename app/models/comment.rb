@@ -11,7 +11,32 @@ class Comment < ApplicationRecord
   # limit to only HINT
   HINT_KIND = self.kinds.select { |k| k[0...4] == 'hint' }
 
-  scope :chargeable_for, ->(user, time_range) { where(user: user, updated_at: time_range, kind: ['hint', 'llm_assist'])  }
+  scope :chargeable_for, ->(user, time_range = nil) {
+    if time_range
+      where(user: user, updated_at: time_range, kind: ['hint', 'llm_assist'])
+    else
+      where(user: user, kind: ['hint', 'llm_assist'])
+    end
+  }
+
+  scope :hint_reveal_for_problems, ->(problems, time_range = nil) {
+    if time_range
+      Comment.joins(:comment_reveals)
+        .where(commentable: problems, commentable_type: 'Problem')
+        .where(comment_reveals: {created_at: time_range})
+        .group('comment_reveals.user_id', :commentable_id)
+    else
+      Comment.joins(:comment_reveals)
+        .where(commentable: problems, commentable_type: 'Problem')
+        .group('comment_reveals.user_id', :commentable_id)
+    end
+  }
+
+  scope :hints, -> { where(kind: HINT_KIND.keys) }
+
+  scope :llm_assists_for_submissions, ->(submissions) {
+    Comment.where(commentable: submissions, commentable_type: 'Submission').group(:commentable_id)
+  }
 
   validates :title, presence: true
 

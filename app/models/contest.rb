@@ -60,8 +60,8 @@ class Contest < ApplicationRecord
       items = line.chomp.split(',', 1000)
 
       login = items[0]
-      remark = items.length >= 2 ? items[1] : nil
-      seat = items.length >= 3 ? items[2] : nil
+      seat = items.length >= 2 ? items[1] : nil
+      remark = items.length >= 3 ? items[2] : nil
 
       user = User.where(login: login).first
 
@@ -153,54 +153,49 @@ class Contest < ApplicationRecord
   #
   # -------- report ---------------
   #
+  # This is for reporting the maximum score of each problem of each user
   def score_report
     # calculate submission with max score
     max_records = self.submissions
       .group('submissions.user_id,submissions.problem_id')
       .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
 
+    llm_assist_count = Comment.llm_assists_for_submissions(self.submissions)
+      .select('SUM(comments.cost) as llm_cost')
+      .select('COUNT(comments.id) as llm_count')
+      .select('comments.commentable_id as submission_id')
+
+    hint_reveal = Comment.hint_reveal_for_problems(self.problems, (self.start)..(self.stop))
+      .select('comment_reveals.user_id as user_id')
+      .select('comments.commentable_id as problem_id')
+      .select('SUM(comments.cost) as hint_cost')
+      .select('count(comments.id) as hint_count')
+
     # records having the same score as the max record
-    records = self.submissions.joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
-                               'submissions.points = MAX_RECORD.max_score AND ' +
-                               'submissions.user_id = MAX_RECORD.user_id AND ' +
-                               'submissions.problem_id = MAX_RECORD.problem_id ').joins(:problem)
+    records = self.submissions
+      .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+                   'submissions.points = MAX_RECORD.max_score AND ' +
+                   'submissions.user_id = MAX_RECORD.user_id AND ' +
+                   'submissions.problem_id = MAX_RECORD.problem_id ')
+      .joins("LEFT JOIN (#{llm_assist_count.to_sql}) LLM_ASSIST ON " +
+        "submissions.id = LLM_ASSIST.submission_id"
+       )
+      .joins("LEFT JOIN (#{hint_reveal.to_sql}) HINT_REVEAL ON " +
+        "submissions.user_id = HINT_REVEAL.user_id AND " +
+        "submissions.problem_id = HINT_REVEAL.problem_id "
+       )
+      .joins(:problem)
       .select('submissions.user_id,users_submissions.login,users_submissions.full_name,users_submissions.remark')
       .select('problems.name')
       .select('max_score')
+      .select('LEAST(max_score,100.0-IFNULL(LLM_ASSIST.llm_cost,0.0)-IFNULL(HINT_REVEAL.hint_cost,0.0)) as final_score')
       .select('submitted_at')
       .select('submissions.id as sub_id')
       .select('submissions.problem_id,submissions.user_id')
+      .select('LLM_ASSIST.llm_cost, LLM_ASSIST.llm_count')
+      .select('HINT_REVEAL.hint_cost, HINT_REVEAL.hint_count')
 
 
     return Submission.calculate_max_score(records, users, problems)
-  end
-
-  protected
-
-  # this is refactored from the report controller
-  #  *records* is a result from Contest.score_report
-  #  *users* is the User relation that is used to build *records*
-  #
-  # return  a hash {score: xx, stat: yy}
-  # xx is {
-  #   #{user.login}: {
-  #     id:, full_name:, remark:,
-  #     prob_#{prob.name}:, time_#{prob.name}
-  #     ...
-  # }
-  def self.build_score_result(records, users)
-    # init score hash
-    result = {score: Hash.new { |h, k| h[k] = {} },
-              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
-
-    # populate users
-    users.each { |u| result[:score][u.login] = {id: u.id, full_name: u.full_name, remark: u.remark} }
-
-    # populate result
-    records.each do |score|
-      result[:score][score.user_id][score.problem_id] = score.max_score || 0
-    end
-
-    return result
   end
 end

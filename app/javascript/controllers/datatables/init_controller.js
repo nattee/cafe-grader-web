@@ -1,11 +1,26 @@
 import { Controller } from "@hotwired/stimulus";
 import { configs } from "controllers/datatables/configs"
 
+/**
+ * usage: connect this controller to an enclosing tag that contains a table element
+ *   that will be made into a datatable, like the following HAML
+ *
+ *       .tab-content{ data: {
+ *           controller: 'datatables--init',
+ *           'datatables--init-config-name-value': 'contestManageUser',
+ *           'datatables--init-ajax-url-value': show_users_query_contest_path(@contest),
+ *           action: 'datatable:reload@window->datatables--init#reload'
+ *
+ *  Write a config in /app/javascript/controllers/datatables/configs.js
+ *  which may include columns from /app/javascript/controllers/datatables/columns.js
+ *
+ *  If ajax is needed, we can put the url helper as data-datatables--init-ajax-url-value
+ *  since we cannot use url helper inside the javascript
+ */
 export default class extends Controller {
   static values = { 
     configName: String,
     ajaxUrl: String,
-
   }
 
   connect() {
@@ -45,15 +60,28 @@ export default class extends Controller {
     });
   }
 
-  // this functions 
+  // this functions reload a datatable in this.table that has it's node() id in event.detail.table
+  // Canonically, we can trigger this function by connecting it to an action but mostly we connect it
+  // with  action: 'datatable:reload@window->datatables--init#reload'
+  // and let the `event_dispatcher` turbo_stream fire the datatable:reload event with event_detail parameters
   reload(event) {
-    // console.log("Received datatable:reload event. Payload:", event.detail)
+    // Get the string of space-separated table names.
+    const targetNamesStr = event.detail?.table;
+
+    // If a string of names is provided, split it into an array.
+    // Otherwise, targetTables will be null.
+    const targetTables = targetNamesStr ? targetNamesStr.split(' ') : null;
+    console.log(`targetTables = ${targetTables}`)
 
     this.tables.forEach(table => {
-      // 'null, false' reloads data from the server but keeps the user on the current page
-      table.ajax.reload(null, false)
-    })
-
+      // 1. No specific tables were targeted (targetTables is null).
+      // 2. This table's id is included in the list of targeted tables.
+      if (!targetTables || targetTables.includes(table.table().node().id)) {
+        // 'null, false' reloads data from the server but keeps the user on the current page
+        table.ajax.reload(null, false)
+        console.log(`reloading = ${table.table().node().id}`)
+      }
+    });
   }
 
 }

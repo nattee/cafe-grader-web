@@ -6,7 +6,6 @@
       .card
         .card-header
           Announcement
-          = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
         %ul.list-group.list-group-flush
           = render :partial => 'announcement', :collection => @announcements
   .col-lg-4.col-md-6.col-sm-12

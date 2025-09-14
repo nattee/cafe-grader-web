@@ -40,7 +40,6 @@ class ContestsController < ApplicationController
                   probCount: ContestProblem.where(contest_id: @contests_for_manage.ids).group('contest_id').count('problem_id') }
   end
 
-
   # GET /contests/1
   # GET /contests/1.xml
   def show
@@ -57,7 +56,6 @@ class ContestsController < ApplicationController
   end
 
   def view_query
-    # @result = Contest.build_score_result(@contest.score_report,@contest.users)
     @result = @contest.score_report
 
     render json: {
@@ -163,9 +161,14 @@ class ContestsController < ApplicationController
     elsif params[:command] == 'remove'
       @contest.users.clear
       @toast[:body] = "All users were removed."
+    elsif params[:command] == 'clear_ip'
+      @contest.users.update_all(last_ip: nil)
+      @toast[:body] = "Clear all users session."
     else
       @toast[:body] = "ERROR: Unknown command"
+      @toast[:type] = :alert
     end
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
     render 'turbo_toast'
   end
 
@@ -179,6 +182,9 @@ class ContestsController < ApplicationController
       gu = @contest.contests_users.where(user: @user).first
       gu.update(enabled: !gu.enabled?)
       @toast[:body] = 'User was updated.'
+    when 'clear_ip'
+      @user.update(last_ip: nil)
+      @toast[:body] = 'User session was cleared.'
     when 'make_editor', 'make_user'
       target_role = params[:command].split('_')[1]
 
@@ -191,7 +197,9 @@ class ContestsController < ApplicationController
       end
     else
       @toast[:body] = "Unknown command"
+      @toast[:type] = :alert
     end
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
     render 'turbo_toast'
   end
 
@@ -201,6 +209,7 @@ class ContestsController < ApplicationController
     start_offset = params[:start_offset]
     cu.update(extra_time_second: params[:end_offset], start_offset_second: params[:start_offset])
     @toast = {title: "Contest #{@contest.name}", body: "Set extra times of #{cu.user.login} to #{start_offset} : #{end_offset}"}
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
     render 'turbo_toast'
   end
 
@@ -214,6 +223,7 @@ class ContestsController < ApplicationController
     else
       return
     end
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
     render 'turbo_toast'
   end
 
@@ -240,6 +250,7 @@ class ContestsController < ApplicationController
       @toast[:body] = "Unknown command"
       @toast[:type] = 'alert'
     end
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
     render 'turbo_toast'
   end
 
@@ -248,6 +259,7 @@ class ContestsController < ApplicationController
       users = User.where(id: params[:user_ids])
       result = @contest.add_users users
       @toast = save_adding_and_build_toast(result, User.name.downcase)
+      @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
@@ -259,6 +271,7 @@ class ContestsController < ApplicationController
       user_ids = GroupUser.where(group_id: params[:user_group_ids]).pluck :user_id
       result = @contest.add_users User.where(id: user_ids)
       @toast = save_adding_and_build_toast(result, User.name.downcase)
+      @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding users failed', body_msg: e.message}
@@ -273,6 +286,7 @@ class ContestsController < ApplicationController
     body = "#{pluralize(res[:added_users].count, 'user')} were added or updated. "
     body += "#{pluralize(res[:error_logins].count, 'user')} failed to be added. The first error is #{res[:first_error]}" if res[:error_logins].count > 0
     @toast[:body] = body
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
     render 'turbo_toast'
   end
 
@@ -283,6 +297,7 @@ class ContestsController < ApplicationController
       problems = @current_user.problems_for_action(:edit).where(id: params[:problem_ids])
       result = @contest.add_problems_and_assign_number(problems)
       @toast = save_adding_and_build_toast(result, Problem.name.downcase)
+      @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
@@ -295,6 +310,7 @@ class ContestsController < ApplicationController
       problems = Problem.group_editable_by_user(@current_user).where(id: problem_ids)
       result = @contest.add_problems_and_assign_number(problems)
       @toast = save_adding_and_build_toast(result, Problem.name.downcase)
+      @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
       render 'turbo_toast'
     rescue => e
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Adding problems failed', body_msg: e.message}
@@ -328,7 +344,7 @@ class ContestsController < ApplicationController
     end
   end
 
-  # ---- useraction ----
+  # ---- user action ----
   def set_active
     # validate
     unless @contest.users.include?(@current_user) && @contest.enabled?
