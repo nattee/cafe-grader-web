@@ -68,7 +68,7 @@ class DatasetsController < ApplicationController
         format.json { render :show, status: :ok, location: @dataset }
         format.turbo_stream
       else
-        #format.html { render :edit, status: :unprocessable_entity }
+        # format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @dataset.errors, status: :unprocessable_entity }
         format.turbo_stream
       end
@@ -76,7 +76,7 @@ class DatasetsController < ApplicationController
   end
 
   def file_delete
-    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    att = ActiveStorage::Attachment.where(record: @dataset, id: params[:att_id]).first
     att.purge
 
     @dataset.reload
@@ -87,15 +87,15 @@ class DatasetsController < ApplicationController
     @active_dataset_tab = "#files"
   end
 
-  #POST /dataset/1/file/view/1
-  #turbo
+  # POST /dataset/1/file/view/1
+  # turbo
   def file_view
-    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    att = ActiveStorage::Attachment.where(record: @dataset, id: params[:att_id]).first
     render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: att.filename, body_msg: "<pre>#{att.download}</pre>".html_safe}
   end
 
   def file_download
-    att = ActiveStorage::Attachment.where(record: @dataset,id: params[:att_id]).first
+    att = ActiveStorage::Attachment.where(record: @dataset, id: params[:att_id]).first
     type = att.content_type
     filename = att.filename.to_s
     send_data att.download, disposition: 'inline', type: type, filename: filename
@@ -103,15 +103,15 @@ class DatasetsController < ApplicationController
 
   #--- turbo response ---
   def settings
-    render turbo_stream: turbo_stream.update( 'dataset_settings', partial: 'settings', locals: {ds: @dataset})
+    render turbo_stream: turbo_stream.update('dataset_settings', partial: 'settings', locals: {ds: @dataset})
   end
 
   def testcases
-    render turbo_stream: turbo_stream.update( 'dataset_testcases', partial: 'testcases', locals: {ds: @dataset})
+    render turbo_stream: turbo_stream.update('dataset_testcases', partial: 'testcases', locals: {ds: @dataset})
   end
 
   def files
-    render turbo_stream: turbo_stream.update( 'dataset_files', partial: 'managers', locals: {ds: @dataset})
+    render turbo_stream: turbo_stream.update('dataset_files', partial: 'managers', locals: {ds: @dataset})
   end
 
   # as turbo
@@ -152,15 +152,15 @@ class DatasetsController < ApplicationController
     begin
       config = JSON.parse(params[:weight_param])
       if config.is_a? Array
-        @dataset.set_by_array(:weight,config)
+        @dataset.set_by_array(:weight, config, can_use_cms_mode: true)
       elsif config.is_a? Hash
         @dataset.set_by_hash(config.symbolize_keys)
       else
         raise JSON::ParserError
       end
-      @toast = {body: "Testcases' parameters are updated.",title: 'Testcase updated'}
+      @toast = {body: "Testcases' parameters are updated.", title: 'Testcase updated'}
     rescue JSON::ParserError => e
-      @toast = {body: "Weight parameter is malformed.",title: 'Testcase updated', type: 'alert'}
+      @toast = {body: "Weight parameter is malformed.", title: 'Testcase updated', type: 'alert'}
     end
     render :update
   end
@@ -175,10 +175,9 @@ class DatasetsController < ApplicationController
 
   def rejudge
     @dataset.problem.submissions.each do |sub|
-      #mass rejudge, priority is very low
-      sub.add_judge_job(@dataset,-50)
+      # mass rejudge, priority is very low
+      sub.add_judge_job(@dataset, -50)
     end
-
   end
 
   # DELETE /datasets/1 or /datasets/1.json
@@ -186,15 +185,15 @@ class DatasetsController < ApplicationController
     p = @dataset.problem
     if p.datasets.count == 1
       # can't delete last dataset
-      @toast = {title: 'Delete error',type: 'alert',
+      @toast = {title: 'Delete error', type: 'alert',
                 body: "Cannot delete the last remaining dataset."}
     elsif @dataset == p.live_dataset
       # can't delete the live dataset
-      @toast = {title: 'Delete error',type: 'alert',
+      @toast = {title: 'Delete error', type: 'alert',
                 body: "Cannot delete the live dataset."}
     else
       @dataset.destroy
-      @toast = {title: 'Dataset changed',type: 'warning',
+      @toast = {title: 'Dataset changed', type: 'warning',
                 body: "Dataset  [#{@dataset.name}] is deleted."}
       # render new dataset
       @dataset = p.datasets.first
@@ -218,7 +217,7 @@ class DatasetsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def dataset_params
       params.fetch(:dataset, {})
-      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename, 
+      params.require(:dataset).permit(:name, :time_limit, :memory_limit, :score_type, :evaluation_type, :main_filename,
                                       :checker, :initializer_filename)
     end
 
@@ -228,5 +227,4 @@ class DatasetsController < ApplicationController
       @active_dataset_tab = params[:active_dataset_tab]
       @active_dataset_tab = '#settings' if @active_dataset_tab.blank?
     end
-
 end
