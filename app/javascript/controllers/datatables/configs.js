@@ -95,8 +95,8 @@ export const configs = {
       {data: 'login'},
       {data: 'full_name'},
       {data: 'role'},  // this is user role column, index 2, must be hidden and has fixed ordering
-      {data: 'remark'},
       {data: 'seat'},
+      {data: 'remark'},
       {data: null, render: renderers.startStopOffsetRender},
       {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
       {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'contest#postUserAction', command: 'clear_ip'} )},

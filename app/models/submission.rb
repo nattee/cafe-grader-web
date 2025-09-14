@@ -124,14 +124,16 @@ class Submission < ApplicationRecord
   # xx is {
   #   #{user.login}: {
   #     id:, full_name:, remark:,
-  #     prob_#{prob.id}:     # score
-  #     time_#{prob.id}:     # the latest time of that score
-  #     sub_#{prob.id}:      # the sub_id of that score
+  #     raw_#{prob.id}:        # score
+  #     time_#{prob.id}:       # the latest time of that score
+  #     sub_#{prob.id}:        # the sub_id of that score
+  #     deduction_#{prob.id}:  # the sub_id of that score
+  #     final_#{prob.id}:      # the sub_id of that score
   #     ...
   # }
   def self.calculate_max_score(records, users, problems)
     result = {score: Hash.new { |h, k| h[k] = {} },
-              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, sum_deduced: 0, score: [] } } }
 
     # build users
     users.each do |u|
@@ -146,7 +148,7 @@ class Submission < ApplicationRecord
     #   id and time of last submission with that max score
     #   cost of llm, count of llm
     records.each do |sub|
-      result[:score][sub.login]["prob_#{sub.problem_id}"] = sub.max_score || 0
+      result[:score][sub.login]["raw_score_#{sub.problem_id}"] = sub.max_score || 0
 
       # we pick the latest and save all related info
       unless (result[:score][sub.login]["time_#{sub.problem_id}"] || Date.new) > sub.submitted_at
@@ -156,30 +158,40 @@ class Submission < ApplicationRecord
         result[:score][sub.login]["llm_cost_#{sub.problem_id}"] = sub.llm_cost
         result[:score][sub.login]["hint_count_#{sub.problem_id}"] = sub.hint_count
         result[:score][sub.login]["hint_cost_#{sub.problem_id}"] = sub.hint_cost
+        result[:score][sub.login]["final_score_#{sub.problem_id}"] = sub.final_score.to_d
+
+        result[:score][sub.login]["total_cost_#{sub.problem_id}"] = nil
+        result[:score][sub.login]["total_cost_#{sub.problem_id}"] = 0.to_d + (sub.llm_cost || 0.0) + (sub.hint_cost || 0.0) unless sub.llm_cost.nil? && sub.hint_cost.nil?
       end
     end
 
-    # calculate aggregated stats (min, max, zero, partial)
-    result[:score].each do |user_id, user_hash|
-      sum = 0
-      user_hash.each do |field_name, field_value|
-        if field_name[0..4] == 'prob_'
-          # field_value is the score
-          prob_name = field_name[5...]
-          result[:stat][prob_name][:score] << field_value
-          result[:stat][prob_name][:sum] += field_value || 0
-          sum += field_value || 0
-          if field_value == 0
-            result[:stat][prob_name][:zero] += 1
-          elsif field_value == 100
-            result[:stat][prob_name][:full] += 1
-          else
-            result[:stat][prob_name][:partial] += 1
-          end
-        end
-      end
-      user_hash[:user_sum] = sum
-    end
+    # calculate aggregated stats (min, max, zero, partial) by iterating over all user
+    #  result[:score].each do |user_id, user_hash|
+    #  sum = 0
+    #  sum_deduced = 0
+    #  user_hash.each do |field_name, field_value|
+    #    if field_name[0..3] == 'raw_'
+    #      # field_value is the score
+    #      prob_id = field_name[4...]
+    #      result[:stat][prob_id][:score] << field_value
+    #      result[:stat][prob_id][:sum] += field_value || 0
+    #      sum += field_value || 0
+    #      if field_value == 0
+    #        result[:stat][prob_id][:zero] += 1
+    #      elsif field_value == 100
+    #        result[:stat][prob_id][:full] += 1
+    #      else
+    #        result[:stat][prob_id][:partial] += 1
+    #      end
+    #    elsif field_name[0..13] == 'deduced_score_'
+    #      prob_id = field_name[14...]
+    #      result[:stat][prob_id][:sum_deduced] += field_value || 0
+    #      sum_deduced += field_value || 0
+    #    end
+    #  end
+    #  user_hash[:user_sum] = sum
+    #  user_hash[:user_sum_deduced] = sum_deduced
+    # end
 
     # summary graph result
     count = {zero: [], partial: [], full: []}

@@ -201,33 +201,19 @@
                       = f.text_area :user_list, value: nil, class: 'form-control', style: 'height: 30rem'
               .col-md-6
                 .card.bg-warning-subtle.shadow-sm
-                  .card-body
-                    .card-title
-                    Add users to the contest from a csv text. One user per line.
-                    %ul
-                      %li
-                        Each line must be in the following format. A square bracket indicates that the parameter is optional.
-                        %span.rounded.bg-light.p-1.font-monospace user_id[,seat[,remark]]]
-                      %li
-                        If the users with the same user_id already exists, existing information will be overwritten.
-                      %li
-                        The columns
-                        %span.rounded.bg-light.p-1.font-monospace seat
-                        and
-                        %span.rounded.bg-light.p-1.font-monospace remark
-                        are optional. When
-                        %span.rounded.bg-light.p-1.font-monospace seat
-                        or
-                        %span.rounded.bg-light.p-1.font-monospace remark
-                        is empty (but not missing), the original value will be used.
-                      %li
-                        The remark here is a remark for this particular contest. It is not the same as the user's global remark.
-                    .card-title
-                      %h5 Example
-                    %ul
-                      %li.mb-2
-                        .rounded.bg-light.p-1.font-monospace user1
-                        will add the user with login "user1" to the contest. If the user already exists, no change is made to the contest user
-                      %li.mb-2
-                        .rounded.bg-light.p-1.font-monospace user1,room 403-8,
-                        will add the user with login "user1" and and set the seating to "room 403" and set the remark to an empty string. If the user is already in the contest, the seat and remark fields updated.
+                  .card-body.markdown-content
+                    :markdown
+                      Add or update users by providing a list of user logins in the text area below. Each user must be on a new line
+                      and each line must follow this comma-separated format: `user_login[,contest_seat[,contest_remark]]`
+
+                      * `contest_seat` and `contest_remark` are optional.
+                      * `contest_remark` is a note specific to this user for this contest only (this does not change the user's main profile remark)
+
+                      #### Updating Rules
+                      * If a `user_id` already exists in the contest, their information will be updated.
+                      * To update a user but keep their existing seat or remark, simply omit that field.
+
+                      #### Example
+                      * `user1` adds user1 to the contest. If they already exist, no changes are made.
+                      * `user1,Room 403-8` adds user1 with the given seat. If user1 is already in the contest, seat will be updated but the existing remark is unchanged.
+                      * `user1,,late entry` adds user1 with a blank seat and "late entry" remark, If user1 is already in the contest, the remark remark will be updated while the seat is set to blank.

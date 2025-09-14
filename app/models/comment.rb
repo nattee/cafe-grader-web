@@ -19,8 +19,17 @@ class Comment < ApplicationRecord
     end
   }
 
-  scope :hint_reveal_for_problems, ->(problems) {
-    Comment.where(commentable: problems, commentable_type: 'Problem').joins(:comment_reveals).group('comment_reveals.user_id', :commentable_id)
+  scope :hint_reveal_for_problems, ->(problems, time_range = nil) {
+    if time_range
+      Comment.joins(:comment_reveals)
+        .where(commentable: problems, commentable_type: 'Problem')
+        .where(comment_reveals: {created_at: time_range})
+        .group('comment_reveals.user_id', :commentable_id)
+    else
+      Comment.joins(:comment_reveals)
+        .where(commentable: problems, commentable_type: 'Problem')
+        .group('comment_reveals.user_id', :commentable_id)
+    end
   }
 
   scope :hints, -> { where(kind: HINT_KIND.keys) }
