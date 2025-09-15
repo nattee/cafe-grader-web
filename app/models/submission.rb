@@ -26,21 +26,18 @@ class Submission < ApplicationRecord
 
   has_many_attached :compiled_files
 
-  # filter submissions in the range
-  scope :in_range, ->(by, from, to) {
-    if by.to_sym == :sub_id
-      # use sub id
-      from_id = from.to_i
-      to_id = to.to_i
-      query = self
-      query = query.where('submissions.id >= ?', from_id) if from_id > 0
-      query = query.where('submissions.id <= ?', to_id) if to_id > 0
-      return query
-    else
-      # use sub time
-      datetime_range= from..to
-      return self.where(submitted_at: datetime_range)
-    end
+  scope :by_id_range, ->(from, to) {
+    query = all
+    query = query.where('submissions.id >= ?', from) if from.present?
+    query = query.where('submissions.id <= ?', to) if to.present?
+    query
+  }
+
+  scope :by_submitted_at, ->(from, to) {
+    query = all
+    query = query.where('submissions.submitted_at >= ?', from) if from.present?
+    query = query.where('submissions.submitted_at <= ?', to) if to.present?
+    query
   }
 
   scope :with_llm_stat_by_problem, ->  {
@@ -131,7 +128,7 @@ class Submission < ApplicationRecord
   #     final_#{prob.id}:      # the sub_id of that score
   #     ...
   # }
-  def self.calculate_max_score(records, users, problems)
+  def self.calculate_max_score(records, users, problems, with_comments: true)
     result = {score: Hash.new { |h, k| h[k] = {} },
               stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, sum_deduced: 0, score: [] } } }
 
@@ -154,53 +151,19 @@ class Submission < ApplicationRecord
       unless (result[:score][sub.login]["time_#{sub.problem_id}"] || Date.new) > sub.submitted_at
         result[:score][sub.login]["time_#{sub.problem_id}"] = sub.submitted_at
         result[:score][sub.login]["sub_#{sub.problem_id}"] = sub.sub_id
-        result[:score][sub.login]["llm_count_#{sub.problem_id}"] = sub.llm_count
-        result[:score][sub.login]["llm_cost_#{sub.problem_id}"] = sub.llm_cost
-        result[:score][sub.login]["hint_count_#{sub.problem_id}"] = sub.hint_count
-        result[:score][sub.login]["hint_cost_#{sub.problem_id}"] = sub.hint_cost
-        result[:score][sub.login]["final_score_#{sub.problem_id}"] = sub.final_score.to_d
+        if with_comments
+          result[:score][sub.login]["llm_count_#{sub.problem_id}"] = sub.llm_count
+          result[:score][sub.login]["llm_cost_#{sub.problem_id}"] = sub.llm_cost
+          result[:score][sub.login]["hint_count_#{sub.problem_id}"] = sub.hint_count
+          result[:score][sub.login]["hint_cost_#{sub.problem_id}"] = sub.hint_cost
+          result[:score][sub.login]["final_score_#{sub.problem_id}"] = sub.final_score.to_d
 
-        result[:score][sub.login]["total_cost_#{sub.problem_id}"] = nil
-        result[:score][sub.login]["total_cost_#{sub.problem_id}"] = 0.to_d + (sub.llm_cost || 0.0) + (sub.hint_cost || 0.0) unless sub.llm_cost.nil? && sub.hint_cost.nil?
+          result[:score][sub.login]["total_cost_#{sub.problem_id}"] = nil
+          result[:score][sub.login]["total_cost_#{sub.problem_id}"] = 0.to_d + (sub.llm_cost || 0.0) + (sub.hint_cost || 0.0) unless sub.llm_cost.nil? && sub.hint_cost.nil?
+        end
       end
     end
 
-    # calculate aggregated stats (min, max, zero, partial) by iterating over all user
-    #  result[:score].each do |user_id, user_hash|
-    #  sum = 0
-    #  sum_deduced = 0
-    #  user_hash.each do |field_name, field_value|
-    #    if field_name[0..3] == 'raw_'
-    #      # field_value is the score
-    #      prob_id = field_name[4...]
-    #      result[:stat][prob_id][:score] << field_value
-    #      result[:stat][prob_id][:sum] += field_value || 0
-    #      sum += field_value || 0
-    #      if field_value == 0
-    #        result[:stat][prob_id][:zero] += 1
-    #      elsif field_value == 100
-    #        result[:stat][prob_id][:full] += 1
-    #      else
-    #        result[:stat][prob_id][:partial] += 1
-    #      end
-    #    elsif field_name[0..13] == 'deduced_score_'
-    #      prob_id = field_name[14...]
-    #      result[:stat][prob_id][:sum_deduced] += field_value || 0
-    #      sum_deduced += field_value || 0
-    #    end
-    #  end
-    #  user_hash[:user_sum] = sum
-    #  user_hash[:user_sum_deduced] = sum_deduced
-    # end
-
-    # summary graph result
-    count = {zero: [], partial: [], full: []}
-    problems.each do |p|
-      count[:zero] << result[:stat][p.name][:zero]
-      count[:full] << result[:stat][p.name][:full]
-      count[:partial] << result[:stat][p.name][:partial]
-    end
-    result[:count] = count
     return result
   end
 

@@ -251,8 +251,12 @@ Rails.application.routes.draw do
     post 'login_summary_query'
     post 'login_detail_query'
     get 'multiple_login'
-    get 'problem_hof(/:id)', action: 'problem_hof', as: 'problem_hof'
-    get 'progress'
+
+    # hall of fame
+    get 'problem_hof'
+    get 'problem_hof/:id', action: 'problem_hof_view', as: 'problem_hof_view'
+
+    # get 'progress'
 
 
     get 'stuck'

@@ -3,7 +3,7 @@
     .container-fluid
       %a.navbar-brand{href: list_main_path}
         %span.mi.mi-bs home
-        = GraderConfiguration.site_name.html_safe || 'MAIN'
+        = GraderConfiguration.site_name&.html_safe || 'MAIN'
       .navbar-expand
         / display MODE button (with countdown in contest mode)
         - if GraderConfiguration.analysis_mode?

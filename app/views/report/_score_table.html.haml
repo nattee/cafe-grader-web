@@ -24,11 +24,11 @@
           %td= score['remark']
           - sum,pass = 0,0
           - @problems.each do |p|
-            - this_prob_score = score['prob_'+p.name] || 0; sum += this_prob_score
+            - this_prob_score = score['raw_score_'+p.id.to_s] || 0; sum += this_prob_score
             - pass += 1 if this_prob_score >= 100
             -# show the score and a link to that submission
             %td.text-end
-              = number_with_precision(score['prob_'+p.name], precision: 0)
+              = number_with_precision(score['final_score_'+p.id.to_s], precision: 0)
             - if @show_time
               %td.text-end
                 - if score['time'+p.name]

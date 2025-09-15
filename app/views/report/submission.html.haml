@@ -34,13 +34,21 @@
   user_path = "#{stat_user_admin_path(-1234)}"
   problem_path = "#{stat_problem_path(-1234)}"
 
-  function sub_link_renderer( data, type, row) {
-    return `<a href="${submission_path.replace("-1234",row['id'])}">\#${row['id']}</a>`;
+  function sub_link_renderer(data, type, row) {
+    if (type == 'display' || type == 'filter') {
+      return `<a href="${submission_path.replace("-1234",row['id'])}">\#${row['id']}</a>`;
+    }
+    //for sort, we just return the data which is supposed to be iso8601
+    return row['id']
   }
-  function user_link_renderer( data, type, row) {
-    return `<a href="${user_path.replace("-1234",row['user_id'])}">(${row['login']})</a> ${row['user_full_name']}`;
+  function user_link_renderer(data, type, row) {
+    if (type == 'display' || type == 'filter') {
+      return `<a href="${user_path.replace("-1234",row['user_id'])}">(${row['login']})</a> ${row['user_full_name']}`;
+    }
+    //for sort, we just return the data which is supposed to be iso8601
+    return row['login']
   }
-  function problem_link_renderer( data, type, row) {
+  function problem_link_renderer(data, type, row) {
     return `<a href="${problem_path.replace("-1234",row['problem_id'])}">[${row['name']}]</a> ${row['full_name']}`;
   }
   function date_time_renderer( data, type, row) {
