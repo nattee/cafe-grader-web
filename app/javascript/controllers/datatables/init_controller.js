@@ -122,4 +122,12 @@ export default class extends Controller {
       }
     });
   }
+
+  redraw(event) {
+    this.tables.forEach(table => {
+      console.log('xxx')
+      table.draw();
+    });
+
+  }
 }

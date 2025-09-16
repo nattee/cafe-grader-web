@@ -177,7 +177,14 @@ export const configs = {
         'buttons',
         {
           div: {
-            html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox"> <label class="form-check-label" for="show-load">Show submission time & download button</label>'
+            html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox" data-datatables--init-score-table-target="showLoad" data-action="datatables--init-score-table#redraw">' +
+                  '<label class="ms-2 form-check-label" for="show-load">Show submission time & download link</label>'
+          }
+        },
+        {
+          div: {
+            html: '<input class="form-check-input" id="show-deduction" name="show-deduction" type="checkbox" data-datatables--init-score-table-target="showDeduction" data-action="datatables--init-score-table#redraw" checked>' +
+                  '<label class="ms-2 form-check-label" for="show-deduction">Show full score deduction (by Hint & LLM)</label>'
           }
         }
       ],

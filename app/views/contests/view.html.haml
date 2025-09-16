@@ -6,44 +6,45 @@
     [
     = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1'
     ]
--# graph area
-.row.mb-3
-  .col-lg-6
-    %div{style: 'height: 350px'}
-      %canvas#chart
-  .col-lg-6
-    %div{style: 'height: 350px'}
-      %canvas#chart_2
+
+-# result table
 %div{data: {
   controller: 'datatables--init-score-table',
   'datatables--init-score-table-config-name-value': 'scoreTable',
   'datatables--init-score-table-ajax-url-value': view_query_contest_path(@contest),
   'datatables--init-score-table-problem-ids-value': @problems.ids,
   'datatables--init-score-table-submission-path-value': submission_path(-123),
-  'datatables--init-score-table-submission-download-path-value': j(link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))),
+  'datatables--init-score-table-submission-download-path-value': link_to(" [#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123) ),
 }}
-
+  -# graph area
+  .row.mb-3
+    .col-lg-6
+      %div{style: 'height: 350px'}
+        %canvas#chart{'data-datatables--init-score-table-target': 'problemScore'}
+    .col-lg-6
+      %div{style: 'height: 350px'}
+        %canvas#chart_2{'data-datatables--init-score-table-target': 'totalScore'}
   %table#table.table.datatable.table-hover
     %thead
       %tr
-        %th{rowspan: 2} #
+        %th.text-end{rowspan: 2} #
         %th{rowspan: 2} Login
         %th{rowspan: 2} Name
         %th{rowspan: 2} Contest Remark
         %th{rowspan: 2} Seat
-        %th{rowspan: 2} Last Seen
+        %th.border-end{rowspan: 2} Last Seen
         - @problems.each do |p|
-          %th.border-start{colspan: 3}=p.name.gsub('_',' ')
-        %th.border-start{colspan: 2} Sum
+          %th.border-end.text-center{colspan: 3}=p.name.gsub('_',' ')
+        %th.border-end.text-center{colspan: 2} Sum
       %tr
         - @problems.each do |p|
           %th Raw
-          %th Deduction
+          %th Deduct
           %th Final
         %th Raw
         %th Final
     %tfoot
-      %tr
+      %tr.fw-bold
         %td
         %td Summation
         %td
@@ -57,9 +58,4 @@
         %td#grand-total-raw.text-end
         %td#grand-total-final.text-end
 
-
-:javascript
-  let show_detail = true
-  const sub_download_link = '#{j link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))}'
-  const sub_path = '#{submission_path(-123)}'
 

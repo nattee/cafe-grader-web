@@ -1,7 +1,189 @@
 import DatatableInitController from "controllers/datatables/init_controller"
 import { columns, renderers } from 'controllers/datatables/columns'
 
+/**
+ * init datatable for contest/view.htlm.haml
+ */
+export default class extends DatatableInitController {
+  static values = { 
+    problemIds: Array,
+    submissionPath: String,
+    submissionDownloadPath: String,
+  }
 
+  static targets = [ "showLoad", "showDeduction", "problemScore", "totalScore" ]
+
+  // -------   draw graph -----------
+  // call chart.js
+  // json is the response from the controller {data: ..., result:..., problem: ...}
+  _drawGraph(json) {
+    //build dataset
+    const usersCount = json.data.length
+    let data = {
+      labels: Array.from(Array(usersCount), (_, i) => i+1), //this builds [1,2,3,4,....,N]
+      datasets:
+        json.problem.map( (a) => {
+          return {
+            label: a.name,
+            data: json.data.map( (b) => b[`final_score_${a.id}`] || 0).sort( (a,b) => a-b )
+          }
+        })
+    }
+
+    //left pad each dataset with zero
+    let maxLength = data.labels.length
+    data.datasets.forEach(dataset => {
+      const paddingLength = maxLength - dataset.data.length;
+      if (paddingLength > 0) {
+          const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
+          dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
+      }
+    });
+
+    let config = {
+      type: 'line',
+      data: data,
+      options: {
+        responstive: true,
+        maintainAspectRatio: false,
+        elements: {
+          point: {
+            pointStyle: false
+          },
+        }
+      },
+    }
+
+    //clone the config to be used in the second graph
+    //this has to be done before we construct the chart.js object,
+    //else the config is already changed
+    let config2 = structuredClone(config)
+    let data2 = {
+      labels: Array.from(Array(usersCount), (_, i) => i+1), //this build [1,2,3,4,....,N]
+      datasets: [
+        {
+          label: 'Total Score',
+          data: json.data.map( (a) => a.sum_final ).sort( (a,b) => a-b )
+        }
+      ]
+    }
+    config2.data = data2
+
+    // destroy old graph
+    if (typeof this.problemScoreChart !== 'undefined') { this.problemScoreChart.destroy() }
+    if (typeof this.totalScoreChart !== 'undefined') { this.totalScoreChart.destroy() }
+
+    // display graph
+    Chart.defaults.font.size = 15
+    //Chart.defaults.font.family = 'Sarabun Light'
+    this.problemScoreChart = new Chart(this.problemScoreTarget,config)
+    this.totalScoreChart = new Chart(this.totalScoreTarget,config2)
+  }
+
+  // OVERRIDE: Programmatically create the columns.
+  _buildColumns(baseConfig) {
+    this.deductionColumns = []  // array of column indices that are raw & total cost
+                                // we use this array to show/hide columns
+    let count = 0
+    let problemColumns = this.problemIdsValue.map( id => {
+      this.deductionColumns.push(6 + 3 * count + 0) // for this problem raw
+      this.deductionColumns.push(6 + 3 * count + 1) // for this problem deduction
+      count += 1
+      return [ 
+        {data: `raw_score_${id}`,className: 'text-end text-secondary' } ,
+        {data: `total_cost_${id}`,className: 'text-end text-secondary',render: this._deduction_renderer_factory(id)},
+        {data: `final_score_${id}`,className: 'text-end border-end',render: this._score_renderer_factory(id) } ,
+      ]
+    }).flat()
+    this.deductionColumns.push(6 + 3 * count + 0) // for the summation raw
+
+    let columns = [
+      {data: 'row_number', className: 'text-end'},
+      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
+      {data: 'full_name'},
+      {data: 'remark'},
+      {data: 'seat'},
+      {data: 'last_heartbeat',label: 'Last Checkin', className: 'border-end', render: renderers.humanizeTimeRender},
+    ].concat(problemColumns)
+    .concat( [
+      {data: 'sum_raw', className: 'fw-bold text-end text-secondary'},
+      {data: 'sum_final', className: 'fw-bold text-end border-end'},
+      //{data: 'pass'}
+    ])
+
+    return columns
+  }
+
+  // OVERRIDE: ajax with special processing
+  _buildAjaxOptions(baseConfig) {
+    let ajaxOptions = super._buildAjaxOptions(baseConfig); // Changed
+    ajaxOptions.dataSrc = (json) => {
+      const processedJson = processScore(json)
+      this._drawGraph(processedJson)
+      return processedJson.data
+    }
+    return ajaxOptions
+  }
+
+  // generate a renderer function for rendering score / time / link for problem prob_id
+  _score_renderer_factory(prob_id) {
+    const subPath = this.submissionPathValue
+    const subDownloadPath = this.submissionDownloadPathValue
+    return (data,type,row,meta) => {
+      if (!data) return ''
+      if (type == 'display' || type == 'filter') {
+        if (this.showLoadTarget.checked) {
+          // render the score, along with the time and link to the sub
+          const sub_col = `sub_${prob_id}`     // column name that contains submission number
+          const time_col = `time_${prob_id}`   // column name that contains the latest submission time
+          const sub_link = `<a class="text-nowrap" href=${subPath.replace(-123,row[sub_col])}>[ ${moment(row[time_col]).format('HH:mm:ss')} ]</a>`
+
+
+          const st = `${data} </br> ${sub_link} | ${subDownloadPath.replace(-123,row[sub_col])}`
+          return st
+        } else {
+          return data
+        }
+      }
+
+      //for sort, we just return the data which is supposed to be iso8601
+      return data
+    }
+  }
+
+  _deduction_renderer_factory(prob_id) {
+    return (data,type,row,meta) => {
+      if (!data) return ''
+      if (type == 'display' || type == 'filter') {
+        // render the DEDUCTION, with, optionally, the detail of the deduction
+        if (this.showLoadTarget.checked) {
+          // llm & hint col
+          const llm_cost_col = `llm_cost_${prob_id}`
+          const llm_count_col = `llm_count_${prob_id}`
+          const hint_cost_col = `hint_cost_${prob_id}`
+          const hint_count_col = `hint_count_${prob_id}`
+
+          let st = `${data}`
+          if (row[llm_count_col] ) st = st + `<div class='text-warning small '> LLM: ${row[llm_cost_col]} (${row[llm_count_col]}) </div>`
+          if (row[hint_count_col] ) st = st + `<div class='text-success small '> Hint: ${row[hint_cost_col]} (${row[hint_count_col]}) </div>`
+          return st
+        } else {
+          return data
+        }
+      }
+
+      //for sort, we just return the data which is supposed to be iso8601
+      return data
+    }
+  }
+
+  redraw(event) {
+    this.tables.forEach(table => {
+      table.columns(this.deductionColumns).visible(this.showDeductionTarget.checked, true)
+      table.rows().invalidate('render').draw()
+    });
+  }
+}
 
 /** 
  * main data transform function
@@ -20,9 +202,6 @@ import { columns, renderers } from 'controllers/datatables/columns'
 function processScore(json) {
   //combine score into user record
   // originally, json.data[i] is the i-th row containing user data (id,login,name,remark,seat, etc)
-
-  // indicate whether we should render details scoring in each cell
-  show_detail = document.getElementById("show-load").checked
 
   // the grand total of all problems and all users
   let grandTotalRaw = 0
@@ -112,172 +291,3 @@ function processScore(json) {
   return json;
 }
 
-  // -------   draw graph -----------
-  // call chart.js
-  // json is the response from the controller {data: ..., result:..., problem: ...}
-  function drawGraph(json) {
-    //build dataset
-    const usersCount = json.data.length
-    let data = {
-      labels: Array.from(Array(usersCount), (_, i) => i+1), //this builds [1,2,3,4,....,N]
-      datasets:
-        json.problem.map( (a) => {
-          return {
-            label: a.name,
-            data: json.data.map( (b) => b[`final_score_${a.id}`] || 0).sort( (a,b) => a-b )
-          }
-        })
-    }
-
-    //left pad each dataset with zero
-    let maxLength = data.labels.length
-    data.datasets.forEach(dataset => {
-      const paddingLength = maxLength - dataset.data.length;
-      if (paddingLength > 0) {
-          const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
-          dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
-      }
-    });
-
-    let config = {
-      type: 'line',
-      data: data,
-      options: {
-        responstive: true,
-        maintainAspectRatio: false,
-        elements: {
-          point: {
-            pointStyle: false
-          },
-        }
-      },
-    }
-
-    //clone the config to be used in the second graph
-    //this has to be done before we construct the chart.js object,
-    //else the config is already changed
-    let config2 = structuredClone(config)
-    let data2 = {
-      labels: Array.from(Array(usersCount), (_, i) => i+1), //this build [1,2,3,4,....,N]
-      datasets: [
-        {
-          label: 'Total Score',
-          data: json.data.map( (a) => a.sum_final ).sort( (a,b) => a-b )
-        }
-      ]
-    }
-    config2.data = data2
-
-    // destroy old graph
-    if (typeof window.chart1 !== 'undefined') { window.chart1.destroy() }
-    if (typeof window.chart2 !== 'undefined') { window.chart2.destroy() }
-
-    // display graph
-    Chart.defaults.font.size = 15
-    //Chart.defaults.font.family = 'Sarabun Light'
-    window.chart1 = new Chart($('#chart'),config)
-    window.chart2 = new Chart($('#chart_2'),config2)
-  }
-/**
- * init datatable for contest/view.htlm.haml
- */
-export default class extends DatatableInitController {
-  static values = { 
-    problemIds: Array,
-    submissionPath: String,
-    submissionDownloadPath: String,
-  }
-
-  // OVERRIDE: Programmatically create the columns.
-  _buildColumns(baseConfig) {
-    let problemColumns = this.problemIdsValue.map( id => {
-      return [ 
-        {data: `raw_score_${id}`,className: 'text-end border-start text-secondary',render: this._score_renderer_factory(id) } ,
-        {data: `total_cost_${id}`,className: 'text-end text-secondary',render: this._deduction_renderer_factory(id)},
-        {data: `final_score_${id}`,className: 'text-end' } ,
-      ]
-    }).flat()
-
-    let columns = [
-      {data: 'row_number'},
-      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
-      {data: 'full_name'},
-      {data: 'remark'},
-      {data: 'seat'},
-      {data: 'last_heartbeat',label: 'Last Checkin', render: renderers.humanizeTimeRender},
-    ].concat(problemColumns)
-    .concat( [
-      {data: 'sum_raw', className: 'fw-bold text-end border-start text-secondary'},
-      {data: 'sum_final', className: 'fw-bold text-end'},
-      //{data: 'pass'}
-    ])
-
-    return columns
-  }
-
-  _buildAjaxOptions(baseConfig) {
-    let ajaxOptions = super._buildAjaxOptions(baseConfig); // Changed
-    ajaxOptions.dataSrc = (json) => {
-      const processedJson = processScore(json)
-      drawGraph(processedJson)
-      return processedJson.data
-    }
-    return ajaxOptions
-  }
-
-  // generate a renderer function for rendering score / time / link for problem prob_id
-  _score_renderer_factory(prob_id) {
-    const subPath = this.submissionPathValue
-    const subDownloadPath = this.submissionDownloadPathValue
-    return function(data,type,row,meta) {
-      let sub_path = 'asdf'
-      let sub_download_link = 'xxxx'
-      if (!data) return ''
-      if (type == 'display' || type == 'filter') {
-        if (show_detail) {
-          // render the score, along with the time and link to the sub
-          sub_col = `sub_${prob_id}`     // column name that contains submission number
-          time_col = `time_${prob_id}`   // column name that contains the latest submission time
-          sub_link = `<a href=${subPath.replace(-123,row[sub_col])}>[ ${moment(row[time_col]).format('HH:mm:ss')} ]</a>`
-
-
-          st = `${data} </br> ${sub_link} | ${subDownloadPath.replace(-123,row[sub_col])}`
-          return st
-        } else {
-          return data
-        }
-      }
-
-      //for sort, we just return the data which is supposed to be iso8601
-      return data
-    }
-  }
-
-  _deduction_renderer_factory(prob_id) {
-    return function(data,type,row,meta) {
-      if (!data) return ''
-      if (type == 'display' || type == 'filter') {
-        // render the DEDUCTION, with, optionally, the detail of the deduction
-        if (show_detail) {
-          // llm & hint col
-          llm_cost_col = `llm_cost_${prob_id}`
-          llm_count_col = `llm_count_${prob_id}`
-          hint_cost_col = `hint_cost_${prob_id}`
-          hint_count_col = `hint_count_${prob_id}`
-
-          st = `${data}`
-          if (row[llm_count_col] ) st = st + `<div class='text-warning small '> LLM: ${row[llm_cost_col]} (${row[llm_count_col]}) </div>`
-          if (row[hint_count_col] ) st = st + `<div class='text-success small '> Hint: ${row[hint_cost_col]} (${row[hint_count_col]}) </div>`
-          return st
-        } else {
-          return data
-        }
-      }
-
-      //for sort, we just return the data which is supposed to be iso8601
-      return data
-    }
-  }
-
-
-}
