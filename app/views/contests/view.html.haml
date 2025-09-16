@@ -14,379 +14,52 @@
   .col-lg-6
     %div{style: 'height: 350px'}
       %canvas#chart_2
-%table#table.table.datatable.table-hover
-  %thead
-    %tr
-      %th{rowspan: 2} #
-      %th{rowspan: 2} Login
-      %th{rowspan: 2} Name
-      %th{rowspan: 2} Remark
-      %th{rowspan: 2} Seat
-      %th{rowspan: 2} Last Seen
-      -#
+%div{data: {
+  controller: 'datatables--init-score-table',
+  'datatables--init-score-table-config-name-value': 'scoreTable',
+  'datatables--init-score-table-ajax-url-value': view_query_contest_path(@contest),
+  'datatables--init-score-table-problem-ids-value': @problems.ids,
+  'datatables--init-score-table-submission-path-value': submission_path(-123),
+  'datatables--init-score-table-submission-download-path-value': j(link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))),
+}}
+
+  %table#table.table.datatable.table-hover
+    %thead
+      %tr
+        %th{rowspan: 2} #
+        %th{rowspan: 2} Login
+        %th{rowspan: 2} Name
+        %th{rowspan: 2} Contest Remark
+        %th{rowspan: 2} Seat
+        %th{rowspan: 2} Last Seen
         - @problems.each do |p|
-          %th= p.name.gsub('_',' ')
-          %th= "#{p.name.gsub('_',' ')} (deduction)"
-          %th= "#{p.name.gsub('_',' ')} (actual)"
-      - @problems.each do |p|
-        %th.border-start{colspan: 3}=p.name.gsub('_',' ')
-      %th.border-start{colspan: 2} Sum
-    %tr
-      - @problems.each do |p|
+          %th.border-start{colspan: 3}=p.name.gsub('_',' ')
+        %th.border-start{colspan: 2} Sum
+      %tr
+        - @problems.each do |p|
+          %th Raw
+          %th Deduction
+          %th Final
         %th Raw
-        %th Deduction
         %th Final
-      %th Raw
-      %th Final
-  %tfoot
-    %tr
-      %td
-      %td Summation
-      %td
-      %td
-      %td
-      %td
-      - @problems.each do |problem|
-        %td.text-end{id: "sum-raw-#{problem.id}"}
-        %td.text-end{id: "sum-deduction-#{problem.id}"}
-        %td.text-end{id: "sum-final-#{problem.id}"}
-      %td#grand-total-raw.text-end
-      %td#grand-total-final.text-end
+    %tfoot
+      %tr
+        %td
+        %td Summation
+        %td
+        %td
+        %td
+        %td
+        - @problems.each do |problem|
+          %td.text-end{id: "sum-raw-#{problem.id}"}
+          %td.text-end{id: "sum-deduction-#{problem.id}"}
+          %td.text-end{id: "sum-final-#{problem.id}"}
+        %td#grand-total-raw.text-end
+        %td#grand-total-final.text-end
 
 
 :javascript
   let show_detail = true
   const sub_download_link = '#{j link_to("[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123))}'
   const sub_path = '#{submission_path(-123)}'
-  window.addEventListener("load", function() {
-    humanize_time_renderer = function(data,type,row,meta) {
-      if (!data) return ''
-      if (type == 'display' || type == 'filter')
-        return humanize_time(data)
-
-      //for sort, we just return the data which is supposed to be iso8601
-      return data
-    }
-
-    // generate a renderer function for rendering score / time / link for problem prob_id
-    function score_renderer_factory(prob_id) {
-      return function(data,type,row,meta) {
-        if (!data) return ''
-        if (type == 'display' || type == 'filter') {
-          if (show_detail) {
-            // render the score, along with the time and link to the sub
-            sub_col = `sub_${prob_id}`     // column name that contains submission number
-            time_col = `time_${prob_id}`   // column name that contains the latest submission time
-            sub_link = `<a href=${sub_path.replace(-123,row[sub_col])}>[ ${moment(row[time_col]).format('HH:mm:ss')} ]</a>`
-
-
-            st = `${data} </br> ${sub_link} | ${sub_download_link.replace(-123,row[sub_col])}`
-            return st
-          } else {
-            return data
-          }
-        }
-
-        //for sort, we just return the data which is supposed to be iso8601
-        return data
-      }
-    }
-
-    function deduction_renderer_factory(prob_id) {
-      return function(data,type,row,meta) {
-        if (!data) return ''
-        if (type == 'display' || type == 'filter') {
-          // render the DEDUCTION, with, optionally, the detail of the deduction
-          if (show_detail) {
-            // llm & hint col
-            llm_cost_col = `llm_cost_${prob_id}`
-            llm_count_col = `llm_count_${prob_id}`
-            hint_cost_col = `hint_cost_${prob_id}`
-            hint_count_col = `hint_count_${prob_id}`
-
-            st = `${data}`
-            /*
-            if (row[llm_count_col] ) st = st + `</br> LLM Count: ${row[llm_count_col] || '-'}`
-            if (row[llm_cost_col]  ) st = st + `</br> LLM Cost: ${row[llm_cost_col] || '-'}`
-            if (row[hint_count_col]) st = st + `</br> Hint Count: ${row[hint_count_col] || '-'}`
-            if (row[hint_cost_col] ) st = st + `</br> Hint Cost: ${row[hint_cost_col] || '-'}`
-            */
-            if (row[llm_count_col] ) st = st + `<div class='text-warning small '> LLM: ${row[llm_cost_col]} (${row[llm_count_col]}) </div>`
-            if (row[hint_count_col] ) st = st + `<div class='text-success small '> Hint: ${row[hint_cost_col]} (${row[hint_count_col]}) </div>`
-            return st
-          } else {
-            return data
-          }
-        }
-
-        //for sort, we just return the data which is supposed to be iso8601
-        return data
-      }
-    }
-
-    // build columns
-    problem_ids = [#{@problems.pluck(:id).join(',')}]
-
-    problem_columns = problem_ids.map( id => {
-      return [ 
-        {data: `raw_score_${id}`,className: 'text-end border-start text-secondary',render: score_renderer_factory(id) } ,
-        {data: `total_cost_${id}`,className: 'text-end text-secondary',render: deduction_renderer_factory(id)},
-        {data: `final_score_${id}`,className: 'text-end' } ,
-      ]
-    }).flat()
-    console.log(problem_columns)
-
-    columns = [
-      {data: 'row_number'},
-      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
-      {data: 'full_name'},
-      {data: 'remark'},
-      {data: 'seat'},
-      {data: 'last_heartbeat',label: 'Last Checkin', render: humanize_time_renderer},
-    ].concat(problem_columns)
-    .concat( [
-      {data: 'sum_raw', className: 'fw-bold text-end border-start text-secondary'},
-      {data: 'sum_final', className: 'fw-bold text-end'},
-      //{data: 'pass'}
-    ])
-
-    /** 
-     * main data transform function
-     * json here is the payload returned from the server and the ajax property of
-     * the DataTable calls this function to transform json
-     * 
-     * See Contest.score_report for the detail of the json but basically, it includes
-     * Two major object, json.data which is an array of each row. However, it is not populated
-     * with the score of the submission. The score is stored in json.result
-     * This function copy some data from json.result to json.data in the correct row
-     * 
-     * The json.result is also transformed into a data for chart.js to be displayed as well.
-     *
-     * Return json.data as this function is used as a final step in ajax options of the DataTable
-     */
-    function processScore(json) {
-      //combine score into user record
-      // originally, json.data[i] is the i-th row containing user data (id,login,name,remark,seat, etc)
-
-      // indicate whether we should render details scoring in each cell
-      show_detail = document.getElementById("show-load").checked
-
-      // the grand total of all problems and all users
-      let grandTotalRaw = 0
-      let grandTotalDeduction = 0
-      let grandTotalFinal = 0
-
-      let problemSumRaw = {}
-      let problemSumDeduction = {}
-      let problemSumFinal = {}
-      json.problem.forEach ( (prob) => { 
-        problemSumRaw[prob.id] = 0.0;
-        problemSumDeduction[prob.id] = 0.0;
-        problemSumFinal[prob.id] = 0.0;
-      })
-
-      // for each row, i.e., user
-      for (let i = 0, ien = json.data.length; i < ien; i++) {
-        // add place holder for row number (which will be set in the final drawing)
-        const login = json.data[i].login
-        // add place holder for row number (which will be set in the listenter of 'order.dt')
-        json.data[i].row_number = null
-
-        // we loop over each problems (in json.problems)
-        // we also sum the score of each user here
-        let sumRaw = 0.0
-        let sumDeduction = 0.0
-        let sumFinal = 0.0
-
-        json.problem.forEach ( (prob) => {
-
-          //and pluck the score of that user from the "score_table" (json.result)
-          const scoreResult = json.result.score[login]
-
-          const probId = `raw_score_${prob.id}`
-          let probScore = (scoreResult) ? (scoreResult[probId] || '') : ''
-
-          // copy the detail of the submissions
-
-          // if we have some result (which indicates that a user has submitted something)
-          json.data[i][`raw_score_${prob.id}`] = probScore
-          json.data[i][`total_cost_${prob.id}`] = null
-          json.data[i][`final_score_${prob.id}`] = null
-          if (probScore.length > 0) {
-
-            probScore = parseFloat(probScore).toFixed(1)
-            json.data[i][`sub_${prob.id}`] = scoreResult[`sub_${prob.id}`]
-            json.data[i][`time_${prob.id}`] = scoreResult[`time_${prob.id}`]
-            json.data[i][`llm_count_${prob.id}`] = scoreResult[`llm_count_${prob.id}`]
-            json.data[i][`llm_cost_${prob.id}`] = scoreResult[`llm_cost_${prob.id}`]
-            json.data[i][`hint_count_${prob.id}`] = scoreResult[`hint_count_${prob.id}`]
-            json.data[i][`hint_cost_${prob.id}`] = scoreResult[`hint_cost_${prob.id}`]
-            json.data[i][`final_score_${prob.id}`] = scoreResult[`final_score_${prob.id}`]
-            json.data[i][`total_cost_${prob.id}`] = scoreResult[`total_cost_${prob.id}`]
-          }
-
-          //also sum the score of this user
-          const thisRaw = parseFloat(probScore || 0.0)
-          const thisDeduction = parseFloat(scoreResult[`total_cost_${prob.id}`] || 0)
-          const thisFinal = parseFloat(scoreResult[`final_score_${prob.id}`] || 0)
-          sumRaw += thisRaw
-          sumDeduction += thisDeduction
-          sumFinal += thisFinal
-
-          //also sum the score of this problem
-          problemSumRaw[prob.id] += thisRaw
-          problemSumDeduction[prob.id] += thisDeduction
-          problemSumFinal[prob.id] += thisFinal
-
-        })
-        // sum the score to the grand total
-        grandTotalRaw += sumRaw
-        grandTotalDeduction += sumDeduction
-        grandTotalFinal += sumFinal
-        json.data[i]['sum_raw'] = sumRaw.toFixed(1)
-        json.data[i]['sum_deduction'] = sumDeduction.toFixed(1)
-        json.data[i]['sum_final'] = sumFinal.toFixed(1)
-      }
-      console.log(problemSumRaw)
-
-      // set the footer
-      json.problem.forEach ( (prob) => { 
-        $(`#sum-raw-${prob.id}`).text( Number(problemSumRaw[prob.id]).toLocaleString(undefined, {minimumFractionDigits: 1}) )
-        $(`#sum-deduction-${prob.id}`).text( Number(problemSumDeduction[prob.id]).toLocaleString(undefined, {minimumFractionDigits: 1}) )
-        $(`#sum-final-${prob.id}`).text( Number(problemSumFinal[prob.id]).toLocaleString(undefined, {minimumFractionDigits: 1}) )
-      })
-      $(`#grand-total-raw`).text( Number(grandTotalRaw).toLocaleString(undefined, {minimumFractionDigits: 1}) )
-      $(`#grand-total-final`).text( Number(grandTotalFinal).toLocaleString(undefined, {minimumFractionDigits: 1}) )
-      return json;
-    }
-
-    //main table
-    table_config = {
-      processing: true,
-      rowId: 'id',
-      destroy: true,
-      paging: false,
-      order: [[0,'asc']],
-      layout: {
-        topStart: [
-          'buttons',
-          {
-            div: {
-              html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox"> <label class="form-check-label" for="show-load">Show submission time & download button</label>'
-            }
-          }
-        ],
-        topEnd: 'search'
-      },
-      buttons: [
-          { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()}},
-          'copyHtml5',
-          'excelHtml5',
-      ],
-      ajax: {
-        url: "#{view_query_contest_path(@contest)}",
-        type: 'POST',
-        headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
-        dataSrc: function (json) {
-          const processedJson = processScore(json)
-          draw_graph(processedJson)
-          return processedJson.data
-        }
-      },
-      columns: columns,
-      drawCallback: function (settings) {
-        var api = this.api();
-        api.columns.adjust()
-
-      },
-      initComplete: function() {
-        //we have to put it here because #show-load is dynamically generated
-        $('#show-load').on('click', function() {
-          table.ajax.reload()
-        })
-
-      }
-    }
-
-    //initialize the table
-    table = $('#table').DataTable(table_config)
-
-    // add row numbering
-    table.on('order.dt search.dt', function () {
-      let i = 1;
-      let t = $('#table').DataTable()
-
-      // select columns 0 of every row, as search and order is applied
-      t.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
-        this.data(i++);
-      });
-    }).draw();
-  });
-
-    //
-    // -------   draw graph -----------
-    // json is the response from the controller {data: ..., result:..., problem: ...}
-    function draw_graph(json) {
-      //build dataset
-      users_count = json.data.length
-      data = {
-        labels: Array.from(Array(users_count), (_, i) => i+1), //this builds [1,2,3,4,....,N]
-        datasets:
-          json.problem.map( (a) => {
-            return {
-              label: a.name,
-              data: json.data.map( (b) => b[`final_score_${a.id}`] || 0).sort( (a,b) => a-b )
-            }
-          })
-      }
-
-      //left pad each dataset with zero
-      maxLength = data.labels.length
-      data.datasets.forEach(dataset => {
-        const paddingLength = maxLength - dataset.data.length;
-        if (paddingLength > 0) {
-            const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
-            dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
-        }
-      });
-
-      config = {
-        type: 'line',
-        data: data,
-        options: {
-          responstive: true,
-          maintainAspectRatio: false,
-          elements: {
-            point: {
-              pointStyle: false
-            },
-          }
-        },
-      }
-
-      //clone the config to be used in the second graph
-      //this has to be done before we construct the chart.js object,
-      //else the config is already changed
-      config2 = structuredClone(config)
-      data2 = {
-        labels: Array.from(Array(users_count), (_, i) => i+1), //this build [1,2,3,4,....,N]
-        datasets: [
-          {
-            label: 'Total Score',
-            data: json.data.map( (a) => a.sum_final ).sort( (a,b) => a-b )
-          }
-        ]
-      }
-      config2.data = data2
-
-      // destroy old graph
-      if (typeof chart1 !== 'undefined') { chart1.destroy() }
-      if (typeof chart2 !== 'undefined') { chart2.destroy() }
-
-      // display graph
-      Chart.defaults.font.size = 15
-      //Chart.defaults.font.family = 'Sarabun Light'
-      chart1 = new Chart($('#chart'),config)
-      chart2 = new Chart($('#chart_2'),config2)
-    }
 

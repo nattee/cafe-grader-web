@@ -25,9 +25,19 @@ export const renderers = {
       result += cafe.dt.render.button('as user',{element_type: 'link', className: 'link-info', action: 'contest#postUserAction', command: 'make_user'})(row['user_id'],type,row,meta)
     }
     return result
+  },
+  humanizeTimeRender: (data,type,row,meta) => {
+    if (!data) return ''
+    if (type == 'display' || type == 'filter')
+      return humanizeTime(data)
+
+    //for sort, we just return the data which is supposed to be iso8601
+    return data
   }
 }
 
+// columns for each tables
+// reuse this if available
 export const columns = {
   // generic columns
   id: { data: 'id', title: 'ID'},
