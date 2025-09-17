@@ -1,11 +1,11 @@
-.card.border-primary.mb-2
+.card.border-primary.mb-2{data: {controller: 'form--filter-submission', action: 'change->form--filter-submission#filterChanged change.td->form--filter-submission#filterChanged'}}
   .card-header.text-bg-primary.border-primary
     Submission range
   .card-body
     .row.mb-2
       .col-1
         .form-check
-          = radio_button_tag :'sub_range[use]', :sub_id, true, class: 'form-check-input'
+          = radio_button_tag 'sub_range[use]', :sub_id, true, class: 'form-check-input', data: {'form--filter-submission-target': 'useOption'}
       .col-11
         %label.form-check-label{for: 'sub_range_use_sub_id'}
           Use submission ID.
@@ -18,15 +18,15 @@
           .col-md-1
             = label_tag 'sub_range[from_id]', "Min", class: 'form-check-label col-form-label'
           .col-md-5
-            = text_field_tag 'sub_range[from_id]', @since_id, class: "form-control"
+            = text_field_tag 'sub_range[from_id]', @since_id, class: "form-control", data: {'form--filter-submission-target': 'fromId'}
           .col-md-1
             = label_tag 'sub_range[to_id]', "Max", class: 'col-form-label'
           .col-md-5
-            = text_field_tag 'sub_range[to_id]', @until_id, class: "form-control"
+            = text_field_tag 'sub_range[to_id]', @until_id, class: "form-control", data: {'form--filter-submission-target': 'toId'}
     .row.mb-2
       .col-1
         .form-check
-          = radio_button_tag 'sub_range[use]', :sub_time, false, class: 'form-check-input'
+          = radio_button_tag 'sub_range[use]', :sub_time, false, class: 'form-check-input', data: {'form--filter-submission-target': 'useOption'}
       .col-11
         %label.form-check-label{for: 'sub_range_use_sub_time'}
           Use Date and time.
@@ -40,7 +40,7 @@
             From Date
           .col-md-9
             .input-group.td-date
-              = text_field_tag 'sub_range[from_time]', nil, class: 'form-control'
+              = text_field_tag 'sub_range[from_time]', nil, class: 'form-control', data: {'form--filter-submission-target': 'fromTime'}
               %span.input-group-text
                 %span.mi event
     .row.mb-2
@@ -51,7 +51,7 @@
             Until Date
           .col-md-9
             .input-group.date
-              = text_field_tag 'sub_range[to_time]', nil, class: 'form-control'
+              = text_field_tag 'sub_range[to_time]', nil, class: 'form-control', data: {'form--filter-submission-target': 'toTime'}
               %span.input-group-text
                 %span.mi event
 :javascript
