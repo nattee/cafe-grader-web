@@ -9,14 +9,17 @@ export default class extends DatatableInitController {
     problemIds: Array,
     submissionPath: String,
     submissionDownloadPath: String,
+    refreshSubmitFormId: String,
   }
 
-  static targets = [ "showLoad", "showDeduction", "problemScore", "totalScore" ]
+  static targets = [ "showLoad", "showDeduction", "problemScore", "totalScore",
+                     "problemScoreChartContainer", "totalScoreChartContainer" ]
 
   // -------   draw graph -----------
   // call chart.js
   // json is the response from the controller {data: ..., result:..., problem: ...}
   _drawGraph(json) {
+    window.graphData = json
     //build dataset
     const usersCount = json.data.length
     let data = {
@@ -78,6 +81,14 @@ export default class extends DatatableInitController {
     //Chart.defaults.font.family = 'Sarabun Light'
     this.problemScoreChart = new Chart(this.problemScoreTarget,config)
     this.totalScoreChart = new Chart(this.totalScoreTarget,config2)
+
+    if (json.data.length > 0 && json.problem.length > 0) {
+      this.problemScoreChartContainerTarget.style = "height: 350px";
+      this.totalScoreChartContainerTarget.style = "height: 350px";
+    } else {
+      this.problemScoreChartContainerTarget.style = "height: 1px";
+      this.totalScoreChartContainerTarget.style = "height: 1px";
+    }
   }
 
   // OVERRIDE: Programmatically create the columns.
@@ -116,11 +127,10 @@ export default class extends DatatableInitController {
 
   // OVERRIDE: ajax with special processing
   _buildAjaxOptions(baseConfig) {
-    let ajaxOptions = super._buildAjaxOptions(baseConfig); // Changed
+    let ajaxOptions = super._buildAjaxOptions(baseConfig);
     // pre request processing
     ajaxOptions.data = (data) => {
       const result = $.extend({}, data, window.userFilterParams, window.problemFilterParams, window.submissionFilterParams);
-      console.log(result)
       return result
     }
     // post request processing
@@ -130,6 +140,17 @@ export default class extends DatatableInitController {
       return processedJson.data
     }
     return ajaxOptions
+  }
+
+  _buildFinalConfig(baseConfig) {
+    let finalConfig = super._buildFinalConfig(baseConfig);
+
+    // update the buttons
+    // If we have this value, instead of calling ajax.refresh, we submit the form with the given ID instead
+    if (this.hasRefreshSubmitFormIdValue) {
+      finalConfig.buttons[0].action = (e,dt,node,config) => { document.getElementById(this.refreshSubmitFormIdValue).requestSubmit() }
+    }
+    return finalConfig
   }
 
   // generate a renderer function for rendering score / time / link for problem prob_id

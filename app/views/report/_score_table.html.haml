@@ -1,19 +1,23 @@
 -# result table
-%div{data: {
-  controller: 'datatables--init-score-table',
-  'datatables--init-score-table-config-name-value': 'scoreTable',
-  'datatables--init-score-table-ajax-url-value': link_for_data,
-  'datatables--init-score-table-problem-ids-value': problems.ids,
-  'datatables--init-score-table-submission-path-value': submission_path(-123),
-  'datatables--init-score-table-submission-download-path-value': link_to(" [#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123) ),
-}}
+-# build data hash
+- data_hash = { controller: 'datatables--init-score-table',
+    'datatables--init-score-table-config-name-value': 'scoreTable',
+    'datatables--init-score-table-ajax-url-value': link_for_data,
+    'datatables--init-score-table-problem-ids-value': problems.ids,
+    'datatables--init-score-table-submission-path-value': submission_path(-123),
+    'datatables--init-score-table-submission-download-path-value': link_to(" [#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123) ),
+  }
+-# add special refresh
+- data_hash['datatables--init-score-table-refresh-submit-form-id-value'] = refresh_submit_form_id if local_assigns[:refresh_submit_form_id]
+
+%div{data: data_hash }
   -# graph area
   .row.mb-3
     .col-lg-6
-      %div{style: 'height: 350px'}
+      %div{style: 'height: 1px', 'data-datatables--init-score-table-target': 'problemScoreChartContainer'}
         %canvas#chart{'data-datatables--init-score-table-target': 'problemScore'}
     .col-lg-6
-      %div{style: 'height: 350px'}
+      %div{style: 'height: 1px', 'data-datatables--init-score-table-target': 'totalScoreChartContainer'}
         %canvas#chart_2{'data-datatables--init-score-table-target': 'totalScore'}
   %table#table.table.datatable.table-hover
     %thead

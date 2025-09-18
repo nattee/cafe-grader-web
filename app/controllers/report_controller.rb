@@ -22,13 +22,20 @@ class ReportController < ApplicationController
 
   # turbo update the table (also with blank table but with columns)
   def max_score_table
-    render turbo_stream: turbo_stream.update(:max_score_result, partial: 'score_table', locals: {problems: @problems, link_for_data: max_score_query_report_path })
+    render turbo_stream: turbo_stream.update(:max_score_result, partial: 'score_table', locals: {problems: @problems, link_for_data: max_score_query_report_path, refresh_submit_form_id: 'max-score-filter-form' })
   end
 
   def max_score_query
-    submissions = submission_in_range(params[:sub_range]).where(user: @users,problem: @problems)
-    records = submissions.max_score_report(@problems,1,2)
-    @result = Submission.calculate_max_score(records, @users, @problems, with_comments: false)
+    submissions = submission_in_range(params[:sub_range]).where(user: @users, problem: @problems)
+
+    # the max score report need range of time to check for hint acquiring,
+    # we use the time from the first submission to the last submission of the filtered submission
+    start = submissions.minimum(:submitted_at)
+    stop = submissions.maximum(:submitted_at)
+    records = submissions.max_score_report(@problems, start, stop)
+
+    # calculate the maximum score
+    @result = Submission.calculate_max_score(records, @users, @problems)
 
     render json: {
       data: @users.select(:id, :login, :full_name, :remark).select(' NULL as seat').select('NULL as last_heartbeat'),
