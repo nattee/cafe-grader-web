@@ -2,8 +2,8 @@
 %div{data: {
   controller: 'datatables--init-score-table',
   'datatables--init-score-table-config-name-value': 'scoreTable',
-  'datatables--init-score-table-ajax-url-value': ajax_data_path,
-  'datatables--init-score-table-problem-ids-value': problems,
+  'datatables--init-score-table-ajax-url-value': link_for_data,
+  'datatables--init-score-table-problem-ids-value': problems.ids,
   'datatables--init-score-table-submission-path-value': submission_path(-123),
   'datatables--init-score-table-submission-download-path-value': link_to(" [#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123) ),
 }}
@@ -28,7 +28,7 @@
           %th.border-end.text-center{colspan: 3}=problem.name.gsub('_',' ')
         %th.border-end.text-center{colspan: 2} Sum
       %tr
-        - @problems.each do |problem|
+        - problems.each do |problem|
           %th Raw
           %th Deduct
           %th Final
@@ -42,7 +42,7 @@
         %td
         %td
         %td
-        - @problems.each do |problem|
+        - problems.each do |problem|
           %td.text-end{id: "sum-raw-#{problem.id}"}
           %td.text-end{id: "sum-deduction-#{problem.id}"}
           %td.text-end{id: "sum-final-#{problem.id}"}

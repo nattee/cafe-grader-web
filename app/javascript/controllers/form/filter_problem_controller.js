@@ -9,9 +9,9 @@ export default class extends Controller {
 
     // select2 use jQuery event system
     // I have tried using this.groupSelectTarget.addEventListener or using data-action but it does not work
-    $(this.groupSelectTarget).on('change.select2', this.dispatchChange);
-    $(this.idSelectTarget).on('change.select2', this.dispatchChange);
-    $(this.tagSelectTarget).on('change.select2', this.dispatchChange);
+    $(this.groupSelectTarget).on('change.select2', () => { this.dispatchChange() });
+    $(this.idSelectTarget).on('change.select2', () => { this.dispatchChange() });
+    $(this.tagSelectTarget).on('change.select2', () => { this.dispatchChange() });
   }
 
   /**
@@ -40,6 +40,7 @@ export default class extends Controller {
    *   window.problemFilterParams then can be used by non-stimulus JS such as DataTables.ajax
    */
   dispatchChange() {
+    console.log('problem chagned')
     window.problemFilterParams = this.params
   }
 

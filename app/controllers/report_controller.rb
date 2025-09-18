@@ -13,42 +13,25 @@ class ReportController < ApplicationController
   before_action :hall_of_fame_authorization, only: [:problem_hof, :problem_hof_view]
   before_action :can_view_problem, only: [:problem_hof_view]
 
+  # render the UI for filtering and the initial blank table
   def max_score
     # this is for rendering the filter selection
     @problems = @current_user.problems_for_action(:report)
     @groups = @current_user.groups_for_action(:report)
   end
 
+  # turbo update the table (also with blank table but with columns)
   def max_score_table
-    render partial: 'score_table', locals: {problems: @problem, ajax_data_path: max_score_query_report_path }
+    render turbo_stream: turbo_stream.update(:max_score_result, partial: 'score_table', locals: {problems: @problems, link_for_data: max_score_query_report_path })
   end
 
   def max_score_query
-    # calculate submission with max score
-    max_records = submission_in_range(params[:sub_range])
-      .where(user_id: @users.ids, problem_id: @problems).group('user_id,problem_id')
-      .select('MAX(submissions.points) as max_score, user_id, problem_id')
-
-    records = submission_in_range(params[:sub_range])
-      .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
-             'submissions.points = MAX_RECORD.max_score AND ' +
-             'submissions.user_id = MAX_RECORD.user_id AND ' +
-             'submissions.problem_id = MAX_RECORD.problem_id ')
-      .joins(:user).joins(:problem)
-      .select('users.id,users.login,users.full_name,users.remark')
-      .select('problems.name')
-      .select('max_score')
-      .select('submissions.submitted_at')
-      .select('submissions.problem_id')
-      .select('submissions.id as sub_id')
-
-    @show_time = params['show-time'] == 'on'
-
-    # calculate the score
+    submissions = submission_in_range(params[:sub_range]).where(user: @users,problem: @problems)
+    records = submissions.max_score_report(@problems,1,2)
     @result = Submission.calculate_max_score(records, @users, @problems, with_comments: false)
 
     render json: {
-      data: @users.select(:id, :user_id, :login, :full_name, :remark).select(' NULL as seat').select('NULL as last_heartbeat'),
+      data: @users.select(:id, :login, :full_name, :remark).select(' NULL as seat').select('NULL as last_heartbeat'),
       result: @result,
       problem: @problems
     }
@@ -451,6 +434,7 @@ ORDER BY submitted_at
     # and add more where clause limiting the submission to be in the
     # rnage specified only
     def submission_in_range(range_params)
+      range_params ||= {}
       if range_params[:use] ==  'sub_id'
         Submission.by_id_range(range_params[:from_id], range_params[:to_id])
       else
@@ -485,6 +469,7 @@ ORDER BY submitted_at
     end
 
     def selected_users
+      return (@users = User.none) unless params.has_key? :users
       @users = if params[:users][:use] == "group" then
                  if params[:users][:only_users]
                    User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).where(groups_users: {role: 'user'}).pluck(:user_id))

@@ -1,6 +1,6 @@
 %h1 Best Score
 
-= form_with url: show_max_score_report_path, data: {turbo: true, controller: 'init-ui-component'} do |f|
+= form_with id: 'max-score-filter-form', url: max_score_table_report_path, data: {turbo: true, controller: 'init-ui-component'} do |f|
   .row
     .col-lg-4
       = render partial: 'problem_select'
@@ -15,13 +15,6 @@
   .row
     .col-lg-1
       = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
-    .col-lg-5
-      %div{style: 'height: 350px'}
-        %canvas#chart
-    .col-lg-5
-      %div{style: 'height: 350px'}
-        %canvas#chart_2
-
 .mt-3
-  = turbo_frame_tag "max_score_result", data: {turbo: "true"}
-    = render partial: 'score_table', locals: {problems: nil, ajax_data_path: max_score_query_report_path }
+  = turbo_frame_tag "max_score_result", data: {turbo: "true"} do
+    = render partial: 'score_table', locals: {problems: Problem.none, link_for_data: max_score_query_report_path }

@@ -188,7 +188,8 @@ export const configs = {
       topEnd: 'search'
     },
     buttons: [
-        { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()}},
+        { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()}, className: 'd-none' },
+        { text: 'Refresh2', action: function(e,dt,node,config) { document.getElementById('max-score-filter-form').requestSubmit() } },
         'copyHtml5',
         'excelHtml5',
     ],

@@ -89,7 +89,7 @@ export default class extends DatatableInitController {
       this.deductionColumns.push(6 + 3 * count + 0) // for this problem raw
       this.deductionColumns.push(6 + 3 * count + 1) // for this problem deduction
       count += 1
-      return [ 
+      return [
         {data: `raw_score_${id}`,className: 'text-end text-secondary' } ,
         {data: `total_cost_${id}`,className: 'text-end text-secondary',render: this._deduction_renderer_factory(id)},
         {data: `final_score_${id}`,className: 'text-end border-end',render: this._score_renderer_factory(id) } ,
@@ -119,9 +119,9 @@ export default class extends DatatableInitController {
     let ajaxOptions = super._buildAjaxOptions(baseConfig); // Changed
     // pre request processing
     ajaxOptions.data = (data) => {
-      return $.extend({}, d, window.userFilterParams);
-      return $.extend({}, d, window.problemFilterParams);
-      return $.extend({}, d, window.submissionFilterParams);
+      const result = $.extend({}, data, window.userFilterParams, window.problemFilterParams, window.submissionFilterParams);
+      console.log(result)
+      return result
     }
     // post request processing
     ajaxOptions.dataSrc = (json) => {

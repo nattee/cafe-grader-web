@@ -68,7 +68,7 @@ class Submission < ApplicationRecord
 
     # records having the same score as the max record
     # this is what we returned
-    all
+    all.joins(:user)
       .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
                    'submissions.points = MAX_RECORD.max_score AND ' +
                    'submissions.user_id = MAX_RECORD.user_id AND ' +
@@ -81,7 +81,7 @@ class Submission < ApplicationRecord
         "submissions.problem_id = HINT_REVEAL.problem_id "
        )
       .joins(:problem)
-      .select('submissions.user_id,users_submissions.login,users_submissions.full_name,users_submissions.remark')
+      .select('submissions.user_id,users.login,users.full_name,users.remark')
       .select('problems.name')
       .select('max_score')
       .select('LEAST(max_score,100.0-IFNULL(LLM_ASSIST.llm_cost,0.0)-IFNULL(HINT_REVEAL.hint_cost,0.0)) as final_score')
