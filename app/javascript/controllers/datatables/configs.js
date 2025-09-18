@@ -166,12 +166,9 @@ export const configs = {
     },
   },
   // this scoreTable is used in contest/:id/view and report/max_score
+  // this must be initialized by specialized Stimulus controller datatables--init-score-table
   scoreTable: {
-    processing: true,
-    rowId: 'id',
-    destroy: true,
     paging: false,
-    order: [[0,'asc']],
     layout: {
       topStart: [
         'buttons',
@@ -205,6 +202,7 @@ export const configs = {
       }
     },
     columns: columns,
+    order: [[0,'asc']],
     drawCallback: function (settings) {
       var api = this.api();
       api.columns.adjust()

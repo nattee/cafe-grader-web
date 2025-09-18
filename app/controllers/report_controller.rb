@@ -2,8 +2,8 @@ class ReportController < ApplicationController
   include ProblemAuthorization
 
   before_action :check_valid_login
-  before_action :selected_problems, only: [ :show_max_score, :submission_query ]
-  before_action :selected_users, only: [ :show_max_score, :submission_query ]
+  before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
+  before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
 
   before_action(except: [:problem_hof]) {
     group_action_authorization(:report)
@@ -14,8 +14,44 @@ class ReportController < ApplicationController
   before_action :can_view_problem, only: [:problem_hof_view]
 
   def max_score
+    # this is for rendering the filter selection
     @problems = @current_user.problems_for_action(:report)
     @groups = @current_user.groups_for_action(:report)
+  end
+
+  def max_score_table
+    render partial: 'score_table', locals: {problems: @problem, ajax_data_path: max_score_query_report_path }
+  end
+
+  def max_score_query
+    # calculate submission with max score
+    max_records = submission_in_range(params[:sub_range])
+      .where(user_id: @users.ids, problem_id: @problems).group('user_id,problem_id')
+      .select('MAX(submissions.points) as max_score, user_id, problem_id')
+
+    records = submission_in_range(params[:sub_range])
+      .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+             'submissions.points = MAX_RECORD.max_score AND ' +
+             'submissions.user_id = MAX_RECORD.user_id AND ' +
+             'submissions.problem_id = MAX_RECORD.problem_id ')
+      .joins(:user).joins(:problem)
+      .select('users.id,users.login,users.full_name,users.remark')
+      .select('problems.name')
+      .select('max_score')
+      .select('submissions.submitted_at')
+      .select('submissions.problem_id')
+      .select('submissions.id as sub_id')
+
+    @show_time = params['show-time'] == 'on'
+
+    # calculate the score
+    @result = Submission.calculate_max_score(records, @users, @problems, with_comments: false)
+
+    render json: {
+      data: @users.select(:id, :user_id, :login, :full_name, :remark).select(' NULL as seat').select('NULL as last_heartbeat'),
+      result: @result,
+      problem: @problems
+    }
   end
 
   # post max_score

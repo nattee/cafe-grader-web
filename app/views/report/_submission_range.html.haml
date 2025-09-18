@@ -1,4 +1,4 @@
-.card.border-primary.mb-2{data: {controller: 'form--filter-submission', action: 'change->form--filter-submission#filterChanged change.td->form--filter-submission#filterChanged'}}
+#hahaha.card.border-primary.mb-2{data: {controller: 'form--filter-submission', action: 'change->form--filter-submission#filterChanged change.td->form--filter-submission#filterChanged'}}
   .card-header.text-bg-primary.border-primary
     Submission range
   .card-body
@@ -40,7 +40,7 @@
             From Date
           .col-md-9
             .input-group.td-date
-              = text_field_tag 'sub_range[from_time]', nil, class: 'form-control', data: {'form--filter-submission-target': 'fromTime'}
+              = text_field_tag 'sub_range[from_time]', nil, class: 'form-control', data: {'form--filter-submission-target': 'fromTime', action: 'change.td->form--filter-submission#filterChanged'}
               %span.input-group-text
                 %span.mi event
     .row.mb-2
@@ -51,7 +51,7 @@
             Until Date
           .col-md-9
             .input-group.date
-              = text_field_tag 'sub_range[to_time]', nil, class: 'form-control', data: {'form--filter-submission-target': 'toTime'}
+              = text_field_tag 'sub_range[to_time]', nil, class: 'form-control', data: {'form--filter-submission-target': 'toTime', action: 'change.td->form--filter-submission#filterChanged'}
               %span.input-group-text
                 %span.mi event
 :javascript

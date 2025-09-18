@@ -1,4 +1,4 @@
-.card.border-primary.mb-2{data: {controller: 'form--filter-problem', action: 'change->form--filter-problem#filterChanged change.select2->form--filter-problem#dispatchChange'}}
+.card.border-primary.mb-2{data: {controller: 'form--filter-problem', action: 'change->form--filter-problem#filterChanged'}}
   .card-header.text-bg-primary.border-primary
     Problems
   .card-body
@@ -18,7 +18,8 @@
       .col-11
         = label_tag :probs_use_ids, "Only these problems"
         = select_tag 'probs[ids][]',
-          options_for_select(@problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, params[:'probs[ids][]']), { class: 'select2 form-control', multiple: "true", data: {'form--filter-problem-target': 'idSelect'} }
+            options_for_select(@problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, params[:'probs[ids][]']),
+            { class: 'select2 form-control', multiple: "true", data: {'form--filter-problem-target': 'idSelect'} }
     .row.mb-2
       .col-1
         .form-check

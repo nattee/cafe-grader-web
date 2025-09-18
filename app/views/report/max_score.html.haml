@@ -24,3 +24,4 @@
 
 .mt-3
   = turbo_frame_tag "max_score_result", data: {turbo: "true"}
+    = render partial: 'score_table', locals: {problems: nil, ajax_data_path: max_score_query_report_path }

@@ -26,12 +26,13 @@
     .row
       .col-1
       .col-11
-        = select_tag "users[group_ids]", options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]), class: 'select2', style: 'width: 20em', data: {'form--filter-user-target': 'onlyUsers'};
+        = select_tag "users[group_ids]", options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]),
+          class: 'select2', style: 'width: 20em', data: {'form--filter-user-target': 'groupSelect'};
     .row.mt-1
       .col-1
       .col-11
         .form-check
-          %input#only-users.form-check-input{type: 'checkbox', name: 'users[only_users]', checked: true, data: {'form--filter-user-target': 'groupSelect'}}
+          %input#only-users.form-check-input{type: 'checkbox', name: 'users[only_users]', checked: true, data: {'form--filter-user-target': 'onlyUsers'}}
           %label.form-check-label{for: 'only-users'} Exclude editors and reporters
 
 :javascript

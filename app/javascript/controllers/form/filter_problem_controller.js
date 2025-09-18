@@ -7,9 +7,11 @@ export default class extends Controller {
     // Dispatch the initial state so listeners can load with the default values
     this.filterChanged()
 
-    $('.select2').on('change.select2', () => {
-      this.dispatchChange();
-    });
+    // select2 use jQuery event system
+    // I have tried using this.groupSelectTarget.addEventListener or using data-action but it does not work
+    $(this.groupSelectTarget).on('change.select2', this.dispatchChange);
+    $(this.idSelectTarget).on('change.select2', this.dispatchChange);
+    $(this.tagSelectTarget).on('change.select2', this.dispatchChange);
   }
 
   /**
@@ -38,7 +40,6 @@ export default class extends Controller {
    *   window.problemFilterParams then can be used by non-stimulus JS such as DataTables.ajax
    */
   dispatchChange() {
-    console.log('yyy')
     window.problemFilterParams = this.params
   }
 
@@ -55,7 +56,6 @@ export default class extends Controller {
    * @returns {object}
    */
   get params() {
-    window.xxx = this.isSelectTarget
     return {
       'probs[use]': this.selectedOptionValue,
       'probs[ids][]': $(this.idSelectTarget).val(),

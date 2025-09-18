@@ -1,143 +1,50 @@
-= turbo_frame_tag "max_score_result", data: {turbo: "true"} do
-  %table#score-table.table.table-hover
+-# result table
+%div{data: {
+  controller: 'datatables--init-score-table',
+  'datatables--init-score-table-config-name-value': 'scoreTable',
+  'datatables--init-score-table-ajax-url-value': ajax_data_path,
+  'datatables--init-score-table-problem-ids-value': problems,
+  'datatables--init-score-table-submission-path-value': submission_path(-123),
+  'datatables--init-score-table-submission-download-path-value': link_to(" [#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123) ),
+}}
+  -# graph area
+  .row.mb-3
+    .col-lg-6
+      %div{style: 'height: 350px'}
+        %canvas#chart{'data-datatables--init-score-table-target': 'problemScore'}
+    .col-lg-6
+      %div{style: 'height: 350px'}
+        %canvas#chart_2{'data-datatables--init-score-table-target': 'totalScore'}
+  %table#table.table.datatable.table-hover
     %thead
       %tr
-        %th #
-        %th Login
-        %th Name
-        %th Remark
-        - @problems.each do |p|
-          %th.text-right= p.name.gsub('_',' ')
-          - if @show_time
-            %th.text-right= p.name.gsub('_',' ') + ' (time)'
-        %th.text-right Total
-        %th.text-right Passed
-    %tbody
-      - super_sum, super_pass = 0,0
-      - row_count = 0
-      - col_num_for_total = 4 + @problems.count * (@show_time ? 2 : 1)
-      - @result[:score].each do |login,score|
-        %tr
-          %td
-          %td= link_to login, stat_user_admin_path(score['id'])
-          %td= score['full_name']
-          %td= score['remark']
-          - sum,pass = 0,0
-          - @problems.each do |p|
-            - this_prob_score = score['raw_score_'+p.id.to_s] || 0; sum += this_prob_score
-            - pass += 1 if this_prob_score >= 100
-            -# show the score and a link to that submission
-            %td.text-end
-              = number_with_precision(score['final_score_'+p.id.to_s], precision: 0)
-            - if @show_time
-              %td.text-end
-                - if score['time'+p.name]
-                  = link_to score['time'+p.name].strftime('%Y/%m/%d %T'), submission_path(score['sub_'+p.name])
-                  = ' | '
-                  = link_to "[#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(score['sub_'+p.name])
-
-          - super_sum += sum
-          - super_pass += pass
-          %td.text-end= number_with_precision(sum, precision: 0)
-          %td.text-end= pass
-    %tfoot
+        %th.text-end{rowspan: 2} #
+        %th{rowspan: 2} Login
+        %th{rowspan: 2} Name
+        %th{rowspan: 2} Contest Remark
+        %th{rowspan: 2} Seat
+        %th.border-end{rowspan: 2} Last Seen
+        - problems.each do |problem|
+          %th.border-end.text-center{colspan: 3}=problem.name.gsub('_',' ')
+        %th.border-end.text-center{colspan: 2} Sum
       %tr
+        - @problems.each do |problem|
+          %th Raw
+          %th Deduct
+          %th Final
+        %th Raw
+        %th Final
+    %tfoot
+      %tr.fw-bold
         %td
         %td Summation
         %td
         %td
-        - @problems.each do |p|
-          %td.text-end= number_with_precision(@result[:stat][p.name][:sum], delimiter: ',', precision: 0)
-          - if @show_time
-            %td
-        %td.text-end= number_with_precision(super_sum, delimiter: ',', precision: 0)
-        %td.text-end= number_with_precision(super_pass, delimiter: ',', precision: 0)
-  :javascript
-      $('#score-table').DataTable({
-        paging: false,
-        layout: {
-           topStart: 'buttons',
-           topEnd: 'search'
-        },
-        buttons: [
-            'copyHtml5',
-            'excelHtml5',
-        ],
-        order: [[#{col_num_for_total},'asc']],
-        columnDefs: [{orderable: false, targets: [0]} ],
-
-      })
-
-      // add row numbering
-      $('#score-table').DataTable().on('order.dt search.dt', function () {
-        let i = 1;
-
-        table = $('#score-table').DataTable()
-
-        table.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
-          this.data(i++);
-        });
-      }).draw();
-
-      np = #{[1,@problems.count].max}
-      data = {
-        labels: #{(1..@result[:score].keys.count).to_a.to_s.html_safe},
-        datasets: [
-          #{
-            @result[:stat].map{ |prob_name, detail|
-              "{ label: '#{prob_name}',data: #{detail[:score].sort.map{ |x| x.to_i }.to_s} }"
-            }.join(",\n").html_safe
-          }
-        ]
-      }
-
-      //left padd with zero and sort the data
-      maxLength = data.labels.length
-      data.datasets.forEach(dataset => {
-          const paddingLength = maxLength - dataset.data.length;
-          if (paddingLength > 0) {
-              const padding = new Array(paddingLength).fill(0); // Create an array of 0's for padding
-              dataset.data = [...padding, ...dataset.data]; // Prepend the 0's to the data array
-          }
-      });
-
-      config = {
-        type: 'line',
-        data: data,
-        options: {
-          responstive: true,
-          maintainAspectRatio: false,
-          elements: {
-            point: {
-              pointStyle: false
-            },
-          }
-        },
-      }
-
-      window.xxx = config
-
-      //clone the config to be used in the second graph
-      //this has to be done before we construct the chart.js object,
-      //else the config is already changed
-      config2 = structuredClone(config)
-      data2 = {
-        labels: #{(1..@result[:score].keys.count).to_a.to_s.html_safe},
-        datasets: [
-          {
-            label: 'Total Score',
-            data: #{@result[:score].map{ |login,detail| detail[:user_sum].to_f }.sort.to_s}
-          }
-        ]
-      }
-      config2.data = data2
-
-      // destroy old graph
-      if (typeof chart1 !== 'undefined') { chart1.destroy() }
-      if (typeof chart2 !== 'undefined') { chart2.destroy() }
-
-      // display graph
-      Chart.defaults.font.size = 15
-      //Chart.defaults.font.family = 'Sarabun Light'
-      chart1 = new Chart($('#chart'),config)
-      chart2 = new Chart($('#chart_2'),config2)
+        %td
+        %td
+        - @problems.each do |problem|
+          %td.text-end{id: "sum-raw-#{problem.id}"}
+          %td.text-end{id: "sum-deduction-#{problem.id}"}
+          %td.text-end{id: "sum-final-#{problem.id}"}
+        %td#grand-total-raw.text-end
+        %td#grand-total-final.text-end

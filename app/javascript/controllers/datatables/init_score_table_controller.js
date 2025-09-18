@@ -117,6 +117,13 @@ export default class extends DatatableInitController {
   // OVERRIDE: ajax with special processing
   _buildAjaxOptions(baseConfig) {
     let ajaxOptions = super._buildAjaxOptions(baseConfig); // Changed
+    // pre request processing
+    ajaxOptions.data = (data) => {
+      return $.extend({}, d, window.userFilterParams);
+      return $.extend({}, d, window.problemFilterParams);
+      return $.extend({}, d, window.submissionFilterParams);
+    }
+    // post request processing
     ajaxOptions.dataSrc = (json) => {
       const processedJson = processScore(json)
       this._drawGraph(processedJson)

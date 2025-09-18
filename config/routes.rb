@@ -244,6 +244,8 @@ Rails.application.routes.draw do
   # report
   resource :report, only: [], controller: 'report' do
     get 'max_score'
+    post 'max_score_table'
+    post 'max_score_query'
     post 'show_max_score'
     get 'login'
     get 'login_stat'

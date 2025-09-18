@@ -23,7 +23,7 @@ export default class extends Controller {
    *   window.userFilterParams then can be used by non-stimulus JS such as DataTables.ajax
    */
   dispatchChange() {
-    window.problemFilterParams = this.params
+    window.userFilterParams = this.params
   }
 
   /**
