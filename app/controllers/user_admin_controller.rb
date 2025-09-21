@@ -277,8 +277,13 @@ class UserAdminController < ApplicationController
     end
     if params[:commit] == 'Grant'
       # grant role
-      user.roles << role
-      @toast[:body] = "User '#{user.login}' has been granted the role '#{role.name}'"
+      if user.roles.where(name: role.name).any?
+        @toast[:body] = "User '#{user.login}' already has the role '#{role.name}'"
+        @toast[:type] = :alert
+      else
+        user.roles << role
+        @toast[:body] = "User '#{user.login}' has been granted the role '#{role.name}'"
+      end
     else
       # revoke role
       if user.login == 'root' && role.name == 'admin'

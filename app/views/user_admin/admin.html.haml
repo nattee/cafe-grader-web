@@ -25,21 +25,6 @@
             %th Login
             %th Full name
             %th
-        -#
-          %table#main-table.table.table-condense.table-hover.table-striped
-            %thead{:class => 'info-head'}
-              %th #
-              %th Login
-              %th Full name
-              %th 
-            - @admins.each_with_index do |user, i|
-              %tr
-                %td= i+1
-                %td= user.login
-                %td= user.full_name
-                %td
-                  - if user.login!='root'
-                    = link_to '[revoke]', modify_role_user_admin_index_path( id: user.id, role: 'admin', commit: 'revoke')
   .col-md-6
     .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body
