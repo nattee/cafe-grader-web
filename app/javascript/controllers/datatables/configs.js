@@ -4,6 +4,7 @@ const baseConfig = {
   responsive: true,
   processing: true,
   destroy: true,
+  paging: false,
   rowId: 'id',
 };
 
@@ -27,6 +28,7 @@ export const configs = {
   default: { ...baseConfig },
   solidQueueJob: {
     ...baseConfig,
+    paging: true,
     pageLength: 25,
     columns: [
       columns.id,
@@ -44,7 +46,6 @@ export const configs = {
   // /contests/
   contestIndex: {
     ...baseConfig,
-    paging: false,
     ajax: {
       type: 'POST',
       headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
@@ -133,11 +134,11 @@ export const configs = {
     },
   },
   contestManageProblem: {
+    ...baseConfig,
     responsive: true,
     processing: true,
     rowId: 'id',
     destroy: true,
-    paging: false,
     order: [[0,'asc']],
     ajax: {
       type: 'POST',
@@ -168,7 +169,7 @@ export const configs = {
   // this scoreTable is used in contest/:id/view and report/max_score
   // this must be initialized by specialized Stimulus controller datatables--init-score-table
   scoreTable: {
-    paging: false,
+    ...baseConfig,
     layout: {
       topStart: [
         'buttons',
