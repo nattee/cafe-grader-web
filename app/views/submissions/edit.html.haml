@@ -1,7 +1,7 @@
 .container{data: {controller: 'editor', editor_delay_value: 4000, editor_as_binary_value: @as_binary }}
   - unless @as_binary
     -# hidden area that shows the original code
-    %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @submission&.source
+    %textarea#text_sourcecode{style: "display:none", data: {editor_target: 'source'}}~ @submission_source
   .row.mb-2
     .col-lg-8
       = render partial: 'problems/problem_head', locals: {problem: @problem}
@@ -33,14 +33,10 @@
           %div.mb-3#editor{data: {editor_target: 'editor'}, style: 'height: 500px; border-radius: 7px; font-size: 14px;'}
         - else
           - if @last_sub.present?
-            %ul
-              %li
-                You have already submitted a file.
-                = link_to 'Download', download_submission_path(@last_sub)
-                the latest submission
-              %li
-                = link_to 'View', problem_submissions_path(@problem)
-                all submissions for this problem.
+            :markdown
+              * You have already submitted a file at #{@last_sub.submitted_at}.
+                * #{link_to 'Download', download_submission_path(@last_sub)} the latest submission
+                * #{link_to 'View', problem_submissions_path(@problem)} all submissions for this problem.
           - else
             %ul
               %li You have not submitted any file to this problem.
@@ -60,7 +56,7 @@
               :markdown
                 Write your code in the box above, choose a language, and then click the **"Submit"** button to submit the code.
         = form_with url: submit_main_path, :multipart => true, class: 'row row-cols-lg-auto g-3 align-items-center', data: {action: 'editor#submit'} do |form|
-          = hidden_field_tag 'editor_text', @submission&.source, data: {editor_target: 'submitSource'}
+          = hidden_field_tag 'editor_text', @submission_source, data: {editor_target: 'submitSource'}
           = hidden_field_tag 'submission[problem_id]', @problem.id
           .col-auto
             = form.label :language_id, 'Language'
