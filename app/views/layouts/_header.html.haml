@@ -3,7 +3,7 @@
     .container-fluid
       %a.navbar-brand{href: list_main_path}
         %span.mi.mi-bs home
-        = GraderConfiguration.site_name.html_safe || 'MAIN'
+        = GraderConfiguration.site_name&.html_safe || 'MAIN'
       .navbar-expand
         / display MODE button (with countdown in contest mode)
         - if GraderConfiguration.analysis_mode?
@@ -213,7 +213,7 @@
   }
 
   // time should be a string in iso8601 format
-  function humanize_time(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
+  function humanizeTime(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
     const time = Date.parse(time_iso8601)
     const now = new Date() ;
     const remainingTime = time - now + server_time_offset_ms;

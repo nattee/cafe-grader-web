@@ -244,6 +244,8 @@ Rails.application.routes.draw do
   # report
   resource :report, only: [], controller: 'report' do
     get 'max_score'
+    post 'max_score_table'
+    post 'max_score_query'
     post 'show_max_score'
     get 'login'
     get 'login_stat'
@@ -251,8 +253,12 @@ Rails.application.routes.draw do
     post 'login_summary_query'
     post 'login_detail_query'
     get 'multiple_login'
-    get 'problem_hof(/:id)', action: 'problem_hof', as: 'problem_hof'
-    get 'progress'
+
+    # hall of fame
+    get 'problem_hof'
+    get 'problem_hof/:id', action: 'problem_hof_view', as: 'problem_hof_view'
+
+    # get 'progress'
 
 
     get 'stuck'

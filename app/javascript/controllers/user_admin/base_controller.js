@@ -14,6 +14,9 @@ export default class extends rowFieldToggle(Controller) {
   }
 
   postUserAction(event) {
+    // must call this one to prevent the link to scroll to the top
+    event.preventDefault()
+
     const { form, userId, command } = this.userForm
 
     //set the command and user_id in the form

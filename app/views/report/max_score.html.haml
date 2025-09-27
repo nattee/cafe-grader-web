@@ -1,6 +1,6 @@
 %h1 Best Score
 
-= form_with url: show_max_score_report_path, data: {turbo: true, controller: 'init-ui-component'} do |f|
+= form_with id: 'max-score-filter-form', url: max_score_table_report_path, data: {turbo: true, controller: 'init-ui-component'} do |f|
   .row
     .col-lg-4
       = render partial: 'problem_select'
@@ -8,19 +8,13 @@
       = render partial: 'submission_range'
     .col-lg-4
       = render partial: 'user_select'
-  .row.mb-2
-    .col-auto
-      %input#show-time.form-check-input{type: 'checkbox', name: 'show-time'}
-      %label.form-check-label{for: 'show-time'} Show time column
+      = button_tag 'Show', class: "btn btn-primary btn-large d-none", value: "show"
+      .alert.alert-warning.shadow-sm
+        Choose the problems and user and then click the "Refresh" button to display the maximum score of selected users and problems.
   .row
     .col-lg-1
-      = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
-    .col-lg-5
-      %div{style: 'height: 350px'}
-        %canvas#chart
-    .col-lg-5
-      %div{style: 'height: 350px'}
-        %canvas#chart_2
-
+      -#
+        = button_tag 'Show', class: "btn btn-primary btn-large", value: "show"
 .mt-3
-  = turbo_frame_tag "max_score_result", data: {turbo: "true"}
+  = turbo_frame_tag "max_score_result", data: {turbo: "true"} do
+    = render partial: 'score_table', locals: {problems: Problem.none, link_for_data: max_score_query_report_path }

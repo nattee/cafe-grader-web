@@ -74,6 +74,7 @@ class SubmissionsController < ApplicationController
   def direct_edit_problem
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = [] # won't allow llm models on the first submission
+    @submission_source = nil
     render 'edit'
   end
 
@@ -81,6 +82,7 @@ class SubmissionsController < ApplicationController
   def edit
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = Rails.configuration.llm[:provider].keys
+    @submission_source = @submission&.source unless @as_binary
   end
 
   # as Turbo

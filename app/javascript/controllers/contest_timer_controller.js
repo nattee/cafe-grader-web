@@ -26,16 +26,16 @@ export default class extends Controller {
       const stopTime = Date.parse(element.dataset.stop)
 
       if (now < startTime) {
-        let text = humanize_time(element.dataset.start, 'starts in ', 'started ')
+        let text = humanizeTime(element.dataset.start, 'starts in ', 'started ')
         if ( (startTime - parseInt(element.dataset.startOffset) * 1000) < now) {
           text += ` (You have ${element.dataset.startOffset} seconds head start)`
         }
         element.textContent = text;
       } else {
-        let text = humanize_time(element.dataset.stop, 'ends in ', 'ended ')
+        let text = humanizeTime(element.dataset.stop, 'ends in ', 'ended ')
         if (parseInt(element.dataset.extraTime) > 0) {
           const endWithExtraTimeAsDate = new Date(stopTime + parseInt(element.dataset.extraTime) * 1000 )
-          const endWithExtraTime = humanize_time(endWithExtraTimeAsDate.toISOString(), 'ends in ', 'ended ')
+          const endWithExtraTime = humanizeTime(endWithExtraTimeAsDate.toISOString(), 'ends in ', 'ended ')
           text += ` <div class="fst-italic">(You have ${element.dataset.extraTime} seconds extra time, <span class="fw-bold">${endWithExtraTime}</span>)</div>`
         }
         element.innerHTML = text;

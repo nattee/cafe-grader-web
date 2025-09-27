@@ -1,13 +1,13 @@
 = render partial: 'problems/problem_head', locals: {problem: @problem}
 
-.row.mb-3
-  .col-md-8
+.row
+  .col-md-8.mb-3
     .card
       .card-body
         %h2.card-title Submission History
         %canvas#chart{height: '50px'}
 
-  .col-md-4
+  .col-md-4.mb-3
     .card
       .card-body
         %h2.card-title General Info

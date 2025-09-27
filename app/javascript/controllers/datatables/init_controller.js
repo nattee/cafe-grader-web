@@ -25,39 +25,80 @@ export default class extends Controller {
 
   connect() {
     // tables is an array of DataTable object
-
     this.tables = [];
-    //get the config using stimulus value
-    const config = configs[this.configNameValue] || configs.default
 
+    // build the config, see the default behavior from these protected method
+    const baseConfig = this._getBaseConfig();
+    const finalConfig = this._buildFinalConfig(baseConfig);
 
+    // build array of table elements that we should initialize
     let table_elements
-    // Case 1: Controller attached to the table itself.
     if (this.element.tagName.toLowerCase() === 'table') {
+      // Case 1: Controller attached to the table itself.
       table_elements = [this.element];
     } else {
       // Case 2: Controller attached to enclosing elements
       table_elements = this.element.querySelectorAll('table');
     }
 
-    // include ajax url, if any
-    let finalConfig = { ...config }
-    if (this.hasAjaxUrlValue && typeof config.ajax === 'object') {
-      // merge the url to ajax option using Stimulus controller value
-      let ajaxOptions = { ...config.ajax };
-      ajaxOptions.url = this.ajaxUrlValue;
-
-      // Merge the fully constructed ajax object and other server-side flags
-      finalConfig = {
-        ...finalConfig,
-        ajax: ajaxOptions
-      };
-    }
-
     // Initialize DataTable for each table found.
     table_elements.forEach(element => {
       this.tables.push($(element).DataTable(finalConfig));
     });
+  }
+
+  // --- HOOK FUNCTIONS FOR SUBCLASS ---
+  // These functions works by itself but we can override
+  // it in a subclass when the need arise.
+  /**
+   * Fetches the base configuration object from the configs object (in datatables/configs.js)
+   * @returns {object}
+   */
+  _getBaseConfig() {
+    return configs[this.configNameValue] || configs.default;
+  }
+
+  /**
+   * Assembles the final configuration object before initialization.
+   * This is the main orchestrator method that subclasses can override
+   * if they need to change the entire assembly logic.
+   * @param {object} baseConfig The config from getBaseConfig()
+   * @returns {object} The final config for DataTables.
+   */
+  _buildFinalConfig(baseConfig) {
+    let finalConfig = { ...baseConfig };
+
+    // This logic is now delegated to other hook methods
+    finalConfig.columns = this._buildColumns(baseConfig);
+    finalConfig.ajax = this._buildAjaxOptions(baseConfig);
+
+    return finalConfig;
+  }
+
+  /**
+   * Hook for building the 'columns' array.
+   * The default behavior is to just use the columns from the config.
+   * @param {object} baseConfig The config from getBaseConfig()
+   * @returns {array} The columns definition for DataTables.
+   */
+  _buildColumns(baseConfig) {
+    return baseConfig.columns;
+  }
+
+  /**
+   * Hook for building the 'ajax' options object.
+   * The default behavior is to merge the ajaxUrlValue.
+   * @param {object} baseConfig The config from getBaseConfig()
+   * @returns {object} The ajax options for DataTables.
+   */
+  _buildAjaxOptions(baseConfig) {
+    if (this.hasAjaxUrlValue && typeof baseConfig.ajax === 'object') {
+      return {
+        ...baseConfig.ajax,
+        url: this.ajaxUrlValue
+      };
+    }
+    return baseConfig.ajax;
   }
 
   // this functions reload a datatable in this.table that has it's node() id in event.detail.table
@@ -71,7 +112,6 @@ export default class extends Controller {
     // If a string of names is provided, split it into an array.
     // Otherwise, targetTables will be null.
     const targetTables = targetNamesStr ? targetNamesStr.split(' ') : null;
-    console.log(`targetTables = ${targetTables}`)
 
     this.tables.forEach(table => {
       // 1. No specific tables were targeted (targetTables is null).
@@ -79,9 +119,13 @@ export default class extends Controller {
       if (!targetTables || targetTables.includes(table.table().node().id)) {
         // 'null, false' reloads data from the server but keeps the user on the current page
         table.ajax.reload(null, false)
-        console.log(`reloading = ${table.table().node().id}`)
       }
     });
   }
 
+  redraw(event) {
+    this.tables.forEach(table => {
+      table.draw();
+    });
+  }
 }

@@ -4,6 +4,7 @@ const baseConfig = {
   responsive: true,
   processing: true,
   destroy: true,
+  paging: false,
   rowId: 'id',
 };
 
@@ -27,6 +28,7 @@ export const configs = {
   default: { ...baseConfig },
   solidQueueJob: {
     ...baseConfig,
+    paging: true,
     pageLength: 25,
     columns: [
       columns.id,
@@ -44,7 +46,6 @@ export const configs = {
   // /contests/
   contestIndex: {
     ...baseConfig,
-    paging: false,
     ajax: {
       type: 'POST',
       headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
@@ -83,7 +84,6 @@ export const configs = {
     paging: false,
     order: [[0,'asc']],
     ajax: {
-      url: "#{show_users_query_contest_path(@contest)}",
       type: 'POST',
       headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
     },
@@ -134,11 +134,11 @@ export const configs = {
     },
   },
   contestManageProblem: {
+    ...baseConfig,
     responsive: true,
     processing: true,
     rowId: 'id',
     destroy: true,
-    paging: false,
     order: [[0,'asc']],
     ajax: {
       type: 'POST',
@@ -165,5 +165,63 @@ export const configs = {
       var api = this.api();
       api.columns.adjust()
     },
+  },
+  // this scoreTable is used in contest/:id/view and report/max_score
+  // this must be initialized by specialized Stimulus controller datatables--init-score-table
+  scoreTable: {
+    ...baseConfig,
+    layout: {
+      topStart: [
+        'buttons',
+        {
+          div: {
+            html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox" data-datatables--init-score-table-target="showLoad" data-action="datatables--init-score-table#redraw">' +
+                  '<label class="ms-2 form-check-label" for="show-load">Show submission time & download link</label>'
+          }
+        },
+        {
+          div: {
+            html: '<input class="form-check-input" id="show-deduction" name="show-deduction" type="checkbox" data-datatables--init-score-table-target="showDeduction" data-action="datatables--init-score-table#redraw" checked>' +
+                  '<label class="ms-2 form-check-label" for="show-deduction">Show full score deduction (by Hint & LLM)</label>'
+          }
+        }
+      ],
+      topEnd: 'search'
+    },
+    buttons: [
+        { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()} },
+        'copyHtml5',
+        'excelHtml5',
+    ],
+    ajax: {
+      type: 'POST',
+      headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
+      dataSrc: function (json) {
+        const processedJson = processScore(json)
+        draw_graph(processedJson)
+        return processedJson.data
+      }
+    },
+    columns: columns,
+    order: [[0,'asc']],
+    drawCallback: function (settings) {
+      var api = this.api();
+      api.columns.adjust()
+    },
+    initComplete: function() {
+      // 'this' refers to the datatable settings object.
+      // 'this.api()' returns the API instance.
+      const api = this.api();
+
+      // draw the line numbering, independently of sorting
+      api.on('order.dt search.dt', function (e, dt, type, index) {
+        let i = 1;
+
+        // select columns 0 of every row, as search and order is applied
+        dt.api.cells(null, 0, { search: 'applied', order: 'applied' }).every(function (cell) {
+          this.data(i++);
+        });
+      }).draw();
+    }
   }
 };
