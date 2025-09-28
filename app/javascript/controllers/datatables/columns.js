@@ -14,7 +14,7 @@ export const renderers = {
     const start_offset = row['start_offset_second']
     const extra_time = row['extra_time_second']
     return `${start_offset} : ${extra_time} ` +
-      `<a href='#' data-row-id="${row['id']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
+      `<a href='#' data-row-id="${row['id']}" data-login="${row['login']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
   },
   roleActionButton: (data,type,row,meta) => {
     let result = ''

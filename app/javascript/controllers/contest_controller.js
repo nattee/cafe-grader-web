@@ -105,14 +105,14 @@ export default class extends Controller {
     const element = event.target
 
     bootbox.dialog( {
-      title: `Set extra times for ${user}`,
+      title: `Set extra times for ${event.currentTarget.dataset.login}`,
       message: `
         <div class="form-group">
-          <label for="start-offset">Start offset (second)</label>
+          <label for="start-offset">Extra Time before Start (second)</label>
           <input type="number" class="form-control" id="start-offset" value="${currentStartOffset}">
         </div>
         <div class="form-group">
-          <label for="end-offset">Finish offset (second)</label>
+          <label for="end-offset">Extra Time After Finish (second)</label>
           <input type="number" class="form-control" id="end-offset" value="${currentExtraTime}" >
         </div> `,
       buttons: {
