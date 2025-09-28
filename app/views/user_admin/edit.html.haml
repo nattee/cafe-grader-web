@@ -5,13 +5,13 @@
   ]
 .row
   .col-md-6
-    .card.shadow-sm
+    .card.shadow-sm.mb-3
       .card-body
         %h4 Basic Info
         = simple_form_for @user, url: user_admin_path(@user), wrapper: :horizontal_form do |f|
           = render partial: 'form', locals: {f: f}
   .col-md-6
-    .card.shadow-sm
+    .card.shadow-sm.mb-3
       .card-body
         %h4 Groups
         .card.bg-warning-subtle
@@ -22,16 +22,41 @@
             %tr
               %th Group
               %th Description
-              %th Enabled
+              %th.text-center Enabled
               %th Role
           %tbody
             - @user.groups_users.each do |gu|
               %tr
                 %td= link_to gu.group.name, group_path(gu.group)
                 %td= gu.group.description
-                %td
+                %td.text-center
                   - if gu.group.enabled
                     %span.badge.text-bg-success Yes
                   - else
                     %span.badge.text-bg-danger No
                 %td= gu.role
+    .card.shadow-sm.mb-3
+      .card-body
+        %h4 Contest
+        .card.bg-warning-subtle
+          .card-body
+            :markdown
+              Add/Remove the user from contests in the management page of contests clicking on the contest name.
+        %table.table
+          %thead
+            %tr
+              %th Contest
+              %th Description
+              %th.text-center Enabled
+              %th Role
+          %tbody
+            - @user.contests_users.each do |cu|
+              %tr
+                %td= link_to cu.contest.name, contest_path(cu.contest)
+                %td= cu.contest.description
+                %td.text-center
+                  - if cu.contest.enabled
+                    %span.badge.text-bg-success Yes
+                  - else
+                    %span.badge.text-bg-danger No
+                %td= cu.role

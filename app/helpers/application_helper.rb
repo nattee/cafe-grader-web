@@ -1,12 +1,11 @@
 # Methods added to this helper will be available to all templates in the application.
 module ApplicationHelper
-
   # render material design icon
-  def mdi(icon,class_name = '')
+  def mdi(icon, class_name = '')
     "<span class='mi mi-bs #{class_name}'>#{icon}</span>".html_safe
   end
 
-  #new bootstrap header
+  # new bootstrap header
   def navbar_user_header
     left_menu = ''
     right_menu = ''
@@ -22,28 +21,28 @@ module ApplicationHelper
       left_menu << add_menu("#{I18n.t 'menu.hall_of_fame'}", 'report', 'problem_hof')
     end
 
-    right_menu << add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-question-sign')}".html_safe, 'main', 'help')
-    right_menu << add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-comment')}".html_safe, 'messages', 'list', {title: I18n.t('menu.messages'), data: {toggle: 'tooltip'}})
+    right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-question-sign')}".html_safe, 'main', 'help')
+    right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-comment')}".html_safe, 'messages', 'list', {title: I18n.t('menu.messages'), data: {toggle: 'tooltip'}})
     if GraderConfiguration['system.user_setting_enabled']
-      right_menu << add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-cog')}".html_safe, 'users', 'index', {title: I18n.t('menu.settings'), data: {toggle: 'tooltip'}})
+      right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-cog')}".html_safe, 'users', 'index', {title: I18n.t('menu.settings'), data: {toggle: 'tooltip'}})
     end
-    right_menu << add_menu("#{content_tag(:span,'',class: 'glyphicon glyphicon-log-out')} #{user.full_name}".html_safe, 'main', 'login', {title: I18n.t('menu.log_out'), data: {toggle: 'tooltip'}})
+    right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-log-out')} #{user.full_name}".html_safe, 'main', 'login', {title: I18n.t('menu.log_out'), data: {toggle: 'tooltip'}})
 
 
-    result = content_tag(:ul,left_menu.html_safe,class: 'nav navbar-nav') + content_tag(:ul,right_menu.html_safe,class: 'nav navbar-nav navbar-right')
+    result = content_tag(:ul, left_menu.html_safe, class: 'nav navbar-nav') + content_tag(:ul, right_menu.html_safe, class: 'nav navbar-nav navbar-right')
   end
 
   def add_menu(title, controller, action, html_option = {})
     link_option = {controller: controller, action: action}
     html_option[:class] = (html_option[:class] || '') + " active" if current_page?(link_option)
-    content_tag(:li, link_to(title,link_option),html_option)
+    content_tag(:li, link_to(title, link_option), html_option)
   end
 
   def user_header
     menu_items = ''
     user = User.find(session[:user_id])
 
-    if (user!=nil) and (session[:admin]) 
+    if (user!=nil) and (session[:admin])
       # admin menu
       menu_items << "<b>Administrative task:</b> "
       append_to menu_items, '[Announcements]', 'announcements', 'index'
@@ -82,11 +81,11 @@ module ApplicationHelper
     menu_items.html_safe
   end
 
-  def append_to(option,label, controller, action)
+  def append_to(option, label, controller, action)
     option << ' ' if option!=''
     option << link_to_unless_current(label,
-                                     :controller => controller,
-                                     :action => action)
+                                     controller: controller,
+                                     action: action)
   end
 
   def format_short_time(time)
@@ -109,15 +108,15 @@ module ApplicationHelper
   end
 
   # display start and stop time in humanized way
-  def format_start_stop(start,stop)
+  def format_start_stop(start, stop)
     start_text = start.strftime("%y-%b-%d %H:%M")
     date_diff = (stop.to_date - start.to_date).to_i
     end_text = stop.strftime("%H:%M")
-    end_text += " (+#{pluralize(date_diff,'day')})" if (date_diff > 0)
+    end_text += " (+#{pluralize(date_diff, 'day')})" if date_diff > 0
     return "#{start_text} to #{end_text}"
   end
 
-  def read_textfile(fname,max_size=2048)
+  def read_textfile(fname, max_size = 2048)
     begin
       File.open(fname).read(max_size)
     rescue
@@ -125,7 +124,7 @@ module ApplicationHelper
     end
   end
 
-  def toggle_button(on,toggle_url,id, option={})
+  def toggle_button(on, toggle_url, id, option = {})
     btn_size = option[:size] || 'btn-sm'
     btn_block = option[:block] || 'btn-block'
     link_to (on ? "Yes" : "No"), toggle_url,
@@ -139,45 +138,67 @@ module ApplicationHelper
 
     return 'ace/mode/c_cpp' unless language
     case language.pretty_name
-      when 'Pascal'
+    when 'Pascal'
         'ace/mode/pascal'
-      when 'C++','C'
+    when 'C++', 'C'
         'ace/mode/c_cpp'
-      when 'Ruby'
+    when 'Ruby'
         'ace/mode/ruby'
-      when 'Python'
+    when 'Python'
         'ace/mode/python'
-      when 'Java'
+    when 'Java'
         'ace/mode/java'
-      when 'Rust'
+    when 'Rust'
         'ace/mode/rust'
-      when 'Go'
+    when 'Go'
         'ace/mode/golang'
-      else
+    else
         'ace/mode/c_cpp'
     end
   end
 
   # render a key pair as two lines (label & value)
   # input can be either label & value or object & field
-  def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil, className: '')
-    label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
-    value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
+  #
+  # def key_pair(label: nil, value: nil, obj: nil, field: nil, width: 4, as: nil, className: '')
+  #   label = field.capitalize if label.nil? && obj && field && obj.respond_to?(field)
+  #   value = obj.send(field).to_s if value.nil? && obj && field && obj.respond_to?(field)
 
-    # convert value
-    if as&.to_sym == :yes_no
-      if value&.downcase == 'true'
-        value = "<span class='badge text-bg-success'>Yes</span>"
-      else
-        value = "<span class='badge text-bg-danger'>No</span>"
-      end
+  #   # convert value
+  #   if as&.to_sym == :yes_no
+  #     if value&.downcase == 'true'
+  #       value = "<span class='badge text-bg-success'>Yes</span>"
+  #     else
+  #       value = "<span class='badge text-bg-danger'>No</span>"
+  #     end
+  #   end
+
+  #   # render
+  #   content = <<~HTML
+  #     <div class="col-md-#{width} mb-3 #{className}"><div class="fw-bold">#{label}</div>#{value}</div>
+  #   HTML
+  #   return content.html_safe
+  # end
+
+  def key_pair(obj: nil, field: nil, label: nil, value: nil, width: 4, as: nil, class_name: '')
+    # 1. Determine the label using I18n, with fallbacks
+    if label.nil? && obj && field
+      label = obj.class.human_attribute_name(field)
+    elsif label.nil? && field
+      label = field.to_s.humanize
     end
 
-    #render
-    content = <<~HTML
-      <div class="col-md-#{width} mb-3 #{className}"><div class="fw-bold">#{label}</div>#{value}</div>
-    HTML
-    return content.html_safe
+    # 2. Determine the value
+    value ||= obj&.public_send(field) if obj && field
+
+    # 3. Build the HTML using safe tag helpers
+    css_classes = "col-md-#{width} mb-3 #{class_name}".strip
+    tag.div(class: css_classes) do
+      safe_join([
+        tag.div(label, class: 'fw-bold'),
+        format_key_pair_value(value, as)
+      ])
+    end
   end
 
   def user_title_bar(user)
@@ -197,11 +218,11 @@ CONTEST_OVER
       if !user.contest_started?
         time_left = "&nbsp;&nbsp;" + (t 'title_bar.contest_not_started')
       else
-        time_left = "&nbsp;&nbsp;" + (t 'title_bar.remaining_time') + 
+        time_left = "&nbsp;&nbsp;" + (t 'title_bar.remaining_time') +
           " #{format_short_duration(user.contest_time_left)}"
       end
     end
-    
+
     #
     # if the contest is in the anaysis mode
     if GraderConfiguration.analysis_mode?
@@ -258,10 +279,10 @@ TITLEBAR
     BOOTSTRAP_FLASH_MSG.fetch(flash_type.to_sym, flash_type.to_s)
   end
 
-  def active_class_when(options = {},cname = @active_controller, aname = @active_action)
+  def active_class_when(options = {}, cname = @active_controller, aname = @active_action)
     class_name = ' active '
     ok = true
-    options.each do |k,v|
+    options.each do |k, v|
       ok = false if k == :controller && v.to_s != cname
       ok = false if k == :action && v.to_s != aname
     end
@@ -273,5 +294,23 @@ TITLEBAR
     @current_user && @current_user.admin?
   end
 
+  private
 
+  # Handles value formatting to keep the main helper clean.
+  # Easily extendable with more formats.
+  def format_key_pair_value(value, format)
+    case format&.to_sym
+    when :yes_no
+      if value == true || value.to_s.downcase == 'true'
+        tag.span(t('helpers.yes'), class: 'badge text-bg-success')
+      else
+        tag.span(t('helpers.no'), class: 'badge text-bg-danger')
+      end
+    # Add other formatters here, e.g., :date, :currency
+    # when :date
+    #   l(value.to_date) if value.present?
+    else
+      value.to_s # Default: convert to string (will be safely escaped)
+    end
+  end
 end

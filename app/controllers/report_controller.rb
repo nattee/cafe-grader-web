@@ -5,7 +5,7 @@ class ReportController < ApplicationController
   before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
   before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
 
-  before_action(except: [:problem_hof]) {
+  before_action(except: [:problem_hof, :problem_hof_view]) {
     group_action_authorization(:report)
   }
 
