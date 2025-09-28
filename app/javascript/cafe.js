@@ -48,8 +48,9 @@ const default_td_options = {
     },
   },
   localization: {
-    locale: 'en-uk',
+    locale: 'en-US',
     format: 'dd/MMM/yyyy HH:mm',
+    hourCycle: 'h23',
   }
 }
 
@@ -73,8 +74,9 @@ const default_td_date_options = {
     }
   },
   localization: {
-    locale: 'en-uk',
+    locale: 'en-US',
     format: 'dd/MMM/yyyy',
+    hourCycle: 'h23',
   }
 }
 
