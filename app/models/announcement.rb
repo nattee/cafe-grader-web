@@ -18,7 +18,7 @@ class Announcement < ApplicationRecord
       return all
     elsif user.groups_for_action(:edit).any?
       # for editor, can only edit announcements of their editable groups
-      return where(group: user.groups_for_action(:edit))
+      return where(group: user.groups_for_action(:edit)).or(where(group: nil))
     else
       return none
     end
