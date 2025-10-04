@@ -163,7 +163,7 @@ class ContestsController < ApplicationController
       @toast[:body] = "All users were removed."
     elsif params[:command] == 'clear_ip'
       @contest.users.update_all(last_ip: nil)
-      @toast[:body] = "Clear all users session."
+      @toast[:body] = "Device locks of all users are cleared. The user can now log in from a new device."
     else
       @toast[:body] = "ERROR: Unknown command"
       @toast[:type] = :alert

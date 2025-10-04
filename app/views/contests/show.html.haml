@@ -105,7 +105,7 @@
                     = button_to 'Remove All', do_all_users_contest_path(@contest), class: 'btn btn-danger m-1', value: 'remove', name: 'command',
                       form: {style: 'display: inline',data: {turbo: true,
                       'turbo-confirm': 'Really remove all users from the contest?'}}
-                    = button_to 'Clear Session All', do_all_users_contest_path(@contest), class: 'btn btn-warning m-1', value: 'clear_ip', name: 'command',
+                    = button_to 'Clear Session Lock All', do_all_users_contest_path(@contest), class: 'btn btn-warning m-1', value: 'clear_ip', name: 'command',
                       form: {style: 'display: inline',data: {turbo: true}}
               .col-md-6
                 -# help for GroupUser

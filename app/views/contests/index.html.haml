@@ -26,13 +26,16 @@
           .col
             .alert.alert-info.markdown-content
               :markdown
-                A user's session is stored in a browser cookie and is locked to the first device and browser they use to log in. 
-                This prevents them from signing in on another computer or a different browser simultaneously.
-                If a user needs to switch devices or gets locked out. You have two options:
+                #### Device Session Lock
 
-                  * Use the **"Clear All User Sessions"** button to reset the session for every user.
-                  * For a single user, navigate to that contest's management page.
-              = link_to 'Clear all users session', clear_user_ip_grader_configuration_index_path, class: 'btn btn-secondary m-1', data: {turbo: true, 'turbo-method': 'post'}
+                This security feature limits a user to **one active login on a single computer or device** at a time. When a user logs in, a unique **Session Key** is saved to their browser and the server. All subsequent requests must match this key. Access is denied if the user tries to use a different machine.
+
+                **Clearing the Lock**: Deleting the user's key from the server allows the next request from any device to establish a new locked session.
+
+                  * The `Clear All Users Locks` button clears locks of all users.
+                  * In each contest's management page. There is a button to to clear the lock for a single user or for all users of that specific contest.
+
+              = link_to 'Clear All Users Locks', clear_user_ip_grader_configuration_index_path, class: 'btn btn-secondary m-1', data: {turbo: true, 'turbo-method': 'post'}
   .col-md-7
     .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body.markdown-content

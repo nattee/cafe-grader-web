@@ -13,7 +13,7 @@ class AnnouncementsController < ApplicationController
   # GET /announcements
   # GET /announcements.xml
   def index
-    @announcements = Announcement.viewable_by_user(@current_user).default_order
+    @announcements = Announcement.editable_by_user(@current_user).default_order
 
     respond_to do |format|
       format.html # index.html.erb
