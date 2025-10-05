@@ -8,56 +8,5 @@
     ]
 
 .mt-3
-  = render partial: 'report/score_table', locals: {problems: @problems, link_for_data: view_query_contest_path(@contest) }
--# result table
-  %div{data: {
-    controller: 'datatables--init-score-table',
-    'datatables--init-score-table-config-name-value': 'scoreTable',
-    'datatables--init-score-table-ajax-url-value': view_query_contest_path(@contest),
-    'datatables--init-score-table-problem-ids-value': @problems.ids,
-    'datatables--init-score-table-submission-path-value': submission_path(-123),
-    'datatables--init-score-table-submission-download-path-value': link_to(" [#{mdi(:download_2,'md-18')} load]".html_safe, download_submission_path(-123) ),
-  }}
-    -# graph area
-    .row.mb-3
-      .col-lg-6
-        %div{style: 'height: 1px', 'data-datatables--init-score-table-target': 'problemScoreChartContainer'}
-          %canvas#chart{'data-datatables--init-score-table-target': 'problemScore'}
-      .col-lg-6
-        %div{style: 'height: 1px', 'data-datatables--init-score-table-target': 'totalScoreChartContainer'}
-          %canvas#chart_2{'data-datatables--init-score-table-target': 'totalScore'}
-    %table#table.table.datatable.table-hover
-      %thead
-        %tr
-          %th.text-end{rowspan: 2} #
-          %th{rowspan: 2} Login
-          %th{rowspan: 2} Name
-          %th{rowspan: 2} Contest Remark
-          %th{rowspan: 2} Seat
-          %th.border-end{rowspan: 2} Last Seen
-          - @problems.each do |p|
-            %th.border-end.text-center{colspan: 3}=p.name.gsub('_',' ')
-          %th.border-end.text-center{colspan: 2} Sum
-        %tr
-          - @problems.each do |p|
-            %th Raw
-            %th Deduct
-            %th Final
-          %th Raw
-          %th Final
-      %tfoot
-        %tr.fw-bold
-          %td
-          %td Summation
-          %td
-          %td
-          %td
-          %td
-          - @problems.each do |problem|
-            %td.text-end{id: "sum-raw-#{problem.id}"}
-            %td.text-end{id: "sum-deduction-#{problem.id}"}
-            %td.text-end{id: "sum-final-#{problem.id}"}
-          %td#grand-total-raw.text-end
-          %td#grand-total-final.text-end
-
+  = render partial: 'report/score_table', locals: {problems: @problems, link_for_data: view_query_contest_path(@contest), contest_id: @contest.id  }
 

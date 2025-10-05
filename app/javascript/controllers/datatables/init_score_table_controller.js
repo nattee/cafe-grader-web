@@ -9,11 +9,13 @@ export default class extends DatatableInitController {
     problemIds: Array,
     submissionPath: String,
     submissionDownloadPath: String,
+    statPath: String,
     refreshSubmitFormId: String,
   }
 
   static targets = [ "showLoad", "showDeduction", "problemScore", "totalScore",
-                     "problemScoreChartContainer", "totalScoreChartContainer" ]
+                     "problemScoreChartContainer", "totalScoreChartContainer",
+                     "probHeader"]
 
   // -------   draw graph -----------
   // call chart.js
@@ -93,6 +95,7 @@ export default class extends DatatableInitController {
 
   // OVERRIDE: Programmatically create the columns.
   _buildColumns(baseConfig) {
+    const userStatPath = this.statPathValue
     this.deductionColumns = []  // array of column indices that are raw & total cost
                                 // we use this array to show/hide columns
     let count = 0
@@ -110,7 +113,7 @@ export default class extends DatatableInitController {
 
     let columns = [
       {data: 'row_number', className: 'text-end'},
-      {data: 'login', render: cafe.dt.render.link(null,{path: '#{stat_contest_user_admin_path(-123,@contest.id)}', replace_field: 'user_id' })},
+      {data: 'login', render: cafe.dt.render.link(null,{path: userStatPath, replace_field: 'user_id' })},
       {data: 'full_name'},
       {data: 'remark'},
       {data: 'seat'},
@@ -179,6 +182,7 @@ export default class extends DatatableInitController {
     }
   }
 
+  // render the full score deduction columns (raw score, deduction points)
   _deduction_renderer_factory(prob_id) {
     return (data,type,row,meta) => {
       if (!data) return ''
@@ -205,11 +209,24 @@ export default class extends DatatableInitController {
     }
   }
 
+  // redraw the table & adjust visibility
   redraw(event) {
+    const showDeduction = this.showDeductionTarget.checked
+
     this.tables.forEach(table => {
-      table.columns(this.deductionColumns).visible(this.showDeductionTarget.checked, true)
+      // set the visible + force recalculation of layout (by passing 'true' to the second arg)
+      table.columns(this.deductionColumns).visible(showDeduction, true)
+
+      // set the column span
+      this.probHeaderTargets.forEach(col => {
+        col.colSpan = (showDeduction ? 3 : 1)
+      })
+
+      // force redraw
       table.rows().invalidate('render').draw()
     });
+
+
   }
 }
 
