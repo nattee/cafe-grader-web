@@ -6,6 +6,7 @@ import { columns, renderers } from 'controllers/datatables/columns'
  */
 export default class extends DatatableInitController {
   static values = { 
+    showDeduction: {type: Boolean, default: true},
     problemIds: Array,
     submissionPath: String,
     submissionDownloadPath: String,
@@ -103,11 +104,13 @@ export default class extends DatatableInitController {
       this.deductionColumns.push(6 + 3 * count + 0) // for this problem raw
       this.deductionColumns.push(6 + 3 * count + 1) // for this problem deduction
       count += 1
-      return [
-        {data: `raw_score_${id}`,className: 'text-end text-secondary' } ,
-        {data: `total_cost_${id}`,className: 'text-end text-secondary',render: this._deduction_renderer_factory(id)},
-        {data: `final_score_${id}`,className: 'text-end border-end',render: this._score_renderer_factory(id) } ,
-      ]
+      let result = []
+      if (this.showDeductionValue) {
+        result.push( {data: `raw_score_${id}`,className: 'text-end text-secondary' })
+        result.push( {data: `total_cost_${id}`, className: 'text-end text-secondary',render: this._deduction_renderer_factory(id)})
+      }
+      result.push({data: `final_score_${id}`,className: 'text-end border-end',render: this._score_renderer_factory(id) })
+      return result
     }).flat()
     this.deductionColumns.push(6 + 3 * count + 0) // for the summation raw
 
@@ -119,11 +122,10 @@ export default class extends DatatableInitController {
       {data: 'seat'},
       {data: 'last_heartbeat',label: 'Last Checkin', className: 'border-end', render: renderers.humanizeTimeRender},
     ].concat(problemColumns)
-    .concat( [
-      {data: 'sum_raw', className: 'fw-bold text-end text-secondary'},
-      {data: 'sum_final', className: 'fw-bold text-end border-end'},
-      //{data: 'pass'}
-    ])
+    if (this.showDeductionValue) {
+      columns.push({data: 'sum_raw', className: 'fw-bold text-end text-secondary'})
+    }
+    columns.push( {data: 'sum_final', className: 'fw-bold text-end border-end'} )
 
     return columns
   }
@@ -145,6 +147,7 @@ export default class extends DatatableInitController {
     return ajaxOptions
   }
 
+  //OVERRIDE: some custom config
   _buildFinalConfig(baseConfig) {
     let finalConfig = super._buildFinalConfig(baseConfig);
 
@@ -153,6 +156,26 @@ export default class extends DatatableInitController {
     if (this.hasRefreshSubmitFormIdValue) {
       finalConfig.buttons[0].action = (e,dt,node,config) => { document.getElementById(this.refreshSubmitFormIdValue).requestSubmit() }
     }
+
+    finalConfig.layout = {
+      topStart: [
+        'buttons',
+        {
+          div: {
+            html: '<input class="form-check-input" id="show-load" name="show-load" type="checkbox" data-datatables--init-score-table-target="showLoad" data-action="datatables--init-score-table#redraw">' +
+                  '<label class="ms-2 form-check-label" for="show-load">Show submission time & download link</label>'
+          }
+        },
+        {
+          div: {
+            html: `<input class="form-check-input" id="show-deduction" name="show-deduction" type="checkbox" data-datatables--init-score-table-target="showDeduction" data-action="datatables--init-score-table#redraw" ${ this.showDeductionValue ? 'checked' : ''}>` +
+                  '<label class="ms-2 form-check-label" for="show-deduction">Show full score deduction (by Hint & LLM)</label>'
+          }
+        }
+      ],
+      topEnd: 'search'
+    }
+
     return finalConfig
   }
 
@@ -213,20 +236,24 @@ export default class extends DatatableInitController {
   redraw(event) {
     const showDeduction = this.showDeductionTarget.checked
 
+
     this.tables.forEach(table => {
       // set the visible + force recalculation of layout (by passing 'true' to the second arg)
-      table.columns(this.deductionColumns).visible(showDeduction, true)
-
-      // set the column span
-      this.probHeaderTargets.forEach(col => {
-        col.colSpan = (showDeduction ? 3 : 1)
-      })
-
-      // force redraw
-      table.rows().invalidate('render').draw()
+      table.columns(this.deductionColumns).visible(showDeduction, false)
+      table.rows().invalidate('render')
     });
 
+    // window.xxx = this.probHeaderTargets
 
+    // I really don't know why but I have to wait a little bit, so that the visibility is taken into account
+    // before I call draw() (which also must be call twice because of reason unknown in this case) so that the colspan is correctly rendered
+    setTimeout(() => {
+      this.probHeaderTargets.forEach(col => { col.colSpan = (showDeduction ? 3 : 1) })
+      this.tables.forEach(table => {
+        table.columns.adjust().draw()
+        //table.columns.adjust().draw()
+      });
+    }, 500); // 1000 milliseconds = 1 second
   }
 }
 

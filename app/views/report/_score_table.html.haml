@@ -11,6 +11,7 @@
   }
 -# add special refresh
 - data_hash['datatables--init-score-table-refresh-submit-form-id-value'] = refresh_submit_form_id if local_assigns[:refresh_submit_form_id]
+- show_deduction = local_assigns.fetch(:show_deduction, true)
 
 
 %div{data: data_hash }
@@ -32,14 +33,16 @@
         %th{rowspan: 2} Seat
         %th.border-end{rowspan: 2} Last Seen
         - problems.each do |problem|
-          %th.border-end.text-center{colspan: 3,'data-dt-order': 'disable', 'data-datatables--init-score-table-target': 'probHeader'}=problem.name.gsub('_',' ')
-        %th.border-end.text-center{colspan: 2} Sum
+          %th.border-end.text-center.prob-header{colspan: (show_deduction ? 3 : false), 'data-dt-order': 'disable', 'data-datatables--init-score-table-target': 'probHeader'}=problem.name.gsub('_',' ')
+        %th.border-end.text-center.sum-header{colspan: (show_deduction ? 2 : false), 'data-dt-order': 'disable'} Sum
       %tr
         - problems.each do |problem|
-          %th Raw
-          %th Deduct
+          - if show_deduction
+            %th Raw
+            %th Deduct
           %th Final
-        %th Raw
+        - if show_deduction
+          %th Raw
         %th Final
     %tfoot
       %tr.fw-bold
@@ -50,8 +53,10 @@
         %td
         %td
         - problems.each do |problem|
-          %td.text-end{id: "sum-raw-#{problem.id}"}
-          %td.text-end{id: "sum-deduction-#{problem.id}"}
+          - if show_deduction
+            %td.text-end{id: "sum-raw-#{problem.id}"}
+            %td.text-end{id: "sum-deduction-#{problem.id}"}
           %td.text-end{id: "sum-final-#{problem.id}"}
-        %td#grand-total-raw.text-end
+        - if show_deduction
+          %td#grand-total-raw.text-end
         %td#grand-total-final.text-end
