@@ -45,6 +45,10 @@ export default class extends Controller {
     table_elements.forEach(element => {
       this.tables.push($(element).DataTable(finalConfig));
     });
+
+    // append to windows.tables
+    window.tables = window.tables || []
+    window.tables = window.tables.concat(this.tables)
   }
 
   // --- HOOK FUNCTIONS FOR SUBCLASS ---

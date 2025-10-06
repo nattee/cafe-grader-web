@@ -38,7 +38,11 @@ class ReportController < ApplicationController
     @result = Submission.calculate_max_score(records, @users, @problems)
 
     render json: {
-      data: @users.select(:id, :login, :full_name, :remark).select(' NULL as seat').select('NULL as last_heartbeat'),
+      # for data, we need some alias as we use the same render for both the report and contest stat,
+      # these fields are required in the contest view but not in the report view
+      # we also have to alias the user.id to user_id as well
+      data: @users.select(:id, :login, :full_name, :remark)
+        .select(' NULL as seat').select('NULL as last_heartbeat').select(' id as user_id'),
       result: @result,
       problem: @problems
     }
@@ -455,7 +459,7 @@ ORDER BY submitted_at
     # build @problems that matches the given params
     def selected_problems
       # start with reportable problems (this already consider when @current_user is an admin)
-      @problems = @current_user.problems_for_action(:report)
+      @problems = Problem.where(id: @current_user.problems_for_action(:report).ids)
 
       # problem
       prob_use = params[:probs][:use] rescue ''
