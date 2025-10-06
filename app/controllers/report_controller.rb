@@ -459,7 +459,7 @@ ORDER BY submitted_at
     # build @problems that matches the given params
     def selected_problems
       # start with reportable problems (this already consider when @current_user is an admin)
-      @problems = @current_user.problems_for_action(:report)
+      @problems = Problem.where(id: @current_user.problems_for_action(:report).ids)
 
       # problem
       prob_use = params[:probs][:use] rescue ''

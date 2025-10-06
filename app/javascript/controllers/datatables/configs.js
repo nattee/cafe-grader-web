@@ -188,8 +188,8 @@ export const configs = {
     },
     order: [[0,'asc']],
     drawCallback: function (settings) {
-      //var api = this.api();
-      //api.columns.adjust()
+      var api = this.api();
+      api.columns.adjust()
     },
     initComplete: function() {
       // 'this' refers to the datatable settings object.
