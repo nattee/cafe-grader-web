@@ -88,17 +88,17 @@ function dt_button_renderer(label,{element_type = 'button',
 //
 // See that the *data* is not used and the renderer just replace -123 with the row['id'], because the default value of *replace_field* is 'id'
 // In this case, it just renders user_admin/xxx  where xxx is the row['id'] from the DataTable data
-function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '-123', replace_field = 'id', confirm=null, turbo=false, method=null} = {}) {
+function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '-123', replace_field = 'id', prefetch=false, confirm=null, turbo=false, turboStream=false, method=null} = {}) {
   return function(data,type,row,meta) {
     const dataMethod = data_tag_unless_null(method,'turbo-method')
     let href = path
-    if (method) turbo = true
+    if (method || turboStream) turbo = true
     if (replace_field && replace_pattern) {
       href = path.replace(replace_pattern,row[replace_field])
     }
     const dataConfirm = data_tag_unless_null(confirm,'turbo-confirm')
     let link_text = (label === null) ? data : label
-    return `<a href="${href}" class="${className}" ${dataConfirm} ${dataMethod} data-turbo="${turbo}"> ${link_text}</a>`
+    return `<a href="${href}" class="${className}" ${dataConfirm} ${dataMethod} data-turbo="${turbo}" data-turbo-prefetch="${prefetch}" data-turbo-stream="${turboStream}"> ${link_text}</a>`
   }
 }
 

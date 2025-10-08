@@ -125,6 +125,16 @@ class Contest < ApplicationRecord
     return :during
   end
 
+  def get_next_name(base = self.name)
+    num = 0
+    name = base
+    while Contest.where(name: name).count > 0
+      num += 1
+      name = base + "_#{num}"
+    end
+    return name
+  end
+
   # check in interval in seconds
   def self.check_in_interval
     # once every minutes

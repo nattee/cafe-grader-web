@@ -65,7 +65,7 @@
   }
     %h3 Contests
     %p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
-    %table#contest_table.table.table-striped
+    %table#contest_table.table.table-striped{'data-turbo': true}
       %thead
         %tr
           %th Name

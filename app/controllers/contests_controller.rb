@@ -79,11 +79,20 @@ class ContestsController < ApplicationController
   end
 
   def clone
-    new_contest = Contest.new(name: @contest.name + ' Copy', description: @contest.description, start: Time.zone.now, stop: Time.zone.now+3.hour)
-    new_contest.save
-    @contest.contests_users.each { |cu| new_contest.contests_users.create(user_id: cu.user_id, role: cu.role) }
-    @contest.contests_problems.each { |cp| new_contest.contests_problems.create(problem_id: cp.problem_id) }
-    redirect_to contest_path(new_contest), notice: "Contest \"#{@contest.name}\" is cloned to this contest"
+    new_contest = Contest.new(description: @contest.description, start: Time.zone.now, stop: Time.zone.now+3.hour)
+    new_contest.name = new_contest.get_next_name(@contest.name + '_copy')
+    @contest.contests_users.each { |cu| new_contest.contests_users.build(user_id: cu.user_id, role: cu.role) }
+    @contest.contests_problems.each { |cp| new_contest.contests_problems.build(problem_id: cp.problem_id) }
+    if new_contest.save
+      # Turbo also work fine with redirect
+      redirect_to contest_path(new_contest), notice: "Contest \"#{@contest.name}\" is cloned to this contest"
+    else
+      # render Turbo modal response
+      render partial: 'msg_modal_show', locals: {do_popup: true,
+                                                 header_msg: 'Contest Cloning Error',
+                                                 header_class: 'bg-danger-subtle',
+                                                 error_messages: new_contest.errors.full_messages}
+    end
   end
 
   # GET /contests/1/edit

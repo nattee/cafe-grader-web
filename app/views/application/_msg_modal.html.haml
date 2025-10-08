@@ -11,6 +11,7 @@
 - id = local_assigns.fetch(:id, 'msg_modal')
 - header_class = local_assigns.fetch(:header_class, '')
 - pre = local_assigns.fetch(:pre,false)
+- error_messages = local_assigns.fetch(:error_messages, nil)
 .modal.fade{id: id, tabindex: -1,role: 'dialog'}
   .modal-dialog.modal-lg{role:'document'}
     .modal-content
@@ -18,7 +19,12 @@
         %h4= header_msg
         %button.btn-close{type: 'button', data: {bs: {dismiss: :modal}}, aria: {label: 'Close'}}
       .modal-body
-        = body_msg
+        - unless error_messages
+          = body_msg
+        - else
+          %ul
+            - error_messages.each do |msg|
+              %li= msg.html_safe
       .modal-footer
         %button.btn.btn-secondary{type: 'button', data: {bs: {dismiss: 'modal'}}} Close
 - if do_popup
