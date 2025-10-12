@@ -53,7 +53,7 @@ class ApplicationController < ActionController::Base
   end
 
   # report and redirect for unauthorized activities
-  def unauthorized_redirect(logout: false, msg: 'You are not authorized to view the page you requested')
+  def unauthorized_redirect(logout: false, msg: 'You are not authorized to view the page you requested.')
     if logout || @current_user.nil?
       session[:user_id] = nil
       redirect_to login_main_path, alert: msg
@@ -126,7 +126,7 @@ class ApplicationController < ActionController::Base
   def group_editor_authorization
     return true if @current_user.admin?
     return true if @current_user.groups_for_action(:edit).any?
-    unauthorized_redirect(msg: "You cannot manage any problem")
+    unauthorized_redirect(msg: "Permission Missing: You must have the <strong>Group Editor</strong> role to view this page.<br /> Please contact an editor of your group to request this role.")
   end
 
   # redirect when user does not have specific roles in any group
@@ -209,22 +209,6 @@ class ApplicationController < ActionController::Base
     end
 
     return true
-  end
-
-  def authorization
-    return false unless check_valid_login
-    user = User.find(session[:user_id])
-    unless user.roles.detect { |role|
-        role.rights.detect { |right|
-          right.controller == self.class.controller_name and
-            (right.action == 'all' || right.action == action_name)
-        }
-      }
-      flash[:notice] = 'You are not authorized to view the page you requested'
-      # request.env['HTTP_REFERER'] ? (redirect_to :back) : (redirect_to :controller => 'login')
-      redirect_to controller: 'main', action: 'login'
-      return false
-    end
   end
 
   def verify_time_limit
