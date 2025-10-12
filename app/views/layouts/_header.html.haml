@@ -43,7 +43,7 @@
           - if GraderConfiguration['right.user_hall_of_fame']
             %li= link_to "#{I18n.t 'menu.hall_of_fame'}", problem_hof_report_path, class: 'nav-link mx-2'+active_class_when(controller: :report, action: :problem_hof)
           / admin section
-          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:edit).any?)
+          - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:edit).any? || @current_user.contests_for_action(:edit).any?)
             / management
             %li.nav-item.dropdown.mx-2
               %a.nav-link.dropdown-toggle.active-with-children{href: '#',
