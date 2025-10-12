@@ -26,6 +26,10 @@ class ReportController < ApplicationController
   end
 
   def max_score_query
+    # when @problems is blank, it is very likely that the user hasn't select anything in the form at all
+    # which default to showing all user with no problem selected. We then force the user to be blank as well to speed up
+
+    @users = User.none if @problems.blank?
     submissions = submission_in_range(params[:sub_range]).where(user: @users, problem: @problems)
 
     # the max score report need range of time to check for hint acquiring,

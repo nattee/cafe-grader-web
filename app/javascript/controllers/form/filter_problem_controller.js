@@ -40,7 +40,6 @@ export default class extends Controller {
    *   window.problemFilterParams then can be used by non-stimulus JS such as DataTables.ajax
    */
   dispatchChange() {
-    console.log('problem chagned')
     window.problemFilterParams = this.params
   }
 
