@@ -5,10 +5,12 @@ class ReportController < ApplicationController
   before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
   before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
 
+  # for all action except hall of fame (which is viewable by any user if the feature is enabled)
   before_action(except: [:problem_hof, :problem_hof_view]) {
     group_action_authorization(:report)
   }
 
+  # for hall of fame
   before_action :set_problem, only: [:problem_hof_view]
   before_action :hall_of_fame_authorization, only: [:problem_hof, :problem_hof_view]
   before_action :can_view_problem, only: [:problem_hof_view]
@@ -159,11 +161,29 @@ class ReportController < ApplicationController
     # render json:  {data: @submissions,sub_count_by_date: {a:1}}
   end
 
-  def progress
+  def ai
+    # this is "selectable" problems, groups and for rendering the filter selection
+    @problems = @current_user.problems_for_action(:report)
+    @groups = @current_user.groups_for_action(:report)
   end
 
-  def progress_query
+  def ai_query
+    jobs_scope = SolidQueue::Job.all
+    if params[:status].present?
+      jobs_scope = jobs_scope
+    end
+
+    raw_jobs = jobs_scope.order(created_at: :desc).first(500)
+    @jobs = raw_jobs.map { |job| SubmissionAssistJobPresenter.new(job) }
   end
+
+
+  # -- not used --
+  # def progress
+  # end
+
+  # def progress_query
+  # end
 
   def problem_hof
     # gen problem list

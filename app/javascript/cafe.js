@@ -44,7 +44,6 @@ const default_td_options = {
       hours: true,
       minutes: true,
       seconds: false,
-      useTwentyfourHour: true,
     },
   },
   localization: {

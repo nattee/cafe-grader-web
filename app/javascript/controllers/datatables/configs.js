@@ -207,4 +207,19 @@ export const configs = {
       }).draw();
     }
   }
+  // report -> AI report
+  aiAssistReport: {
+    ...baseConfig,
+    paging: true,
+    pageLength: 50,
+    columns: [
+      columns.id,
+      columns.solidQueueJob.status,
+      columns.solidQueueJob.submissionId,
+      columns.solidQueueJob.user,
+      columns.solidQueueJob.problem,
+      columns.solidQueueJob.detail,
+      columns.solidQueueJob.createdAt,
+    ],
+  },
 };
