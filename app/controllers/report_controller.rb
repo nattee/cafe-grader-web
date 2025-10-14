@@ -2,8 +2,8 @@ class ReportController < ApplicationController
   include ProblemAuthorization
 
   before_action :check_valid_login
-  before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
-  before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query ]
+  before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query ]
+  before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query ]
 
   # for all action except hall of fame (which is viewable by any user if the feature is enabled)
   before_action(except: [:problem_hof, :problem_hof_view]) {
@@ -168,13 +168,59 @@ class ReportController < ApplicationController
   end
 
   def ai_query
-    jobs_scope = SolidQueue::Job.all
-    if params[:status].present?
-      jobs_scope = jobs_scope
+    submissions = submission_in_range(params[:sub_range]).order(:submitted_at)
+    first_sub = submissions.first
+    last_sub = submissions.last
+
+    first_submission_datetime = first_sub&.submitted_at
+    first_sub_id = first_sub&.id
+    last_sub_id = last_sub&.id
+
+    # We can't efficiently filter only for the job inside the selected submissions id range
+    # because we then need to unserialize the argument first.
+    # Therefore, we just use the first submission date to filter the "start" submission
+    # and then use select at the end to actually filtering out the submissions
+    jobs_scope = SolidQueue::Job
+      .where('created_at > ?', first_submission_datetime)
+      .where('class_name LIKE "Llm::%"')
+      .order(created_at: :desc)
+
+    # We need to eager load the submission, else this will be N+1 queries
+    # First, we need all gid of the submission
+
+    job_submission_map = {} # { job_id => gid_string }
+    all_gids = []
+
+    jobs_scope.each do |job|
+      arguments = job.arguments['arguments']
+      if job.class_name.safe_constantize&.<(Llm::SubmissionAssistJob) && arguments.present?
+        gid_string = arguments.first.values.last
+        if gid_string.is_a?(String)
+          job_submission_map[job.id] = gid_string
+          all_gids << gid_string
+        end
+      end
     end
 
-    raw_jobs = jobs_scope.order(created_at: :desc).first(500)
-    @jobs = raw_jobs.map { |job| SubmissionAssistJobPresenter.new(job) }
+    # load these submissions, also eager load the user and problem
+    submissions_hash = GlobalID::Locator.locate_many(all_gids, includes: [:user, :problem]).index_by { |submission| submission.to_gid.to_s }
+
+
+    @jobs = jobs_scope.map do |job|
+      gid_string = job_submission_map[job.id]
+      # Pass the pre-loaded submission (or nil) to the presenter
+      submission = gid_string ? submissions_hash[gid_string] : nil
+      SubmissionAssistJobPresenter.new(job, submission)
+    end
+
+    # @jobs[i] is now a presenter object of the job
+    # We will do filtering here
+    selected_problem_ids = @problems.ids
+    selected_user_ids = @users.ids
+    @jobs = @jobs
+      .select { |job| selected_problem_ids.include? job.problem_id }
+      .select { |job| selected_user_ids.include? job.user_id }
+      .select { |job| job.submission_id >= first_sub_id && job.submission_id <= last_sub_id }
   end
 
 
@@ -496,11 +542,11 @@ ORDER BY submitted_at
         ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
         @problems = @problems.where(id: ids)
       else
-        @problems = Problem.where('id > 0 and id < 0')
+        @problems = Problem.none
       end
 
       # sort it
-      @problems = @problems.order(:date_added)
+      @problems = @current_user.problems_for_action(:report).where(id: @problems.ids).order(:date_added)
     end
 
     def selected_users

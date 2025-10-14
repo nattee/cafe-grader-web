@@ -50,7 +50,9 @@ export const columns = {
     status: { data: 'status', title: 'Status'},
     submissionId: { data: 'submission_id', title: 'Submission', render: function(data,type,row,meta) {
       if (data === null) return ''
-      return `<a href="/submissions/${data}"> #${data}</a>`
+      if (type == 'display' || type == 'filter')
+        return `<a href="/submissions/${data}"> #${data}</a>`
+      return data
     } },
     detail: { data: 'detail_html', title: 'Detail'},
     createdAt: { data: 'created_at', title: 'Created At' }
@@ -69,5 +71,9 @@ export const columns = {
     cloneButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`, 
       {path: AppRoute.clone_contest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true}), className: 'align-middle py-1'},
     deleteButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
-  }
+  },
+  // --- submission ---
+  submission: {
+    points: {data: 'points', title: 'Raw Points'},
+  },
 }
