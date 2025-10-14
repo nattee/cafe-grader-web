@@ -206,5 +206,41 @@ export const configs = {
         });
       }).draw();
     }
-  }
+  },
+  // report -> AI report
+  aiAssistReport: {
+    ...baseConfig,
+    paging: true,
+    pageLength: 50,
+    layout: {
+      topStart: [ 'buttons', 'pageLength' ],
+    },
+    buttons: [
+        { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()} },
+        'copyHtml5',
+        'excelHtml5',
+    ],
+    columns: [
+      columns.id,
+      columns.solidQueueJob.status,
+      columns.solidQueueJob.submissionId,
+      columns.submission.points,
+      columns.solidQueueJob.user,
+      columns.solidQueueJob.problem,
+      columns.solidQueueJob.detail,
+      columns.solidQueueJob.createdAt,
+    ],
+    ajax: { 
+      ...baseAjax, //use spread so that it is copied
+      data: (data) => {
+        // use the params which is set globally by the UI
+        const result = $.extend({}, data, window.userFilterParams, window.problemFilterParams, window.submissionFilterParams);
+        return result
+      }
+    },
+    drawCallback: function (settings) {
+      var api = this.api();
+      api.columns.adjust()
+    },
+  },
 };

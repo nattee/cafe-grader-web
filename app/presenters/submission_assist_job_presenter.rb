@@ -2,26 +2,31 @@ class SubmissionAssistJobPresenter < SimpleDelegator
   # Use SimpleDelegator to forward all standard method calls to the original job object
 
   attr_reader :user_name, :problem_name
+  attr_reader :user_id, :problem_id
+  attr_reader :points
 
-  def initialize(job)
+  def initialize(job, submission = nil)
     # The __setobj__ method is from SimpleDelegator
     __setobj__(job)
-    @job_class = class_name.safe_constantize
+
+    @submission = submission
     @arguments = job.arguments['arguments']
-
-    # initialize submission for submission based job
-    if @job_class && @job_class < Llm::SubmissionAssistJob && arguments.present?
-      gid_string = @arguments.first.values.last
-      if gid_string.is_a?(String)
-        @submission = GlobalID::Locator.locate(gid_string) rescue nil
-      end
-
-      if @submission
-        @user_name = @submission.user.full_name
-        @problem_name = @submission.problem.full_name
-      end
+    # Set attributes directly from the pre-loaded object
+    if @submission
+      # The user and problem associations were eager loaded (e.g., .includes(:user, :problem))
+      # so these calls DO NOT hit the database.
+      @user_name = @submission.user.full_name
+      @user_id = @submission.user.id
+      @problem_name = @submission.problem.full_name
+      @problem_id = @submission.problem.id
+      @points = @submission.points
+    else
+      # Fallback logic if needed, or simply leave attributes nil
+      # ... original argument parsing logic can remain here for single initialization ...
+      # (e.g., if you were to call this presenter on a single job outside the main list view)
     end
   end
+
 
   # for SubmissionAssistJob, the first argument is a submission
   def submission_id
@@ -30,9 +35,6 @@ class SubmissionAssistJobPresenter < SimpleDelegator
 
   # You can also wrap other logic here
   def detail
-    # Only perform this logic for your specific job types.
-    return {} unless @job_class && @job_class < Llm::SubmissionAssistJob && arguments.present?
-
     # Keyword arguments are the last element in the array if it's a hash.
     last_arg = @arguments.last
     last_arg.is_a?(Hash) ? last_arg : {}

@@ -6,7 +6,7 @@ export default class extends Controller {
   connect() {
     // Dispatch the initial state so listeners can load with the default values
     this.dispatchChange()
-    $(this.groupSelectTarget).on('change.select2', () => { this.dispatchChange() });
+    $(this.groupSelectTarget).on('change', () => { this.dispatchChange() });
   }
 
   /**

@@ -1,0 +1,32 @@
+%h1 AI Assist Report
+
+= form_with url: '#', id: 'filter_form' do |f|
+  .row{data: {controller: 'init-ui-component'}}
+    .col-lg-4.mt-2
+      = render partial: 'problem_select', locals: {all: true}
+    .col-lg-4.mt-2
+      = render partial: 'submission_range'
+    .col-lg-4.mt-2
+      = render partial: 'user_select'
+
+.row
+  .col-lg-4
+    .card.bg-warning-subtle.mt-2
+      .card-body
+        .card-title
+          %h4
+            .mi.mi-bs.fill help
+            Usage
+        :markdown
+          * Select parameters and then click **Refresh**
+  .col-lg-8
+    %canvas#chart
+
+.row
+  .col-sm-12{ data: { turbo: true,
+      controller: 'datatables--init init-ui-component',
+      'datatables--init-config-name-value': 'aiAssistReport',
+      'datatables--init-ajax-url-value': ai_query_report_path
+    }
+  }
+    %table#table.table.table-hover.table-condense
