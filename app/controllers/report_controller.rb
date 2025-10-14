@@ -176,6 +176,7 @@ class ReportController < ApplicationController
     first_sub_id = first_sub&.id
     last_sub_id = last_sub&.id
 
+
     # We can't efficiently filter only for the job inside the selected submissions id range
     # because we then need to unserialize the argument first.
     # Therefore, we just use the first submission date to filter the "start" submission
@@ -533,7 +534,9 @@ ORDER BY submitted_at
 
       # problem
       prob_use = params[:probs][:use] rescue ''
-      if prob_use == 'ids'
+      if prob_use == 'all'
+        @problems = Problem.all
+      elsif prob_use == 'ids'
         @problems = @problems.where(id: params[:probs][:ids])
       elsif prob_use == 'groups'
         ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
@@ -542,6 +545,7 @@ ORDER BY submitted_at
         ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
         @problems = @problems.where(id: ids)
       else
+        # wrong PARAM
         @problems = Problem.none
       end
 
@@ -559,8 +563,11 @@ ORDER BY submitted_at
                  end
       elsif params[:users][:use] == 'enabled'
                  User.where(enabled: true)
-      else
+      elsif params[:users][:use] == 'all'
                  User.all
+      else
+                 # wrong PARAM
+                 User.none
       end
 
       # if user is not admin, filter problem to be only that are reportable
