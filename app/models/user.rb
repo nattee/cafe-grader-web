@@ -244,7 +244,7 @@ class User < ApplicationRecord
       result = [ ]
       http.start do |http|
         req = Net::HTTP::Post.new(path)
-        param = "appid=#{appid}&appsecret=#{appsecret}&username=#{login}&password=#{password}"
+        param = "appid=#{appid}&appsecret=#{appsecret}&username=#{login}&password=#{CGI.escape(password)}"
         resp = http.request(req, param)
         result = JSON.parse resp.body
         puts result
