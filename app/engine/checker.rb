@@ -30,8 +30,9 @@ class Checker
 
   def process_result_cms(out, err)
     score = out.chomp.strip
+    err = err.chomp.strip
+    err = nil if ['translate:success', 'translate:wrong'].include? err   # remove CMS default "translate:success" and "translate:wrong" from the comment
     err = nil if err.blank?
-    err = nil if ['translate:success', 'translate:wrong'].include? err.chomp.strip   # remove CMS default "translate:success" and "translate:wrong" from the comment
     return EngineResponse::CheckerResult.by_score(score: score, comment: err)
   end
 
