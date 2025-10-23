@@ -172,6 +172,7 @@ export const configs = {
     ...baseConfig,
     //layout: -- defined in the datatables--init-score-table --
     //columns: -- defined in the datatables--init-score-table --
+    responsive: false,  // we don't use responsive here
     buttons: [
         { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()} },
         'copyHtml5',
