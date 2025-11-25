@@ -170,10 +170,10 @@ class Contest < ApplicationRecord
       .group('submissions.user_id,submissions.problem_id')
       .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
 
-    llm_assist_count = Comment.llm_assists_for_submissions(self.submissions)
+    llm_assist_count = submissions.joins(:comments).group(:user_id, :problem_id)
       .select('SUM(comments.cost) as llm_cost')
       .select('COUNT(comments.id) as llm_count')
-      .select('comments.commentable_id as submission_id')
+      .select('user_id', 'problem_id')
 
     hint_reveal = Comment.hint_reveal_for_problems(self.problems, (self.start)..(self.stop))
       .select('comment_reveals.user_id as user_id')
@@ -188,7 +188,8 @@ class Contest < ApplicationRecord
                    'submissions.user_id = MAX_RECORD.user_id AND ' +
                    'submissions.problem_id = MAX_RECORD.problem_id ')
       .joins("LEFT JOIN (#{llm_assist_count.to_sql}) LLM_ASSIST ON " +
-        "submissions.id = LLM_ASSIST.submission_id"
+        "submissions.user_id = LLM_ASSIST.user_id AND " +
+        "submissions.problem_id = LLM_ASSIST.problem_id"
        )
       .joins("LEFT JOIN (#{hint_reveal.to_sql}) HINT_REVEAL ON " +
         "submissions.user_id = HINT_REVEAL.user_id AND " +
