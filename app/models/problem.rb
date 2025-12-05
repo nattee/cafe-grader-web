@@ -108,7 +108,7 @@ class Problem < ApplicationRecord
       .where('contests_problems.enabled': true) # problem is enabled
       .where('ADDTIME(contests.start,-contests_users.start_offset_second) <= ?', now)
       .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?', now)
-      .distinct('problems.id')
+      .group('problems.id')
   }
 
   # return all problem that the user has "editing" rights in a contest
@@ -124,7 +124,13 @@ class Problem < ApplicationRecord
       .distinct('problems.id')
   }
 
-  scope :default_order, -> { order(date_added: :desc).order(:name)  }
+  scope :default_order, -> {
+    if GraderConfiguration.contest_mode?
+      order('MIN(contests_problems.number)')
+    else
+      order(date_added: :desc).order(:name)
+    end
+  }
 
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
