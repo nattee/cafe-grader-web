@@ -8,7 +8,13 @@
 .mi-bs {
   vertical-align: middle;
   position: relative;
+  // DAE: i need -3 because, when putting in a bootstrap button, -3 make it perfectly centered vertically
   top: -3px;
+
+  .btn-sm & {
+    // but for btn-sm, it is -2 instead
+    top: -2px;
+  }
 }
 
 .mi {

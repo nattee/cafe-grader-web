@@ -67,9 +67,9 @@ export const columns = {
     start: {data: 'start', render: cafe.dt.render.datetime()},
     stop: {data: 'stop', render: cafe.dt.render.datetime()},
     manageLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('settings','md-18')} Manage`, {path: AppRoute.contest})},
-    watchLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: AppRoute.view_contest})},
+    watchLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: AppRoute.viewContest})},
     cloneButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`, 
-      {path: AppRoute.clone_contest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true}), className: 'align-middle py-1'},
+      {path: AppRoute.cloneContest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true}), className: 'align-middle py-1'},
     deleteButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
   },
   // --- submission ---

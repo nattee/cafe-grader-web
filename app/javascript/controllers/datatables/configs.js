@@ -1,3 +1,4 @@
+// columns and custom renderers
 import { columns, renderers } from 'controllers/datatables/columns'
 
 const baseConfig = {
@@ -93,7 +94,33 @@ export const configs = {
     },
     columns: [ 
       {data: 'login'},
-      {data: 'full_name'},
+      {
+        data: 'full_name',
+        render: ( data, type, row, meta ) => {
+          // this renders an ellipsis for user actions
+          if (!data) return ''
+          if (type == 'display') {
+            return `
+              <div class="d-flex align-items-center justify-content-beteen">
+                <span>${data}</span>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    ${cafe.msi('more_vert','md-18')}
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">${row.full_name}</h6></li>
+                    <li><a class="dropdown-item" href="${AppRoute.editUserAdmin.replace(-123,row.user_id)}">Edit</a></li>
+                    <li><a class="dropdown-item" href="${AppRoute.statContestUserAdmin.replace(-123,row.user_id).replace(-456,row.contest_id)}">Contest Stats</a></li>
+                    <li><a class="dropdown-item" href="${AppRoute.statUserAdmin.replace(-123,row.user_id)}">Lifetime Stats</a></li>
+                  </ul>
+                </div>
+              </div>
+            `;
+          }
+          // fallback
+          return data;
+        }
+      },
       {data: 'role'},  // this is user role column, index 2, must be hidden and has fixed ordering
       {data: 'seat'},
       {data: 'remark'},
@@ -151,7 +178,32 @@ export const configs = {
     columns: [ 
       {data: 'number'},
       {data: 'name'},
-      {data: 'full_name'},
+      {
+        data: 'full_name',
+        render: ( data, type, row, meta ) => {
+          // this renders an ellipsis for problem actions
+          if (!data) return ''
+          if (type == 'display') {
+            return `
+              <div class="d-flex align-items-center justify-content-beteen">
+                <span>${data}</span>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    ${cafe.msi('more_vert','md-18')}
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">${row.full_name}</h6></li>
+                    <li><a class="dropdown-item" href="${AppRoute.editProblem.replace(-123,row.problem_id)}">Edit</a></li>
+                    <li><a class="dropdown-item" href="${AppRoute.statProblem.replace(-123,row.problem_id).replace(-456,row.contest_id)}">Stats</a></li>
+                  </ul>
+                </div>
+              </div>
+            `;
+          }
+          // fallback
+          return data;
+        }
+      },
       {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
       {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
       {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm'})},

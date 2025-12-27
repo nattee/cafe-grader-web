@@ -151,12 +151,12 @@ class ContestsController < ApplicationController
   # --- users & problems ---
   def show_users_query
     render json: {data: @contest.contests_users.joins(:user)
-      .select('contests_users.id', :user_id, :enabled, :full_name, :role, :login, :remark, :seat, :extra_time_second, :start_offset_second)}
+      .select('contests_users.id', :user_id, :contest_id, :enabled, :full_name, :role, :login, :remark, :seat, :extra_time_second, :start_offset_second)}
   end
 
   def show_problems_query
     render json: {data: @contest.contests_problems.joins(:problem)
-      .select('contests_problems.id', :problem_id, :available, :enabled, :allow_llm, :name, :full_name, :number)}
+      .select('contests_problems.id', :problem_id, :contest_id, :available, :enabled, :allow_llm, :name, :full_name, :number)}
   end
 
   def do_all_users
