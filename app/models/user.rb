@@ -25,6 +25,9 @@ class User < ApplicationRecord
 
   has_many :submissions
 
+  # this is score of this user for a particular dataset
+  has_many :scores, class_name: "ScoreUser", dependent: :destroy
+
   has_one :contest_stat, class_name: "UserContestStat", dependent: :destroy
 
   belongs_to :site, optional: true

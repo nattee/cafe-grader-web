@@ -8,6 +8,7 @@ class Submission < ApplicationRecord
   belongs_to :user
 
   has_many :evaluations, dependent: :destroy
+  has_many :scores, class_name: "ScoreSubmission", dependent: :destroy
 
   # comments
   has_many :comments, as: :commentable, dependent: :destroy

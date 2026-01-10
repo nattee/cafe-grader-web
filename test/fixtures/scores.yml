@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  submission: one
+  dataset: one
+  valid: false
+  points: 9.99
+
+two:
+  submission: two
+  dataset: two
+  valid: false
+  points: 9.99
