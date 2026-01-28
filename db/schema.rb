@@ -323,7 +323,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_152834) do
     t.index ["user_id"], name: "index_roles_users_on_user_id"
   end
 
-  create_table "score_submissions", charset: "utf8mb3", force: :cascade do |t|
+  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "submission_id", null: false
     t.decimal "points", precision: 8, scale: 4
@@ -334,7 +334,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_152834) do
     t.index ["submission_id"], name: "index_score_submissions_on_submission_id"
   end
 
-  create_table "score_users", charset: "utf8mb3", force: :cascade do |t|
+  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "user_id", null: false
     t.decimal "points", precision: 8, scale: 4
