@@ -17,6 +17,7 @@
 *~
 
 /vendor/plugins/rails_upgrade
+/vendor/bundle
 
 #ignore public assets???
 /public/assets
