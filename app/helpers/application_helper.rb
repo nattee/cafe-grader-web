@@ -233,7 +233,7 @@ CONTEST_OVER
 ANALYSISMODE
     end
 
-    contest_name = GraderConfiguration['contest.name']
+    contest_name = GraderConfiguration['ui.site_title']
 
     #
     # build real title bar

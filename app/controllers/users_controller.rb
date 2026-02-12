@@ -137,15 +137,15 @@ class UsersController < ApplicationController
   end
 
   def send_confirmation_email(user)
-    contest_name = GraderConfiguration['contest.name']
+    site_title = GraderConfiguration['ui.site_title']
     activation_url = url_for(action: 'confirm',
                              login: user.login,
                              activation: user.activation_key)
     home_url = url_for(controller: 'main', action: 'index')
-    mail_subject = "[#{contest_name}] Confirmation"
+    mail_subject = "[#{site_title}] Confirmation"
     mail_body = t('registration.email_body', {
                     full_name: user.full_name,
-                    contest_name: contest_name,
+                    contest_name: site_title,
                     login: user.login,
                     password: user.password,
                     activation_url: activation_url,
@@ -158,11 +158,11 @@ class UsersController < ApplicationController
   end
 
   def send_new_password_email(user)
-    contest_name = GraderConfiguration['contest.name']
-    mail_subject = "[#{contest_name}] Password recovery"
+    site_title = GraderConfiguration['ui.site_title']
+    mail_subject = "[#{site_title}] Password recovery"
     mail_body = t('registration.password_retrieval.email_body', {
                     full_name: user.full_name,
-                    contest_name: contest_name,
+                    contest_name: site_title,
                     login: user.login,
                     password: user.password,
                     admin_email: GraderConfiguration['system.admin_email']

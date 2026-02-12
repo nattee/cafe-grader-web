@@ -475,7 +475,7 @@ class UserAdminController < ApplicationController
   end
 
   def send_contest_update_notification_email(user, contest)
-    contest_title_name = GraderConfiguration['contest.name']
+    contest_title_name = GraderConfiguration['ui.site_title']
     contest_name = contest.name
     mail_subject = t('contest.notification.email_subject', {
                        contest_title_name: contest_title_name,
