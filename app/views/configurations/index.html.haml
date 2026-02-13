@@ -23,24 +23,26 @@
 = turbo_frame_tag "stream_js"
 
 .row
-  - @group.each do |group|
+  - @group.each do |groups|
     .col-lg-6.col-xl-4
-      .card.config-card{data: {group: group}}
-        .card-header
-          %h3
-            %span.mi= section_icons[group] || 'settings'
-            = section_names[group] || group.upcase
-        .card-body
-          - @configurations.each do |conf|
-            - next if conf.key[0...(conf.key.index('.'))] != group
-            .config-item{data: {key: conf.key, search: "#{conf.key} #{conf.description}".downcase}}
-              .config-main
-                .config-info
-                  %span.config-key= conf.key
-                  .config-description= conf.description
-                  %span.config-type-badge= conf.value_type
-                .config-value-wrapper
-                  = render partial: 'config', locals: {conf: conf}
+      - groups = [groups] unless groups.is_a? Array
+      - groups.each do |group|
+        .card.config-card.mb-4.shadow-sm{data: {group: group}}
+          .card-header.bg-light.bg-info-subtle.p-3
+            %h3
+              %span.mi= section_icons[group] || 'settings'
+              = section_names[group] || group.upcase
+          .card-body
+            - @configurations.each do |conf|
+              - next if conf.key[0...(conf.key.index('.'))] != group
+              .config-item{data: {key: conf.key, search: "#{conf.key} #{conf.description}".downcase}}
+                .config-main
+                  .config-info
+                    %span.config-key= conf.key
+                    .config-description= conf.description
+                    %span.badge.bg-body-tertiary.text-secondary=conf.value_type.upcase
+                  .config-value-wrapper
+                    = render partial: 'config', locals: {conf: conf}
 
 :javascript
   function filterConfigs() {

@@ -6,8 +6,15 @@ class ConfigurationsController < ApplicationController
     @configurations = GraderConfiguration.order(:key)
 
     # pick the first key of the group name
-    @group = GraderConfiguration.pluck("grader_configurations.key").map { |x| x[0...(x.index('.'))] }.uniq.sort
-    @group.delete('contest')
+    first_key = GraderConfiguration.pluck("grader_configurations.key").map { |x| x[0...(x.index('.'))] }.uniq.sort
+    pre_defined_group = %w[chula ui right system]
+    missing_group_less_contest = first_key - pre_defined_group - ['contest']
+
+    # default grouping
+    @group = [ %w[chula ui], 'right', 'system']
+
+    # add any missing group
+    @group += missing_group_less_contest
   end
 
   def edit
