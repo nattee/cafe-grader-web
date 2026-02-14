@@ -1,7 +1,7 @@
 %h1 Manage problems
 
-.mb-3
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1'
+.mb-3.d-flex.gap-1.align-items-center.align-middle
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
 
 - if @result && @result.count > 0
   .alert.alert-info

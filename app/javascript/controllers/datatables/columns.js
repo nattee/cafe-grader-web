@@ -68,9 +68,30 @@ export const columns = {
     stop: {data: 'stop', render: cafe.dt.render.datetime()},
     manageLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('settings','md-18')} Manage`, {path: AppRoute.contest})},
     watchLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: AppRoute.viewContest})},
-    cloneButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`, 
-      {path: AppRoute.cloneContest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true}), className: 'align-middle py-1'},
+    cloneButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`, {path: AppRoute.cloneContest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true}), className: 'align-middle py-1'},
     deleteButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
+    actionButton: {data: null, render: function(data,type,row,meta) {
+
+      // only render for display
+      if (type != 'display') return ''
+
+      // calling the render function for link
+      const clone_button = cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`,{path: AppRoute.cloneContest, className: 'dropdown-item', prefetch: false, turboStream: true})(data,type,row,meta)
+      const delete_button = cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'dropdown-item text-danger', })(data,type,row,meta)
+
+      let string = `<div class="dropdown">`+
+                   `<button type="button" class="btn btn-sm btn-light " data-bs-toggle="dropdown">`+
+                   `  <span class="mi mi-bs">more_horiz</span>`+
+                   `</button>`+
+                   `<ul class="dropdown-menu dropdown-menu-end border-0 shadow">`+
+                   `    <li>${clone_button}</li>`+
+                   `    <li><hr class="dropdown-divider"></li>`+
+                   `    <li>${delete_button}</li>`+
+                   `</ul>`+
+                   `</div>`
+
+      return string
+    }, className: 'align-middle py-1' }
   },
   // --- submission ---
   submission: {

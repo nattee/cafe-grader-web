@@ -1,9 +1,9 @@
 %h3 Contest management
-.mb-3
+.mb-3.d-flex.gap-1.align-items-center.align-middle
   [
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1'
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
   |
-  = link_to "#{mdi(:summarize)} Watch".html_safe, view_contest_path(@contest), class: 'mx-1'
+  = link_to "#{mdi(:summarize)} Watch".html_safe, view_contest_path(@contest), class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
   ]
 .row.my-3.gx-3
   .col-md-6
@@ -112,7 +112,7 @@
                 .card.bg-warning-subtle.shadow-sm
                   .card-body
                     :markdown
-                      * If you want to add several users to a contest, use the #{mdi("upload")} Import tab.
+                      * <span class="d-flex"> If you want to add several users to a contest, use the #{mdi("upload",'mx-1')} Import tab. </span>
                       * Only enabled users may access the contest.
             %table#user_table.table.datatable.table-hover
               %thead

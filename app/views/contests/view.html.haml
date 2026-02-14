@@ -1,11 +1,10 @@
 %h2
   Contest Status
   %span.text-body-secondary.font-monospace (#{@contest.name})
-.row
-  .col
-    [
-    = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1'
-    ]
+%div.d-flex.gap-1.align-items-center.align-middle
+  [
+  = link_to "#{mdi(:arrow_back)} Back".html_safe, contests_path, class: 'mx-1 gap-1 d-flex align-items-center'
+  ]
 
 .mt-3
   = render partial: 'report/score_table', locals: {problems: @problems, link_for_data: view_query_contest_path(@contest), contest_id: @contest.id  }

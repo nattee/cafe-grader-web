@@ -1,3 +1,10 @@
+//---- dae 2026 ----
+.card-shadow {
+  @extend .shadow-sm;
+  @extend .border-secondary;
+  @extend .border-opacity-25;
+}
+
 .config-card {
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;

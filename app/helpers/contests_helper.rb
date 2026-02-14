@@ -1,5 +1,4 @@
 module ContestsHelper
-
   def mode_to_class(mode = GraderConfiguration.get('system.mode'))
     case mode
     when 'standard'

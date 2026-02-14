@@ -1,12 +1,12 @@
 %span= render partial: 'problems/problem_head', locals: {problem: @problem, prefix: 'Edit Problem'}
 
-.mb-3
+.mb-3.d-flex.gap-1.align-items-center.align-middle
   [
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1'
+  = link_to mdi(:arrow_back) + "Back", problems_path, class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
   |
-  = link_to mdi(:finance) + 'Stat', stat_problem_path(@problem), class: 'mx-1'
+  = link_to mdi(:finance) + 'Stat', stat_problem_path(@problem), class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
   |
-  = link_to '<span class="mi mi-bs">download</span> Download'.html_safe, download_archive_problem_path(@problem), class: 'mx-1'
+  = link_to mdi(:download) + 'Download', download_archive_problem_path(@problem), class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
   ]
 .row
   -# problem card
