@@ -9,7 +9,11 @@
 # Also see config/initializer/cafe_grader.rb
 llm_services: &services
   # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
-  GenieAssist: gemini-2.5-pro,Claude-3.5-Sonnet
+  #GenieAssist: gemini-2.5-pro,Claude-3.5-Sonnet
+  GenieAssist: gemini-2.5-pro,Claude-Sonnet
+
+  # as of 14 Feb 2026, the list_model method gives
+  # ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash-lite", "Claude-Sonnet", "gemini-2.5-pro", "gpt-4o-mini", "Claude-Haiku", "gemini-2.0-flash"]
 
 development:
   <<: *services
