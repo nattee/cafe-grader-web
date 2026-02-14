@@ -27,12 +27,12 @@
     .col-lg-6.col-xl-4
       - groups = [groups] unless groups.is_a? Array
       - groups.each do |group|
-        .card.config-card.mb-4.shadow-sm{data: {group: group}}
+        .card.config-card.mb-4.shadow-sm.rounded-3{data: {group: group}}
           .card-header.bg-light.bg-info-subtle.p-3
             %h3
               %span.mi= section_icons[group] || 'settings'
               = section_names[group] || group.upcase
-          .card-body
+          .card-body.p-0
             - @configurations.each do |conf|
               - next if conf.key[0...(conf.key.index('.'))] != group
               .config-item{data: {key: conf.key, search: "#{conf.key} #{conf.description}".downcase}}

@@ -1,9 +1,9 @@
 .config-card {
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /*
   border: none;
   border-radius: 12px;
-  overflow: hidden;
-  /*
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 24px;
   background: white;
@@ -33,9 +33,6 @@
     }
   }
 
-  .card-body {
-    padding: 0;
-  }
 }
 
 .config-item {
@@ -66,6 +63,7 @@
       color: #1e293b;
       display: block;
       word-break: break-all;
+      text-transform: bold;
     }
 
     .config-description {
