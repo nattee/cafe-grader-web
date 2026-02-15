@@ -6,15 +6,17 @@
     = render partial: 'tag_help'
 
 
-%table#tag_table.table.table-hover
-  %thead
-    %tr
-      %th Name
-      %th Description
-      %th.text-center Public
-      %th Type
-      %th
-      %th
+.card.card-shadow
+  .card-body
+    %table#tag_table.table.table-hover
+      %thead
+        %tr
+          %th Name
+          %th Description
+          %th.text-center Public
+          %th Type
+          %th
+          %th
 -# hidden form for tag toggle
 = form_with url: toggle_public_tag_path(-123), html: {data: {turbo: true, 'tag-target': 'togglePublicForm', action: 'turbo:submit-end->tag#resetToggleForm', 'table-reload-id': 'tag_table'}} do
   /

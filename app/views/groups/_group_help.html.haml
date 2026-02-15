@@ -1,11 +1,62 @@
-.card.bg-warning-subtle.shadow-sm
-  .card-body
-    .card-title
-      %h4 What is a group?
-    %p
-      Group is a collections of users and problems. A user will have access only to problems in the groups that contain that user. Be noted that a problem's "avalability" is required for a user to have access to that problem as well. Problems' availabilities can be set in #{link_to 'Setting/Problems', problems_path}.
+/ The Knowledge Card
+.card.border-0.shadow-sm.border-start.border-4.border-info
+  .card-body.p-4
+    
+    / --- Header ---
+    .d-flex.align-items-center.mb-3
+      .bg-info-subtle.text-info-emphasis.rounded-circle.d-flex.align-items-center.justify-content-center.me-3.lh-1{style: "width: 48px; height: 48px"}
+        %span.mi.md-24.fill help
+      
+      %div
+        %h5.fw-bold.text-dark.mb-0 How Groups Work
+        %small.text-secondary Controls problem visibility for specific users.
 
-    %p
-      To use group, turn on the option
-      %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
-      in the #{link_to 'System Configuration', grader_configuration_index_path}.
+    / --- Section 1: The Core Concept (Tiles) ---
+    .row.g-3.mb-4
+      / Tile 1: The Definition
+      .col-md-6
+        .d-flex.align-items-start
+          .text-info.me-3.lh-1
+            %span.mi.md-24 groups
+          %div
+            %span.fw-bold.d-block.text-dark The Bridge
+            %small.text-muted.lh-sm
+              Connects specific 
+              %strong users
+              to specific 
+              %strong Problems.
+
+      / Tile 2: The Access Rule
+      .col-md-6
+        .d-flex.align-items-start
+          .text-info.me-3.lh-1
+            %span.mi.md-24 visibility
+          %div
+            %span.fw-bold.d-block.text-dark Scoped Access
+            %small.text-muted.lh-sm 
+              Users 
+              %i only
+              see problems contained in their groups.
+
+    / --- Divider ---
+    %hr.text-secondary-subtle.my-3/
+
+    / --- Section 2: Technical Constraints (The "Gotchas") ---
+    %h6.fw-bold.text-dark.small.text-uppercase.mb-3 Requirements
+    
+    .d-flex.flex-column.gap-2
+      / Requirement 1: Problem Availability
+      .d-flex.align-items-start.gap-2
+        %span.mi.md-18.text-warning.flex-shrink-0 warning
+        %small.text-secondary
+          Problems must also be marked as 
+          %strong.text-dark "Available"
+          in their individual settings to be visible.
+
+      / Requirement 2: System Config
+      .d-flex.align-items-start.gap-2
+        %span.mi.md-18.text-danger.flex-shrink-0 settings
+        %small.text-secondary
+          Feature requires 
+          %code.text-dark system.use_problem_group
+          to be enabled in #{link_to 'System Configuration', grader_configuration_index_path}.
