@@ -5,7 +5,7 @@
       %h2.fw-bold.text-dark.mb-0 Announcements
 
     .d-flex.flex-wrap.gap-2
-      = link_to mdi(:add, 'me-1') + 'Add Announcement', new_announcement_path, class: 'btn btn-sm btn-success'
+      = link_to mdi(:add) + 'Add Announcement', new_announcement_path, class: 'btn btn-flex btn-success'
   .col-md-7.mb-3
     = render partial: 'announcement_help'
 
@@ -32,10 +32,14 @@
               = h announcement.title
               %br/
             - if !announcement.notes.blank?
-              %b
-                Notes: #{h announcement.notes}
+              %strong Notes:
+              = h announcement.notes
               %br/
-            = h announcement.body
+            - if announcement.body.length > 300
+              = markdown(truncate(announcement.body, length: 300))
+              = link_to 'Read more', announcement_path(announcement), class: 'small text-decoration-none'
+            - else
+              = markdown(announcement.body)
           %td= h announcement.author
           %td
             .form-check.form-switch
@@ -49,8 +53,9 @@
               
             - else
               = announcement.group.name
-          %td= link_to 'Edit', edit_announcement_path(announcement)
-          %td= link_to 'Destroy', announcement, :confirm => 'Are you sure?', :method => :delete, class: "btn btn-block btn-sm btn-danger"
+          %td= link_to mdi('edit') + 'Edit', edit_announcement_path(announcement), class: 'btn btn-flex btn-outline-primary border-0'
+          %td= link_to mdi('delete', 'md-24'), announcement, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-flex btn-outline-danger border-0'
+
     %br
 
 -# hidden form for announcement toggle

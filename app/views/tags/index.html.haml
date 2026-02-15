@@ -5,7 +5,7 @@
       %h2.fw-bold.text-dark.mb-0 Tags
 
     .d-flex.flex-wrap.gap-2
-      = link_to mdi(:add, 'me-1') + 'New Tag', new_tag_path, class: 'btn btn-sm btn-success'
+      = link_to mdi(:add) + 'New Tag', new_tag_path, class: 'btn btn-flex btn-success'
   .col-md-7.mb-3
     = render partial: 'tag_help'
 
@@ -60,8 +60,8 @@
         {data: 'description'},
         {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'tag#toggle', checked_data_field: 'public'})},
         {data: 'kind_text'},
-        {data: null, render: cafe.dt.render.link(`Edit`, {path: '#{edit_tag_path(-123)}'})},
-        {data: null, render: cafe.dt.render.link(`Delete`, {path: '#{tag_path(-123)}', className: 'btn btn-danger btn-sm', confirm: 'Really delete the tag?', method: 'delete'}), className: 'align-middle py-1'},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('edit')} Edit`, {path: '#{edit_tag_path(-123)}', className: 'btn btn-flex btn-outline-primary border-0'})},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete')}`, {path: '#{tag_path(-123)}', className: 'btn btn-flex btn-outline-danger border-0', confirm: 'Really delete the tag?', method: 'delete'}), className: 'align-middle py-1'},
       ],
       columnDefs: [{orderable: false, targets: [2,4,5]} ],
       drawCallback: function (settings) {
