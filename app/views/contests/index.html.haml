@@ -1,5 +1,12 @@
 .row.mt-2
   .col-md-5
+    .d-flex.flex-column.gap-1.mb-3
+      %small.text-secondary.text-uppercase.fw-bold.ls-1 Events
+      %h2.fw-bold.text-dark.mb-0 Contests
+
+    .d-flex.flex-wrap.gap-2.mb-4
+      = link_to mdi(:add, 'me-1') + 'New Contest', new_contest_path, class: 'btn btn-sm btn-success'
+
     .card.card-shadow.mb-3
       .card-body
         -# --- SECTION 1: SYSTEM MODE ---
@@ -171,8 +178,6 @@
       action: 'datatable:reload@window->datatables--init#reload',
     }
   }
-    %h3 Contests
-    %p= link_to 'New contest', new_contest_path, class: 'btn btn-success'
     %table#contest_table.table.table-hover{'data-turbo': true}
       %thead
         %tr

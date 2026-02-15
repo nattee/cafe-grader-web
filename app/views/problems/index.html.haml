@@ -1,12 +1,15 @@
 .row.my-2
   .col-md-5.mb-3
-    %h1 Problems
-    .d-flex.flex-wrap.gap-1
-      = link_to 'Import problems', {action: 'import'}, class: 'btn btn-success'
-      = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info'
+    .d-flex.flex-column.gap-1.mb-3
+      %small.text-secondary.text-uppercase.fw-bold.ls-1 Management
+      %h2.fw-bold.text-dark.mb-0 Problems
+
+    .d-flex.flex-wrap.gap-2
+      = link_to mdi(:add, 'me-1') + 'Import', {action: 'import'}, class: 'btn btn-sm btn-success'
+      = link_to mdi(:settings, 'me-1') + 'Manage', { action: 'manage'}, class: 'btn btn-sm btn-outline-secondary'
       - if @current_user.admin?
-        = link_to 'All Off', {action: 'turn_all_off'}, class: 'btn btn-outline-secondary'
-        = link_to 'All On', {action: 'turn_all_on'}, class: 'btn btn-outline-secondary'
+        = link_to 'All Off', {action: 'turn_all_off'}, class: 'btn btn-sm btn-outline-secondary'
+        = link_to 'All On', {action: 'turn_all_on'}, class: 'btn btn-sm btn-outline-secondary'
   .col-md-7.mb-3
     = render partial: 'problem_help'
 

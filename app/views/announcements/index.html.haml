@@ -1,7 +1,11 @@
 .row.my-2
   .col-md-5.mb-3
-    %h1 Announcements
-    = link_to '+ Add announcement', new_announcement_path, class: 'btn btn-success'
+    .d-flex.flex-column.gap-1.mb-3
+      %small.text-secondary.text-uppercase.fw-bold.ls-1 Communication
+      %h2.fw-bold.text-dark.mb-0 Announcements
+
+    .d-flex.flex-wrap.gap-2
+      = link_to mdi(:add, 'me-1') + 'Add Announcement', new_announcement_path, class: 'btn btn-sm btn-success'
   .col-md-7.mb-3
     = render partial: 'announcement_help'
 
