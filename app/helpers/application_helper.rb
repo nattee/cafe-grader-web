@@ -2,7 +2,7 @@
 module ApplicationHelper
   # render material design icon
   def mdi(icon, class_name = '')
-    "<span class='mi mi-bs #{class_name}'>#{icon}</span>".html_safe
+    "<span class='mi #{class_name}'>#{icon}</span>".html_safe
   end
 
   # new bootstrap header

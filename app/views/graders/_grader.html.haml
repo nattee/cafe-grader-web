@@ -3,8 +3,9 @@
   %td= grader.box_id
   %td
     = turbo_frame_tag dom_id(grader,"grader_job_type") do
-      = job_type_text(grader.job_type)
-      = link_to '<span class="mi mi-bs md-18">edit</span>'.html_safe, edit_job_type_grader_process_path(grader), data: {turbo: "true", 'turbo-method': 'post'}
+      .d-inline-flex.align-items-center.gap-1
+        = job_type_text(grader.job_type)
+        = link_to '<span class="mi md-18">edit</span>'.html_safe, edit_job_type_grader_process_path(grader), data: {turbo: "true", 'turbo-method': 'post'}, class: 'link-flex'
   %td= "#{time_ago_in_words(grader.last_heartbeat, include_seconds: true) if grader.last_heartbeat} ago"
   %td= grader.status
   %td= grader.task_id

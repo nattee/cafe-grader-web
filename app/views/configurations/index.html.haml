@@ -5,11 +5,11 @@
   .col-md-12.d-flex.justify-content-between.align-items-center
     %h1.mb-0 System configuration
     .actions
-      = link_to reload_grader_configuration_index_path, class: 'btn btn-outline-secondary btn-sm me-2', title: 'Reload configuration from DB' do
-        %span.mi.md-18.mi-bs refresh
+      = link_to reload_grader_configuration_index_path, class: 'btn-flex btn btn-outline-secondary btn-sm me-2', title: 'Reload configuration from DB' do
+        %span.mi.md-18 refresh
         Reload
-      = link_to clear_user_ip_grader_configuration_index_path, class: 'btn btn-outline-danger btn-sm', data: {turbo: true, 'turbo-method': 'post'}, title: 'Clear all user device locks' do
-        %span.mi.md-18.mi-bs lock_open
+      = link_to clear_user_ip_grader_configuration_index_path, class: 'btn-flex btn btn-outline-danger btn-sm', data: {turbo: true, 'turbo-method': 'post'}, title: 'Clear all user device locks' do
+        %span.mi.md-18 lock_open
         Clear Device Locks
 
 .row

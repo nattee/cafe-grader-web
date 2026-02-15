@@ -4,7 +4,7 @@ module Tooltips
   def tooltip(wrapper_options = nil)
     unless options[:tooltip].nil?
 
-      tooltip_html = "<span class='mi mi-bs md-18 text-body-tertiary' " +
+      tooltip_html = "<span class='mi md-18 text-body-tertiary' " +
         "data-bs-toggle='tooltip' " +
         "data-bs-placement='top' " +
         "data-bs-title='#{tooltip_text}' " +

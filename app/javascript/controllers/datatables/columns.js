@@ -13,8 +13,10 @@ export const renderers = {
   startStopOffsetRender: (data,type,row,meta) => {
     const start_offset = row['start_offset_second']
     const extra_time = row['extra_time_second']
-    return `${start_offset} : ${extra_time} ` +
-      `<a href='#' data-row-id="${row['id']}" data-login="${row['login']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog"><span class="mi mi-bs md-18">edit</span></a>`
+    return `<span class="d-inline-flex align-items-center">${start_offset} : ${extra_time} ` +
+      `<a class="d-inline-flex align-items-center text-decoration-none" href='#' data-row-id="${row['id']}" data-login="${row['login']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog">` + 
+      `<span class="mi md-18 mx-1">edit</span></a>`+
+      `<span>`
   },
   roleActionButton: (data,type,row,meta) => {
     let result = ''
@@ -81,7 +83,7 @@ export const columns = {
 
       let string = `<div class="dropdown">`+
                    `<button type="button" class="btn btn-sm btn-light " data-bs-toggle="dropdown">`+
-                   `  <span class="mi mi-bs">more_horiz</span>`+
+                   `  <span class="mi">more_horiz</span>`+
                    `</button>`+
                    `<ul class="dropdown-menu dropdown-menu-end border-0 shadow">`+
                    `    <li>${clone_button}</li>`+

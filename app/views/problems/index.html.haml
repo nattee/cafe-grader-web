@@ -10,7 +10,7 @@
     .card.bg-warning-subtle.shadow-sm.mb-3
       .card-body
         %h4 
-          .mi.mi-bs.fill settings
+          .mi.fill settings
           Configurations Status
         %ul.mb-0
           %li
@@ -30,7 +30,7 @@
               problems that are
               %strong available.
         %h4
-          .mi.mi-bs.fill help
+          .mi.fill help
           Usage
         %ul.mb-0
           %li
@@ -73,8 +73,8 @@
         %td= problem.name
         %td
           = problem.full_name
-          = link_to_description_if_any "[Read <span class='mi mi-bs md-18'>description</span>]".html_safe, problem
-          = link_to "[Files <span class='mi mi-bs md-18'>archive</span>]".html_safe, download_by_type_problem_path(problem,'attachment') if problem.attachment.attached?
+          = link_to_description_if_any "[<span class='mi md-18'>description</span> Read]".html_safe, problem, class: "link-flex"
+          = link_to "[<span class='mi md-18'>archive</span> Files]".html_safe, download_by_type_problem_path(problem,'attachment'), class: 'link-flex' if problem.attachment.attached?
         %td= render_star(problem.difficulty)
         %td.text-end
           = problem.live_dataset.checker.attached? ? mdi(:checkbook) : ''

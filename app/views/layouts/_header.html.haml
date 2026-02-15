@@ -2,7 +2,7 @@
   %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg.shadow
     .container-fluid
       %a.navbar-brand.d-flex.align-items-center.gap-1{href: list_main_path}
-        %span.mi.mi-bs home
+        %span.mi home
         = GraderConfiguration.site_name&.html_safe || 'MAIN'
       .navbar-expand
         / display MODE button (with countdown in contest mode)
@@ -94,17 +94,17 @@
           -#
             %li.nav-item
               %a.nav-link{href: help_main_path}
-                %span.mi.mi-bs.md-18 help
+                %span.mi.md-18 help
             %li.nav-item
               %a.nav-link{href: messages_path}
-                %span.mi.mi-bs.md-18 chat
+                %span.mi.md-18 chat
           - if GraderConfiguration['system.user_setting_enabled']
-            %li.nav-item
-              %a.nav-link{href: profile_users_path, 'data-user-id': @current_user.id}
-                %span.mi.mi-bs.md-18 settings
-          %li.nav-item
-            %a.nav-link{href: logout_main_path}
-              %span.mi.mi-bs.md-18 exit_to_app
+            %li.nav-item.d-flex.align-items-center
+              %a.nav-link.link-flex{href: profile_users_path, 'data-user-id': @current_user.id}
+                %span.mi.md-18 settings
+          %li.nav-item.d-flex.align-items-center
+            %a.nav-link.link-flex.gap-2{href: logout_main_path}
+              %span.mi.md-18 exit_to_app
               = @current_user.full_name
 :javascript
   let server_time_offset_ms = 0

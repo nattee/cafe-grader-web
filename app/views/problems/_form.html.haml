@@ -19,22 +19,22 @@
         .row
           .col-sm-3
           .col-sm-9
-            %p
+            %p.d-inline-flex.align-items-center.gap-1
               - if @problem.statement.attached?
-                = link_to "<span class='mi mi-bs md-18'>description</span> Read (#{@problem.statement.filename})".html_safe, download_by_type_problem_path(@problem,'statement'), target: '_blank', data: {turbo: false}
+                = link_to "<span class='mi md-18 me-1'>description</span> Read (#{@problem.statement.filename})".html_safe, download_by_type_problem_path(@problem,'statement'), target: '_blank', data: {turbo: false}, class: 'link-flex'
                 = " | "
-                = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'statement'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Really delete the Statement? This cannot be undone.'}
+                = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'statement'), class: 'link-flex link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Really delete the Statement? This cannot be undone.'}
               - else
                 This problem has no statement
         = form.input :attachment, wrapper: :horizontal_file
         .row
           .col-sm-3
           .col-sm-9
-            %p
+            %p.d-inline-flex.align-items-center.gap-1
               - if @problem.attachment.attached?
-                = link_to "<span class='mi mi-bs md-18'>archive</span> File (#{@problem.attachment.filename})".html_safe, download_by_type_problem_path(@problem,'attachment'), target: '_blank', data: {turbo: false}
+                = link_to "<span class='mi md-18 me-1'>archive</span> File (#{@problem.attachment.filename})".html_safe, download_by_type_problem_path(@problem,'attachment'), target: '_blank', data: {turbo: false}
                 |
-                = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'attachment'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Really delete the Attachment? This cannot be undone.'}
+                = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'attachment'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Really delete the Attachment? This cannot be undone.'}
               - else
                 This problem has no attachment
         = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags with public value of true will be shown to contestant in the main page"
@@ -63,11 +63,11 @@
         -# we hide the markdown and url which are no longer used
           = form.input :markdown, wrapper: :horizontal_boolean
           = form.input :url
-        %p
+        %p.d-inline-flex.align-items-center.gap-1
           - if @problem.generated_statement.attached?
-            = link_to "<span class='mi mi-bs md-18'>description</span> Generated Statement".html_safe, download_by_type_problem_path(@problem,'generated_statement'), target: '_blank', data: {turbo: false}
+            = link_to "<span class='mi md-18 me-1'>description</span> Generated Statement".html_safe, download_by_type_problem_path(@problem,'generated_statement'), target: '_blank', data: {turbo: false}
             = " | "
-            = link_to '<span class="mi mi-bs md-18">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'generated_statement'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Delete the generated document?'}
+            = link_to '<span class="mi md-18 me-1">delete</span> Delete'.html_safe, delete_by_type_problem_path(@problem,'generated_statement'), class: 'link-danger', data: {turbo: true, turbo_method: 'delete', turbo_confirm: 'Delete the generated document?'}
           - else
             This problem has no statement
         = form.button :submit, class: 'btn btn-primary me-2'

@@ -59,11 +59,11 @@
         // enabled switch
         {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'user-admin--index#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
         // clear ip action
-        {data: 'id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'user-admin--index#postUserAction', command: 'clear_ip'} )},
+        {data: 'id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-flex', action: 'user-admin--index#postUserAction', command: 'clear_ip'} )},
         // edit link
-        {data: null, render: cafe.dt.render.link(`${cafe.msi('edit','md-18')} Edit`, {path: '#{edit_user_admin_path(-123)}' })},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('edit','md-18')} Edit`, {className: 'link-flex', path: '#{edit_user_admin_path(-123)}' })},
         // destroy action
-        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: '#{user_admin_path(-123)}', method: 'delete', confirm: 'Really delete this user?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
+        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {className: 'btn-flex', path: '#{user_admin_path(-123)}', method: 'delete', confirm: 'Really delete this user?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
       ],
       columnDefs: [{orderable: false, targets: [6,7,8]} ],
     });

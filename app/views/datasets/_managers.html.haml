@@ -3,8 +3,8 @@
   -# a place holder dataset
   %input{type: 'hidden', name: 'dataset[placeholder]'}
   -# --- managers ---
-  %h5.my-2 
-    %span.mi.mi-bs clinical_notes
+  %h5.my-2.d-flex.align-items-center.gap-2
+    %span.mi clinical_notes
     Managers
   - ds.managers.each do |mg|
     .row
@@ -23,8 +23,8 @@
 
   -# --- checker ---
   - if ['custom_cafe','custom_cms'].include? ds.evaluation_type
-    %h5.my-2
-      %span.mi.mi-bs checkbook
+    %h5.my-2.d-flex.align-items-center.gap-2
+      %span.mi checkbook
       Checker
     - if ds.checker.attached?
       .row.mb-2
@@ -44,8 +44,8 @@
     = f.input :checker, label: 'Set checker', wrapper: :horizontal_file
 
   -# --- Initializer ---
-  %h5.my-2 
-    %span.mi.mi-bs video_settings
+  %h5.my-2.d-flex.align-items-center.gap-2
+    %span.mi video_settings
     Initializers
   - ds.initializers.each do |init|
     .row
@@ -63,8 +63,8 @@
     = f.input :initializers, label: 'Add initializers', wrapper: :horizontal_file
 
   -# --- Data File ---
-  %h5.my-2 
-    %span.mi.mi-bs database
+  %h5.my-2.d-flex.align-items-center.gap-2
+    %span.mi database
     Data Files
   - ds.data_files.each do |data_file|
     .row

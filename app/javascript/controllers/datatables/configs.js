@@ -104,10 +104,10 @@ export const configs = {
             return `
               <div class="d-flex align-items-center justify-content-beteen">
                 <span>${data}</span>
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    ${cafe.msi('more_vert','md-18')}
-                  </button>
+                <div class="dropdown d-inline-flex align-items-center">
+                  <a class="link-flex rounded-1 bg-light ms-2 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    ${cafe.msi('more_horiz','md-18')}
+                  </a>
                   <ul class="dropdown-menu">
                     <li><h6 class="dropdown-header">${row.full_name}</h6></li>
                     <li><a class="dropdown-item" href="${AppRoute.editUserAdmin.replace(-123,row.user_id)}">Edit</a></li>
@@ -127,8 +127,8 @@ export const configs = {
       {data: 'remark'},
       {data: null, render: renderers.startStopOffsetRender},
       {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'contest#postUserAction', command: 'clear_ip'} )},
-      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
+      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18 me-1')} Clear]`, {element_type: 'link', className: 'link-flex', action: 'contest#postUserAction', command: 'clear_ip'} )},
+      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18 me-1')} Remove]`, {element_type: 'link', className: 'link-flex link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
       {data: 'user_id', render: renderers.roleActionButton},
     ],
     columnDefs: [{visible: false, targets: 2}, {orderable: false, targets: [5,6,7,8,9]} ],
@@ -188,10 +188,10 @@ export const configs = {
             return `
               <div class="d-flex align-items-center justify-content-beteen">
                 <span>${data}</span>
-                <div class="dropdown">
-                  <button class="btn btn-outline-secondary btn-sm ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    ${cafe.msi('more_vert','md-18')}
-                  </button>
+                <div class="dropdown d-inline-flex align-items-center">
+                  <a href="#" class="link-flex rounded-1 bg-light ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    ${cafe.msi('more_horiz','md-18')}
+                  </a>
                   <ul class="dropdown-menu">
                     <li><h6 class="dropdown-header">${row.full_name}</h6></li>
                     <li><a class="dropdown-item" href="${AppRoute.editProblem.replace(-123,row.problem_id)}">Edit</a></li>
@@ -208,9 +208,9 @@ export const configs = {
       {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
       {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
       {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm'})},
-      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
-      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
-      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
+      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-flex link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
+      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {className: 'link-flex', action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
+      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {className: 'link-flex', action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
     ],
     columnDefs: [{visible: false, targets: [0]},
                  {orderable: false, targets: [1,2,3,4,5,6,7,8]}],

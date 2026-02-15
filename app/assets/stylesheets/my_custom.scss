@@ -7,8 +7,8 @@
 
 //---- google material icon -----
 .mi-bs {
-  vertical-align: middle;
-  position: relative;
+  //vertical-align: middle;
+  //position: relative;
   // DAE: i need -3 because, when putting in a bootstrap button, -3 make it perfectly centered vertically
   //top: -3px;
 
@@ -60,6 +60,12 @@
   @extend .align-items-center;
 
   justify-content: center;
+}
+
+.link-flex {
+  @extend .d-inline-flex;
+  @extend .align-items-center;
+  @extend .text-decoration-none;
 }
 
 //for use google material icon with Tempus Dominus

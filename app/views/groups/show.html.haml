@@ -24,14 +24,16 @@
         %ul.nav.nav-tabs.mb-3
           %li.nav-item
             %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-group-user'}}}
-              %span.mi.mi-bs
-                person
-              Users
+              .d-inline-flex.align-items-center
+                %span.mi
+                  person
+                Users
           %li.nav-item
             %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-group-problem'}}}
-              %span.mi.mi-bs
-                task
-              Problems
+              .d-inline-flex.align-items-center
+                %span.mi
+                  task
+                Problems
         .tab-content
           -# ==========================================
           -# ---------- users pane ------------------
@@ -183,7 +185,7 @@
         {data: 'role'},
         {data: 'remark'},
         {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'group#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        {data: 'user_id', render: cafe.dt.render.button(`${cafe.msi('person_remove','md-18')} Remove`, {element_type: 'link', className: 'link-danger', action: 'group#postUserAction', command: 'remove', confirm: 'Remove user from group?'})},
+        {data: 'user_id', render: cafe.dt.render.button(`${cafe.msi('person_remove','md-18 me-1')} Remove`, {element_type: 'link', className: 'link-flex link-danger', action: 'group#postUserAction', command: 'remove', confirm: 'Remove user from group?'})},
         {data: 'user_id', render: role_action_button},
       ],
       columnDefs: [{visible: false, targets: user_role_column}, {orderable: false, targets: [4,5,6]} ],

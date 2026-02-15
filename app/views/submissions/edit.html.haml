@@ -15,16 +15,17 @@
             %span= @problem.live_dataset.memory_limit
             %span.text-body-tertiary>MB
         .col-md-6.text-md-end
-          = link_to_description_if_any "<span class='mi mi-bs md-18'>description</span> Read".html_safe, @problem, cxlass: 'badge text-bg-primary'
-          - if @problem.attachment.attached?
-            .d-md-none
-            %span.d-none.d-md-inline
-              |
-            = link_to "<span class='mi mi-bs md-18'>archive</span> File".html_safe, download_by_type_problem_path(@problem,'attachment')
-          - if @problem.can_view_testcase
-            %span
-              |
-            = link_to "<span class='mi mi-bs md-18'>bug_report</span> Testcases".html_safe, show_problem_testcases_path(@problem), class: ''
+          .d-inline-flex.align-items-center.gap-1
+            = link_to_description_if_any "<span class='mi md-18'>description</span> Read".html_safe, @problem, class: 'link-flex'
+            - if @problem.attachment.attached?
+              .d-md-none
+              %span.d-none.d-md-inline
+                |
+              = link_to "<span class='mi md-18'>archive</span> File".html_safe, download_by_type_problem_path(@problem,'attachment'), class: 'link-flex'
+            - if @problem.can_view_testcase
+              %span
+                |
+              = link_to "<span class='mi md-18'>bug_report</span> Testcases".html_safe, show_problem_testcases_path(@problem), class: 'link-flex'
   .row
     .col-lg-8
       -# Coding area (or text display for Binary Type)

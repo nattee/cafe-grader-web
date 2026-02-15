@@ -35,21 +35,24 @@
           %li.nav-item
             %button.nav-link.active{data: {bs: {toggle: 'tab',target: '#tab-contest-user'},
               action: 'shown.bs.tab->contest#tabChange', table: {id: 'user_table',init: 'no'}}}
-              %span.mi.mi-bs
-                person
-              Users
+              .d-inline-flex.align-items-center
+                %span.mi
+                  person
+                Users
           %li.nav-item
             %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-contest-problem'}, 
               action: 'shown.bs.tab->contest#tabChange', table: {id: 'problem_table',init: 'no'}}}
-              %span.mi.mi-bs
-                task
-              Problems
+              .d-inline-flex.align-items-center
+                %span.mi
+                  task
+                Problems
           %li.nav-item
             %button.nav-link{data: {bs: {toggle: 'tab',target: '#tab-add-users'},
               action: 'shown.bs.tab->contest#tabChange'}}
-              %span.mi.mi-bs
-                upload
-              Import
+              .d-inline-flex.align-items-center
+                %span.mi
+                  upload
+                Import
         .tab-content
           -# ==========================================
           -# ---------- users pane ------------------

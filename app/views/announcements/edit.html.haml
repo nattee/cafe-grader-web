@@ -25,5 +25,5 @@
     .card.shadow-sm
       .card-body
         - content_for(:form_buttons) do
-          = link_to '<span class="mi mi-bs md-18">arrow_back</span> Back'.html_safe, announcements_path, class: 'btn btn-outline-secondary mx-2'
+          = link_to '<span class="mi md-18">arrow_back</span> Back'.html_safe, announcements_path, class: 'btn btn-outline-secondary mx-2'
         = render 'form'

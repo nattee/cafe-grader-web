@@ -114,10 +114,10 @@
       if (type == 'display') {
         count = data || 0
 
-        html = "<i class=\"mi mi-bs md-18\" style=\"font-variation-settings: 'FILL' 1\">star</i>".repeat(count/2)
+        html = "<span class=\"mi md-18\" style=\"font-variation-settings: 'FILL' 1\">star</span>".repeat(count/2)
         if (count % 2 == 1)
-          html += "<i class=\"mi mi-bs md-18\" > star_half </i>"
-        return `<span style='display: inline-block;'>${html}</span>`
+          html += "<span class=\"mi md-18\" > star_half </span>"
+        return html
       }
 
       return data
@@ -125,14 +125,14 @@
 
     function full_name_render(data,type,row,meta) {
       // statement link
-      let statement = ' <a href="$(url)">[Read <span class="mi mi-bs md-18">description</span>]</a>'
+      let statement = ' <a href="$(url)" class="link-flex">[Read <span class="mi md-18">description</span>]</a>'
       if (typeof row.url === 'string' && row.url.length > 0)
         statement = statement.replace('$(url)',row.url)
       else if (row.statement_attached)
         statement = statement.replace('$(url)',row.statement_path)
       else statement = ''
 
-      let attachment = ' <a href="$(url)">[Files <span class="mi mi-bs md-18">archive</span>]</a>'
+      let attachment = ' <a href="$(url)" class="link-flex">[Files <span class="mi md-18">archive</span>]</a>'
       if (row.attachment_attached)
         attachment = attachment.replace('$(url)',row.attachment_path)
       else attachment = ''
