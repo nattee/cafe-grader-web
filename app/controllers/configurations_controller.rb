@@ -27,7 +27,7 @@ class ConfigurationsController < ApplicationController
 
   def clear_user_ip
     User.clear_last_login
-    @toast = {title: 'User Device Lock', body: 'Device locks of all users in this contest are cleared. The users can now log in from a new device'}
+    @toast = {title: 'User Device Lock', body: 'Device locks of all users are cleared. The users can now log in from a new device'}
     render 'turbo_toast'
   end
 

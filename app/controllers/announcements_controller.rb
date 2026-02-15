@@ -119,7 +119,7 @@ class AnnouncementsController < ApplicationController
     end
 
     def announcement_params
-      params.require(:announcement).permit(:author, :body, :published, :frontpage, :contest_only, :title, :on_nav_bar, :file, :group_id)
+      params.require(:announcement).permit(:author, :body, :published, :frontpage, :contest_only, :title, :on_nav_bar, :file, :group_id, :notes)
     end
 
     def can_edit_announcement

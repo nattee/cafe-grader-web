@@ -1,27 +1,15 @@
-%h1 New announcement
+= render 'application/breadcrumb', steps: [{ label: 'Announcements', path: announcements_path, icon: resource_icon_name(Announcement) }, { label: 'New' }]
 
--content_for(:form_buttons) do
-  = link_to t(:back), announcements_path, class: 'card-link btn btn-secondary'
+.d-flex.justify-content-between.align-items-center.mb-3
+  .d-flex.align-items-center.gap-2
+    %h2.fw-bold.text-dark.mb-0
+      New Announcement
+    %span.badge.bg-success-subtle.text-success.border.border-success-subtle.rounded-pill.fw-medium
+      %small Creating
 
-.row
-  .col-md-6
-    .card.shadow-sm
-      .card-body
+  .d-flex.gap-2
+    = link_to 'Cancel', announcements_path, class: 'btn btn-link text-secondary text-decoration-none'
+    %button.btn.btn-primary.px-4.shadow-sm{type: 'submit', form: 'edit_form'} Create Announcement
 
-        = render 'form'
-
--# old style
-  = error_messages_for :announcement
-  = simple_form_for(@announcement) do |f|
-    .row
-      .col-md-6
-        = f.input :title
-        = f.input :notes, label: 'Notes (shown internally, used to organize announcements)'
-        = f.input :body
-        = f.input :author
-        = f.input :published
-        = f.input :frontpage, label: 'Display in the front page only?'
-        = f.input :contest_only, label: 'Display in contest only?'
-        = f.button :submit, "Create", class: 'btn btn-primary'
-        = link_to 'Back', announcements_path, class: 'btn btn-default'
+= render 'form'
 

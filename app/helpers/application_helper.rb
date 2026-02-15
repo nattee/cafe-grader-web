@@ -5,6 +5,32 @@ module ApplicationHelper
     "<span class='mi #{class_name}'>#{icon}</span>".html_safe
   end
 
+  RESOURCE_ICONS = {
+    Tag => 'label',
+    Announcement => 'campaign',
+    Problem => 'quiz',
+    User => 'person',
+    Contest => 'emoji_events',
+    Group => 'groups',
+    Grader => 'computer',
+    Submission => 'input',
+    Language => 'code',
+    Site => 'web',
+    GraderConfiguration => 'settings'
+  }
+
+  def resource_icon_name(resource_class)
+    # Handle both class and instance
+    klass = resource_class.is_a?(Class) ? resource_class : resource_class.class
+    
+    # Try direct mapping, then fallback to string lookup if needed, then default
+    RESOURCE_ICONS[klass] || 'description'
+  end
+
+  def resource_icon(resource_class)
+    mdi(resource_icon_name(resource_class))
+  end
+
   # new bootstrap header
   def navbar_user_header
     left_menu = ''
