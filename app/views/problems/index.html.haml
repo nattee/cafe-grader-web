@@ -1,100 +1,72 @@
-%h1 Problems
-.row
-  .col-md-5
-    = link_to 'Import problems', {:action => 'import'}, class: 'btn btn-success m-1'
-    = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info m-1'
-    - if @current_user.admin?
-      = link_to 'Turn off all problems', {:action => 'turn_all_off'}, class: 'btn btn-secondary m-1'
-      = link_to 'Turn on all problems', {:action => 'turn_all_on'}, class: 'btn btn-secondary m-1'
-  .col-md-7
-    .card.bg-warning-subtle.shadow-sm.mb-3
-      .card-body
-        %h4 
-          .mi.fill settings
-          Configurations Status
-        %ul.mb-0
-          %li
-            Since
-            %span.font-monospace.rounded.bg-light.p-1 system.use_problem_group
-            is
-            %strong>= " #{GraderConfiguration.use_problem_group?}"
-            =","
-            - if GraderConfiguration.use_problem_group?
-              normal users will only have access to
-              %strong enabled
-              problems within their assigned groups.
-              To manage these groups, visit #{link_to 'Manage/Groups', groups_path}.
-            - else
-              Normal users will see
-              %strong every
-              problems that are
-              %strong available.
-        %h4
-          .mi.fill help
-          Usage
-        %ul.mb-0
-          %li
-            %strong Available
-            is a global setting per problem. Problems that have their available set to
-            %strong false
-            won't appear to any user, even if the problem is enabled in their group. 
-            Only admin can change availability status, while group editor should use the
-            %strong enabled
-            option in group management to control visibility within groups.
+.row.my-2
+  .col-md-5.mb-3
+    %h1 Problems
+    .d-flex.flex-wrap.gap-1
+      = link_to 'Import problems', {action: 'import'}, class: 'btn btn-success'
+      = link_to 'Bulk Manage', { action: 'manage'}, class: 'btn btn-info'
+      - if @current_user.admin?
+        = link_to 'All Off', {action: 'turn_all_off'}, class: 'btn btn-outline-secondary'
+        = link_to 'All On', {action: 'turn_all_on'}, class: 'btn btn-outline-secondary'
+  .col-md-7.mb-3
+    = render partial: 'problem_help'
 
-%table#main_table.table.table-condense.table-hover{'data-controller': 'init-ui-component'}
-  %thead
-    %tr
-      %th Name
-      %th Full name
-      %th Difficulty
-      %th.text-end
-        A - D(T)
-        = render partial: 'tooltip', locals: {title: 'number of attachments, datasets, testcases of the problem'}
-      %th.text-end Solution/Hint
-      %th Tags
-      %th
-        Submit
-        = render partial: 'tooltip', locals: {title: 'Admin can always submit to any problem'}
-      %th Date added
-      %th.text-center
-        Avail?
-        = render partial: 'tooltip', locals: {title: 'If "Avail?" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.'}
-      %th.text-center
-        View Testcase?
-        = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
-      %th.text-center
-      %th.text-center
-      %th.text-center
-  %tbody
-    - for problem in @problems
-      %tr{:class => "#{(problem.available) ? "table-success" : ""}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
-        - @problem=problem
-        %td= problem.name
-        %td
-          = problem.full_name
-          = link_to_description_if_any "[<span class='mi md-18'>description</span> Read]".html_safe, problem, class: "link-flex"
-          = link_to "[<span class='mi md-18'>archive</span> Files]".html_safe, download_by_type_problem_path(problem,'attachment'), class: 'link-flex' if problem.attachment.attached?
-        %td= render_star(problem.difficulty)
-        %td.text-end
-          = problem.live_dataset.checker.attached? ? mdi(:checkbook) : ''
-          = "#{problem.attachment.attached? ? 1 : 0} - #{problem.dataset_count}(#{problem.tc_count})"
-        %td.text-end= "#{problem.ms_count || '-'}/#{problem.hint_count || '-'}"
-        %td
-          - problem.tags.each do |t|
-            %span.badge.text-bg-secondary.bg-opacity-100= t.name
-        %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
-        %td= problem.date_added
-        %td
-          .form-check.form-switch.d-flex.justify-content-center
-            %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available', readonly: @current_user.admin? ? 'false' : 'true'}, disabled: @current_user.admin? == false}
-        %td 
-          -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
-          .form-check.form-switch.d-flex.justify-content-center
-            %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
-        %td= link_to "#{mdi(:finance)}Stat".html_safe, {:action => 'stat', :id => problem.id}
-        %td= link_to 'Edit', {:action => 'edit', :id => problem}
-        %td.py-1.align-middle= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block py-1'
+.card.card-shadow
+  .card-body
+
+    %table#main_table.table.table-condense.table-hover{'data-controller': 'init-ui-component'}
+      %thead
+        %tr
+          %th Name
+          %th Full name
+          %th Difficulty
+          %th.text-end
+            A - D(T)
+            = render partial: 'tooltip', locals: {title: 'number of attachments, datasets, testcases of the problem'}
+          %th.text-end Solution/Hint
+          %th Tags
+          %th
+            Submit
+            = render partial: 'tooltip', locals: {title: 'Admin can always submit to any problem'}
+          %th Date added
+          %th.text-center
+            Avail?
+            = render partial: 'tooltip', locals: {title: 'If "Avail?" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.'}
+          %th.text-center
+            View Testcase?
+            = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
+          %th.text-center
+          %th.text-center
+          %th.text-center
+      %tbody
+        - for problem in @problems
+          %tr{:class => "#{(problem.available) ? "table-success" : ""}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
+            - @problem=problem
+            %td= problem.name
+            %td
+              = problem.full_name
+              = link_to_description_if_any "[<span class='mi md-18'>description</span> Read]".html_safe, problem, class: "link-flex"
+              = link_to "[<span class='mi md-18'>archive</span> Files]".html_safe, download_by_type_problem_path(problem,'attachment'), class: 'link-flex' if problem.attachment.attached?
+            %td= render_star(problem.difficulty)
+            %td.text-end
+              = problem.live_dataset.checker.attached? ? mdi(:checkbook) : ''
+              = "#{problem.attachment.attached? ? 1 : 0} - #{problem.dataset_count}(#{problem.tc_count})"
+            %td.text-end= "#{problem.ms_count || '-'}/#{problem.hint_count || '-'}"
+            %td
+              - problem.tags.each do |t|
+                %span.badge.text-bg-secondary.bg-opacity-100= t.name
+            %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
+            %td= problem.date_added
+            %td
+              .form-check.form-switch.d-flex.justify-content-center
+                %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available', readonly: @current_user.admin? ? 'false' : 'true'}, disabled: @current_user.admin? == false}
+            %td 
+              -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
+              .form-check.form-switch.d-flex.justify-content-center
+                %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
+            %td= link_to "#{mdi(:finance)}Stat".html_safe, {:action => 'stat', :id => problem.id}
+            %td= link_to 'Edit', {:action => 'edit', :id => problem}
+            %td.py-1.align-middle= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block py-1'
+    %br
 
 -# hidden form for problem toggle
 = form_with url: toggle_view_testcase_problem_path(-123), html: {data: {turbo: true, 'problem-target': 'toggleViewTestcaseForm', action: 'turbo:submit-end->problem#resetToggleForm'}} do

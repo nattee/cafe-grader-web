@@ -55,8 +55,17 @@
 
       / Requirement 2: System Config
       .d-flex.align-items-start.gap-2
-        %span.mi.md-18.text-danger.flex-shrink-0 settings
-        %small.text-secondary
-          Feature requires 
-          %code.text-dark system.use_problem_group
-          to be enabled in #{link_to 'System Configuration', grader_configuration_index_path}.
+        %span.mi.md-18.text-info.flex-shrink-0 settings
+        %div
+          .d-flex.align-items-center.gap-2.mb-1
+            %small.text-secondary Configuration:
+            - if GraderConfiguration.use_problem_group?
+              %span.badge.bg-success-subtle.text-success.border.border-success-subtle On
+            - else
+              %span.badge.bg-secondary-subtle.text-secondary.border.border-secondary-subtle Off
+          
+          %small.text-secondary
+            Feature requires 
+            %strong.text-dark Problem Group Mode
+            to be enabled.
+            #{link_to 'System Configuration', grader_configuration_index_path, class: 'text-decoration-none'}

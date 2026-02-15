@@ -7,21 +7,23 @@
   = link_to 'Bulk Manage', { action: :bulk_manage} , { class: 'btn btn-secondary btn-info m-1'}
   = link_to 'View administrators',{ :action => 'admin'}, { class: 'btn btn-secondary m-1'}
 
-%table#main-table.table.table-hover.table-condense.datatable
-  %thead
-    %th Login
-    %th Full name
-    %th email
-    %th Remark
-    %th 
-      Activated
-      %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'User has already confirmed the email?' } [?]
-    %th 
-      Enabled
-      %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'Allow the user to login?' } [?]
-    %th Session Clear
-    %th <!-- edit -->
-    %th <!-- destroy -->
+.card.card-shadow
+  .card-body
+    %table#main-table.table.table-hover.table-condense.datatable
+      %thead
+        %th Login
+        %th Full name
+        %th email
+        %th Remark
+        %th 
+          Activated
+          %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'User has already confirmed the email?' } [?]
+        %th 
+          Enabled
+          %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'Allow the user to login?' } [?]
+        %th Session Clear
+        %th <!-- edit -->
+        %th <!-- destroy -->
 
 -# hidden user action form
 = form_with url: user_action_user_admin_index_path, html: {'data-user-admin--index-target': 'userForm', id: 'do-user-form',
