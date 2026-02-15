@@ -101,8 +101,11 @@ class Submission < ApplicationRecord
   end
 
 
-  def set_grading_complete(point, grading_text, max_time, max_mem)
+  def set_grading_complete(point, grading_text, max_time, max_mem, working_dataset)
     update(points: point, status: :done, graded_at: Time.zone.now, grader_comment: grading_text, max_runtime: max_time, peak_memory: max_mem)
+
+    # add score of the submission
+    ScoreSubmission.create(submission: self, dataset: working_dataset, point: point, max_runtime: max_time, peak_memory: max_mem)
   end
 
   def set_grading_error(error_text)

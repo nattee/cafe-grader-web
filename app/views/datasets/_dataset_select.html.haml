@@ -16,8 +16,8 @@
       = link_to 'Set as live', set_as_live_dataset_path(ds), data: {turbo: true, 'turbo-method': 'post'}, class: 'btn btn-info btn-sm mx-1' if ds != problem.live_dataset
       = link_to 'Delete', dataset_path(ds), data: {turbo: true,
         'turbo-method': 'delete',
-        turbo_confirm: "Really delete the dataset [#{problem.live_dataset.name}]?"}, class: 'btn btn-danger btn-sm mx-1'
+        turbo_confirm: "Really delete the dataset [#{ds.name}]?"}, class: 'btn btn-danger btn-sm mx-1'
       = link_to 'Rejudge', rejudge_dataset_path(ds), data: {turbo: true,
         'turbo-method': 'post',
-        turbo_confirm: "Rejudge all #{problem.submissions.count} submissions of #{problem.name} using the dataset [#{problem.live_dataset.name}]?"}, 
+        turbo_confirm: "Rejudge all #{problem.submissions.count} submissions of #{problem.name} using the dataset [#{ds.name}]?"}, 
         class: 'btn btn-warning btn-sm mx-1'

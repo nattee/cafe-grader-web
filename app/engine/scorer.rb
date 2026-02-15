@@ -131,7 +131,7 @@ class Scorer
     max_mem = @sub.evaluations.pluck(:memory).map { |x| x || 0 }.max
 
     # update result
-    @sub.set_grading_complete(point, grading_text, max_time, max_mem)
+    @sub.set_grading_complete(point, grading_text, max_time, max_mem, working_dataset)
 
     judge_log "#{rb_sub(@sub)} completed with points = " + Rainbow("#{point} (#{grading_text})").color(COLOR_SCORE_RESULT)
     return EngineResponse::Result.success

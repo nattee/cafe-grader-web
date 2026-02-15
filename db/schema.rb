@@ -326,8 +326,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_152834) do
   create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "submission_id", null: false
-    t.decimal "points", precision: 8, scale: 4
+    t.decimal "point", precision: 8, scale: 4
     t.integer "status", limit: 1, default: 0, null: false
+    t.float "max_runtime"
+    t.integer "peak_memory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["dataset_id"], name: "index_score_submissions_on_dataset_id"
@@ -337,8 +339,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_01_152834) do
   create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "user_id", null: false
-    t.decimal "points", precision: 8, scale: 4
+    t.decimal "point", precision: 8, scale: 4
     t.integer "status", limit: 1, default: 0, null: false
+    t.float "max_runtime"
+    t.integer "peak_memory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["dataset_id"], name: "index_score_users_on_dataset_id"
