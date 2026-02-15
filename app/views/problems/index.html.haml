@@ -19,7 +19,7 @@
     %table#main_table.table.table-condense.table-hover{'data-controller': 'init-ui-component'}
       %thead
         %tr
-          %th Name
+          %th.all Name
           %th Full name
           %th Difficulty
           %th.text-end
@@ -31,15 +31,13 @@
             Submit
             = render partial: 'tooltip', locals: {title: 'Admin can always submit to any problem'}
           %th Date added
-          %th.text-center
+          %th.text-center.all
             Avail?
             = render partial: 'tooltip', locals: {title: 'If "Avail?" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.'}
           %th.text-center
             View Testcase?
             = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
-          %th.text-center
-          %th.text-center
-          %th.text-center
+          %th.text-center.all
       %tbody
         - for problem in @problems
           %tr{:class => "#{(problem.available) ? "table-success" : ""}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
@@ -66,9 +64,11 @@
               -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
               .form-check.form-switch.d-flex.justify-content-center
                 %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
-            %td= link_to "#{mdi(:finance)}Stat".html_safe, {:action => 'stat', :id => problem.id}
-            %td= link_to 'Edit', {:action => 'edit', :id => problem}
-            %td.py-1.align-middle= link_to 'Destroy', { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-danger btn-sm btn-block py-1'
+            %td.py-1.all
+              .d-flex.gap-1.justify-content-end
+                = link_to "#{mdi(:finance)} Stat".html_safe, {:action => 'stat', :id => problem.id}, class: 'btn btn-flex btn-outline-primary border-0'
+                = link_to "#{mdi(:edit)} Edit".html_safe, {:action => 'edit', :id => problem}, class: 'btn btn-flex btn-outline-primary border-0'
+                = link_to "#{mdi(:delete)}".html_safe, { :action => 'destroy', :id => problem }, 'data-confirm': 'Are you sure?', :method => :delete, class: 'btn btn-outline-danger btn-flex border-0'
     %br
 
 -# hidden form for problem toggle
@@ -82,7 +82,7 @@
     $("#main_table").DataTable({
       sorting: false,
       columnDefs: [
-        { targets: [3,4,5,6,10,11,12], sortable: false },
+        { targets: [3,4,5,6,10], sortable: false },
       ],
       paging: false,
       responsive: true,

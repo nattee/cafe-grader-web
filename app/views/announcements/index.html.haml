@@ -21,7 +21,6 @@
         %th{style: 'width: 100px'} Front?
         %th Group
         %th
-        %th
       - for announcement in @announcements
         %tr
           - @announcement = announcement
@@ -53,8 +52,10 @@
               
             - else
               = announcement.group.name
-          %td= link_to mdi('edit') + 'Edit', edit_announcement_path(announcement), class: 'btn btn-flex btn-outline-primary border-0'
-          %td= link_to mdi('delete', 'md-24'), announcement, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-flex btn-outline-danger border-0'
+          %td.py-1
+            .d-flex.gap-1.justify-content-end
+              = link_to mdi('edit') + 'Edit', edit_announcement_path(announcement), class: 'btn btn-flex btn-outline-primary border-0'
+              = link_to mdi('delete', 'md-24'), announcement, :method => :delete, :data => { :confirm => 'Are you sure?' }, class: 'btn btn-flex btn-outline-danger border-0'
 
     %br
 
