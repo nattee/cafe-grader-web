@@ -2,11 +2,11 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
 
-  static targets = ["usersCommand", "userForm", "userFormUserID", "userFormCommand" ,
-                    "problemsCommand", "problemForm", "problemFormProblemID", "problemFormCommand" ,
-                    "contestForm","contestFormContestID","contestFormCommand",
-                    "userExtraTimeForm", "userExtraTimeFormStart", "userExtraTimeFormEnd", "userExtraTimeFormRowID"
-                   ]
+  static targets = ["usersCommand", "userForm", "userFormUserID", "userFormCommand",
+    "problemsCommand", "problemForm", "problemFormProblemID", "problemFormCommand",
+    "contestForm", "contestFormContestID", "contestFormCommand",
+    "userExtraTimeForm", "userExtraTimeFormStart", "userExtraTimeFormEnd", "userExtraTimeFormRowID"
+  ]
 
   connect() {
     window.user_table_init = false
@@ -20,17 +20,14 @@ export default class extends Controller {
 
   postUserAction(event) {
     event.preventDefault()
-    // event.target is the dom that emits the event
-    // the parameter for the action is in data-* of that dom
-    // we copy the parameter and set the appropriate input
-    // of the form
+    // event.currentTarget is the dom that has the action attached
     const form = this.userFormTarget
     const user_id = this.userFormUserIDTarget
     const command = this.userFormCommandTarget
-    command.value = event.target.dataset.command
-    user_id.value = event.target.dataset.rowId
-    if ('formConfirm' in event.target.dataset) {
-      form.dataset.turboConfirm = event.target.dataset.formConfirm
+    command.value = event.currentTarget.dataset.command
+    user_id.value = event.currentTarget.dataset.rowId
+    if ('formConfirm' in event.currentTarget.dataset) {
+      form.dataset.turboConfirm = event.currentTarget.dataset.formConfirm
     } else {
       form.removeAttribute('data-turbo-confirm')
     }
@@ -52,8 +49,8 @@ export default class extends Controller {
     const form = this.problemFormTarget
     const problem_id = this.problemFormProblemIDTarget
     const command = this.problemFormCommandTarget
-    command.value = event.target.dataset.command
-    problem_id.value = event.target.dataset.rowId
+    command.value = event.currentTarget.dataset.command
+    problem_id.value = event.currentTarget.dataset.rowId
     form.requestSubmit()
   }
 
@@ -104,7 +101,7 @@ export default class extends Controller {
     event.preventDefault()
     const element = event.target
 
-    bootbox.dialog( {
+    bootbox.dialog({
       title: `Set extra times for ${event.currentTarget.dataset.login}`,
       message: `
         <div class="form-group">
@@ -123,7 +120,7 @@ export default class extends Controller {
         ok: {
           label: 'OK',
           className: 'btn-primary',
-          callback: function() {
+          callback: function () {
             start_offset.value = $('#start-offset').val()
             end_offset.value = $('#end-offset').val()
             form.requestSubmit()
