@@ -1,4 +1,4 @@
-= simple_form_for @contest, wrapper: :horizontal_form, html: {data: {turbo: false}} do |f|
+= simple_form_for @contest, wrapper: :horizontal_form, html: {data: {turbo: false}, id: 'edit_form'} do |f|
   = f.error_notification
   = f.input :name, disabled: @contest.finalized?
   = f.input :description, disabled: @contest.finalized?
@@ -22,11 +22,6 @@
   = f.input :post_contest_seconds, disabled: @contest.finalized?
   = f.input :enabled, disabled: @contest.finalized?
   = f.input :finalized
-  = f.button :submit, class: 'btn btn-primary'
-  - if @contest.id
-    = link_to 'Back', contest_path(@contest), class: 'btn btn-outline-secondary mx-2'
-  - else
-    = link_to 'Back', contests_path, class: 'btn btn-outline-secondary mx-2'
 :javascript
   window.addEventListener("load", function() {
     start_datetime = new TempusDominus(document.getElementById('contest_start'), cafe.config.td.datetime );

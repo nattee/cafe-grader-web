@@ -206,7 +206,7 @@ module ApplicationHelper
   #   return content.html_safe
   # end
 
-  def key_pair(obj: nil, field: nil, label: nil, value: nil, width: 4, as: nil, class_name: '')
+  def key_pair(obj: nil, field: nil, label: nil, value: nil, width: 4, as: nil, class_name: '', icon: nil)
     # 1. Determine the label using I18n, with fallbacks
     if label.nil? && obj && field
       label = obj.class.human_attribute_name(field)
@@ -221,8 +221,15 @@ module ApplicationHelper
     css_classes = "col-md-#{width} mb-3 #{class_name}".strip
     tag.div(class: css_classes) do
       safe_join([
-        tag.div(label, class: 'fw-bold'),
-        format_key_pair_value(value, as)
+        tag.div(class: 'text-secondary small d-flex align-items-center mb-1') do
+          safe_join([
+            (mdi(icon, 'me-1') if icon),
+            tag.span(label)
+          ].compact)
+        end,
+        tag.div(class: 'd-flex align-items-center fw-bold text-dark') do
+          format_key_pair_value(value, as)
+        end
       ])
     end
   end
@@ -328,9 +335,9 @@ TITLEBAR
     case format&.to_sym
     when :yes_no
       if value == true || value.to_s.downcase == 'true'
-        tag.span(t('helpers.yes'), class: 'badge text-bg-success')
+        tag.span(t('helpers.yes'), class: 'badge rounded-pill border bg-success-subtle text-success border-success-subtle')
       else
-        tag.span(t('helpers.no'), class: 'badge text-bg-danger')
+        tag.span(t('helpers.no'), class: 'badge rounded-pill border bg-danger-subtle text-danger border-danger-subtle')
       end
     # Add other formatters here, e.g., :date, :currency
     # when :date
