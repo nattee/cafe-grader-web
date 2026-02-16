@@ -7,6 +7,10 @@ class LanguagesController < ApplicationController
     @languages = Language.all
   end
 
+  def index_query
+    @languages = Language.all
+  end
+
   # GET /languages/1 or /languages/1.json
   def show
   end
@@ -26,7 +30,7 @@ class LanguagesController < ApplicationController
 
     respond_to do |format|
       if @language.save
-        format.html { redirect_to @language, notice: "Language was successfully created." }
+        format.html { redirect_to languages_path, notice: "Language was successfully created." }
         format.json { render :show, status: :created, location: @language }
       else
         format.html { render :new, status: :unprocessable_entity }

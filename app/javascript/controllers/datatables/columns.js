@@ -68,8 +68,8 @@ export const columns = {
     enableToggle: {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postContestAction', command: 'toggle', checked_data_field: 'enabled'})},
     start: {data: 'start', render: cafe.dt.render.datetime()},
     stop: {data: 'stop', render: cafe.dt.render.datetime()},
-    manageLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('settings','md-18')} Manage`, {path: AppRoute.contest})},
-    watchLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: AppRoute.viewContest})},
+    manageLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('settings','md-18')} Manage`, {path: AppRoute.contest, className: 'd-inline-flex align-items-center text-decoration-none'})},
+    watchLink: {data: null, render: cafe.dt.render.link(`${cafe.msi('summarize','md-18')} Watch`, {path: AppRoute.viewContest, className: 'd-inline-flex align-items-center text-decoration-none'})},
     cloneButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`, {path: AppRoute.cloneContest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true}), className: 'align-middle py-1'},
     deleteButton: {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
     actionButton: {data: null, render: function(data,type,row,meta) {
@@ -78,18 +78,18 @@ export const columns = {
       if (type != 'display') return ''
 
       // calling the render function for link
-      const clone_button = cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`,{path: AppRoute.cloneContest, className: 'dropdown-item', prefetch: false, turboStream: true})(data,type,row,meta)
-      const delete_button = cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'dropdown-item text-danger', })(data,type,row,meta)
+      const clone_button = cafe.dt.render.link(`${cafe.msi('file_copy','md-18')} Clone`,{path: AppRoute.cloneContest, className: 'dropdown-item d-inline-flex align-items-center', prefetch: false, turboStream: true})(data,type,row,meta)
+      const delete_button = cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {path: AppRoute.contest, className: 'dropdown-item text-danger d-inline-flex align-items-center', method: 'delete', confirm: 'Really delete this contest?'})(data,type,row,meta)
 
-      let string = `<div class="dropdown">`+
-                   `<button type="button" class="btn btn-sm btn-light " data-bs-toggle="dropdown">`+
-                   `  <span class="mi">more_horiz</span>`+
-                   `</button>`+
-                   `<ul class="dropdown-menu dropdown-menu-end border-0 shadow">`+
+      let string = `<div class="dropdown d-inline-flex align-items-center">`+
+                   `  <a type="button" class="link-flex rounded-1 bg-light ms-2 text-muted" data-bs-toggle="dropdown">`+
+                   `    <span class="mi md-18">more_horiz</span>`+
+                   `  </a>`+
+                   `  <ul class="dropdown-menu dropdown-menu-end border-0 shadow">`+
                    `    <li>${clone_button}</li>`+
                    `    <li><hr class="dropdown-divider"></li>`+
                    `    <li>${delete_button}</li>`+
-                   `</ul>`+
+                   `  </ul>`+
                    `</div>`
 
       return string
