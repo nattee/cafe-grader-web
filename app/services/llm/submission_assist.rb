@@ -67,13 +67,24 @@ module Llm
 
     # Can be a common implementation or overridden
     def handle_response(response)
-      @record.cost = 10
-      @record.llm_response = response.body
-      @record.status = 'ok'
+      unless response&.success?
+        @error = "API returned HTTP #{response&.status}: #{response&.body&.truncate(500)}"
+        handle_error
+        return nil
+      end
 
       # prepare the @parsed_body for the parse_response of the subclasses
       @parsed_body = JSON.parse(response.body)
+      validate_response_body! 
+
+      @record.cost = 10
+      @record.llm_response = response.body
+      @record.status = 'ok'
       @record.update(parse_response)             # subclass must implement parse_response
+    rescue JSON::ParseError => e
+      @error = "Invalid JSON from #{provider_name}: #{e.message}"
+      handle_error
+      nil      
     end
 
     def handle_error

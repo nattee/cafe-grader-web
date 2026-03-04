@@ -4,6 +4,13 @@ module Llm
 
     private
 
+    def validate_response_body!
+      choices = @parsed_body['choices']
+      unless choices.is_a?(Array) && choices.dig(0, 'message', 'content').present?
+        raise RuntimeError, "Unexpected response structure from #{provider_name}: missing choices/content"
+      end
+    end
+
     # required implementation from SubmissionAssist
     def provider_name
       'Chula Genie'
