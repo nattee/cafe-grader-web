@@ -1,0 +1,102 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Cafe-Grader is an online programming contest and assignment grading platform (used at Chulalongkorn University). Students submit code, which is automatically compiled and evaluated against test cases. Instructors manage problems, contests, groups, and view reports.
+
+## Tech Stack
+
+- **Ruby 3.4.4, Rails 8.0.0** (with `load_defaults 7.0`)
+- **MySQL** (primary DB: `grader`, queue DB: `grader_queue`)
+- **Propshaft** asset pipeline, **ImportMap** for JS, **cssbundling-rails** with Sass for CSS
+- **Hotwire** (Turbo + Stimulus), jQuery (legacy), Bootstrap 5
+- **HAML** templates
+- **Solid Queue** for background jobs, **Solid Cache**, **Solid Cable**
+- **Puma** web server with Thruster
+
+## Development Commands
+
+```bash
+# Start all dev processes (server, CSS watcher, background queue)
+bin/dev                          # uses Procfile.dev via foreman
+
+# Or run individually:
+bin/rails server                 # web server on port 3000
+yarn build:css --watch           # Sass compilation
+bin/rails solid_queue:start      # background job queue
+
+# Database
+bin/rails db:migrate             # primary DB migrations
+bin/rails db:migrate:queue       # queue DB migrations (db/queue_migrate/)
+
+# Tests
+bin/rails test                   # all tests
+bin/rails test test/models/      # test a directory
+bin/rails test test/models/user_test.rb        # single file
+bin/rails test test/models/user_test.rb:42     # single test by line
+bin/rails test:system            # Capybara system tests
+
+# Code quality
+bundle exec rubocop              # linting (rubocop-rails-omakase)
+bundle exec brakeman             # security analysis
+```
+
+## Architecture
+
+### Two Operating Modes
+
+The system operates in either **contest mode** or **group mode** (configured via `GraderConfiguration`). This affects how problems are scoped and presented to users.
+
+### Key Domain Models
+
+- **User** — has roles (admin, group_editor, reporter) via HABTM; scoped access to problems/contests
+- **Problem** — programming problems with test cases, statements, attachments
+- **Dataset** — test case sets for a problem (one is "live" at a time); contains Testcase records
+- **Submission** — user code submissions; tracked through states: submitted → evaluating → done/error
+- **Contest** — time-bound competitions with users and problems
+- **Group** — organizes problems and users (alternative to contests)
+- **Job** — grading jobs (compile, evaluate, score) processed by external judge workers
+- **Comment** — supports LLM-assisted hints with cost tracking
+
+### Controller Organization
+
+- **MainController** — student-facing: problem list, submit code, view submissions
+- **ProblemsController** — admin: manage problems, datasets, testcases
+- **ContestsController** / **GroupsController** — manage contest/group membership
+- **ReportController** — scoring reports, login analytics, plagiarism detection
+- **UserAdminController** — user management, bulk operations
+- **SubmissionsController** — view/rejudge submissions
+- **Worker::* namespace** — API endpoints for judge worker communication
+- **GradersController** — monitor/manage grader processes and job queues
+
+### Authentication & Authorization
+
+Session-based auth (`session[:user_id]`). Key controller methods:
+- `current_user` — logged-in user
+- `admin_authorization` — restricts to admin role
+- `group_editor_authorization` — restricts to group editors
+
+### Background Processing
+
+- **Solid Queue** handles Active Job (LLM assist, PDF generation)
+- **Judge workers** are separate processes that poll `Job` records for grading tasks (configured in `config/worker.yml`)
+
+### LLM Integration
+
+- `app/services/llm/` — LLM service classes
+- `config/llm.yml` — provider configuration
+- Cost tracking integrated into scoring/reports
+
+### Multi-Database Setup
+
+- Primary: `grader` — application data
+- Queue: `grader_queue` — Solid Queue tables (migrations in `db/queue_migrate/`)
+
+## Key Configuration
+
+- `config/worker.yml` — judge worker settings
+- `config/llm.yml` — LLM provider config
+- `config/application.rb` — timezone is Asia/Bangkok; supports deployment under a subdir via `RAILS_RELATIVE_URL_ROOT`
+- `GraderConfiguration` model — runtime settings stored in DB (exam mode, contest mode, etc.)
