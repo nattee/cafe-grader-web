@@ -43,7 +43,6 @@ pin "cafe_turbo", to: "cafe_turbo.js"
 pin "setup_jquery"
 pin "setup_bootstrap"
 pin "setup_select2"
-pin "setup_ace"
 pin "moment" # @2.30.1
 pin "ace-builds" # @1.42.0
 

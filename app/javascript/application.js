@@ -17,7 +17,6 @@ Turbo.session.drive = false
 import "setup_select2"
 import "setup_bootstrap"
 import "setup_jquery"
-import "setup_ace"
 
 import "chart"
 

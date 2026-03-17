@@ -1,5 +1,6 @@
 import DatatableInitController from "controllers/datatables/init_controller"
 import { columns, renderers } from 'controllers/datatables/columns'
+import { Chart } from "chart"
 
 /**
  * init datatable for contest/view.htlm.haml
