@@ -9,7 +9,7 @@
     .card.mb-3
       .card-body
         %h2.card-title Submission History
-        %canvas#chart{height: '50px'}
+        %canvas#chart{height: '50px', data: { controller: 'chart', chart_data_value: @chart_dataset }}
 
   .col-md-4
     .card.mb-3
@@ -101,29 +101,10 @@
 
 
 :javascript
-
   window.addEventListener("load", function() {
-    //init datatable
     $("#main_table").DataTable({
       paging: false,
       responsive: true,
     });
-
-    //history graph
-    data = #{@chart_dataset}
-    config = {
-      type: 'bar',
-      data: data,
-      options: {
-        plugins: {
-          legend: {
-            display: false
-          },
-        },
-      }
-    }
-    Chart.defaults.font.size = 15
-    //Chart.defaults.font.family = 'Sarabun Light'
-    chart = new Chart($('#chart'),config)
   });
 

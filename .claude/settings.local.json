@@ -3,7 +3,9 @@
     "allow": [
       "Bash(yarn build:css:*)",
       "Bash(gh:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(bundle exec:*)",
+      "Bash(hg:*)"
     ]
   }
 }

@@ -30,7 +30,7 @@
     .card.mb-3.shadow-sm
       .card-body
         %h2.card-title Submission History
-        %canvas#chart{height: '50px'}
+        %canvas#chart{height: '50px', data: { controller: 'chart', chart_data_value: @chart_dataset }}
 
   -# submission stat card
   .col-md-4
@@ -161,22 +161,4 @@
                       = "#{value[:first][:value]}"
                       = link_to "(##{value[:first][:sub_id].to_s})", submission_path( value[:first][:sub_id])
 
-:javascript
-  window.addEventListener("load", function() {
-    data = #{@chart_dataset}
-    config = {
-      type: 'bar',
-      data: data,
-      options: { 
-        plugins: {
-          legend: {
-            display: false
-          },
-        },
-      }
-    }
-    Chart.defaults.font.size = 15
-    //Chart.defaults.font.family = 'Sarabun Light'
-    chart = new Chart($('#chart'),config)
-  });
 

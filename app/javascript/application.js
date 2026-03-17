@@ -18,8 +18,6 @@ import "setup_select2"
 import "setup_bootstrap"
 import "setup_jquery"
 
-import "chart"
-
 
 // TempusDominus
 import "tempus-dominus-js" //this import as tempusDominus
