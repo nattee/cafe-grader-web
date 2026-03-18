@@ -29,42 +29,45 @@ export const renderers = {
     const toggleRoleIcon = isEditor ? 'person' : 'shield_person';
 
     return `
-      <div class="dropdown d-inline-flex align-items-center">
-        <a class="link-flex rounded-1 bg-light px-2 py-1 text-muted border decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <span class="mi md-18">more_vert</span>
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
-          <li><h6 class="dropdown-header">Actions for ${row['login']}</h6></li>
-          <li>
-            <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
-               data-action="click->contest#postUserAction" 
-               data-row-id="${row['user_id']}" 
-               data-command="clear_ip">
-              <span class="mi md-18 text-warning">lock_reset</span>
-              Clear Session Lock
-            </a>
-          </li>
-          <li>
-            <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
-               data-action="click->contest#postUserAction" 
-               data-row-id="${row['user_id']}" 
-               data-command="${toggleRoleCommand}">
-              <span class="mi md-18 text-info">${toggleRoleIcon}</span>
-              ${toggleRoleLabel}
-            </a>
-          </li>
-          <li><hr class="dropdown-divider"></li>
-          <li>
-            <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="#" 
-               data-action="click->contest#postUserAction" 
-               data-row-id="${row['user_id']}" 
-               data-command="remove"
-               data-form-confirm="Remove ${row['login']} from this contest?">
-              <span class="mi md-18">person_remove</span>
-              Remove from Contest
-            </a>
-          </li>
-        </ul>
+      <div class="d-flex align-items-center">
+        <span>&nbsp; </span>
+        <div class="dropdown d-flex align-items-center">
+          <a class="link-flex rounded-1 bg-light ms-2 text-muted decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="mi md-18">more_horiz</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+            <li><h6 class="dropdown-header">Actions for ${row['login']}</h6></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
+                 data-action="click->contest#postUserAction" 
+                 data-row-id="${row['user_id']}" 
+                 data-command="clear_ip">
+                <span class="mi md-18 text-warning">lock_reset</span>
+                Clear Session Lock
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
+                 data-action="click->contest#postUserAction" 
+                 data-row-id="${row['user_id']}" 
+                 data-command="${toggleRoleCommand}">
+                <span class="mi md-18 text-info">${toggleRoleIcon}</span>
+                ${toggleRoleLabel}
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="#" 
+                 data-action="click->contest#postUserAction" 
+                 data-row-id="${row['user_id']}" 
+                 data-command="remove"
+                 data-form-confirm="Remove ${row['login']} from this contest?">
+                <span class="mi md-18">person_remove</span>
+                Remove from Contest
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     `;
   },
