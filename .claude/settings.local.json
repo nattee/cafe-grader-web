@@ -6,8 +6,7 @@
       "Bash(ls:*)",
       "Bash(bundle exec:*)",
       "Bash(hg:*)",
-      "Bash(echo \"TERM=$TERM\")",
-      "Bash(echo \"COLORTERM=$COLORTERM\")",
+      "Bash(rvm:*)",
       "Bash(npm list:*)"
     ]
   }
