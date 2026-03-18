@@ -5,7 +5,10 @@
       "Bash(gh:*)",
       "Bash(ls:*)",
       "Bash(bundle exec:*)",
-      "Bash(hg:*)"
+      "Bash(hg:*)",
+      "Bash(echo \"TERM=$TERM\")",
+      "Bash(echo \"COLORTERM=$COLORTERM\")",
+      "Bash(npm list:*)"
     ]
   }
 }

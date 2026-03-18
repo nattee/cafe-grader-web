@@ -2,21 +2,24 @@
   -# Left pane: (Contest Card, Submission Card and problem list)
   .col-lg-7
     - if (GraderConfiguration.contest_mode?)
-      = render 'contest_box'
+      .mb-4
+        = render 'contest_box'
     - if GraderConfiguration.show_submitbox_to?(@user)
-      = render 'submission_box'
+      .mb-4
+        = render 'submission_box'
     - if GraderConfiguration.show_tasks_to?(@user)
-      %h2.mt-3 Problems
-      = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
+      .mb-4
+        = render partial: 'problem_list', locals: {problems: @problems, groups: @groups}
   -# right pane (Announcements)
   .col-lg-5
-    .card
-      .card-header
-        Announcement
-        - if is_admin
-          = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
-      %ul.list-group.list-group-flush
-        = render :partial => 'announcement', :collection => @announcements
+    .card.card-shadow
+      .card-body
+        .d-flex.justify-content-between.align-items-center.mb-3
+          %h5.fw-bold.text-dark.mb-0 Announcement
+          - if is_admin
+            = link_to 'Manage', announcements_path, class: 'btn btn-secondary btn-sm'
+        %ul.list-group.list-group-flush
+          = render :partial => 'announcement', :collection => @announcements
 
 :javascript
   function filter_tag() {

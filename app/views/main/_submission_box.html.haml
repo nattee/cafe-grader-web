@@ -1,7 +1,6 @@
-.card.border-primary{'data-controller': 'init-ui-component'}
-  .card-header.text-bg-primary
-    Submission
+.card.card-shadow.bg-primary-subtle.border-1.border-primary{'data-controller': 'init-ui-component'}
   .card-body
+    %h5.fw-bold.text-primary-emphasis.mb-3 Submission
     = form_with url: submit_main_path, multipart: true, class: 'form' do |form|
       - if @submission and @submission.errors.any?
         #error_explanation

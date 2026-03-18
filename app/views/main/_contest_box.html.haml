@@ -1,7 +1,6 @@
-.card.border-warning.mb-3{data: {controller: 'contest-timer'}}
-  .card-header.text-bg-warning.border-warning
-    Contest
+.card.card-shadow.bg-warning-subtle.border-1.mb-3{data: {controller: 'contest-timer'}}
   .card-body
+    %h5.fw-bold.text-warning-emphasis.mb-3 Contest
     - if @contests.count == 0
       The system is in contest mode but you are not in any active contest. Please contact the staff.
     - else
