@@ -5,8 +5,15 @@
 - Problem ZIP **does not** use `*.in` / `*.sol` pairs.
 - Put harness files under a **`cocotb/`** directory (or set `cocotb_dir` in `config.yml`).
 - The grader runs **`grade.sh`** inside the sandbox with **`STUDENT_V=/mybin/submitted.v`** and a copy at **`/data/student.v`**.
+- On the worker, **`/data`** is a **writable copy** of the problem’s dataset `data/` (per submission + testcase) so **`student.v`** never mutates the shared problem files on disk.
 - **`grade.sh`** must exit **0** if all tests pass, **non-zero** otherwise. Send pytest/cocotb logs to **stderr** so **stdout** stays clean.
 - The wrapper **`run.sh`** prints **`OK`** or **`WRONG`**, then always exits **0** so isolate still runs the **checker** (diff against answer **`OK`**).
+
+## Judge worker (machine)
+
+- Install **cocotb** (and your simulator: **iverilog + vvp**, **verilator**, etc.) on the worker that runs the grader.
+- Set **`compiler.cocotb_python`** in **`config/worker.yml`** (or `COCOTB_PYTHON` in the environment) to the **`python3`** that has **`cocotb`** in its environment. The evaluator prepends that binary’s directory to **`PATH`** inside isolate so **`grade.sh`**’s **`python3`** is the right interpreter.
+- If you see **`ModuleNotFoundError: No module named 'cocotb'`** in **`judge.log`**, install cocotb for that interpreter (`pip install cocotb`) or point **`cocotb_python`** at a venv that has it.
 
 ## `config.yml` (minimal)
 
@@ -21,13 +28,14 @@ permitted_lang: verilog
 
 ## ZIP layout
 
+Keep everything **flat under `cocotb/`** (no `tests/` subfolders) so **`grade.sh`** and your **`.py`** sit next to each other; the grader copies the student’s Verilog to **`/data/student.v`** beside those files. Subdirectories still work, but Rails **ActiveStorage** may rewrite filenames that contain **`/`** (slashes become **`-`**), so flat names are simplest.
+
 ```text
 config.yml
 cocotb/
-  grade.sh          # required — see below
-  tests/
-    xnor_xor_test.py
-  # ... reference RTL, Makefiles, etc.
+  grade.sh
+  xnor_xor_test.py
+  # optional: extra .v helpers, Makefile, etc.
 ```
 
 ## Cocotb tests: compare outputs as integers (optional)
@@ -39,9 +47,9 @@ On some cocotb/simulator combos, `dut.out.value` may not compare equal to `0`/`1
 ```sh
 #!/bin/sh
 set -e
+cd /data
 export PYTHONPATH="${PYTHONPATH:-.}"
-# Student file: $STUDENT_V (also /data/student.v)
-python3 -m pytest tests/xnor_xor_test.py -q --tb=no 1>&2
+python3 -u xnor_xor_test.py 1>&2
 ```
 
 Make it executable before zipping: `chmod +x cocotb/grade.sh`
@@ -50,6 +58,13 @@ Make it executable before zipping: `chmod +x cocotb/grade.sh`
 
 - `python3`, `pytest`, **cocotb**, **Icarus Verilog** (or your simulator), and paths reachable from the isolate box.
 - You may need extra **isolate** mounts for tools/venv (see `judge_base.rb` `isolate_options_by_lang` for `verilog`).
+
+## Isolate logs on the grader host (`judge.log`)
+
+Every **`isolate --run`** writes **stderr** (and **stdout** at DEBUG) to **`cafe_grader/web/log/judge.log`** on the machine running **`Grader.start`** (not in the browser). Cocotb / `grade.sh` output on stderr appears there as lines **`ISOLATE stderr:`**.
+
+- Turn off: **`GRADER_ISOLATE_LOG_IO=0`**
+- Truncation limits (optional): **`GRADER_ISOLATE_LOG_STDERR_MAX`**, **`GRADER_ISOLATE_LOG_STDOUT_MAX`** (bytes, default 32768 / 8192)
 
 ## Import behaviour
 
@@ -60,6 +75,12 @@ Make it executable before zipping: `chmod +x cocotb/grade.sh`
 ## Non–cocotb Verilog
 
 Use the normal iverilog/vvp pipeline (default dataset evaluation types and `*.in` / `*.sol` uploads).
+
+## Troubleshooting: harness file missing under `/data` or WRONG with no real run
+
+1. **Worker cache** — the judge skips re-download when **`worker_datasets`** says **ready**. After changing cocotb files, run `bin/rails runner "WorkerDataset.delete_all"` (or delete one dataset’s rows). New imports invalidate this cache when **`read_cocotb_assets`** runs.
+
+2. **ActiveStorage** — filenames with **`/`** may be rewritten (e.g. **`tests/foo.py`** → **`tests-foo.py`**). Prefer **flat** paths under **`cocotb/`**.
 
 ## Troubleshooting: `execve("/source/submission.v"): Permission denied` / exit 127
 
