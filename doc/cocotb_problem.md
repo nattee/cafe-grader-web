@@ -54,6 +54,13 @@ python3 -u xnor_xor_test.py 1>&2
 
 Make it executable before zipping: `chmod +x cocotb/grade.sh`
 
+## Exit codes (failures must be non-zero)
+
+**`grade.sh`** must exit **non-zero** when tests fail so **`run.sh`** prints **`WRONG`** and the checker sees **`WRONG`** on stdout.
+
+- **`cocotb_tools.runner.Runner.test()`** only calls **`sys.exit(1)`** on failures when run **under pytest** (`PYTEST_CURRENT_TEST` is set). If you run **`python3 your_test.py`** with a `__main__` that calls **`runner.test()`** only, the **simulator** often exits **0** even when cocotb tests fail.
+- **Fix:** after **`runner.test(...)`**, use **`cocotb_tools.check_results.get_results(results_xml_path)`** and **`sys.exit(1)`** if **`num_failed > 0`**, or run **`python3 -m pytest ...`** so the harness exits non-zero on failure. See `verilog-cocotb/cafe-grader/test_problem/cocotb/xnor_xor_test.py`
+
 ## Worker requirements
 
 - `python3`, `pytest`, **cocotb**, **Icarus Verilog** (or your simulator), and paths reachable from the isolate box.
