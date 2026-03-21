@@ -12,6 +12,10 @@ Rails.application.configure do
   # Show full error reports.
   config.consider_all_requests_local = true
 
+  # Allow browser access via CloudLab public hostname (Host Authorization).
+  # Leading dot = any subdomain of utah.cloudlab.us; Rails also allows optional :port.
+  config.hosts << ".utah.cloudlab.us"
+
   # Enable server timing.
   config.server_timing = true
 
