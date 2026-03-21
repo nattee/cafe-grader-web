@@ -144,7 +144,10 @@ class ProblemImporter
     end
     @dataset.evaluation_type = :cocotb
     @dataset.save
-    @log << "cocotb: evaluation_type set to cocotb"
+    # Judges cache dataset files under isolate_problem/.../data; skip re-download when WorkerDataset is :ready.
+    # After attaching cocotb files (incl. tests/*.py), drop cache so workers fetch the full tree.
+    WorkerDataset.where(dataset_id: @dataset.id).delete_all
+    @log << "cocotb: evaluation_type set to cocotb; worker dataset cache invalidated"
   end
 
   # Grader still needs one testcase row; input is unused; answer must be OK for a passing run.

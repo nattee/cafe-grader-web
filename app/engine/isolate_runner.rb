@@ -17,11 +17,12 @@ module IsolateRunner
   # mem_limit is in MB
   # time_limit is in sec
   # uid is only available when the command is ran as root
-  def run_isolate(prog, input: {}, output: {}, time_limit: 1, wall_limit: time_limit + 0.5, mem_limit: 1024,
+  def run_isolate(prog, input: {}, output: {}, input_rw: {}, time_limit: 1, wall_limit: time_limit + 0.5, mem_limit: 1024,
                   isolate_args: [], meta: MetaFilename, cg: false, uid: false)
     # mount directory for input /output
     dir_args = []
     output.each { |k, v| dir_args << ['-d', "#{k}=#{v}:rw"] } # these are mounted read/write
+    input_rw.each { |k, v| dir_args << ['-d', "#{k}=#{v}:rw"] } # rw copy (e.g. cocotb /data — must not mutate shared problem tree)
     input.each { |k, v| dir_args << ['-d', "#{k}=#{v}"] }     # these are mounted readonly
 
     limit_arg = "-t #{time_limit} -x #{wall_limit} -w #{wall_limit} #{cg ? '--cg-mem' : '-m'} #{mem_limit * 1024}"
@@ -34,7 +35,20 @@ module IsolateRunner
     cmd = "#{@isolate_cmd} #{'--cg' if cg} --run -b #{@box_id} #{"--meta=#{meta}" if meta} #{all_arg} -- #{prog}"
     judge_log("ISOLATE run command: #{Rainbow(cmd).color(JudgeBase::COLOR_ISOLATE_CMD)}", Logger::DEBUG)
     out, err, status = Open3.capture3(cmd)
-    judge_log("ISOLATE run completed: status #{status}, stdout size = #{out.length}", Logger::DEBUG)
+    judge_log("ISOLATE run completed: status #{status}, stdout bytes=#{out.bytesize}, stderr bytes=#{err.bytesize}", Logger::DEBUG)
+
+    # Cocotb / grade.sh send harness output to stderr; log to web/log/judge.log on the grader host (see doc/cocotb_problem.md).
+    # Disable noisy logs: GRADER_ISOLATE_LOG_IO=0
+    if ENV["GRADER_ISOLATE_LOG_IO"] != "0"
+      max_err = ENV.fetch("GRADER_ISOLATE_LOG_STDERR_MAX", "32768").to_i
+      max_out = ENV.fetch("GRADER_ISOLATE_LOG_STDOUT_MAX", "8192").to_i
+      if err.present?
+        judge_log("ISOLATE stderr:\n#{err.to_s.byteslice(0, max_err)}#{(err.bytesize > max_err) ? "\n... [stderr truncated]" : ""}", Logger::INFO)
+      end
+      if out.present?
+        judge_log("ISOLATE stdout:\n#{out.to_s.byteslice(0, max_out)}#{(out.bytesize > max_out) ? "\n... [stdout truncated]" : ""}", Logger::DEBUG)
+      end
+    end
 
     return out, err, status, parse_meta(meta)
   end

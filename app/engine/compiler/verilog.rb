@@ -28,7 +28,16 @@ class Compiler::Verilog < Compiler
       bin_text = <<~SH
         #!/bin/sh
         export STUDENT_V=/mybin/#{SUBMIT_VERILOG_FILENAME}
-        cp -f /mybin/#{SUBMIT_VERILOG_FILENAME} /data/student.v 2>/dev/null || true
+        if [ ! -f "/mybin/#{SUBMIT_VERILOG_FILENAME}" ]; then
+          echo "grader: missing compiled RTL /mybin/#{SUBMIT_VERILOG_FILENAME}" >&2
+          echo WRONG
+          exit 0
+        fi
+        if ! cp -f "/mybin/#{SUBMIT_VERILOG_FILENAME}" /data/student.v; then
+          echo "grader: failed to copy RTL to /data/student.v" >&2
+          echo WRONG
+          exit 0
+        fi
         cd /data
         if [ ! -f /data/grade.sh ]; then
           echo WRONG

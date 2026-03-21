@@ -93,7 +93,7 @@ class Dataset < ApplicationRecord
   end
 
   def invalidate_worker
-    WorkerDataset.where(dataset_id: @dataset).delete_all
+    WorkerDataset.where(dataset_id: id).delete_all
   end
 
   # set main_filename if null and should be set

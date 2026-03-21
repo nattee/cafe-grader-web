@@ -1,4 +1,5 @@
 require 'net/http'
+require 'fileutils'
 
 # This class runs the submission against a given testcases
 # It also runs the checker on the output produced by the submission
@@ -27,6 +28,7 @@ class Evaluator
     prepare_worker_dataset(@working_dataset, :all)
     prepare_testcase_directory(@sub, @testcase)
     prepare_executable
+    prepare_cocotb_data_workspace if cocotb_evaluation?
 
     # prepare params for running sandbox
     executable = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
@@ -40,13 +42,16 @@ class Evaluator
     isolate_args += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
     isolate_args += ["-i", "#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) # redirect input, if needed
     isolate_args += ['-f 50000'] # allow max 50MB output
+    # Isolate mounts "input" read-only; cocotb run.sh copies RTL to /data/student.v — use a per-run copy of dataset data (rw).
     input = {"#{@isolate_input_path}": @input_file.dirname,
-             "#{@isolate_data_path}": @prob_data_path.cleanpath,
              "#{@isolate_bin_path}": @mybin_path.cleanpath}
+    input["#{@isolate_data_path}"] = @prob_data_path.cleanpath unless cocotb_evaluation?
+    input_rw = {}
+    input_rw["#{@isolate_data_path}"] = @cocotb_data_workspace.cleanpath if cocotb_evaluation?
     output = {"#{@isolate_output_path}": @output_path}
     meta_file = @sub_testcase_path + 'meta.txt'
 
-    out, err, status, meta = run_isolate(cmd_string, input: input, output: output, isolate_args: isolate_args, meta: meta_file,
+    out, err, status, meta = run_isolate(cmd_string, input: input, input_rw: input_rw, output: output, isolate_args: isolate_args, meta: meta_file,
                                   time_limit: @working_dataset.time_limit, mem_limit: @working_dataset.memory_limit,
                                   cg: need_cg)
 
@@ -100,6 +105,23 @@ class Evaluator
     # save final result
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"
     return EngineResponse::Result.success(result_description: "Evaluation completed successfully")
+  end
+
+  def cocotb_evaluation?
+    @working_dataset.evaluation_type.to_s == 'cocotb'
+  end
+
+  # Writable snapshot of dataset data/ for cocotb (run.sh writes student.v; shared prob data/ stays read-only on disk).
+  def prepare_cocotb_data_workspace
+    @cocotb_data_workspace = @sub_testcase_path + 'cocotb_data'
+    FileUtils.rm_rf(@cocotb_data_workspace) if @cocotb_data_workspace.exist?
+    if @prob_data_path.exist? && @prob_data_path.directory?
+      FileUtils.cp_r(@prob_data_path, @cocotb_data_workspace)
+    else
+      @cocotb_data_workspace.mkpath
+    end
+    # Isolate runs the submission as a sandbox uid (often not the grader); dataset files are 644/755 → Permission denied on cp to /data/student.v
+    FileUtils.chmod_R(0777, @cocotb_data_workspace.to_s)
   end
 
   def prepare_executable
