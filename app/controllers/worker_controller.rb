@@ -25,6 +25,10 @@ class WorkerController < ApplicationController
   def get_attachment
     file = ActiveStorage::Attachment.find(params[:id])
     send_data file.download, :filename => file.filename.to_s, :type => 'application/octet-stream'
+  rescue ActiveRecord::RecordNotFound
+    Rails.logger.warn "[worker#get_attachment] no ActiveStorage::Attachment id=#{params[:id].inspect} " \
+                      "(grader and web app must use the same DB and RAILS_ENV)"
+    render status: :not_found, plain: "ActiveStorage attachment #{params[:id]} not found"
   end
 
   private

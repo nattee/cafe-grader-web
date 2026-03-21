@@ -219,10 +219,11 @@ module JudgeBase
         download_from_web(url, dest, download_type: 'initializer', chmod_mode: 'a+x')
       end
 
-      # download any data
+      # download any data (preserve relative paths e.g. cocotb/tests/foo.py)
       dataset.data_files.each do |data_file|
-        basename = data_file.filename.base + data_file.filename.extension_with_delimiter
-        dest = @prob_data_path + basename
+        rel = data_file.filename.to_s
+        dest = rel.include?('/') ? (@prob_data_path + rel) : (@prob_data_path + (data_file.filename.base + data_file.filename.extension_with_delimiter))
+        dest.dirname.mkpath
         url = Rails.configuration.worker[:hosts][:web]+worker_get_attachment_path(data_file.id)
         download_from_web(url, dest, download_type: 'data_file')
       end

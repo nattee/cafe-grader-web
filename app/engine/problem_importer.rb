@@ -112,10 +112,50 @@ class ProblemImporter
   end
 
   def load_options
+    @options = {}
     yaml, fn = get_content_of_first_match('config.yml')
     if yaml
-      @options = YAML.safe_load(yaml, symbolize_names: true)
+      @options = YAML.safe_load(yaml, symbolize_names: true) || {}
     end
+  end
+
+  def cocotb_import?
+    o = @options[:cocotb]
+    o == true || o.to_s.downcase == 'true' || o == 1
+  end
+
+  # Attach everything under cocotb/ (or cocotb_dir) as dataset data_files; set evaluation_type cocotb.
+  # Requires a grade.sh inside that folder (see doc/cocotb_problem.md).
+  def read_cocotb_assets
+    dir = @options[:cocotb_dir] || 'cocotb'
+    base = Pathname.new(@base_dir) + dir
+    unless base.directory?
+      @errors << "cocotb: directory '#{dir}' not found under #{@base_dir}"
+      @log << @errors.last
+      return
+    end
+
+    Dir.glob("#{base}/**/*").select { |f| File.file?(f) }.each do |fn|
+      rel = Pathname.new(fn).relative_path_from(base).to_s
+      @log << "cocotb: attach data file #{rel}"
+      File.open(fn, 'rb') do |io|
+        @dataset.data_files.attach(io: io, filename: rel)
+      end
+    end
+    @dataset.evaluation_type = :cocotb
+    @dataset.save
+    @log << "cocotb: evaluation_type set to cocotb"
+  end
+
+  # Grader still needs one testcase row; input is unused; answer must be OK for a passing run.
+  def ensure_cocotb_placeholder_testcase
+    return if @dataset.testcases.any?
+
+    tc = Testcase.new(code_name: 'cocotb', num: 1, group: 1, weight: 1, group_name: 'default')
+    tc.inp_file.attach(io: StringIO.new("cocotb\n"), filename: 'input.txt', content_type: 'text/plain', identify: false)
+    tc.ans_file.attach(io: StringIO.new("OK\n"), filename: 'answer.txt', content_type: 'text/plain', identify: false)
+    @dataset.testcases << tc
+    @log << "cocotb: created placeholder testcase (run.sh must print exactly OK on success)"
   end
 
   def read_options
@@ -398,13 +438,20 @@ class ProblemImporter
 
     @log << "Importing dataset for problem '#{@problem.name}' (#{@problem.id})"
 
-    read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
+    if cocotb_import?
+      read_cocotb_assets
+      ensure_cocotb_placeholder_testcase
+    elsif do_testcase
+      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
+    end
     read_statement if do_statement
     read_attachment if do_attachment
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
     read_initializers if do_initializers
     read_options # options is put to last, it will override any defaults
+    # cocotb imports must stay on evaluation_type cocotb even if config also sets other keys
+    @dataset.update(evaluation_type: :cocotb) if cocotb_import?
     read_solutions if do_solutions
     @problem.save
     @dataset.save
