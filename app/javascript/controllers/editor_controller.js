@@ -110,6 +110,7 @@ export default class extends Controller {
       'Haskell': 'ace/mode/haskell',
       'PostgreSQL': 'ace/mode/sql',
       'Digital': 'ace/mode/xml',
+      'Verilog': 'ace/mode/verilog',
     };
 
     // Get the mode from the map, falling back to defaultMode if not found
