@@ -64,6 +64,11 @@ class ApplicationController < ActionController::Base
 
   # Returns the current logged-in user (if any).
   def current_user
+    # AUTO_LOGIN=user_id automatically logs in as that user in development
+    if ENV['AUTO_LOGIN'].present? && Rails.env.development? && session[:user_id].nil?
+      session[:user_id] = ENV['AUTO_LOGIN'].to_i
+    end
+
     return nil unless session[:user_id]
     @current_user ||= User.includes(:roles).includes(:contests_users).find(session[:user_id]) rescue nil
   end
