@@ -2,8 +2,11 @@
   %td.text-end{'data-order': @numbering}
     %div= @numbering
     - if @current_user&.admin?
-      %div= link_to 'stat', stat_problem_path(problem)
-      %div= link_to 'edit', edit_problem_path(problem)
+      .mt-1
+        = link_to stat_problem_path(problem), class: 'text-secondary me-2 text-decoration-none', 'data-bs-toggle' => 'tooltip', title: 'View Statistics' do
+          %span.mi{style: 'font-size: 1.2rem; vertical-align: middle;'} bar_chart
+        = link_to edit_problem_path(problem), class: 'text-secondary text-decoration-none', 'data-bs-toggle' => 'tooltip', title: 'Edit Problem' do
+          %span.mi{style: 'font-size: 1.2rem; vertical-align: middle;'} edit
   - @numbering+=1
   -# problem name, pdf, attachments, etc.
   %td

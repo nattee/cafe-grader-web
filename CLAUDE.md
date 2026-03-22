@@ -100,3 +100,7 @@ Session-based auth (`session[:user_id]`). Key controller methods:
 - `config/llm.yml` — LLM provider config
 - `config/application.rb` — timezone is Asia/Bangkok; supports deployment under a subdir via `RAILS_RELATIVE_URL_ROOT`
 - `GraderConfiguration` model — runtime settings stored in DB (exam mode, contest mode, etc.)
+
+## Frontend & UI Conventions
+
+- **Icons:** Use the custom `.mi` class (e.g., `<span class="mi">edit</span>`) to render Google Material Symbols. Do *not* use raw SVGs or standard `material-icons` classes, as `.mi` is deeply integrated and optimized via `my_custom.scss`.
