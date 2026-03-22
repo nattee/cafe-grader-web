@@ -7,7 +7,21 @@
       "Bash(bundle exec:*)",
       "Bash(hg:*)",
       "Bash(rvm:*)",
-      "Bash(npm list:*)"
+      "Bash(npm list:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:rubygems.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(bundle install:*)",
+      "Bash(bin/rails dartsass:build 2>&1)",
+      "Bash(RAILS_ENV=test bin/rails db:drop db:create db:migrate 2>&1)",
+      "Bash(RAILS_ENV=test bin/rails db:drop db:create db:migrate --trace)",
+      "Bash(RAILS_ENV=test bin/rails db:migrate:status)",
+      "Bash(RAILS_ENV=test bin/rails:*)",
+      "Bash(RAILS_ENV=development bin/rails db:schema:dump 2>&1)",
+      "Bash(bin/rails generate:*)",
+      "Bash(bin/rails db:migrate 2>&1)",
+      "Bash(bin/rails db:schema:dump)"
     ]
   }
 }
