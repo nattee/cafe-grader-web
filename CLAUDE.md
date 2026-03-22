@@ -104,3 +104,6 @@ Session-based auth (`session[:user_id]`). Key controller methods:
 ## Frontend & UI Conventions
 
 - **Icons:** Use the custom `.mi` class (e.g., `<span class="mi">edit</span>`) to render Google Material Symbols. Do *not* use raw SVGs or standard `material-icons` classes, as `.mi` is deeply integrated and optimized via `my_custom.scss`.
+- **Tooltips & JavaScript UI:** Any element requiring Bootstrap JS (like `data-bs-toggle="tooltip"`) **MUST** be placed inside a parent container that possesses the `data-controller="init-ui-component"` Stimulus attribute. This guarantees the tooltip perfectly survives Hotwire/Turbo Frame reloads.
+- **Vertical Rhythm (Spacing):** When defining the structural gaps between major cards or column sections, strictly normalize on `.mb-4` (24px) to ensure perfect horizontal alignment and grid consistency across the Left and Right panes.
+- **Stateless Dismissals:** For transient, short-lived UI states (like dismissing an "Updated" notification badge during a contest), use lightweight, cookie-based JavaScript rather than storing read-states in the primary `grader` database.
