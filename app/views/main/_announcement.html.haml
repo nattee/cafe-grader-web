@@ -12,7 +12,7 @@
             Updated
             %a.text-white.text-decoration-none.ms-1{:href => "#", :onclick => "dismissAnnouncement(#{announcement.id}, #{announcement.updated_at.to_i}); return false;", :title => "Dismiss"} &times;
       - if @current_user && @current_user.admin?
-        = link_to edit_announcement_path(announcement), class: 'btn btn-sm btn-light border-0 text-secondary ms-2 d-inline-flex align-items-center justify-content-center', 'data-bs-toggle' => 'tooltip', title: 'Edit Announcement' do
+        = link_to edit_announcement_path(announcement), class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary ms-2 d-inline-flex align-items-center justify-content-center', 'data-bs-toggle' => 'tooltip', title: 'Edit Announcement' do
           %span.mi{style: 'font-size: 1.1rem;'} edit
     
     .card-subtitle.text-secondary.mb-3.mt-0
@@ -31,7 +31,10 @@
     - if announcement.file.attached?
       %hr.my-2
       .text-uppercase.small.fw-bold.text-muted.mb-1 Attachments
-      = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none'
+      .mt-2
+        %span.badge.bg-light.text-dark.border
+          = mdi('attachment', 'md-18')
+          = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none ms-1'
 
   - if !is_contest
     .modal.fade{:id => "announcementModal-#{announcement.id}", :tabindex => "-1", "aria-labelledby" => "announcementModalLabel-#{announcement.id}", "aria-hidden" => "true"}
@@ -42,5 +45,12 @@
             %button.btn-close{"data-bs-dismiss" => "modal", "aria-label" => "Close"}
           .modal-body
             = markdown(announcement.body)
+            - if announcement.file.attached?
+              %hr.my-2
+              .text-uppercase.small.fw-bold.text-muted.mb-1 Attachments
+              .mt-2
+                %span.badge.bg-light.text-dark.border
+                  = mdi('attachment', 'md-18')
+                  = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none ms-1'
           .modal-footer
             %button.btn.btn-secondary{"data-bs-dismiss" => "modal"} Close
