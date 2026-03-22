@@ -13,7 +13,7 @@
         .col-auto
           = form.label :submission, 'Problem:', class: 'col-form-label col-form-label-sm fw-semibold'
         .col-md-4
-          = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control form-control-sm', style: "width: 100%" }
+          = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-select form-select-sm', style: "width: 100%" }
         .col-auto.ms-2
           = form.label :file, 'File:', class: 'col-form-label col-form-label-sm fw-semibold'
         .col-md-4

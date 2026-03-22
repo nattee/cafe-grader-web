@@ -138,8 +138,7 @@
                               =submit_tag "Add", class: 'btn btn-primary px-3 shadow-sm'
 
                   -# bulk actions dropdown
-                  .d-flex.justify-content-between.align-items-center.mb-3
-                    %h5.fw-bold.text-dark.mb-0 User List
+                  .d-flex.justify-content-start.align-items-center.mb-3
                     .dropdown
                       %button.btn.btn-outline-secondary.dropdown-toggle.shadow-sm.d-inline-flex.align-items-center.gap-1{type: 'button', 'data-bs-toggle': 'dropdown'}
                         %span.mi.md-18 settings_suggest
@@ -203,29 +202,36 @@
               'datatables--init-ajax-url-value': show_problems_query_contest_path(@contest),
               action: 'datatable:reload@window->datatables--init#reload',
             }}
-              .row
+              .row.gx-4
                 .col-md-6
-                  %h5.mb-2.card-subtitle.text-body-secondary List of problems in this contest
-                  .mb-2
-                    Use following actions to add problems to this contest.
-                  =form_tag add_problem_contest_path(@contest), class: 'mb-1 form-inline',
-                    data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd' } do
-                    .row.mb-1
-                      .col-md-3
-                        =label_tag :problem_ids, "Problem",class: 'col-form-label'
-                      .col-md-7
-                        =select_tag :problem_ids, options_from_collection_for_select(@current_user.problems_for_action(:edit),'id','long_name'), class: 'select2', multiple: true, style: 'width: 100%';
-                      .col-auto
-                        =submit_tag "Add",class: 'btn btn-primary my-1', 'data-group-target': 'asdf'
-                  =form_tag add_problem_by_group_contest_path(@contest), class: 'mb-1 form-inline',
-                    data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
-                    .row.mb-1
-                      .col-md-3
-                        =label_tag :problem_group_ids, "Add all from groups", class: 'col-form-label'
-                      .col-md-7
-                        =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), class: 'select2', multiple: true, style: 'width: 100%';
-                      .col-md-2
-                        =submit_tag "Add", value: "Add", class: 'btn btn-primary my-1'
+                  .card.border-0.shadow-sm.bg-light.mb-4
+                    .card-body.p-4
+                      .d-flex.align-items-center.mb-3
+                        .bg-primary.text-white.rounded-circle.d-flex.align-items-center.justify-content-center.me-3{style: "width: 32px; height: 32px"}
+                          %span.mi.md-18 post_add
+                        %h6.fw-bold.text-dark.mb-0 Add Problems to Contest
+                      
+                      .row.gy-3
+                        .col-12
+                          =form_tag add_problem_contest_path(@contest), class: 'problem-add-form',
+                            data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd' } do
+                            .d-flex.gap-2.align-items-center
+                              .flex-grow-1
+                                =select_tag :problem_ids, options_from_collection_for_select(@current_user.problems_for_action(:edit),'id','long_name'), 
+                                  class: 'select2', multiple: true, style: 'width: 100%',
+                                  data: {placeholder: 'Select individual problems...'}
+                              =submit_tag "Add", class: 'btn btn-primary px-3 shadow-sm'
+
+                        .col-12
+                          =form_tag add_problem_by_group_contest_path(@contest), class: 'group-add-form',
+                            data: {turbo: true, action: 'turbo:submit-end->contest#afterProblemsAdd'} do
+                            .d-flex.gap-2.align-items-center
+                              .flex-grow-1
+                                =select_tag :problem_group_ids, options_from_collection_for_select(@current_user.groups_for_action(:edit),'id','name'), 
+                                  class: 'select2', multiple: true, style: 'width: 100%',
+                                  data: {placeholder: 'Add all problems from groups...'}
+                              =submit_tag "Add", class: 'btn btn-primary px-3 shadow-sm'
+
                 .col-md-6
                   -# help for group problem
                   .card.border-0.shadow-sm.border-start.border-4.border-info.mb-3
