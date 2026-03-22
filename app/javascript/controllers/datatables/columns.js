@@ -71,6 +71,33 @@ export const renderers = {
       </div>
     `;
   },
+  problemActionRenderer: (data, type, row, meta) => {
+    if (type != 'display') return ''
+
+    return `
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center p-1"
+           data-action="click->contest#postProblemAction" 
+           data-row-id="${row['problem_id']}" 
+           data-command="moveup" title="Move Up">
+          <span class="mi md-18">arrow_upward</span>
+        </button>
+        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center p-1"
+           data-action="click->contest#postProblemAction" 
+           data-row-id="${row['problem_id']}" 
+           data-command="movedown" title="Move Down">
+          <span class="mi md-18">arrow_downward</span>
+        </button>
+        <button class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center p-1"
+           data-action="click->contest#postProblemAction" 
+           data-row-id="${row['problem_id']}" 
+           data-command="remove"
+           data-form-confirm="Remove ${row['name']} from this contest?" title="Remove from Contest">
+          <span class="mi md-18">delete</span>
+        </button>
+      </div>
+    `;
+  },
   roleActionButton: (data, type, row, meta) => {
     let result = ''
     if (row['role'] != 'editor')

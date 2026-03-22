@@ -206,12 +206,10 @@ export const configs = {
       { data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center' },
       { data: 'problem_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled' }) },
       { data: 'problem_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm' }) },
-      { data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete', 'md-18')} Remove]`, { className: 'link-flex link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link' }) },
-      { data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward', 'md-18')} Move Up]`, { className: 'link-flex', action: 'contest#postProblemAction', command: 'moveup', element_type: 'link' }) },
-      { data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward', 'md-18')} Move Down]`, { className: 'link-flex', action: 'contest#postProblemAction', command: 'movedown', element_type: 'link' }) },
+      { data: null, render: renderers.problemActionRenderer }
     ],
     columnDefs: [{ visible: false, targets: [0] },
-    { orderable: false, targets: [1, 2, 3, 4, 5, 6, 7, 8] }],
+    { orderable: false, targets: [1, 2, 3, 4, 5, 6] }],
     drawCallback: function (settings) {
       var api = this.api();
       api.columns.adjust()
