@@ -124,8 +124,7 @@ class ProblemImporter
     o == true || o.to_s.downcase == 'true' || o == 1
   end
 
-  # Attach everything under cocotb/ (or cocotb_dir) as dataset data_files; set evaluation_type cocotb.
-  # Requires a grade.sh inside that folder (see doc/cocotb_problem.md).
+  # attach everything under cocotb/ in problem zip as dataset data_files
   def read_cocotb_assets
     dir = @options[:cocotb_dir] || 'cocotb'
     base = Pathname.new(@base_dir) + dir
@@ -144,13 +143,9 @@ class ProblemImporter
     end
     @dataset.evaluation_type = :cocotb
     @dataset.save
-    # Judges cache dataset files under isolate_problem/.../data; skip re-download when WorkerDataset is :ready.
-    # After attaching cocotb files (incl. tests/*.py), drop cache so workers fetch the full tree.
-    WorkerDataset.where(dataset_id: @dataset.id).delete_all
-    @log << "cocotb: evaluation_type set to cocotb; worker dataset cache invalidated"
   end
 
-  # Grader still needs one testcase row; input is unused; answer must be OK for a passing run.
+  # grader still needs one testcase row: dummy input (unused) + answer must be OK
   def ensure_cocotb_placeholder_testcase
     return if @dataset.testcases.any?
 
