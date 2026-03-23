@@ -219,7 +219,7 @@ module JudgeBase
         download_from_web(url, dest, download_type: 'initializer', chmod_mode: 'a+x')
       end
 
-      # download any data 
+      # download any data
       dataset.data_files.each do |data_file|
         basename = data_file.filename.base + data_file.filename.extension_with_delimiter
         dest = @prob_data_path + basename
