@@ -1,6 +1,4 @@
 require 'net/http'
-require 'fileutils'
-require 'open3'
 
 # This class runs the submission against a given testcases
 # It also runs the checker on the output produced by the submission
@@ -11,6 +9,7 @@ class Evaluator
   include IsolateRunner
   include JudgeBase
   include Rails.application.routes.url_helpers
+  include EvaluatorCocotb
 
   # main run function
   # run the submission against the testcase
@@ -29,7 +28,6 @@ class Evaluator
     prepare_worker_dataset(@working_dataset, :all)
     prepare_testcase_directory(@sub, @testcase)
     prepare_executable
-    prepare_cocotb_data_workspace if cocotb_evaluation?
 
     # prepare params for running sandbox
     executable = @isolate_bin_path + @sub.problem.exec_filename(@sub.language)
@@ -39,18 +37,15 @@ class Evaluator
     # run the evaluation in the isolated environment
     isolate_args = %w[-E PATH]
     isolate_args << isolate_options_by_lang(@sub.language.name)
-    append_cocotb_isolate_env!(isolate_args)
     isolate_args += ["-o", "#{@isolate_stdout_file}"] # redirect program stdout to @isolate_stdout_file
     isolate_args += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
     isolate_args += ["-i", "#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) # redirect input, if needed
     isolate_args += ['-f 50000'] # allow max 50MB output
-    # Isolate mounts "input" read-only; cocotb run.sh copies RTL to /data/student.v — use a per-run copy of dataset data (rw).
     input = {"#{@isolate_input_path}": @input_file.dirname,
+            #  "#{@isolate_data_path}": @prob_data_path.cleanpath,
              "#{@isolate_bin_path}": @mybin_path.cleanpath}
-    input["#{@isolate_data_path}"] = @prob_data_path.cleanpath unless cocotb_evaluation?
-    append_cocotb_sys_prefix_to_input!(input)
     input_rw = {}
-    input_rw["#{@isolate_data_path}"] = @cocotb_data_workspace.cleanpath if cocotb_evaluation?
+    configure_evaluate_isolate_inputs!(isolate_args, input, input_rw)
     output = {"#{@isolate_output_path}": @output_path}
     meta_file = @sub_testcase_path + 'meta.txt'
 
@@ -108,67 +103,6 @@ class Evaluator
     # save final result
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"
     return EngineResponse::Result.success(result_description: "Evaluation completed successfully")
-  end
-
-  def cocotb_evaluation?
-    @working_dataset.evaluation_type.to_s == 'cocotb'
-  end
-
-  # Runtime env wins over worker.yml (so systemd Environment=COCOTB_PYTHON=... works without editing YAML).
-  def resolved_cocotb_python_path
-    raw = ENV['COCOTB_PYTHON'].presence || Rails.configuration.worker.dig(:compiler, :cocotb_python).to_s.strip
-    return if raw.blank?
-    File.expand_path(raw)
-  end
-
-  # Put the configured Python (with cocotb) first on PATH inside isolate so grade.sh's `python3` finds site-packages.
-  def append_cocotb_isolate_env!(isolate_args)
-    return unless cocotb_evaluation?
-    py = resolved_cocotb_python_path
-    unless py && File.executable?(py)
-      judge_log "cocotb: cocotb_python not executable (#{py.inspect}); set COCOTB_PYTHON or compiler.cocotb_python in worker.yml to your venv's python3 (pip install cocotb there)", Logger::WARN
-      return
-    end
-    bin_dir = File.dirname(py)
-    # isolate: -E VAR=val sets env (-e is --full-env, not variable assignment)
-    isolate_args << '-E' << "PATH=#{bin_dir}:#{ENV['PATH']}"
-  end
-
-  # Isolate does not expose arbitrary host paths; bind-mount Python's sys.prefix read-only (like Python lang's -d /venv).
-  def append_cocotb_sys_prefix_to_input!(input)
-    return unless cocotb_evaluation?
-    py = resolved_cocotb_python_path
-    return unless py && File.executable?(py)
-    prefix = cocotb_sys_prefix(py)
-    return unless mountable_cocotb_prefix?(prefix)
-    input[prefix] = Pathname(prefix).cleanpath
-  end
-
-  def cocotb_sys_prefix(py_bin)
-    out, status = Open3.capture2(py_bin, '-c', 'import sys; print(sys.prefix)')
-    return unless status.success?
-    out.to_s.strip.presence
-  end
-
-  def mountable_cocotb_prefix?(prefix)
-    return false if prefix.blank?
-    p = Pathname.new(prefix).cleanpath.to_s
-    return false if p == '/' || p == '/usr'
-    return false if p.start_with?('/usr/')
-    File.directory?(p)
-  end
-
-  # Writable snapshot of dataset data/ for cocotb (run.sh writes student.v; shared prob data/ stays read-only on disk).
-  def prepare_cocotb_data_workspace
-    @cocotb_data_workspace = @sub_testcase_path + 'cocotb_data'
-    FileUtils.rm_rf(@cocotb_data_workspace) if @cocotb_data_workspace.exist?
-    if @prob_data_path.exist? && @prob_data_path.directory?
-      FileUtils.cp_r(@prob_data_path, @cocotb_data_workspace)
-    else
-      @cocotb_data_workspace.mkpath
-    end
-    # Isolate runs the submission as a sandbox uid (often not the grader); dataset files are 644/755 → Permission denied on cp to /data/student.v
-    FileUtils.chmod_R(0777, @cocotb_data_workspace.to_s)
   end
 
   def prepare_executable
