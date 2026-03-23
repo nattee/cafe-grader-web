@@ -25,7 +25,7 @@ class Dataset < ApplicationRecord
 
   def set_default
     self.compilation_type ||= 'self_contained'
-    self.evaluation_type ||= 'default'
+    self.evaluation_type ||= 'wdiff'
     self.score_type ||= 'sum'
     self.time_limit ||= 1
     self.memory_limit ||= 512
@@ -92,7 +92,7 @@ class Dataset < ApplicationRecord
   end
 
   def invalidate_worker
-    WorkerDataset.where(dataset_id: id).delete_all
+    WorkerDataset.where(dataset_id: @dataset).delete_all
   end
 
   # set main_filename if null and should be set
