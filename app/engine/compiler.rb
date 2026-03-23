@@ -1,6 +1,5 @@
 require 'pathname'
 require 'net/http'
-require 'fileutils'
 
 class Compiler
   include IsolateRunner
@@ -108,6 +107,9 @@ class Compiler
     File.write(compile_stdout_file, out)
     File.write(compile_stderr_file, err)
 
+    # chmod the compile result
+    run_isolate("/usr/bin/chmod -R 0777 #{@isolate_bin_path}", output: output)
+
     # clean up isolate
     cleanup_isolate(need_cg)
 
@@ -122,8 +124,6 @@ class Compiler
         raise GraderError.new("Error during post_compile of Sub ##{@sub.id} (Language = #{@sub.language.name}), msg = #{e.message}  ",
                               submission_id: @sub.id)
       end
-
-      FileUtils.chmod_R(0777, @compile_path.cleanpath.to_s)
 
       # the result should be at @bin_path
       begin
