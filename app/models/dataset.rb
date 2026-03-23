@@ -10,8 +10,7 @@ class Dataset < ApplicationRecord
                            custom_cafe: 3,
                            custom_cms: 4,
                            postgres: 5,
-                           firstline: 6,
-                           cocotb: 7 } # Verilog/cocotb: compare stdout to answer (OK); see docs/cocotb_problem.md
+                           cocotb: 6 } # verilog: compare stdout to answer (OK)
 
   enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,

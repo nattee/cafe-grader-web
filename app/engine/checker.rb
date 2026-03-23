@@ -23,10 +23,7 @@ class Checker
       return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
-    when 'firstline'
-      return "bash -c \"diff -q -b -B -Z <(head -1 #{output_file}) <(head -1 #{ans_file})\""
     when 'cocotb'
-      # run.sh must print a single line OK or WRONG; answer file is typically "OK\n"
       return "diff -q -b -B -Z #{output_file} #{ans_file}"
     when 'no_check'
       return ""
@@ -61,7 +58,7 @@ class Checker
 
   def process_result(evaluation_type, out, err, status)
     case evaluation_type
-    when 'default', 'exact', 'relative', 'firstline', 'cocotb'
+    when 'default', 'exact', 'relative', 'cocotb'
       # these standard check return 0 when correct
       if status.exitstatus == 0
         return EngineResponse::CheckerResult.correct
