@@ -42,8 +42,9 @@ class Evaluator
     isolate_args += ["-i", "#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) # redirect input, if needed
     isolate_args += ['-f 50000'] # allow max 50MB output
     input = {"#{@isolate_input_path}": @input_file.dirname,
-            #  "#{@isolate_data_path}": @prob_data_path.cleanpath,
              "#{@isolate_bin_path}": @mybin_path.cleanpath}
+    # cocotb must NOT mount /data read-only here (run.sh writes /data/student.v; cocotb uses input_rw + workspace only).
+    input["#{@isolate_data_path}"] = @prob_data_path.cleanpath unless cocotb_evaluation?
     input_rw = {}
     configure_evaluate_isolate_inputs!(isolate_args, input, input_rw)
     output = {"#{@isolate_output_path}": @output_path}
