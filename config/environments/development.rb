@@ -12,16 +12,6 @@ Rails.application.configure do
   # Show full error reports.
   config.consider_all_requests_local = true
 
-  # Allow browser access via CloudLab public hostname (Host Authorization).
-  # Leading dot = any subdomain of utah.cloudlab.us; Rails also allows optional :port.
-  config.hosts << ".utah.cloudlab.us"
-  # Same as production: grader uses Net::HTTP to 127.0.0.1 for /worker/get_attachment (see worker.yml).
-  config.hosts << "127.0.0.1"
-  config.hosts << "localhost"
-  config.host_authorization = {
-    exclude: ->(request) { request.path == "/up" || request.path.start_with?("/worker/") }
-  }
-
   # Enable server timing.
   config.server_timing = true
 
