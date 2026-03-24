@@ -50,9 +50,9 @@ class ContestsController < ApplicationController
   end
 
   # show is for manage
-  # view is for spectating
+  # view is for spectating, showing score graph and table
   def view
-    @problems = @contest.problems
+    @problems = @contest.problems.order(:number)
   end
 
   def view_query
@@ -63,7 +63,7 @@ class ContestsController < ApplicationController
         .where(role: 'user')
         .select(:id, :user_id, :login, :full_name, :remark, :seat, :last_heartbeat),
       result: @result,
-      problem: @contest.problems.select(:id, :name)
+      problem: @contest.problems.select(:id, :name).order(:number)
     }
   end
 
