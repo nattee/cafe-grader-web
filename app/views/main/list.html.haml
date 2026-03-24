@@ -21,17 +21,6 @@
       = render :partial => 'announcement', :collection => @announcements
 
 :javascript
-  function dismissAnnouncement(id, timestamp) {
-    document.cookie = "dismissed_ann_" + id + "_" + timestamp + "=true; path=/; max-age=86400";
-    var badge = document.getElementById("badge-" + id);
-    if (badge) { badge.style.display = 'none'; }
-    var card = document.getElementById("announcement-" + id);
-    if (card) {
-      card.classList.remove('border-danger');
-      card.classList.add('border-0', 'shadow-sm');
-    }
-  }
-
   function filter_tag() {
     let selected_tag = $('#filter-tag :selected').val()
     table.column(5).search(selected_tag).draw()
