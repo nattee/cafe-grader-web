@@ -16,38 +16,31 @@ class Compiler::Verilog < Compiler
     '/bin/true'
   end
 
-  # Creates run.sh: copy submitted.v to /data/student.v, run /data/grade.sh, print OK/WRONG.
+  # Creates run.sh: copy submitted.v to /data/student.v, run /data/grade.sh.
+  # Harness must print PASS/FAIL lines to stdout (see Checker#process_cocotb_pass_fail_output).
   def post_compile
     FileUtils.cp(@source_file, @compile_path + SUBMIT_VERILOG_FILENAME)
 
-    # paths are isolate paths (/mybin, /data). grade.sh must exit 0 on pass, non-zero on fail.
-    # grade.sh must output to stderr so stdout is only OK/WRONG.
     bin_text = <<~SH
       #!/bin/sh
       export STUDENT_V=/mybin/#{SUBMIT_VERILOG_FILENAME}
       if [ ! -f "/mybin/#{SUBMIT_VERILOG_FILENAME}" ]; then
         echo "grader: missing compiled RTL /mybin/#{SUBMIT_VERILOG_FILENAME}" >&2
-        echo WRONG
+        echo "FAIL grader_missing_rtl"
         exit 0
       fi
       if ! cp -f "/mybin/#{SUBMIT_VERILOG_FILENAME}" /data/student.v; then
         echo "grader: failed to copy RTL to /data/student.v" >&2
-        echo WRONG
+        echo "FAIL grader_copy_rtl"
         exit 0
       fi
       cd /data
       if [ ! -f /data/grade.sh ]; then
-        echo WRONG
-        echo "grader: cocotb problem requires /data/grade.sh (see doc/cocotb_problem.md)" >&2
+        echo "grader: cocotb problem requires /data/grade.sh" >&2
+        echo "FAIL grader_missing_grade_sh"
         exit 0
       fi
       sh /data/grade.sh
-      RC=$?
-      if [ "$RC" -eq 0 ]; then
-        echo OK
-      else
-        echo WRONG
-      fi
       exit 0
     SH
     File.write(@exec_file, bin_text)

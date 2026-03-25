@@ -116,7 +116,6 @@ class ProblemExporter
       @options[opt] = @ds.send(opt) unless @ds.send(opt).blank?
       @options[opt] = @options[opt].to_f if @options[opt].is_a? BigDecimal
     end
-    @options[:cocotb] = true if @ds.evaluation_type == 'cocotb'
     @options[OptionConst::YAML_KEY[:ds_name]] = @ds.name
 
     # managers, checker, initializers
