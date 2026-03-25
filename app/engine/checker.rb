@@ -57,22 +57,59 @@ class Checker
     end
   end
 
-  # Cocotb: one line per sub-test, "PASS [name]" or "FAIL [name]" (case-insensitive). Score = passes / (passes + fails).
+  # Cocotb: stdout lines "PASS name" / "FAIL name" (case-insensitive).
+  # If the testcase input's first non-empty line is a subtest key (not the legacy placeholder "cocotb"),
+  # the checker scores that testcase by the matching line only (one UI row per testcase).
+  # If the key is blank or "cocotb", legacy mode: aggregate score = passes / (passes + fails) on all lines.
+  def cocotb_subtest_key_from_input
+    return nil unless @input_file&.exist?
+
+    File.read(@input_file).strip.lines.map(&:strip).reject(&:empty?).first
+  end
+
+  def cocotb_legacy_aggregate_placeholder_key?(key)
+    key.blank? || key.to_s.strip.casecmp?('cocotb')
+  end
+
+  def find_cocotb_line_for_subtest_key(text, key)
+    text.each_line do |raw|
+      line = raw.strip
+      next if line.empty? || line.start_with?('#')
+      return line if line =~ /\A(?:PASS|FAIL)\s+#{Regexp.escape(key)}\s*\z/i
+    end
+    nil
+  end
+
   def process_cocotb_pass_fail_output
     text = File.read(@output_file)
+    key = cocotb_subtest_key_from_input
+
+    unless cocotb_legacy_aggregate_placeholder_key?(key)
+      line = find_cocotb_line_for_subtest_key(text, key)
+      unless line
+        return EngineResponse::CheckerResult.grader_error(
+          comment: "(cocotb) no PASS/FAIL line for subtest #{key.inspect} (expect e.g. PASS #{key})"
+        )
+      end
+      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} cocotb subtest #{key.inspect}: #{line}"
+      if line =~ /\A\s*PASS\b/i
+        return EngineResponse::CheckerResult.correct(score: 1.to_d, comment: line.strip)
+      end
+      return EngineResponse::CheckerResult.wrong(score: 0.to_d, comment: line.strip)
+    end
+
     pass_n = 0
     fail_n = 0
     text.each_line do |raw|
       line = raw.strip
-      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} cocotb output line: #{line}"
       next if line.empty? || line.start_with?('#')
-      if line =~ /\A\s*PASS(?:\s+(\S+))?\s*\z/i
+      if line =~ /\A\s*PASS(?:\s+\S+)?\s*\z/i
         pass_n += 1
-      elsif line =~ /\A\s*FAIL(?:\s+(\S+))?\s*\z/i
+      elsif line =~ /\A\s*FAIL(?:\s+\S+)?\s*\z/i
         fail_n += 1
       end
     end
-    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} cocotb: #{pass_n} passes, #{fail_n} fails"
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} cocotb (aggregate): #{pass_n} passes, #{fail_n} fails"
     total = pass_n + fail_n
     if total.zero?
       return EngineResponse::CheckerResult.grader_error(comment: '(cocotb) no PASS/FAIL lines in program output')

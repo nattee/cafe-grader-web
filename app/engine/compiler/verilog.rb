@@ -17,7 +17,7 @@ class Compiler::Verilog < Compiler
   end
 
   # Creates run.sh: copy submitted.v to /data/student.v, run /data/grade.sh.
-  # Harness must print PASS/FAIL lines to stdout (see Checker#process_cocotb_pass_fail_output).
+  # Harness must print PASS/FAIL lines to stdout. Verilog stdin is the testcase input.txt (first line = subtest key for multi-testcase cocotb; see Checker).
   def post_compile
     FileUtils.cp(@source_file, @compile_path + SUBMIT_VERILOG_FILENAME)
 
