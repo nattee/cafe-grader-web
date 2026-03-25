@@ -24,7 +24,8 @@ class Checker
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
     when 'cocotb'
-      return "diff -q -b -B -Z #{output_file} #{ans_file}"
+      # Scoring parses submission stdout (PASS/FAIL lines); no diff vs answer file.
+      '/bin/true'
     when 'no_check'
       return ""
     end
@@ -56,9 +57,42 @@ class Checker
     end
   end
 
+  # Cocotb: one line per sub-test, "PASS [name]" or "FAIL [name]" (case-insensitive). Score = passes / (passes + fails).
+  def process_cocotb_pass_fail_output
+    text = File.read(@output_file)
+    pass_n = 0
+    fail_n = 0
+    text.each_line do |raw|
+      line = raw.strip
+      judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} cocotb output line: #{line}"
+      next if line.empty? || line.start_with?('#')
+      if line =~ /\A\s*PASS(?:\s+(\S+))?\s*\z/i
+        pass_n += 1
+      elsif line =~ /\A\s*FAIL(?:\s+(\S+))?\s*\z/i
+        fail_n += 1
+      end
+    end
+    judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} cocotb: #{pass_n} passes, #{fail_n} fails"
+    total = pass_n + fail_n
+    if total.zero?
+      return EngineResponse::CheckerResult.grader_error(comment: '(cocotb) no PASS/FAIL lines in program output')
+    end
+    score = pass_n.to_d / total
+    comment = "#{pass_n}/#{total}"
+    if pass_n == total
+      EngineResponse::CheckerResult.correct(score: 1.to_d, comment: comment)
+    elsif pass_n.zero?
+      EngineResponse::CheckerResult.wrong(score: 0.to_d, comment: comment)
+    else
+      EngineResponse::CheckerResult.partial(score: score, comment: comment)
+    end
+  end
+
   def process_result(evaluation_type, out, err, status)
     case evaluation_type
-    when 'default', 'exact', 'relative', 'cocotb'
+    when 'cocotb'
+      return process_cocotb_pass_fail_output
+    when 'default', 'exact', 'relative'
       # these standard check return 0 when correct
       if status.exitstatus == 0
         return EngineResponse::CheckerResult.correct

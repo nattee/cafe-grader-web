@@ -10,7 +10,7 @@ class Dataset < ApplicationRecord
                            custom_cafe: 3,
                            custom_cms: 4,
                            postgres: 5,
-                           cocotb: 6 } # verilog: compare stdout to answer (OK)
+                           cocotb: 6 } # verilog: PASS/FAIL lines on stdout, partial score = pass/(pass+fail)
 
   enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,
