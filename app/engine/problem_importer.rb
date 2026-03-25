@@ -107,41 +107,6 @@ class ProblemImporter
     @problem.save
   end
 
-  # Pairs cocotb/N.in + cocotb/N.sol (same basename). First line of each .in is the subtest key for Checker (PASS/FAIL <key>).
-  def read_cocotb_testcases(group_name_regex: /^(\d+)-/)
-    dir = @options[:cocotb_dir] || 'cocotb'
-    root = @config_yml_dir ? Pathname.new(@config_yml_dir) : Pathname.new(@base_dir)
-    base = root + dir
-    unless base.directory?
-      @errors << "cocotb: directory '#{dir}' not found under #{root} (need *.in / *.sol pairs for testcases)"
-      @log << @errors.last
-      return
-    end
-
-    @tc = Hash.new { |h, k| h[k] = Hash.new }
-    Dir.glob("#{base}/*.in").each do |fn|
-      codename = Pathname.new(fn).basename('.in').to_s
-      @tc[codename][:input] = Pathname.new(fn).cleanpath
-    end
-    Dir.glob("#{base}/*.sol").each do |fn|
-      codename = Pathname.new(fn).basename('.sol').to_s
-      @tc[codename][:sol] = Pathname.new(fn).cleanpath
-    end
-
-    paired = @tc.keys.select { |k| @tc[k][:input] && @tc[k][:sol] }
-    unpaired = @tc.keys.reject { |k| @tc[k][:input] && @tc[k][:sol] }
-    @log << "cocotb: warning — missing .in or .sol for codenames: #{unpaired.join(', ')}" if unpaired.any?
-
-    if paired.empty?
-      @errors << "cocotb: add at least one matching pair (e.g. cocotb/1.in + cocotb/1.sol) under #{base}"
-      @log << @errors.last
-      return
-    end
-
-    import_paired_testcases_from_tc!(group_name_regex)
-    @log << "cocotb: imported #{paired.size} testcase(s) from #{base}/*.in + *.sol"
-  end
-
   def load_options
     @options = {}
     @config_yml_dir = nil
@@ -157,19 +122,20 @@ class ProblemImporter
     o == true || o.to_s.downcase == 'true' || o == 1
   end
 
-  # attach everything under cocotb/ in problem zip as dataset data_files
+  # Attach all files under the problem zip root as dataset data_files (copied to /data for the harness).
+  # Testcase .in/.sol are also attached here (duplicate of testcase attachments) so grade.sh / Python see testcases/… on /data.
+  # Skips config.yml, statement/attachment-style dirs, and common doc extensions.
   def read_cocotb_assets
-    dir = @options[:cocotb_dir] || 'cocotb'
-    root = @config_yml_dir ? Pathname.new(@config_yml_dir) : Pathname.new(@base_dir)
-    base = root + dir
-    unless base.directory?
-      @errors << "cocotb: directory '#{dir}' not found under #{root} (place cocotb next to config.yml)"
-      @log << @errors.last
-      return
-    end
+    base = Pathname.new(@base_dir).cleanpath
 
     Dir.glob("#{base}/**/*").select { |f| File.file?(f) }.each do |fn|
+      next if Pathname.new(fn).basename.to_s == 'config.yml'
+
       rel = Pathname.new(fn).relative_path_from(base).to_s
+      next if cocotb_skip_data_file_relative_path?(rel)
+      ext = Pathname.new(fn).extname.downcase
+      next if ext == '.pdf' || ext == '.md' # statement / description handled elsewhere
+
       @log << "cocotb: attach data file #{rel}"
       File.open(fn, 'rb') do |io|
         @dataset.data_files.attach(io: io, filename: rel)
@@ -177,6 +143,23 @@ class ProblemImporter
     end
     @dataset.evaluation_type = :cocotb
     @dataset.save
+  end
+
+  # Do not mirror attachment/checker/managers/… into dataset data_files (those are imported by other steps).
+  def cocotb_skip_data_file_relative_path?(rel)
+    attach = OptionConst::DEFAULT[:dir][:attachment]
+    checker = OptionConst::DEFAULT[:dir][:checker]
+    managers = OptionConst::DEFAULT[:dir][:managers]
+    model_sols = OptionConst::DEFAULT[:dir][:model_sols]
+    inits = OptionConst::DEFAULT[:dir][:initializers]
+    attach = @options[OptionConst::YAML_KEY[:dir][:attachment]] || attach if @options[OptionConst::YAML_KEY[:dir][:attachment]]
+    checker = @options[OptionConst::YAML_KEY[:dir][:checker]] || checker if @options[OptionConst::YAML_KEY[:dir][:checker]]
+    managers = @options[OptionConst::YAML_KEY[:dir][:managers]] || managers if @options[OptionConst::YAML_KEY[:dir][:managers]]
+    model_sols = @options[OptionConst::YAML_KEY[:dir][:model_sols]] || model_sols if @options[OptionConst::YAML_KEY[:dir][:model_sols]]
+    inits = @options[OptionConst::YAML_KEY[:dir][:initializers]] || inits if @options[OptionConst::YAML_KEY[:dir][:initializers]]
+
+    prefixes = [attach, checker, managers, model_sols, inits].compact.map { |d| "#{d}/" }
+    prefixes.any? { |p| rel.start_with?(p) }
   end
 
   def read_options
@@ -463,8 +446,8 @@ class ProblemImporter
     @log << "Importing dataset for problem '#{@problem.name}' (#{@problem.id})"
 
     if cocotb_import?
+      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
       read_cocotb_assets
-      read_cocotb_testcases(group_name_regex: group_name_regex) if do_testcase
     elsif do_testcase
       read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
     end
