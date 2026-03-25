@@ -4,6 +4,21 @@ module EvaluatorCocotb
     @working_dataset.evaluation_type.to_s == 'cocotb'
   end
 
+  # Verilog uses input_redirect_by_lang == false (no stdin). Cocotb needs each testcase's input.txt on stdin
+  # so isolate gets -i /input/input.txt → grade.sh / python read sys.stdin (see JudgeBase#input_redirect_by_lang).
+  def isolate_redirect_stdin_to_testcase_input?
+    return true if cocotb_evaluation?
+
+    input_redirect_by_lang(@sub.language.name)
+  end
+
+  # Do not merge stderr into stdout for cocotb: PASS/FAIL must stay on stdout; cocotb logs go to stderr.
+  def isolate_merge_stderr_into_stdout?
+    return false if cocotb_evaluation?
+
+    input_redirect_by_lang(@sub.language.name)
+  end
+
   # runtime env wins over worker.yml (so systemd Environment=COCOTB_PYTHON=... works without editing YAML).
   def resolved_cocotb_python_path
     raw = ENV['COCOTB_PYTHON'].presence || Rails.configuration.worker.dig(:compiler, :cocotb_python).to_s.strip
