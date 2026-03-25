@@ -157,7 +157,7 @@ class ProblemImporter
     tc.inp_file.attach(io: StringIO.new("cocotb\n"), filename: 'input.txt', content_type: 'text/plain', identify: false)
     tc.ans_file.attach(io: StringIO.new("OK\n"), filename: 'answer.txt', content_type: 'text/plain', identify: false)
     @dataset.testcases << tc
-    @log << "cocotb: created placeholder testcase (run.sh must print exactly OK on success)"
+    @log << "cocotb: created placeholder testcase (harness must print PASS/FAIL lines on stdout)"
   end
 
   def read_options
