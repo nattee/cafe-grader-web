@@ -124,9 +124,9 @@ class ProblemImporter
     end
   end
 
-  def cocotb_import?
-    o = @options[:cocotb]
-    o == true || o.to_s.downcase == 'true' || o == 1
+  def cocotb_evaluation?
+    t = @options[:evaluation_type]
+    t.to_s.downcase == 'cocotb' || t == :cocotb
   end
 
   # Attach all files under the problem zip root as dataset data_files (copied to /data for the harness).
@@ -184,9 +184,6 @@ class ProblemImporter
     # MUST MATCH ONES IN problem_exporter.rb
     d_options = %i[time_limit memory_limit score_type evaluation_type main_filename initializer_filename]
     d_options.each do |opt|
-      # cocotb imports force evaluation_type cocotb at end of import; ignore conflicting yaml
-      next if opt == :evaluation_type && cocotb_import?
-
       if @options.has_key? opt
         @log << "dataset.#{opt} is set to '#{@options[opt]}' by options file"
         @dataset.write_attribute(opt, @options[opt]) if @options.has_key? opt
@@ -452,7 +449,7 @@ class ProblemImporter
 
     @log << "Importing dataset for problem '#{@problem.name}' (#{@problem.id})"
 
-    if cocotb_import?
+    if cocotb_evaluation?
       read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
       read_cocotb_assets
     elsif do_testcase
@@ -464,8 +461,6 @@ class ProblemImporter
     read_cpp_extras if do_cpp_extras
     read_initializers if do_initializers
     read_options # options is put to last, it will override any defaults
-    # cocotb imports must stay on evaluation_type cocotb even if config also sets other keys
-    @dataset.update(evaluation_type: :cocotb) if cocotb_import?
     read_solutions if do_solutions
     @problem.save
     @dataset.save
