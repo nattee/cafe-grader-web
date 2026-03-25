@@ -127,18 +127,15 @@ class ProblemImporter
     t.to_s.downcase == 'cocotb' || t == :cocotb
   end
 
-  # Attach all files under the problem zip root as dataset data_files (copied to /data for the harness).
   def read_cocotb_assets
     base = Pathname.new(@base_dir).cleanpath
 
-    Dir.glob("#{base}/**/*").select { |f| File.file?(f) }.each do |fn|
-      next if Pathname.new(fn).basename.to_s == 'config.yml'
+    paths = []
+    paths.concat(Dir.glob("#{base}/**/grade.sh").select { |f| File.file?(f) })
+    paths.concat(Dir.glob("#{base}/**/*.py").select { |f| File.file?(f) })
 
+    paths.uniq.sort.each do |fn|
       rel = Pathname.new(fn).relative_path_from(base).to_s
-      next if cocotb_skip_data_file_relative_path?(rel)
-      ext = Pathname.new(fn).extname.downcase
-      next if ext == '.pdf' || ext == '.md' # statement / description handled elsewhere
-
       @log << "cocotb: attach data file #{rel}"
       File.open(fn, 'rb') do |io|
         @dataset.data_files.attach(io: io, filename: rel)
@@ -146,23 +143,6 @@ class ProblemImporter
     end
     @dataset.evaluation_type = :cocotb
     @dataset.save
-  end
-
-  # Do not mirror attachment/checker/managers/… into dataset data_files (those are imported by other steps).
-  def cocotb_skip_data_file_relative_path?(rel)
-    attach = OptionConst::DEFAULT[:dir][:attachment]
-    checker = OptionConst::DEFAULT[:dir][:checker]
-    managers = OptionConst::DEFAULT[:dir][:managers]
-    model_sols = OptionConst::DEFAULT[:dir][:model_sols]
-    inits = OptionConst::DEFAULT[:dir][:initializers]
-    attach = @options[OptionConst::YAML_KEY[:dir][:attachment]] || attach if @options[OptionConst::YAML_KEY[:dir][:attachment]]
-    checker = @options[OptionConst::YAML_KEY[:dir][:checker]] || checker if @options[OptionConst::YAML_KEY[:dir][:checker]]
-    managers = @options[OptionConst::YAML_KEY[:dir][:managers]] || managers if @options[OptionConst::YAML_KEY[:dir][:managers]]
-    model_sols = @options[OptionConst::YAML_KEY[:dir][:model_sols]] || model_sols if @options[OptionConst::YAML_KEY[:dir][:model_sols]]
-    inits = @options[OptionConst::YAML_KEY[:dir][:initializers]] || inits if @options[OptionConst::YAML_KEY[:dir][:initializers]]
-
-    prefixes = [attach, checker, managers, model_sols, inits].compact.map { |d| "#{d}/" }
-    prefixes.any? { |p| rel.start_with?(p) }
   end
 
   def read_options
