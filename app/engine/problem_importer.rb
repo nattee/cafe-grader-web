@@ -52,15 +52,12 @@ class ProblemImporter
       @tc[codename][:sol] = sol_fn.cleanpath
     end
 
-    import_paired_testcases_from_tc!(group_name_regex)
-  end
-
-  # @tc must be populated: codename => { input: Pathname, sol: Pathname }
-  def import_paired_testcases_from_tc!(group_name_regex)
+    # load into dataset and testcase
     num = @dataset.testcases.count + 1
     group = 1
     group_hash = {}
 
+    # we sort the filename by their natural sort order
     natural_order_sorted = @tc.keys.sort_by { |s| s.split(/[^\d]+/).map { |e| Integer(e, 10) rescue 0 } }
     natural_order_sorted.each do |codename|
       if @tc[codename].count >= 2
@@ -69,6 +66,7 @@ class ProblemImporter
 
         # default weight
         weight = 1
+
 
         # parse group_name and build group number
         group_name = group_hash.count + 1
@@ -99,7 +97,7 @@ class ProblemImporter
         else
           @log << "add a testcase #{num} with codename #{codename} (num,weight,group,group_name are #{[num, weight, group, group_name].join ','})"
           new_tc = Testcase.new(code_name: codename, num: num, group: group, weight: weight, group_name: group_name)
-          num += 1
+          num +=1
         end
         input = File.read(@tc[codename][:input]).gsub(/\r$/, '')
         ans = File.read(@tc[codename][:sol]).gsub(/\r$/, '')
@@ -130,8 +128,6 @@ class ProblemImporter
   end
 
   # Attach all files under the problem zip root as dataset data_files (copied to /data for the harness).
-  # Testcase .in/.sol are also attached here (duplicate of testcase attachments) so grade.sh / Python see testcases/… on /data.
-  # Skips config.yml, statement/attachment-style dirs, and common doc extensions.
   def read_cocotb_assets
     base = Pathname.new(@base_dir).cleanpath
 
