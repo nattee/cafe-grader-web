@@ -84,7 +84,7 @@ module JudgeBase
   # return true when we must redirect the input into stdin
   def input_redirect_by_lang(language_name)
     case language_name
-    when 'digital', 'verilog'
+    when 'digital'
       return false
     else
       return true

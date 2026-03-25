@@ -38,8 +38,8 @@ class Evaluator
     isolate_args = %w[-E PATH]
     isolate_args << isolate_options_by_lang(@sub.language.name)
     isolate_args += ["-o", "#{@isolate_stdout_file}"] # redirect program stdout to @isolate_stdout_file
-    isolate_args += ['--stderr-to-stdout'] if isolate_merge_stderr_into_stdout?
-    isolate_args += ["-i", "#{@isolate_input_file}"] if isolate_redirect_stdin_to_testcase_input?
+    isolate_args += ['--stderr-to-stdout'] if input_redirect_by_lang(@sub.language.name)  # also redirect stderr, if needed
+    isolate_args += ["-i", "#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) # redirect input, if needed
     isolate_args += ['-f 50000'] # allow max 50MB output
     input = {"#{@isolate_input_path}": @input_file.dirname,
              "#{@isolate_bin_path}": @mybin_path.cleanpath}
