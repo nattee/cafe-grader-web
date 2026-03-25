@@ -7,6 +7,7 @@ class ProblemImporter
     @log = []
     @options = {}
     @errors = []
+    @config_yml_dir = nil
   end
 
   def read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
@@ -113,9 +114,11 @@ class ProblemImporter
 
   def load_options
     @options = {}
+    @config_yml_dir = nil
     yaml, fn = get_content_of_first_match('config.yml')
     if yaml
       @options = YAML.safe_load(yaml, symbolize_names: true) || {}
+      @config_yml_dir = Pathname.new(fn).dirname
     end
   end
 
@@ -127,9 +130,10 @@ class ProblemImporter
   # attach everything under cocotb/ in problem zip as dataset data_files
   def read_cocotb_assets
     dir = @options[:cocotb_dir] || 'cocotb'
-    base = Pathname.new(@base_dir) + dir
+    root = @config_yml_dir ? Pathname.new(@config_yml_dir) : Pathname.new(@base_dir)
+    base = root + dir
     unless base.directory?
-      @errors << "cocotb: directory '#{dir}' not found under #{@base_dir}"
+      @errors << "cocotb: directory '#{dir}' not found under #{root} (place cocotb next to config.yml)"
       @log << @errors.last
       return
     end
