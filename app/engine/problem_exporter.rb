@@ -35,11 +35,7 @@ class ProblemExporter
   end
 
   def export_testcases
-    @testcase_dir = if @ds.cocotb?
-                      @main_dir + 'cocotb'
-                    else
-                      @main_dir + OptionConst::DEFAULT[:dir][:testcases]
-                    end
+    @testcase_dir = @main_dir + OptionConst::DEFAULT[:dir][:testcases]
     @testcase_dir.mkpath
     tc_options = {}
     @ds.testcases.each do |tc|
@@ -60,7 +56,7 @@ class ProblemExporter
       end
     end
     @options[OptionConst::YAML_KEY[:testcases_pattern]] = '*'
-    @options[OptionConst::YAML_KEY[:dir][:testcases]] = @ds.cocotb? ? 'cocotb' : OptionConst::DEFAULT[:dir][:testcases]
+    @options[OptionConst::YAML_KEY[:dir][:testcases]] = OptionConst::DEFAULT[:dir][:testcases]
     @options[OptionConst::YAML_KEY[:testcases]] = tc_options
   end
 

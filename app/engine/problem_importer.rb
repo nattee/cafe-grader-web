@@ -52,95 +52,64 @@ class ProblemImporter
       @tc[codename][:sol] = sol_fn.cleanpath
     end
 
-    import_paired_testcases_from_tc!(group_name_regex)
-  end
-
-  # @tc must be populated: codename => { input: Pathname, sol: Pathname }
-  def import_paired_testcases_from_tc!(group_name_regex)
+    # load into dataset and testcase
     num = @dataset.testcases.count + 1
     group = 1
     group_hash = {}
 
+    # we sort the filename by their natural sort order
     natural_order_sorted = @tc.keys.sort_by { |s| s.split(/[^\d]+/).map { |e| Integer(e, 10) rescue 0 } }
     natural_order_sorted.each do |codename|
-      next unless @tc[codename].count >= 2
+      if @tc[codename].count >= 2
+        # we found both the input and sol
+        # the codename is the key of the hash
 
-      weight = 1
+        # default weight
+        weight = 1
 
-      group_name = group_hash.count + 1
-      mg = @tc[codename][:input].basename.to_s.match group_name_regex
-      group_name = mg[1] if mg # if match, we will use the captured pattern
 
-      if group_hash.has_key? group_name
-        group = group_hash[group_name]
-      else
-        group = group_hash.count + 1
-        group_hash[group_name] = group
+        # parse group_name and build group number
+        group_name = group_hash.count + 1
+        mg = @tc[codename][:input].basename.to_s.match group_name_regex
+        group_name = mg[1] if mg # if match, we will use the captured pattern
+
+        if group_hash.has_key? group_name
+          group = group_hash[group_name]
+        else
+          group = group_hash.count + 1
+          group_hash[group_name] = group
+        end
+
+        # overwrite with options if exists
+        if @options.has_key?(OptionConst::YAML_KEY[:testcases]) && @options[OptionConst::YAML_KEY[:testcases]].has_key?(codename.to_sym)
+          weight = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:weight]
+          group = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group]
+          group_name = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group_name]
+        end
+
+        # create new testcase
+        new_tc = @dataset.testcases.where(code_name: codename).first
+        if new_tc
+          @log << "replace existing testcase with codename #{codename} (num,weight,group,group_name are #{[num, weight, group, group_name].join ','})"
+          new_tc.weight = weight
+          new_tc.group = group
+          new_tc.group_name = group_name
+        else
+          @log << "add a testcase #{num} with codename #{codename} (num,weight,group,group_name are #{[num, weight, group, group_name].join ','})"
+          new_tc = Testcase.new(code_name: codename, num: num, group: group, weight: weight, group_name: group_name)
+          num +=1
+        end
+        input = File.read(@tc[codename][:input]).gsub(/\r$/, '')
+        ans = File.read(@tc[codename][:sol]).gsub(/\r$/, '')
+        new_tc.inp_file.attach(io: StringIO.new(input), filename: 'input.txt', content_type: 'text/plain',  identify: false)
+        new_tc.ans_file.attach(io: StringIO.new(ans),   filename: 'answer.txt', content_type: 'text/plain',  identify: false)
+        @dataset.testcases << new_tc
+        @log << "  #{@tc[codename][:input]} is the input"
+        @log << "  #{@tc[codename][:sol]} is the sol"
       end
-
-      if @options.has_key?(OptionConst::YAML_KEY[:testcases]) && @options[OptionConst::YAML_KEY[:testcases]].has_key?(codename.to_sym)
-        weight = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:weight]
-        group = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group]
-        group_name = @options[OptionConst::YAML_KEY[:testcases]][codename.to_sym][:group_name]
-      end
-
-      new_tc = @dataset.testcases.where(code_name: codename).first
-      if new_tc
-        @log << "replace existing testcase with codename #{codename} (num,weight,group,group_name are #{[num, weight, group, group_name].join ','})"
-        new_tc.weight = weight
-        new_tc.group = group
-        new_tc.group_name = group_name
-      else
-        @log << "add a testcase #{num} with codename #{codename} (num,weight,group,group_name are #{[num, weight, group, group_name].join ','})"
-        new_tc = Testcase.new(code_name: codename, num: num, group: group, weight: weight, group_name: group_name)
-        num += 1
-      end
-      input = File.read(@tc[codename][:input]).gsub(/\r$/, '')
-      ans = File.read(@tc[codename][:sol]).gsub(/\r$/, '')
-      new_tc.inp_file.attach(io: StringIO.new(input), filename: 'input.txt', content_type: 'text/plain',  identify: false)
-      new_tc.ans_file.attach(io: StringIO.new(ans),   filename: 'answer.txt', content_type: 'text/plain',  identify: false)
-      @dataset.testcases << new_tc
-      @log << "  #{@tc[codename][:input]} is the input"
-      @log << "  #{@tc[codename][:sol]} is the sol"
     end
 
     @problem.save
-  end
-
-  # Pairs cocotb/N.in + cocotb/N.sol (same basename). First line of each .in is the subtest key matched against PASS key / FAIL key in stdout (see Checker).
-  def read_cocotb_testcases(group_name_regex: /^(\d+)-/)
-    dir = @options[:cocotb_dir] || 'cocotb'
-    root = @config_yml_dir ? Pathname.new(@config_yml_dir) : Pathname.new(@base_dir)
-    base = root + dir
-    unless base.directory?
-      @errors << "cocotb: directory '#{dir}' not found under #{root} (need *.in / *.sol pairs for testcases)"
-      @log << @errors.last
-      return
-    end
-
-    @tc = Hash.new { |h, k| h[k] = Hash.new }
-    Dir.glob("#{base}/*.in").each do |fn|
-      codename = Pathname.new(fn).basename('.in').to_s
-      @tc[codename][:input] = Pathname.new(fn).cleanpath
-    end
-    Dir.glob("#{base}/*.sol").each do |fn|
-      codename = Pathname.new(fn).basename('.sol').to_s
-      @tc[codename][:sol] = Pathname.new(fn).cleanpath
-    end
-
-    paired = @tc.keys.select { |k| @tc[k][:input] && @tc[k][:sol] }
-    unpaired = @tc.keys.reject { |k| @tc[k][:input] && @tc[k][:sol] }
-    if unpaired.any?
-      @log << "cocotb: warning — missing .in or .sol for codenames: #{unpaired.join(', ')}"
-    end
-    if paired.empty?
-      @errors << "cocotb: add at least one matching pair (e.g. cocotb/1.in + cocotb/1.sol) under #{base}"
-      @log << @errors.last
-      return
-    end
-
-    import_paired_testcases_from_tc!(group_name_regex)
-    @log << "cocotb: imported #{paired.size} testcase(s) from #{base}/*.in + *.sol"
   end
 
   def load_options
@@ -178,6 +147,17 @@ class ProblemImporter
     end
     @dataset.evaluation_type = :cocotb
     @dataset.save
+  end
+
+  # grader still needs one testcase row: dummy input (unused) + answer must be OK
+  def ensure_cocotb_placeholder_testcase
+    return if @dataset.testcases.any?
+
+    tc = Testcase.new(code_name: 'cocotb', num: 1, group: 1, weight: 1, group_name: 'default')
+    tc.inp_file.attach(io: StringIO.new("cocotb\n"), filename: 'input.txt', content_type: 'text/plain', identify: false)
+    tc.ans_file.attach(io: StringIO.new("OK\n"), filename: 'answer.txt', content_type: 'text/plain', identify: false)
+    @dataset.testcases << tc
+    @log << "cocotb: created placeholder testcase (harness must print PASS/FAIL lines on stdout)"
   end
 
   def read_options
@@ -462,7 +442,7 @@ class ProblemImporter
 
     if cocotb_import?
       read_cocotb_assets
-      read_cocotb_testcases(group_name_regex: group_name_regex) if do_testcase
+      ensure_cocotb_placeholder_testcase
     elsif do_testcase
       read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
     end
