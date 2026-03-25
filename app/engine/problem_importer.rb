@@ -7,7 +7,6 @@ class ProblemImporter
     @log = []
     @options = {}
     @errors = []
-    @config_yml_dir = nil
   end
 
   def read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
@@ -114,11 +113,9 @@ class ProblemImporter
 
   def load_options
     @options = {}
-    @config_yml_dir = nil
     yaml, fn = get_content_of_first_match('config.yml')
     if yaml
       @options = YAML.safe_load(yaml, symbolize_names: true) || {}
-      @config_yml_dir = Pathname.new(fn).dirname
     end
   end
 
@@ -425,16 +422,12 @@ class ProblemImporter
 
     @log << "Importing dataset for problem '#{@problem.name}' (#{@problem.id})"
 
-    if cocotb_evaluation?
-      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
-      read_cocotb_assets
-    elsif do_testcase
-      read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
-    end
+    read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_testcase
     read_statement if do_statement
     read_attachment if do_attachment
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
+    read_cocotb_assets if cocotb_evaluation?
     read_initializers if do_initializers
     read_options # options is put to last, it will override any defaults
     read_solutions if do_solutions
