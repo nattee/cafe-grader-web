@@ -130,6 +130,8 @@ class ProblemImporter
     paths = []
     paths.concat(Dir.glob("#{base}/**/grade.sh").select { |f| File.file?(f) })
     paths.concat(Dir.glob("#{base}/**/*.py").select { |f| File.file?(f) })
+    # Reference RTL / TB templates (submission is copied to student.v at judge time; do not omit DUT .v).
+    paths.concat(Dir.glob("#{base}/**/*.v").select { |f| File.file?(f) })
 
     paths.uniq.sort.each do |fn|
       rel = Pathname.new(fn).relative_path_from(base).to_s
