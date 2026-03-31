@@ -15,13 +15,13 @@
       .card-body
         .card-title
           %h4
-            .mi.mi-bs.fill help
+            .mi.fill help
             Usage
         %ul
           %li Select parameters and then click "Refresh"
           %li Won't show more than 100,000 entries
   .col-lg-8
-    %canvas#chart
+    %canvas#chart{data: {controller: 'chart', chart_preset_value: 'submission_line', chart_data_value: '{}'}}
 
 .row
   .col-sm-12
@@ -113,36 +113,7 @@
               },
             ]
           }
-          config = {
-            type: 'line',
-            data: data,
-            options: {
-              aspectRatio: 6,
-              plugins: {
-                legend: {
-                  display: false,
-                }
-              },
-              scales: {
-                y: {
-                  title: {
-                    text: '#sub',
-                    display: true,
-                  }
-                },
-                x: {
-                  ticks: {
-                    maxRotation: 0,
-                  }
-                }
-              }
-            },
-          }
-          if (typeof my_chart !== 'undefined') {
-            my_chart.destroy()
-          }
-          Chart.defaults.font.size = 15
-          my_chart = new Chart($('#chart'),config)
+          document.getElementById('chart').setAttribute('data-chart-data-value', JSON.stringify(data))
 
           return json.data
         }

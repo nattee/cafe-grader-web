@@ -1,16 +1,24 @@
 %tr{id: dom_id(grader), is: 'turbo-frame'}
-  %td= grader.worker_id
+  %td.fw-medium= grader.worker_id
   %td= grader.box_id
   %td
     = turbo_frame_tag dom_id(grader,"grader_job_type") do
-      = job_type_text(grader.job_type)
-      = link_to '<span class="mi mi-bs md-18">edit</span>'.html_safe, edit_job_type_grader_process_path(grader), data: {turbo: "true", 'turbo-method': 'post'}
-  %td= "#{time_ago_in_words(grader.last_heartbeat, include_seconds: true) if grader.last_heartbeat} ago"
-  %td= grader.status
-  %td= grader.task_id
+      .d-inline-flex.align-items-center.gap-1.flex-wrap
+        - job_type_badges(grader.job_type).each do |jt|
+          %span.badge.rounded-pill.bg-light.text-dark.border= jt
+        %button.btn.btn-sm.bg-white.shadow-sm.border-0.text-secondary.d-inline-flex.align-items-center.justify-content-center{style: "width: 28px; height: 28px;", data: {'bs-toggle': 'tooltip', 'bs-title': 'Edit job type'}}
+          = link_to mdi(:edit, 'md-18'), edit_job_type_grader_process_path(grader), data: {turbo: "true", 'turbo-method': 'post'}, class: 'text-secondary text-decoration-none'
+  %td.text-secondary.small= "#{time_ago_in_words(grader.last_heartbeat, include_seconds: true) if grader.last_heartbeat} ago"
   %td
-    - text = (grader.enabled? ? 'Disable' : 'Enable')
-    - btn_class = (grader.enabled? ? 'btn-secondary' : 'btn-primary')
-    - param_value = (grader.enabled? ? 0 : 1)
-    = button_to text , set_enabled_grader_process_path(grader,param_value), class: "btn #{btn_class} btn-sm", form: { data: { turbo: 'true' } }
-
+    - if grader.enabled?
+      %span.badge.rounded-pill.border.bg-success-subtle.text-success.border-success-subtle= grader.status
+    - else
+      %span.badge.rounded-pill.border.bg-secondary-subtle.text-secondary.border-secondary-subtle= grader.status
+  %td.font-monospace.small= grader.task_id
+  %td.text-center
+    - if grader.enabled?
+      = button_to set_enabled_grader_process_path(grader, 0), class: "btn btn-sm btn-outline-secondary", form: { data: { turbo: 'true' } }, data: {'bs-toggle': 'tooltip', 'bs-title': 'Disable this grader'} do
+        %span.mi.md-18 pause_circle
+    - else
+      = button_to set_enabled_grader_process_path(grader, 1), class: "btn btn-sm btn-outline-success", form: { data: { turbo: 'true' } }, data: {'bs-toggle': 'tooltip', 'bs-title': 'Enable this grader'} do
+        %span.mi.md-18 play_circle

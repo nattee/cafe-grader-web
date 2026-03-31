@@ -2,7 +2,33 @@
 module ApplicationHelper
   # render material design icon
   def mdi(icon, class_name = '')
-    "<span class='mi mi-bs #{class_name}'>#{icon}</span>".html_safe
+    "<span class='mi #{class_name}'>#{icon}</span>".html_safe
+  end
+
+  RESOURCE_ICONS = {
+    Tag => 'label',
+    Announcement => 'campaign',
+    Problem => 'quiz',
+    User => 'person',
+    Contest => 'emoji_events',
+    Group => 'groups',
+    Grader => 'computer',
+    Submission => 'input',
+    Language => 'code',
+    Site => 'web',
+    GraderConfiguration => 'settings'
+  }
+
+  def resource_icon_name(resource_class)
+    # Handle both class and instance
+    klass = resource_class.is_a?(Class) ? resource_class : resource_class.class
+    
+    # Try direct mapping, then fallback to string lookup if needed, then default
+    RESOURCE_ICONS[klass] || 'description'
+  end
+
+  def resource_icon(resource_class)
+    mdi(resource_icon_name(resource_class))
   end
 
   # new bootstrap header
@@ -180,7 +206,7 @@ module ApplicationHelper
   #   return content.html_safe
   # end
 
-  def key_pair(obj: nil, field: nil, label: nil, value: nil, width: 4, as: nil, class_name: '')
+  def key_pair(obj: nil, field: nil, label: nil, value: nil, width: 4, as: nil, class_name: '', icon: nil)
     # 1. Determine the label using I18n, with fallbacks
     if label.nil? && obj && field
       label = obj.class.human_attribute_name(field)
@@ -195,8 +221,15 @@ module ApplicationHelper
     css_classes = "col-md-#{width} mb-3 #{class_name}".strip
     tag.div(class: css_classes) do
       safe_join([
-        tag.div(label, class: 'fw-bold'),
-        format_key_pair_value(value, as)
+        tag.div(class: 'text-secondary small d-flex align-items-center mb-1') do
+          safe_join([
+            (mdi(icon, 'me-1') if icon),
+            tag.span(label)
+          ].compact)
+        end,
+        tag.div(class: 'd-flex align-items-center fw-bold text-dark') do
+          format_key_pair_value(value, as)
+        end
       ])
     end
   end
@@ -233,7 +266,7 @@ CONTEST_OVER
 ANALYSISMODE
     end
 
-    contest_name = GraderConfiguration['contest.name']
+    contest_name = GraderConfiguration['ui.site_title']
 
     #
     # build real title bar
@@ -302,9 +335,9 @@ TITLEBAR
     case format&.to_sym
     when :yes_no
       if value == true || value.to_s.downcase == 'true'
-        tag.span(t('helpers.yes'), class: 'badge text-bg-success')
+        tag.span(t('helpers.yes'), class: 'badge rounded-pill border bg-success-subtle text-success border-success-subtle')
       else
-        tag.span(t('helpers.no'), class: 'badge text-bg-danger')
+        tag.span(t('helpers.no'), class: 'badge rounded-pill border bg-danger-subtle text-danger border-danger-subtle')
       end
     # Add other formatters here, e.g., :date, :currency
     # when :date

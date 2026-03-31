@@ -1,3 +1,4 @@
+// columns and custom renderers
 import { columns, renderers } from 'controllers/datatables/columns'
 
 const baseConfig = {
@@ -49,7 +50,7 @@ export const configs = {
     ajax: {
       type: 'POST',
       headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
-      dataSrc: function(json) {
+      dataSrc: function (json) {
         window.userCount = json.userCount
         window.probCount = json.probCount
         return json.data
@@ -59,7 +60,7 @@ export const configs = {
       topStart: 'info',
       topEnd: 'search',
     },
-    columns: [ 
+    columns: [
       columns.contest.name,
       columns.contest.description,
       columns.contest.enableToggle,
@@ -69,10 +70,11 @@ export const configs = {
       columns.contest.stop,
       columns.contest.manageLink,
       columns.contest.watchLink,
-      columns.contest.cloneButton,
-      columns.contest.deleteButton,
+      //columns.contest.cloneButton,
+      //columns.contest.deleteButton,
+      columns.contest.actionButton // use drop down instead
     ],
-    columnDefs: [ {orderable: false, targets: [2,3,7,8,9,10]} ],
+    columnDefs: [{ orderable: false, targets: [2, 3, 7, 8, 9] }],
     order: [[5, 'desc']], // order by starting time
     drawCallback: function (settings) {
       var api = this.api();
@@ -82,7 +84,7 @@ export const configs = {
   contestManageUser: {
     ...baseConfig,
     paging: false,
-    order: [[0,'asc']],
+    order: [[0, 'asc']],
     ajax: {
       type: 'POST',
       headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
@@ -91,20 +93,44 @@ export const configs = {
       topStart: 'info',
       topEnd: 'search',
     },
-    columns: [ 
-      {data: 'login'},
-      {data: 'full_name'},
-      {data: 'role'},  // this is user role column, index 2, must be hidden and has fixed ordering
-      {data: 'seat'},
-      {data: 'remark'},
-      {data: null, render: renderers.startStopOffsetRender},
-      {data: 'user_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-primary', action: 'contest#postUserAction', command: 'clear_ip'} )},
-      {data: 'user_id', render: cafe.dt.render.button(`[${cafe.msi('person_remove','md-18')} Remove]`, {element_type: 'link', className: 'link-danger', action: 'contest#postUserAction', command: 'remove', confirm: 'Remove user from contest?'})},
-      {data: 'user_id', render: renderers.roleActionButton},
+    columns: [
+      { data: 'login' },
+      {
+        data: 'full_name',
+        render: (data, type, row, meta) => {
+          // this renders an ellipsis for user actions
+          if (!data) return ''
+          if (type == 'display') {
+            return `
+              <div class="d-flex align-items-center">
+                <span>${data}</span>
+                <div class="dropdown d-flex align-items-center">
+                  <a class="link-flex rounded-1 bg-light ms-2 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    ${cafe.msi('more_horiz', 'md-18')}
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">Link for ${row.full_name}</h6></li>
+                    <li><a class="dropdown-item" href="${AppRoute.editUserAdmin.replace(-123, row.user_id)}">Edit</a></li>
+                    <li><a class="dropdown-item" href="${AppRoute.statContestUserAdmin.replace(-123, row.user_id).replace(-456, row.contest_id)}">Contest Stats</a></li>
+                    <li><a class="dropdown-item" href="${AppRoute.statUserAdmin.replace(-123, row.user_id)}">Lifetime Stats</a></li>
+                  </ul>
+                </div>
+              </div>
+            `;
+          }
+          // fallback
+          return data;
+        }
+      },
+      { data: 'role' },  // this is user role column, index 2, must be hidden and has fixed ordering
+      { data: 'seat' },
+      { data: 'remark' },
+      { data: null, render: renderers.startStopOffsetRender, title: 'Extra Time' },
+      { data: 'user_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled' }), title: 'Enabled' },
+      { data: null, render: renderers.userActionRenderer, title: 'Actions' },
     ],
-    columnDefs: [{visible: false, targets: 2}, {orderable: false, targets: [5,6,7,8,9]} ],
-    orderFixed: [2,'asc'],
+    columnDefs: [{ visible: false, targets: 2 }, { orderable: false, targets: [5, 6, 7] }],
+    orderFixed: [2, 'asc'],
     drawCallback: function (settings) {
       // we assume that the row are sorted by users' role (by 'orderFixed' and 'order' options)
       // this render a header rows when two adjacent rows has their roles differ
@@ -114,19 +140,19 @@ export const configs = {
       api.column(2, { page: 'current' })
         .data()
         .each(function (role, i) {
-            if (last_role !== role) {
-              // set text for role row
-              let role_text
-              if (role == 'editor') {
-                role_text = '<tr class="table-success"><td colspan="9"> Editors (Can edit the contest) </td></tr>'
-              } else {
-                role_text = '<tr class="table-info"><td colspan="9"> Users (Can only submit to the contest) </td></tr>'
-              }
-
-              //prepend row
-              $(rows).eq(i).before(role_text);
-              last_role = role;
+          if (last_role !== role) {
+            // set text for role row
+            let role_text
+            if (role == 'editor') {
+              role_text = '<tr class="table-success"><td colspan="9"> Editors (Can edit the contest) </td></tr>'
+            } else {
+              role_text = '<tr class="table-info"><td colspan="9"> Users (Can only submit to the contest) </td></tr>'
             }
+
+            //prepend row
+            $(rows).eq(i).before(role_text);
+            last_role = role;
+          }
         });
       //since columns size changed, we call adjust
       //but not .draw() !!! else, infinite recursion
@@ -139,7 +165,7 @@ export const configs = {
     processing: true,
     rowId: 'id',
     destroy: true,
-    order: [[0,'asc']],
+    order: [[0, 'asc']],
     ajax: {
       type: 'POST',
       headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), },
@@ -148,19 +174,42 @@ export const configs = {
       topStart: 'info',
       topEnd: 'search',
     },
-    columns: [ 
-      {data: 'number'},
-      {data: 'name'},
-      {data: 'full_name'},
-      {data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center'},
-      {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled'})},
-      {data: 'problem_id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm'})},
-      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('delete','md-18')} Remove]`, {className: 'link-danger', action: 'contest#postProblemAction', command: 'remove', confirm: 'Remove problem from contest?', element_type: 'link'})},
-      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_upward','md-18')} Move Up]`, {action: 'contest#postProblemAction', command: 'moveup', element_type: 'link'})},
-      {data: 'problem_id', render: cafe.dt.render.button(`[${cafe.msi('arrow_downward','md-18')} Move Down]`, {action: 'contest#postProblemAction', command: 'movedown', element_type: 'link'})},
+    columns: [
+      { data: 'number' },
+      { data: 'name' },
+      {
+        data: 'full_name',
+        render: (data, type, row, meta) => {
+          // this renders an ellipsis for problem actions
+          if (!data) return ''
+          if (type == 'display') {
+            return `
+              <div class="d-flex align-items-center justify-content-beteen">
+                <span>${data}</span>
+                <div class="dropdown d-inline-flex align-items-center">
+                  <a href="#" class="link-flex rounded-1 bg-light ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    ${cafe.msi('more_horiz', 'md-18')}
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">${row.full_name}</h6></li>
+                    <li><a class="dropdown-item" href="${AppRoute.editProblem.replace(-123, row.problem_id)}">Edit</a></li>
+                    <li><a class="dropdown-item" href="${AppRoute.statProblem.replace(-123, row.problem_id).replace(-456, row.contest_id)}">Stats</a></li>
+                  </ul>
+                </div>
+              </div>
+            `;
+          }
+          // fallback
+          return data;
+        }
+      },
+      { data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center' },
+      { data: 'problem_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled' }) },
+      { data: 'problem_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm' }) },
+      { data: null, render: renderers.problemActionRenderer }
     ],
-    columnDefs: [{visible: false, targets: [0]},
-                 {orderable: false, targets: [1,2,3,4,5,6,7,8]}],
+    columnDefs: [{ visible: false, targets: [0] },
+    { orderable: false, targets: [1, 2, 3, 4, 5, 6] }],
     drawCallback: function (settings) {
       var api = this.api();
       api.columns.adjust()
@@ -174,9 +223,9 @@ export const configs = {
     //columns: -- defined in the datatables--init-score-table --
     responsive: false,  // we don't use responsive here
     buttons: [
-        { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()} },
-        'copyHtml5',
-        'excelHtml5',
+      { text: 'Refresh', action: function (e, dt, node, config) { dt.clear().draw(); dt.ajax.reload() } },
+      'copyHtml5',
+      'excelHtml5',
     ],
     ajax: {
       type: 'POST',
@@ -187,12 +236,12 @@ export const configs = {
         return processedJson.data
       }
     },
-    order: [[0,'asc']],
+    order: [[0, 'asc']],
     drawCallback: function (settings) {
       var api = this.api();
       api.columns.adjust()
     },
-    initComplete: function() {
+    initComplete: function () {
       // 'this' refers to the datatable settings object.
       // 'this.api()' returns the API instance.
       const api = this.api();
@@ -214,12 +263,12 @@ export const configs = {
     paging: true,
     pageLength: 50,
     layout: {
-      topStart: [ 'buttons', 'pageLength' ],
+      topStart: ['buttons', 'pageLength'],
     },
     buttons: [
-        { text: 'Refresh', action: function(e,dt,node,config) {dt.clear().draw(); dt.ajax.reload()} },
-        'copyHtml5',
-        'excelHtml5',
+      { text: 'Refresh', action: function (e, dt, node, config) { dt.clear().draw(); dt.ajax.reload() } },
+      'copyHtml5',
+      'excelHtml5',
     ],
     columns: [
       columns.id,
@@ -231,7 +280,7 @@ export const configs = {
       columns.solidQueueJob.detail,
       columns.solidQueueJob.createdAt,
     ],
-    ajax: { 
+    ajax: {
       ...baseAjax, //use spread so that it is copied
       data: (data) => {
         // use the params which is set globally by the UI

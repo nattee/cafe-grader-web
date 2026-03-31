@@ -2,8 +2,6 @@
 
 # entry point
 pin "application"
-pin "prepend_jquery"
-# pin "my_sprocket"
 pin_all_from "app/javascript/controllers", under: "controllers"
 pin_all_from "app/javascript/mixins", under: "mixins"
 
@@ -16,10 +14,7 @@ pin "pdfmake", to: 'datatables/pdfmake.min.js'
 # select2
 pin "select2", to: "select2.min.js" # @4.1.0
 
-
-# pin "ace-rails-ap"
 pin "chart", to: 'chart.umd.js' # @4.4.0 from https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js
-pin "tempus-dominus-esm", to: "tempus-dominus/tempus-dominus.esm.js"
 pin "tempus-dominus-js", to: "tempus-dominus/tempus-dominus.js"
 
 # hotwire
@@ -36,8 +31,6 @@ pin "jquery", preload: true # @3.7.1
 
 # this bootstrap is wgetted from "https://ga.jspm.io/npm:bootstrap@5.3.6/dist/js/bootstrap.esm.js"
 # we need the esm version
-# similarly, tis @popperjs/core is wget from ""
-# pin "bootstrap", to: "bootstrap.js" # @5.3.6
 pin "bootstrap", to: "bootstrap.esm.js"
 pin "@popperjs/core", to: "@popperjs-core-esm.js" # @2.11.8
 
@@ -49,14 +42,12 @@ pin "cafe_datatable", to: 'cafe_datatable.js'
 pin "cafe_turbo", to: "cafe_turbo.js"
 pin "setup_jquery"
 pin "setup_bootstrap"
-pin "setup_datatables"
-pin "setup_ace"
-pin "setup_highlight"
+pin "setup_select2"
 pin "moment" # @2.30.1
 pin "ace-builds" # @1.42.0
 
 # --- ace editor pin ---
-# pin_all_from does not works so I have to pin each individual files that is required by ace editor
+# pin_all_from does not work so I have to pin each individual files that is required by ace editor
 # however, we also have to import all of these as well, see setup_ace
 ace_mode = %w[ c_cpp pascal ruby python java rust golang php haskell sql xml ]
 ace_theme =%w[ merbivore merbivore_soft dracula ]
@@ -64,8 +55,4 @@ ace_theme =%w[ merbivore merbivore_soft dracula ]
 ace_mode.each { |mod| pin "ace-mode-#{mod}", to: "ace-noconflict/mode-#{mod}.js" }
 ace_theme.each { |theme| pin "ace-theme-#{theme}", to: "ace-noconflict/theme-#{theme}.js" }
 
-# pin "ace-theme-merbivore", to: 'ace-noconflict/theme-merbivore.js'
-# pin "ace-mode-c_cpp", to: 'ace-noconflict/mode-c_cpp.js'
-
-# pin_all_from "vendor/javascript/highlight", under: "highlight"
 pin "highlight", to: 'highlight/highlight.js', preload: true

@@ -1,5 +1,23 @@
 // For setting the ace editor
 import { Controller } from "@hotwired/stimulus"
+import ace from 'ace-builds'
+
+// ace themes
+import 'ace-theme-merbivore'
+import 'ace-theme-merbivore_soft'
+import 'ace-theme-dracula'
+// ace modes
+import 'ace-mode-c_cpp'
+import 'ace-mode-pascal'
+import 'ace-mode-python'
+import 'ace-mode-ruby'
+import 'ace-mode-haskell'
+import 'ace-mode-php'
+import 'ace-mode-java'
+import 'ace-mode-rust'
+import 'ace-mode-golang'
+import 'ace-mode-xml'
+import 'ace-mode-sql'
 
 export default class extends Controller {
 

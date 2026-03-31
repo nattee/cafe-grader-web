@@ -11,6 +11,7 @@ export default class extends Controller {
 
   handleFrameHasLoaded = () => {
     this.initializeTooltips();
+    this.initializePopovers();
     this.initializeSelect2();
     this.initializeTempusDominus();
   }
@@ -22,6 +23,15 @@ export default class extends Controller {
     // Create new tooltip instances for the current content
     this.tooltipInstances = Array.from(tooltipTriggerList).map(tooltipTriggerEl => {
       return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+  }
+
+  initializePopovers() {
+    const popoverTriggerList = this.element.querySelectorAll('[data-bs-toggle="popover"]');
+
+    // Create new popover instances for the current content
+    this.popoverInstances = Array.from(popoverTriggerList).map(popoverTriggerEl => {
+      return new bootstrap.Popover(popoverTriggerEl);
     });
   }
 

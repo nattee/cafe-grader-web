@@ -1,8 +1,18 @@
-%h3 Edit language
-.mb-3
-  [
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, languages_path, class: 'mx-1'
-  ]
+= render 'application/breadcrumb', steps: [ { label: 'Languages', path: languages_path, icon: resource_icon_name(Language) }, { label: 'Edit' } ]
+
+.d-flex.justify-content-between.align-items-center.mb-3
+  .d-flex.align-items-center.gap-2
+    %h2.fw-bold.text-dark.mb-0.font-monospace
+      - if @language.name.present?
+        = @language.name
+      - else
+        %span.text-muted.fst-italic [Untitled Language ##{@language.id}]  
+    %span.badge.bg-primary-subtle.text-primary.border.border-primary-subtle.rounded-pill.fw-medium
+      %small Editing
+
+  .d-flex.gap-2
+    = link_to 'Cancel', languages_path, class: 'btn btn-link text-secondary text-decoration-none'
+    %button.btn.btn-primary.px-4.shadow-sm{type: 'submit', form: 'edit_form'} Save Changes
 
 .row.my-3.gx-3
   .col-md-6
@@ -10,14 +20,4 @@
       .card-body
         = render 'form'
   .col-md-6
-    .card.bg-warning-subtle.shadow-sm
-      .card-body
-        .card-title
-          %h4 Language
-        :markdown
-          You can set language specific options here.
-
-          * **Binary** indicates that the submission is a binary file (such as .zip or .jar) which won't be editable in an editor.
-          * **Control Group** enable the usage of control group for the isolate sandbox system. This is required if the language need multi-thread or multi-process.
-          * **No Grade** indicates that the submission will not be graded by the grader, it merely store the submission as a file.
-
+    = render 'language_help'

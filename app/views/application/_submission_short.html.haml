@@ -1,11 +1,13 @@
+-# this is for render a (not so small but also not full-info) submission status
+  It is used in the main page (and some other place as well)
 - if submission.nil?
   = "-"
 - else
   - if local_assigns[:show_id]
     -# show submission id row (with tries and compiler message)
     .row
-      .col-12
-        %span.me-1.mi.mi-bs.text-secondary tag
+      .col-12.d-flex.align-items-center
+        %span.me-1.mi.text-secondary tag
         = link_to submission.id, submission_path(submission), data: {turbo: false}
         %span.ms-2
           = "(#{link_to pluralize(sub_count || '-',"try"), problem_submissions_path(submission.problem_id), data: {turbo: false}})"
@@ -20,13 +22,13 @@
   - unless submission.graded_at
     -# show waiting to be graded
     .row
-      .col-12
-        %span.me-1.mi.mi-bs.mr-2.text-secondary hourglass
+      .col-12.d-flex.align-items-center
+        %span.me-1.mi.mr-2.text-secondary hourglass
         submitted
         %span= time_ago_in_words(submission.submitted_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.submitted_at)})
     .row
-      .col-12{ data: ({controller: 'refresh', refresh_delay_value: @delay_value} if local_assigns[:refresh_if_not_graded] && @submission)  }
+      .col-12.d-flex.align-items-center{ data: ({controller: 'refresh', refresh_delay_value: @delay_value} if local_assigns[:refresh_if_not_graded] && @submission)  }
         %div{data: {refresh_target: 'waitingText'}} Waiting to be graded...
         -# hidden link to be clicked by the stimulus action
         - if @submission
@@ -34,15 +36,15 @@
   - else
     -# show graded time (and the score if allowed)
     .row
-      .col-12
-        %span.me-1.mi.mi-bs.mr-2.text-secondary calendar_clock
+      .col-12.d-flex.align-items-center
+        %span.me-1.mi.mr-2.text-secondary calendar_clock
         %span= time_ago_in_words(submission.graded_at) + ' ago'
         %span.text-secondary (#{format_short_time(submission.graded_at)})
     - if GraderConfiguration['ui.show_score']
       .row
         //.col-lg-3.text-secondary=t 'main.score'
-        .col-12
-          %span.me-1.mi.mi-bs.mr-2.text-secondary speed
+        .col-12.d-flex.align-items-center
+          %span.me-1.mi.mr-2.text-secondary speed
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points
           %span.grader-comment.text-break

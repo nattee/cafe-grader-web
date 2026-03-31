@@ -1,13 +1,56 @@
-%li.list-group-item
-  .card-title
-    %h1
-      = announcement.title
-      - if @current_user and @current_user.admin?
-        = link_to 'Edit', edit_announcement_path(announcement), class: 'btn btn-sm btn-outline-secondary'
-  .card-subtitle.text-secondary
-    %small{'data-updated-at': announcement.updated_at}= "(updated #{time_ago_in_words(announcement.updated_at)} ago)"
-  .card-text
-    = markdown(announcement.body)
-  - if announcement.file.attached?
-    %h5.mt-2 Files
-    = link_to announcement.file.filename, url_for(announcement.file)
+- is_contest = GraderConfiguration.contest_mode?
+- cookie_key = "dismissed_ann_#{announcement.id}_#{announcement.updated_at.to_i}"
+- is_updated = announcement.updated_at > 1.day.ago
+
+.card.mb-4{:id => "announcement-#{announcement.id}", "data-controller" => "init-ui-component dismiss-announcement", "data-dismiss-announcement-id-value" => announcement.id, "data-dismiss-announcement-timestamp-value" => announcement.updated_at.to_i, :class => (is_updated && cookies[cookie_key].blank? ? 'border-danger' : 'border-1 shadow-sm')}
+  .card-body
+    .card-title.mb-1.d-flex.justify-content-between.align-items-start
+      %h5.mb-0.d-flex.align-items-center
+        %strong= announcement.title
+        - if is_updated && cookies[cookie_key].blank?
+          %span.badge.bg-danger.rounded-pill.ms-2{"data-dismiss-announcement-target" => "badge"}
+            Updated
+            %a.text-white.text-decoration-none.ms-1{:href => "#", "data-action" => "dismiss-announcement#dismiss", :title => "Dismiss"} &times;
+      - if @current_user && @current_user.admin?
+        = link_to edit_announcement_path(announcement), class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary ms-2 d-inline-flex align-items-center justify-content-center', 'data-bs-toggle' => 'tooltip', title: 'Edit Announcement' do
+          %span.mi{style: 'font-size: 1.1rem;'} edit
+    
+    .card-subtitle.text-secondary.mb-3.mt-0
+      %small{'data-updated-at': announcement.updated_at}= "Updated #{time_ago_in_words(announcement.updated_at)} ago"
+    
+    .card-text.text-dark
+      - if is_contest
+        = markdown(announcement.body)
+      - else
+        - parsed_body = markdown(announcement.body)
+        - raw_text = CGI.unescapeHTML(strip_tags(parsed_body))
+        = truncate(raw_text, length: 150)
+        - if raw_text.length > 150
+          %a.ms-1.fw-bold{:href => "#", "data-bs-toggle" => "modal", "data-bs-target" => "#announcementModal-#{announcement.id}", :style => "text-decoration: none;"} Read More &rarr;
+
+    - if announcement.file.attached?
+      %hr.my-2
+      .text-uppercase.small.fw-bold.text-muted.mb-1 Attachments
+      .mt-2
+        %span.badge.bg-light.text-dark.border
+          = mdi('attachment', 'md-18')
+          = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none ms-1'
+
+  - if !is_contest
+    .modal.fade{:id => "announcementModal-#{announcement.id}", :tabindex => "-1", "aria-labelledby" => "announcementModalLabel-#{announcement.id}", "aria-hidden" => "true"}
+      .modal-dialog.modal-lg.modal-dialog-scrollable
+        .modal-content
+          .modal-header
+            %h5.modal-title.fw-bold{:id => "announcementModalLabel-#{announcement.id}"}= announcement.title
+            %button.btn-close{"data-bs-dismiss" => "modal", "aria-label" => "Close"}
+          .modal-body
+            = markdown(announcement.body)
+            - if announcement.file.attached?
+              %hr.my-2
+              .text-uppercase.small.fw-bold.text-muted.mb-1 Attachments
+              .mt-2
+                %span.badge.bg-light.text-dark.border
+                  = mdi('attachment', 'md-18')
+                  = link_to announcement.file.filename, url_for(announcement.file), class: 'text-decoration-none ms-1'
+          .modal-footer
+            %button.btn.btn-secondary{"data-bs-dismiss" => "modal"} Close

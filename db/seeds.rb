@@ -33,6 +33,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'ui.site_title',
+     value_type: 'string',
+     default_value: 'Grader',
+     description: 'This name will be shown on the user header bar.'
+   },
+
+   {
      key: 'contest.time_limit',
      value_type: 'string',
      default_value: 'unlimited',
@@ -46,12 +53,6 @@ CONFIGURATIONS =
      description: 'Current modes are "standard", "contest", "indv-contest", and "analysis".'
    },
 
-   {
-     key: 'contest.name',
-     value_type: 'string',
-     default_value: 'Grader',
-     description: 'This name will be shown on the user header bar.'
-   },
 
    {
      key: 'contest.multisites',

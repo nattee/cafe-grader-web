@@ -1,7 +1,6 @@
-.card.border-primary{'data-controller': 'init-ui-component'}
-  .card-header.text-bg-primary
-    Submission
-  .card-body
+.card.card-shadow.bg-primary-subtle.border-1.border-primary{'data-controller': 'init-ui-component'}
+  .card-body.p-3
+    %h6.fw-bold.text-primary-emphasis.mb-2 Submission
     = form_with url: submit_main_path, multipart: true, class: 'form' do |form|
       - if @submission and @submission.errors.any?
         #error_explanation
@@ -10,14 +9,14 @@
             %ul
               - @submission.errors.full_messages.each do |msg|
                 %li= msg
-      .row.mb-2
-        .col-sm-2
-          = form.label :submission, 'Problem:', class: 'col-form-label'
-        .col-sm-10
-          = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-control', style: "width: 100%" }
-      .row.mb-2
-        .col-sm-2
-          = form.label :file, 'File:', class: 'col-form-label'
-        .col-sm-10
-          = form.file_field :file, class: 'form-control'
-      = form.submit 'Submit', class: 'btn btn-primary'
+      .row.align-items-center.gx-2
+        .col-auto
+          = form.label :submission, 'Problem:', class: 'col-form-label col-form-label-sm fw-semibold'
+        .col-md-4
+          = select 'submission', 'problem_id', [[(t 'main.specified_in_header'),'-1']] + @problems.collect {|p| ["[#{p.name}] #{p.full_name}", p.id]}, {:selected => '-1'}, { class: 'select2 form-select form-select-sm', style: "width: 100%" }
+        .col-auto.ms-2
+          = form.label :file, 'File:', class: 'col-form-label col-form-label-sm fw-semibold'
+        .col-md-4
+          = form.file_field :file, class: 'form-control form-control-sm'
+        .col-auto.ms-auto
+          = form.submit 'Submit', class: 'btn btn-primary btn-sm'

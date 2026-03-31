@@ -1,12 +1,17 @@
-%h3 Edit announcement
-.mb-3
-  [
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, announcements_path, class: 'mx-1'
-  ]
-.row
-  .col-md-6
-    .card.shadow-sm
-      .card-body
-        - content_for(:form_buttons) do
-          = link_to '<span class="mi mi-bs md-18">arrow_back</span> Back'.html_safe, announcements_path, class: 'btn btn-outline-secondary mx-2'
-        = render 'form'
+= render 'application/breadcrumb', steps: [{ label: 'Announcements', path: announcements_path, icon: resource_icon_name(Announcement) }, { label: 'Edit' }]
+
+.d-flex.justify-content-between.align-items-center.mb-3
+  .d-flex.align-items-center.gap-2
+    %h2.fw-bold.text-dark.mb-0
+      - if @announcement.title.present?
+        = @announcement.title
+      - else
+        %span.text-muted.fst-italic [Untitled Announcement ##{@announcement.id}]
+    %span.badge.bg-primary-subtle.text-primary.border.border-primary-subtle.rounded-pill.fw-medium
+      %small Editing
+
+  .d-flex.gap-2
+    = link_to 'Cancel', announcements_path, class: 'btn btn-link text-secondary text-decoration-none'
+    %button.btn.btn-primary.px-4.shadow-sm{type: 'submit', form: 'edit_form'} Save Changes
+
+= render 'form'

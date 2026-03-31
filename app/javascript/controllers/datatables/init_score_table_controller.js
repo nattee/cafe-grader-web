@@ -1,5 +1,6 @@
 import DatatableInitController from "controllers/datatables/init_controller"
 import { columns, renderers } from 'controllers/datatables/columns'
+import "chart" // UMD build: sets window.Chart as side effect
 
 /**
  * init datatable for contest/view.htlm.haml

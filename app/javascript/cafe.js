@@ -5,7 +5,7 @@
 import "setup_jquery"
 
 function msi(icon_name, className = '') {
-  return `<span class="mi mi-bs ${className}">${icon_name}</span>`
+  return `<span class="mi ${className}">${icon_name}</span>`
 }
 
 function initSelect2() {

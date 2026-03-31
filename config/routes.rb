@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
-  resources :languages, except: [:show]
+  resources :languages, except: [:show] do
+    post :index_query, on: :collection
+  end
 
   resources :tags do
     post :toggle_public, on: :member
@@ -160,6 +162,7 @@ Rails.application.routes.draw do
 
   resources :grader_configuration, controller: 'configurations' do
     collection do
+      get 'reload'
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
       post 'clear_user_ip'
     end

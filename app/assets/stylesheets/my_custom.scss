@@ -4,11 +4,18 @@
 }
 
 
+
 //---- google material icon -----
 .mi-bs {
-  vertical-align: middle;
-  position: relative;
-  top: -3px;
+  //vertical-align: middle;
+  //position: relative;
+  // DAE: i need -3 because, when putting in a bootstrap button, -3 make it perfectly centered vertically
+  //top: -3px;
+
+  .btn-sm & {
+    // but for btn-sm, it is -2 instead
+    // top: -2px;
+  }
 }
 
 .mi {
@@ -23,6 +30,8 @@
   word-wrap: normal;
   white-space: nowrap;
   direction: ltr;
+
+  vertical-align: middle;
 }
 
 .mi.md-18 {
@@ -33,12 +42,30 @@
   font-size: 24px;
 }
 
+.mi.md-36 {
+  font-size: 36px;
+}
+
 .mi.md-48 {
   font-size: 48px;
 }
 
 .mi.fill {
   font-variation-settings: 'FILL' 1
+}
+
+.btn-flex {
+  @extend .d-inline-flex;
+  @extend .gap-2;
+  @extend .align-items-center;
+
+  justify-content: center;
+}
+
+.link-flex {
+  @extend .d-inline-flex;
+  @extend .align-items-center;
+  @extend .text-decoration-none;
 }
 
 //for use google material icon with Tempus Dominus
@@ -95,11 +122,6 @@ h1 {
 
 h2 {
   color: #5566bb;
-}
-
-hr {
-  border-top: 1px solid #dddddd;
-  border-bottom: 1px solid #eeeeee;
 }
 
 code {

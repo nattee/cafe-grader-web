@@ -9,7 +9,7 @@ gem "rails", "~>8.0.0"
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 # gem "sprockets-rails"
 gem "propshaft" # Replaces sprockets-rails for serving assets
-gem "cssbundling-rails" # Replaces sassc-rails for compiling CSS
+gem "dartsass-rails" # Replaces cssbundling-rails; no Node.js dependency
 
 gem "puma"
 

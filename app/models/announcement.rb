@@ -1,6 +1,7 @@
 class Announcement < ApplicationRecord
   has_one_attached :file
   belongs_to :group, optional: true
+  validates :title, presence: true
 
   scope :published, -> { where(published: true) }
   scope :frontpage, -> { published.where(frontpage: true) }

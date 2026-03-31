@@ -10,24 +10,18 @@ Turbo.session.drive = false
 
 
 // these setup our library
-// even we import setup_datatables and setup_bootstrap BEFORE setup_jquery
-// everything still work fine because in setup_bootstrap and setup_database,
+// even we import setup_select2 and setup_bootstrap BEFORE setup_jquery
+// everything still work fine because in setup_bootstrap and setup_select2,
 // we explicitly import setup_jquery as well, so, the browser knows that they
 // must load the setup_jquery first
-import "setup_datatables"
+import "setup_select2"
 import "setup_bootstrap"
 import "setup_jquery"
-import "setup_ace"
-
-import "chart"
 
 
 // TempusDominus
-// -- normal --
 import "tempus-dominus-js" //this import as tempusDominus
-// -- esm --
-//import * as tempusDominus from  "tempus-dominus-esm"
-// since any of the above import does not set the window directly, I have to do it
+// since this import does not set the window directly, I have to do it
 window.tempusDominus = tempusDominus
 
 //too lazy to use the tempusDominus namespace, just use TempusDominus directly
