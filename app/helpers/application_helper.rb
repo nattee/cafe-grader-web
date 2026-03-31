@@ -327,17 +327,15 @@ TITLEBAR
     @current_user && @current_user.admin?
   end
 
-  private
-
   # Handles value formatting to keep the main helper clean.
   # Easily extendable with more formats.
   def format_key_pair_value(value, format)
     case format&.to_sym
     when :yes_no
       if value == true || value.to_s.downcase == 'true'
-        tag.span(t('helpers.yes'), class: 'badge rounded-pill border bg-success-subtle text-success border-success-subtle')
+        tag.span(t('helpers.yes'), class: 'badge bg-success-subtle text-success border border-success-subtle rounded-pill')
       else
-        tag.span(t('helpers.no'), class: 'badge rounded-pill border bg-danger-subtle text-danger border-danger-subtle')
+        tag.span(t('helpers.no'), class: 'badge bg-light text-secondary border border-secondary-subtle rounded-pill')
       end
     # Add other formatters here, e.g., :date, :currency
     # when :date

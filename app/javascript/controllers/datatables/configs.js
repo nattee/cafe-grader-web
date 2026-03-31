@@ -68,13 +68,9 @@ export const configs = {
       columns.contest.userProb,
       columns.contest.start,
       columns.contest.stop,
-      columns.contest.manageLink,
-      columns.contest.watchLink,
-      //columns.contest.cloneButton,
-      //columns.contest.deleteButton,
       columns.contest.actionButton // use drop down instead
     ],
-    columnDefs: [{ orderable: false, targets: [2, 3, 7, 8, 9] }],
+    columnDefs: [{ orderable: false, targets: [2, 3, 7] }],
     order: [[5, 'desc']], // order by starting time
     drawCallback: function (settings) {
       var api = this.api();

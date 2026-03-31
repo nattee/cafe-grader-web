@@ -109,12 +109,12 @@ function dt_yes_no_pill_renderer() {
   return function(data,type,row,meta) {
     if (data == '1' || data == 'true' || data == 1 || data == true)
       if (type == 'display' || type == 'filter')
-        return '<span class="badge text-bg-success">Yes</span>'
+        return window.CafeUI?.badges?.yes || '<span class="badge text-bg-success">Yes</span>'
       else
         return 'Yes'
     else if (data == '0' || data == 'false' || data == 0 || data == false)
       if (type == 'display' || type == 'filter')
-        return '<span class="badge text-bg-light border border-secondary-subtle">No</span>'
+        return window.CafeUI?.badges?.no || '<span class="badge text-bg-secondary">No</span>'
       else
         return 'No'
     return ''
