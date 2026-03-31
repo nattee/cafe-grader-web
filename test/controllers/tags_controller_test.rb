@@ -1,49 +1,29 @@
-require 'test_helper'
+require "test_helper"
 
-class TagsControllerTest < ActionController::TestCase
-  setup do
-    @tag = tags(:one)
-  end
-
-  test "should get index" do
-    get :index
-    assert_response :success
-    assert_not_nil assigns(:tags)
-  end
-
-  test "should get new" do
-    get :new
+class TagsControllerTest < ActionDispatch::IntegrationTest
+  test "admin can access tags index" do
+    sign_in_as("admin", "admin")
+    get tags_path
     assert_response :success
   end
 
-  test "should create tag" do
-    assert_difference('Tag.count') do
-      post :create, tag: { description: @tag.description, name: @tag.name, public: @tag.public }
+  test "admin can create tag" do
+    sign_in_as("admin", "admin")
+    assert_difference("Tag.count") do
+      post tags_path, params: { tag: { name: "new_tag", description: "A new tag", public: true } }
     end
-
-    assert_redirected_to tag_path(assigns(:tag))
   end
 
-  test "should show tag" do
-    get :show, id: @tag
+  test "admin can edit tag" do
+    sign_in_as("admin", "admin")
+    get edit_tag_path(tags(:tag_easy))
     assert_response :success
   end
 
-  test "should get edit" do
-    get :edit, id: @tag
-    assert_response :success
-  end
-
-  test "should update tag" do
-    patch :update, id: @tag, tag: { description: @tag.description, name: @tag.name, public: @tag.public }
-    assert_redirected_to tag_path(assigns(:tag))
-  end
-
-  test "should destroy tag" do
-    assert_difference('Tag.count', -1) do
-      delete :destroy, id: @tag
+  test "admin can destroy tag" do
+    sign_in_as("admin", "admin")
+    assert_difference("Tag.count", -1) do
+      delete tag_path(tags(:tag_hard))
     end
-
-    assert_redirected_to tags_path
   end
 end

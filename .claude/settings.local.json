@@ -21,7 +21,15 @@
       "Bash(RAILS_ENV=development bin/rails db:schema:dump 2>&1)",
       "Bash(bin/rails generate:*)",
       "Bash(bin/rails db:migrate 2>&1)",
-      "Bash(bin/rails db:schema:dump)"
+      "Bash(bin/rails db:schema:dump)",
+      "Bash(head -20 /home/dae/cafe-grader/web/test/jobs/*.rb)",
+      "Bash(find /home/dae/cafe-grader/web/lib/tasks -name *.rake)",
+      "Bash(xargs -I{} basename {} .rb)",
+      "Bash(bin/rails routes:*)",
+      "Bash(bin/rails test:*)",
+      "Bash(gem install:*)",
+      "Bash(bin/rails runner:*)",
+      "Bash(grep:*)"
     ]
   }
 }
