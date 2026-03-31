@@ -24,7 +24,7 @@ export const renderers = {
 
     // roles and labels
     const isEditor = row['role'] === 'editor';
-    const toggleRoleLabel = isEditor ? 'Make User' : 'Make Editor';
+    const toggleRoleLabel = isEditor ? 'Set as User' : 'Set as Editor';
     const toggleRoleCommand = isEditor ? 'make_user' : 'make_editor';
     const toggleRoleIcon = isEditor ? 'person' : 'shield_person';
 
@@ -32,8 +32,8 @@ export const renderers = {
       <div class="d-flex align-items-center">
         <span>&nbsp; </span>
         <div class="dropdown d-flex align-items-center">
-          <a class="link-flex rounded-1 bg-light ms-2 text-muted decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="mi md-18">more_horiz</span>
+          <a class="btn btn-outline-secondary border-0 link-flex rounded-1 p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="mi">more_horiz</span>
           </a>
           <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
             <li><h6 class="dropdown-header">Actions for ${row['login']}</h6></li>
@@ -75,25 +75,25 @@ export const renderers = {
     if (type != 'display') return ''
 
     return `
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center p-1"
+      <div class="d-flex gap-1 justify-content-end">
+        <button class="btn btn-outline-secondary border-0 py-1 px-2"
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="moveup" title="Move Up">
-          <span class="mi md-18">arrow_upward</span>
+          <span class="mi">arrow_upward</span>
         </button>
-        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center p-1"
+        <button class="btn btn-outline-secondary border-0 py-1 px-2"
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="movedown" title="Move Down">
-          <span class="mi md-18">arrow_downward</span>
+          <span class="mi">arrow_downward</span>
         </button>
-        <button class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center p-1"
+        <button class="btn btn-outline-danger border-0 py-1 px-2"
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="remove"
            data-form-confirm="Remove ${row['name']} from this contest?" title="Remove from Contest">
-          <span class="mi md-18">delete</span>
+          <span class="mi">close</span>
         </button>
       </div>
     `;
