@@ -100,7 +100,7 @@ class User < ApplicationRecord
 
     if GraderConfiguration.multicontests?
       # legacy mode, have not been implemented yet
-      return Problem.none
+      return Problem.contests_problems_for_user(self.id).none
     elsif GraderConfiguration.contest_mode?
       if [:edit, :report].include? action
         return Problem.contests_editable_problems_for_user(self.id)
