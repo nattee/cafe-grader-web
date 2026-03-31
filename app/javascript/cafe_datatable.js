@@ -1,9 +1,10 @@
 import "datatables"
 import "vfs-fonts"
 import "pdfmake"
+import { escapeHtml } from 'cafe'
 
 function data_tag_unless_null(value,label) {
-  return value == null ? "" : `data-${label}="${value}"`
+  return value == null ? "" : `data-${label}="${escapeHtml(value)}"`
 
 }
 
@@ -97,7 +98,7 @@ function dt_link_renderer(label,{className = '', path = '#', replace_pattern = '
       href = path.replace(replace_pattern,row[replace_field])
     }
     const dataConfirm = data_tag_unless_null(confirm,'turbo-confirm')
-    let link_text = (label === null) ? data : label
+    let link_text = (label === null) ? escapeHtml(data) : label
     return `<a href="${href}" class="${className}" ${dataConfirm} ${dataMethod} data-turbo="${turbo}" data-turbo-prefetch="${prefetch}" data-turbo-stream="${turboStream}"> ${link_text}</a>`
   }
 }
@@ -108,12 +109,12 @@ function dt_yes_no_pill_renderer() {
   return function(data,type,row,meta) {
     if (data == '1' || data == 'true' || data == 1 || data == true)
       if (type == 'display' || type == 'filter')
-        return '<span class="badge text-bg-success">Yes</span>'
+        return window.CafeUI?.badges?.yes || '<span class="badge text-bg-success">Yes</span>'
       else
         return 'Yes'
     else if (data == '0' || data == 'false' || data == 0 || data == false)
       if (type == 'display' || type == 'filter')
-        return '<span class="badge text-bg-light border border-secondary-subtle">No</span>'
+        return window.CafeUI?.badges?.no || '<span class="badge text-bg-secondary">No</span>'
       else
         return 'No'
     return ''
@@ -141,7 +142,7 @@ function dt_array_render_factory({format = '${result}', item_format = '${item}',
 
 
     if (type == 'display' || type == 'filter') {
-      let item_formatted_arr = arr.map( x => item_format.replace("${item}",x))
+      let item_formatted_arr = arr.map( x => item_format.replace("${item}",escapeHtml(x)))
       return format.replace('${result}', item_formatted_arr.join(join))
     }
 

@@ -24,7 +24,7 @@ export const renderers = {
 
     // roles and labels
     const isEditor = row['role'] === 'editor';
-    const toggleRoleLabel = isEditor ? 'Make User' : 'Make Editor';
+    const toggleRoleLabel = isEditor ? 'Set as User' : 'Set as Editor';
     const toggleRoleCommand = isEditor ? 'make_user' : 'make_editor';
     const toggleRoleIcon = isEditor ? 'person' : 'shield_person';
 
@@ -32,8 +32,8 @@ export const renderers = {
       <div class="d-flex align-items-center">
         <span>&nbsp; </span>
         <div class="dropdown d-flex align-items-center">
-          <a class="link-flex rounded-1 bg-light ms-2 text-muted decoration-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="mi md-18">more_horiz</span>
+          <a class="btn btn-outline-secondary border-0 link-flex rounded-1 p-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="mi">more_horiz</span>
           </a>
           <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
             <li><h6 class="dropdown-header">Actions for ${row['login']}</h6></li>
@@ -75,25 +75,25 @@ export const renderers = {
     if (type != 'display') return ''
 
     return `
-      <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center p-1"
+      <div class="d-flex gap-1 justify-content-end">
+        <button class="btn btn-outline-secondary border-0 py-1 px-2"
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="moveup" title="Move Up">
-          <span class="mi md-18">arrow_upward</span>
+          <span class="mi">arrow_upward</span>
         </button>
-        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center p-1"
+        <button class="btn btn-outline-secondary border-0 py-1 px-2"
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="movedown" title="Move Down">
-          <span class="mi md-18">arrow_downward</span>
+          <span class="mi">arrow_downward</span>
         </button>
-        <button class="btn btn-sm btn-outline-danger d-flex align-items-center justify-content-center p-1"
+        <button class="btn btn-outline-danger border-0 py-1 px-2"
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="remove"
            data-form-confirm="Remove ${row['name']} from this contest?" title="Remove from Contest">
-          <span class="mi md-18">delete</span>
+          <span class="mi">close</span>
         </button>
       </div>
     `;
@@ -150,8 +150,8 @@ export const columns = {
     enableToggle: { data: 'id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postContestAction', command: 'toggle', checked_data_field: 'enabled' }) },
     start: { data: 'start', render: cafe.dt.render.datetime() },
     stop: { data: 'stop', render: cafe.dt.render.datetime() },
-    manageLink: { data: null, render: cafe.dt.render.link(`${cafe.msi('settings', 'md-18')} Manage`, { path: AppRoute.contest, className: 'd-inline-flex align-items-center text-decoration-none' }) },
-    watchLink: { data: null, render: cafe.dt.render.link(`${cafe.msi('summarize', 'md-18')} Watch`, { path: AppRoute.viewContest, className: 'd-inline-flex align-items-center text-decoration-none' }) },
+    manageLink: { data: null, render: cafe.dt.render.link(`${cafe.msi('settings')} Manage`, { path: AppRoute.contest, className: 'btn btn-flex btn-outline-primary border-0' }), className: 'align-middle py-1' },
+    watchLink: { data: null, render: cafe.dt.render.link(`${cafe.msi('summarize')} Watch`, { path: AppRoute.viewContest, className: 'btn btn-flex btn-outline-success border-0' }), className: 'align-middle py-1' },
     cloneButton: { data: null, render: cafe.dt.render.link(`${cafe.msi('file_copy', 'md-18')} Clone`, { path: AppRoute.cloneContest, className: 'btn btn-sm btn-success', prefetch: false, turboStream: true }), className: 'align-middle py-1' },
     deleteButton: { data: null, render: cafe.dt.render.link(`${cafe.msi('delete', 'md-18')} Destroy`, { path: AppRoute.contest, method: 'delete', confirm: 'Really delete this contest?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1' },
     actionButton: {
@@ -160,13 +160,17 @@ export const columns = {
         // only render for display
         if (type != 'display') return ''
 
-        // calling the render function for link
+        // Generate the standard pill action buttons
+        const manage_btn = cafe.dt.render.link(`${cafe.msi('settings')} Manage`, { path: AppRoute.contest, className: 'btn btn-flex btn-outline-primary border-0' })(data, type, row, meta)
+        const watch_btn = cafe.dt.render.link(`${cafe.msi('summarize')} Watch`, { path: AppRoute.viewContest, className: 'btn btn-flex btn-outline-success border-0' })(data, type, row, meta)
+
+        // Dropdown actions
         const clone_button = cafe.dt.render.link(`${cafe.msi('file_copy', 'md-18')} Clone`, { path: AppRoute.cloneContest, className: 'dropdown-item d-inline-flex align-items-center', prefetch: false, turboStream: true })(data, type, row, meta)
         const delete_button = cafe.dt.render.link(`${cafe.msi('delete', 'md-18')} Destroy`, { path: AppRoute.contest, className: 'dropdown-item text-danger d-inline-flex align-items-center', method: 'delete', confirm: 'Really delete this contest?' })(data, type, row, meta)
 
-        let string = `<div class="dropdown d-inline-flex align-items-center">` +
-          `  <a type="button" class="link-flex rounded-1 bg-light ms-2 text-muted" data-bs-toggle="dropdown">` +
-          `    <span class="mi md-18">more_horiz</span>` +
+        let dropdown = `<div class="dropdown d-inline-flex align-items-center">` +
+          `  <a type="button" class="btn btn-outline-secondary link-flex rounded-1 border-0 p-1" data-bs-toggle="dropdown">` +
+          `    <span class="mi">more_horiz</span>` +
           `  </a>` +
           `  <ul class="dropdown-menu dropdown-menu-end border-0 shadow">` +
           `    <li>${clone_button}</li>` +
@@ -175,8 +179,8 @@ export const columns = {
           `  </ul>` +
           `</div>`
 
-        return string
-      }, className: 'align-middle py-1'
+        return `<div class="d-flex gap-1 justify-content-end">${manage_btn} ${watch_btn} ${dropdown}</div>`
+      }, className: 'align-middle py-1 pr-2'
     }
   },
   // --- submission ---

@@ -83,4 +83,11 @@ const config = {
   td: {date: default_td_date_options, datetime: default_td_options}
 }
 
-export { config, msi, initSelect2 }
+function escapeHtml(str) {
+  if (str == null) return ''
+  const div = document.createElement('div')
+  div.textContent = str
+  return div.innerHTML
+}
+
+export { config, msi, initSelect2, escapeHtml }

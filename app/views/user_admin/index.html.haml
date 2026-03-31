@@ -1,29 +1,33 @@
-%h1 Users
+.row.my-2
+  .col-md-5.mb-3
+    .d-flex.flex-column.gap-1.mb-3
+      %small.text-secondary.text-uppercase.fw-bold.ls-1 Management
+      %h2.fw-bold.text-dark.mb-0 Users
 
-
-%p
-  = link_to '+ New user', { :action => 'new' }, { class: 'btn btn-success m-1'}
-  = link_to '+ New list of users', { :action => 'new_list' }, { class: 'btn btn-success m-1'}
-  = link_to 'Bulk Manage', { action: :bulk_manage} , { class: 'btn btn-secondary btn-info m-1'}
-  = link_to 'View administrators',{ :action => 'admin'}, { class: 'btn btn-secondary m-1'}
+    .d-flex.flex-wrap.gap-2
+      = link_to mdi('person_add', 'me-1') + 'Add User', { :action => 'new' }, class: 'btn btn-sm btn-success'
+      = link_to mdi('group_add', 'me-1') + 'Import Users', { :action => 'new_list' }, class: 'btn btn-sm btn-outline-success'
+      = link_to mdi('checklist', 'me-1') + 'Bulk Manage', { action: :bulk_manage }, class: 'btn btn-sm btn-outline-secondary'
+      = link_to mdi('admin_panel_settings', 'me-1') + 'Admins', { :action => 'admin' }, class: 'btn btn-sm btn-outline-secondary'
+  .col-md-7.mb-3
+    = render partial: 'user_help'
 
 .card.card-shadow
   .card-body
-    %table#main-table.table.table-hover.table-condense.datatable
+    %table#main-table.table.table-hover.table-condense.datatable{'data-controller': 'init-ui-component'}
       %thead
-        %th Login
-        %th Full name
-        %th email
-        %th Remark
-        %th 
-          Activated
-          %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'User has already confirmed the email?' } [?]
-        %th 
-          Enabled
-          %sup{class: 'text-primary',data: {toggle: 'tooltip', placement: 'top'}, title: 'Allow the user to login?' } [?]
-        %th Session Clear
-        %th <!-- edit -->
-        %th <!-- destroy -->
+        %tr
+          %th Login
+          %th Full name
+          %th email
+          %th Remark
+          %th.text-center
+            Activated
+            = render partial: 'application/tooltip', locals: {title: 'User has already confirmed their email address'}
+          %th.text-center
+            Enabled
+            = render partial: 'application/tooltip', locals: {title: 'Allow the user to log in?'}
+          %th
 
 -# hidden user action form
 = form_with url: user_action_user_admin_index_path, html: {'data-user-admin--index-target': 'userForm', id: 'do-user-form',
@@ -60,13 +64,18 @@
         {data: 'activated', render: cafe.dt.render.yes_no_pill(), className: 'text-center' },
         // enabled switch
         {data: 'id', render: cafe.dt.render.button(null, {element_type: 'switch', action: 'user-admin--index#postUserAction', command: 'toggle', checked_data_field: 'enabled'})},
-        // clear ip action
-        {data: 'id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', className: 'link-flex', action: 'user-admin--index#postUserAction', command: 'clear_ip'} )},
-        // edit link
-        {data: null, render: cafe.dt.render.link(`${cafe.msi('edit','md-18')} Edit`, {className: 'link-flex', path: '#{edit_user_admin_path(-123)}' })},
-        // destroy action
-        {data: null, render: cafe.dt.render.link(`${cafe.msi('delete','md-18')} Destroy`, {className: 'btn-flex', path: '#{user_admin_path(-123)}', method: 'delete', confirm: 'Really delete this user?', className: 'btn btn-sm btn-danger', }), className: 'align-middle py-1'},
+        // actions
+        {
+          data: 'id',
+          className: 'align-middle py-1 pr-2',
+          render: function(data, type, row) {
+            let clear_btn = cafe.dt.render.button(`${cafe.msi('lock_reset')} Clear`, {element_type: 'link', className: 'btn btn-flex btn-outline-secondary border-0', action: 'user-admin--index#postUserAction', command: 'clear_ip'})(data, type, row);
+            let edit_btn = cafe.dt.render.link(`${cafe.msi('edit')} Edit`, {className: 'btn btn-flex btn-outline-primary border-0', path: '#{edit_user_admin_path(-123)}'})(data, type, row);
+            let destroy_btn = cafe.dt.render.link(`${cafe.msi('delete')}`, {className: 'btn btn-flex btn-outline-danger border-0', path: '#{user_admin_path(-123)}', method: 'delete', confirm: 'Really delete this user?'})(data, type, row);
+            return `<div class="d-flex gap-1 justify-content-end">${clear_btn} ${edit_btn} ${destroy_btn}</div>`;
+          }
+        }
       ],
-      columnDefs: [{orderable: false, targets: [6,7,8]} ],
+      columnDefs: [{orderable: false, targets: [4,5,6]} ],
     });
   })

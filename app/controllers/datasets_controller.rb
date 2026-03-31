@@ -118,7 +118,7 @@ class DatasetsController < ApplicationController
   def testcase_input
     begin
       tc = Testcase.find(params[:tc_id])
-      text = tc.inp_file.download
+      text = ERB::Util.html_escape(tc.inp_file.download)
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Input', body_msg: "<pre>#{text}</pre>".html_safe }
     rescue  ActiveStorage::FileNotFoundError
       text = "<div class='alert alert-danger'>File NOT Found on the server!!!</div>".html_safe
@@ -130,7 +130,7 @@ class DatasetsController < ApplicationController
   def testcase_sol
     begin
       tc = Testcase.find(params[:tc_id])
-      text = tc.ans_file.download
+      text = ERB::Util.html_escape(tc.ans_file.download)
       render partial: 'msg_modal_show', locals: {do_popup: true, header_msg: 'Answer', body_msg: "<pre>#{text}</pre>".html_safe }
     rescue  ActiveStorage::FileNotFoundError
       text = "<div class='alert alert-danger'>File NOT Found on the server!!!</div>".html_safe

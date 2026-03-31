@@ -180,7 +180,16 @@
                             = mdi("upload",'mx-1')
                             %strong.text-dark Import
                             tab.
-                          %li Only enabled users may access the contest.
+                          %li.mb-1 Only enabled users may access the contest.
+                          %li
+                            %strong.text-dark User Roles:
+                            %ul.ps-3.mt-1.mb-0
+                              %li
+                                %span.badge.bg-info-subtle.text-info-emphasis.border.border-info-subtle User
+                                = "- Standard competition participant."
+                              %li.mt-1
+                                %span.badge.bg-success-subtle.text-success-emphasis.border.border-success-subtle Editor
+                                = "- Has elevated administration and edit rights."
 
               %table#user_table.table.datatable.table-hover
                 %thead
@@ -245,8 +254,22 @@
                             If you want to add multiple problems at once, use the 
                             = link_to 'Bulk Manage Problems', manage_problems_path, class: 'fw-bold text-dark'
                             page.
-                          %li A problem is only shown to users if it's **globally available** and **enabled** in the contest.
-                          %li The **LLM Assistant** can be enabled individually for each problem.
+                          %li.mb-1
+                            A problem is only shown to users if it's 
+                            %strong.text-dark globally available 
+                            and 
+                            %strong.text-dark enabled 
+                            in the contest.
+                          %li 
+                            The 
+                            %strong.text-dark LLM Assistant 
+                            can be enabled individually for each problem.
+                          %li.mt-1
+                            Use the 
+                            %strong.text-dark 
+                              %span.mi.md-18.align-text-bottom arrow_upward
+                              %span.mi.md-18.align-text-bottom arrow_downward
+                            arrows to sort the display order of problems for the contest users.
               .row
                 .col-12
                   %table#problem_table.table.datatable.table-hover
@@ -258,7 +281,7 @@
                         %th.text-center Global Available
                         %th.text-center Enable
                         %th.text-center Allow LLM
-                        %th Action
+                        %th.text-end Actions
             -# ==========================================
             -# ---------- import users ------------------
             -# ==========================================

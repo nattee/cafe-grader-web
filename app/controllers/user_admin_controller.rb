@@ -15,7 +15,7 @@ class UserAdminController < ApplicationController
   end
 
   def index_query
-    render json: {data: User.all}
+    render json: { data: User.all }
   end
 
   def active

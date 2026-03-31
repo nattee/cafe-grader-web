@@ -19,6 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     = render partial: 'layouts/js_route'
+    = render partial: 'layouts/js_ui'
 
   %body.bg-light{ 'data-controller': "initialize #{@stimulus_controller}" }
     - unless local_assigns[:skip_header]

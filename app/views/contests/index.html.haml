@@ -1,11 +1,11 @@
-.row.mt-2
+.row.my-2
   .col-md-5
     .d-flex.flex-column.gap-1.mb-3
-      -# %small.text-secondary.text-uppercase.fw-bold.ls-1 Events
+      %small.text-secondary.text-uppercase.fw-bold.ls-1 Management
       %h2.fw-bold.text-dark.mb-0 Contests
 
     .d-flex.flex-wrap.gap-2.mb-4
-      = link_to mdi(:add, 'me-1') + 'New Contest', new_contest_path, class: 'btn btn-success btn-flex'
+      = link_to mdi(:add, 'me-1') + 'New Contest', new_contest_path, class: 'btn btn-sm btn-success btn-flex'
 
     .card.card-shadow.mb-3
       .card-body
@@ -179,7 +179,7 @@
     }
   }
 
-    %table#contest_table.table.table-hover{'data-turbo': true}
+    %table#contest_table.table.table-hover.table-condense{'data-turbo': true}
       %thead
         %tr
           %th Name
@@ -190,8 +190,7 @@
           %th Start
           %th End
           %th
-          %th
-          %th
+
   -# hidden contest action form
   = form_with url: contest_action_contests_path, html: {'data-contest-target': 'contestForm', id: 'do-contest-form',
     data: {turbo: true,

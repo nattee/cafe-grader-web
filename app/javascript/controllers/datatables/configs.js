@@ -68,13 +68,9 @@ export const configs = {
       columns.contest.userProb,
       columns.contest.start,
       columns.contest.stop,
-      columns.contest.manageLink,
-      columns.contest.watchLink,
-      //columns.contest.cloneButton,
-      //columns.contest.deleteButton,
       columns.contest.actionButton // use drop down instead
     ],
-    columnDefs: [{ orderable: false, targets: [2, 3, 7, 8, 9] }],
+    columnDefs: [{ orderable: false, targets: [2, 3, 7] }],
     order: [[5, 'desc']], // order by starting time
     drawCallback: function (settings) {
       var api = this.api();
@@ -127,7 +123,7 @@ export const configs = {
       { data: 'remark' },
       { data: null, render: renderers.startStopOffsetRender, title: 'Extra Time' },
       { data: 'user_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postUserAction', command: 'toggle', checked_data_field: 'enabled' }), title: 'Enabled' },
-      { data: null, render: renderers.userActionRenderer, title: 'Actions' },
+      { data: null, render: renderers.userActionRenderer, title: 'Actions', class: 'py-1' },
     ],
     columnDefs: [{ visible: false, targets: 2 }, { orderable: false, targets: [5, 6, 7] }],
     orderFixed: [2, 'asc'],
@@ -206,7 +202,7 @@ export const configs = {
       { data: 'available', render: cafe.dt.render.yes_no_pill(), className: 'text-center' },
       { data: 'problem_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle', checked_data_field: 'enabled' }) },
       { data: 'problem_id', render: cafe.dt.render.button(null, { element_type: 'switch', action: 'contest#postProblemAction', command: 'toggle_llm', checked_data_field: 'allow_llm' }) },
-      { data: null, render: renderers.problemActionRenderer }
+      { data: null, render: renderers.problemActionRenderer, className: 'py-1' }
     ],
     columnDefs: [{ visible: false, targets: [0] },
     { orderable: false, targets: [1, 2, 3, 4, 5, 6] }],
