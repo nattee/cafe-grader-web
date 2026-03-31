@@ -1,7 +1,5 @@
-require 'test_helper'
+require "test_helper"
 
-class TestcasesControllerTest < ActionController::TestCase
-  setup do
-    @testcase = testcases(:one)
-  end
+class TestcasesControllerTest < ActionDispatch::IntegrationTest
+  # Testcase controller tests are covered by dataset and problem integration tests
 end
