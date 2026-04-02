@@ -137,10 +137,12 @@ group :test do
   gem "minitest-reporters"
 end
 
+# Swagger UI for API docs (served at /api-docs in all environments)
+gem "rswag-api"
+gem "rswag-ui"
+
 group :development, :test do
-  # RSpec + rswag for API documentation & testing
+  # RSpec + rswag for API spec testing & swagger generation
   gem "rspec-rails"
   gem "rswag-specs"
-  gem "rswag-api"
-  gem "rswag-ui"
 end
