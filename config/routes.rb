@@ -1,4 +1,39 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
+  # ---- API ----
+  namespace :api do
+    namespace :v1 do
+      post "auth/login", to: "auth#login"
+
+      get "me", to: "users#me"
+      resources :languages, only: [:index]
+
+      resources :contests, only: [:show] do
+        get "problems", on: :member
+      end
+
+      resources :problems, only: [:index, :show] do
+        member do
+          get "description"
+          get "files/:type", action: "file", as: "file"
+          get "data_files"
+          get "testcases"
+        end
+        resources :submissions, only: [:index, :create]
+      end
+
+      resources :testcases, only: [] do
+        member do
+          get "input"
+          get "sol"
+        end
+      end
+
+      resources :submissions, only: [:show]
+    end
+  end
+
   resources :languages, except: [:show] do
     post :index_query, on: :collection
   end

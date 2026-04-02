@@ -1,0 +1,180 @@
+require "swagger_helper"
+
+RSpec.describe "Problems API", type: :request do
+  fixtures :users, :roles, :grader_configurations, :sites,
+           :problems, :datasets, :testcases,
+           :groups, :groups_users, :groups_problems,
+           :contests, :contests_users, :contests_problems,
+           :submissions, :languages, :tags
+
+  let(:user) { users(:admin) }
+  let(:Authorization) { "Bearer #{jwt_token_for(user)}" }
+
+  path "/api/v1/problems" do
+    get "List all accessible problems" do
+      tags "Problems"
+      produces "application/json"
+      security [bearer: []]
+
+      response "200", "problems list" do
+        schema type: :array, items: {
+          type: :object, additionalProperties: false, properties: {
+            id: { type: :integer },
+            name: { type: :string },
+            full_name: { type: :string },
+            difficulty: { type: :integer, nullable: true },
+            tags: { type: :array, items: { type: :string } },
+            submission_count: { type: :integer },
+            best_score: { type: :number, nullable: true },
+            last_score: { type: :number, nullable: true },
+            last_result: { type: :string, nullable: true },
+            last_submission_time: { type: :string, format: "date-time", nullable: true },
+            has_testcase: { type: :boolean },
+            has_attachment: { type: :boolean },
+            permitted_languages: {
+              type: :array, nullable: true,
+              items: {
+                type: :object, additionalProperties: false,
+                properties: { id: { type: :integer }, name: { type: :string }, ext: { type: :string } }
+              },
+              description: "Allowed languages, or null if all are allowed"
+            }
+          }
+        }
+
+        run_test! do |response|
+          data = JSON.parse(response.body)
+          expect(data).to be_an(Array)
+          names = data.map { |p| p["name"] }
+          expect(names).to include("add")
+          expect(names).not_to include("subtract") # not available
+        end
+      end
+    end
+  end
+
+  path "/api/v1/problems/{id}" do
+    get "Get problem detail" do
+      tags "Problems"
+      produces "application/json"
+      security [bearer: []]
+
+      parameter name: :id, in: :path, type: :integer, required: true
+
+      response "200", "problem detail" do
+        schema type: :object, additionalProperties: false, properties: {
+          id: { type: :integer },
+          name: { type: :string },
+          full_name: { type: :string },
+          full_score: { type: :integer, nullable: true },
+          difficulty: { type: :integer, nullable: true },
+          tags: { type: :array, items: { type: :string } },
+          submission_count: { type: :integer },
+          best_score: { type: :number, nullable: true },
+          last_score: { type: :number, nullable: true },
+          last_result: { type: :string, nullable: true },
+          last_submission_time: { type: :string, format: "date-time", nullable: true },
+          has_testcase: { type: :boolean },
+          has_attachment: { type: :boolean },
+          permitted_languages: {
+            type: :array, nullable: true,
+            items: {
+              type: :object, additionalProperties: false,
+              properties: { id: { type: :integer }, name: { type: :string }, ext: { type: :string } }
+            },
+            description: "Allowed languages, or null if all are allowed"
+          },
+          submission_ids: { type: :array, items: { type: :integer } }
+        }, required: %w[id name full_name submission_count submission_ids]
+
+        let(:id) { problems(:prob_add).id }
+
+        run_test! do |response|
+          data = JSON.parse(response.body)
+          expect(data["name"]).to eq("add")
+          expect(data["submission_ids"]).to be_an(Array)
+        end
+      end
+
+      response "404", "problem not found" do
+        schema type: :object, additionalProperties: false, properties: { error: { type: :string } }
+
+        let(:id) { 999999 }
+
+        run_test!
+      end
+    end
+  end
+
+  path "/api/v1/problems/{id}/description" do
+    get "Get problem description (markdown)" do
+      tags "Problems"
+      produces "application/json"
+      security [bearer: []]
+
+      parameter name: :id, in: :path, type: :integer, required: true
+
+      response "200", "description returned" do
+        schema type: :object, additionalProperties: false, properties: {
+          markdown: { type: :boolean },
+          description: { type: :string, nullable: true }
+        }
+
+        let(:id) { problems(:prob_add).id }
+
+        run_test!
+      end
+    end
+  end
+
+  path "/api/v1/problems/{id}/files/{type}" do
+    get "Get problem file by type" do
+      tags "Problems"
+      produces "application/json"
+      security [bearer: []]
+
+      parameter name: :id, in: :path, type: :integer, required: true
+      parameter name: :type, in: :path, type: :string, required: true,
+        enum: %w[pdf attachment checker manager],
+        description: "File type to retrieve"
+
+      response "404", "file not found" do
+        schema type: :object, additionalProperties: false, properties: { error: { type: :string } }
+
+        let(:id) { problems(:prob_add).id }
+        let(:type) { "pdf" }
+
+        run_test!
+      end
+
+      response "400", "unknown file type" do
+        schema type: :object, additionalProperties: false, properties: { error: { type: :string } }
+
+        let(:id) { problems(:prob_add).id }
+        let(:type) { "unknown" }
+
+        run_test!
+      end
+    end
+  end
+
+  path "/api/v1/problems/{id}/testcases" do
+    get "List testcase metadata for a problem" do
+      tags "Problems"
+      produces "application/json"
+      security [bearer: []]
+
+      parameter name: :id, in: :path, type: :integer, required: true
+
+      response "403", "testcase viewing not allowed" do
+        schema type: :object, additionalProperties: false, properties: { error: { type: :string } }
+
+        # right.view_testcase is false in fixtures
+        let(:user) { users(:john) }
+        let(:id) { problems(:prob_add).id }
+
+        run_test!
+      end
+    end
+  end
+end
