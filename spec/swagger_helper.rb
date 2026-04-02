@@ -13,7 +13,7 @@ RSpec.configure do |config|
       },
       paths: {},
       servers: [
-        { url: "{baseUrl}", variables: { baseUrl: { default: "http://localhost:3000" } } }
+        { url: "{server}", variables: { server: { default: "https://your-server.example.com", description: "Server URL" } } }
       ],
       components: {
         securitySchemes: {

@@ -748,10 +748,11 @@ paths:
                   error:
                     type: string
 servers:
-- url: "{baseUrl}"
+- url: "{server}"
   variables:
-    baseUrl:
-      default: http://localhost:3000
+    server:
+      default: https://your-server.example.com
+      description: Server URL
 components:
   securitySchemes:
     bearer:
