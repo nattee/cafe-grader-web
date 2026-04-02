@@ -41,6 +41,10 @@ bin/rails test:system            # Capybara system tests
 # Code quality
 bundle exec rubocop              # linting (rubocop-rails-omakase)
 bundle exec brakeman             # security analysis
+
+# API specs & Swagger docs (RSpec + rswag)
+bundle exec rspec spec/requests/api/v1/          # run API tests
+bundle exec rails rswag:specs:swaggerize         # regenerate swagger/v1/swagger.yaml
 ```
 
 ## Architecture
@@ -59,6 +63,15 @@ The system operates in either **contest mode** or **group mode** (configured via
 - **Group** — organizes problems and users (alternative to contests)
 - **Job** — grading jobs (compile, evaluate, score) processed by external judge workers
 - **Comment** — supports LLM-assisted hints with cost tracking
+
+### JSON API (`/api/v1/`)
+
+- Lives in `app/controllers/api/v1/`, routes under `namespace :api / :v1`
+- **JWT auth** via `Authorization: Bearer <token>` (session auth is NOT used)
+- **Must reuse existing model authorization** (`User#problems_for_action`, `User#can_view_testcase?`, `User#can_view_submission?`, etc.) — never duplicate business logic in API controllers
+- **rswag** specs in `spec/requests/api/v1/` double as tests and Swagger docs
+- After changing any API spec: **always run `rails rswag:specs:swaggerize`** to regenerate `swagger/v1/swagger.yaml`
+- Swagger UI is served at `/api-docs`
 
 ### Controller Organization
 
