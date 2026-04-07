@@ -30,7 +30,8 @@
       "Bash(gem install:*)",
       "Bash(bin/rails runner:*)",
       "Bash(grep:*)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(find:*)"
     ]
   }
 }
