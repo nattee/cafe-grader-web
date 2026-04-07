@@ -29,7 +29,8 @@
       "Bash(bin/rails test:*)",
       "Bash(gem install:*)",
       "Bash(bin/rails runner:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(unzip:*)"
     ]
   }
 }
