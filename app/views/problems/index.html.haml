@@ -22,36 +22,46 @@
           %th.all Name
           %th Full name
           %th Difficulty
-          %th.text-end
-            A - D(T)
-            = render partial: 'tooltip', locals: {title: 'number of attachments, datasets, testcases of the problem'}
-          %th.text-end Solution/Hint
+          %th.text-center
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Checker'}} checkbook
+          %th.text-center
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Datasets (Testcases)'}} dataset
+          %th.text-center
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Hints'}} lightbulb
+          %th.text-center
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Model Solutions'}} code
           %th Tags
           %th
             Submit
             = render partial: 'tooltip', locals: {title: 'Admin can always submit to any problem'}
           %th Date added
           %th.text-center.all
-            Avail?
-            = render partial: 'tooltip', locals: {title: 'If "Avail?" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.'}
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Available to students'}} toggle_on
           %th.text-center
-            View Testcase?
-            = render partial: 'tooltip', locals: {title: 'Let user view the testcase of this problem?'}
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Students can view testcases'}} bug_report
           %th.text-center.all
       %tbody
         - for problem in @problems
           %tr{:class => "#{(problem.available) ? "table-success" : ""}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
             - @problem=problem
-            %td= problem.name
+            %td.font-monospace= problem.name
             %td
-              = problem.full_name
-              = link_to_description_if_any "[<span class='mi md-18'>description</span> Read]".html_safe, problem, class: "link-flex"
-              = link_to "[<span class='mi md-18'>archive</span> Files]".html_safe, download_by_type_problem_path(problem,'attachment'), class: 'link-flex' if problem.attachment.attached?
+              .d-inline-flex.align-items-center
+                = problem.full_name
+                = link_to_description_if_any mdi(:description, 'md-18 text-muted'), problem, class: 'ms-1 d-inline-flex text-decoration-none', title: 'Read statement', data: {'bs-toggle': 'tooltip'}
+                - if problem.attachment.attached?
+                  = link_to mdi(:archive, 'md-18 text-muted'), download_by_type_problem_path(problem, 'attachment'), class: 'ms-1 d-inline-flex text-decoration-none', title: 'Download files', data: {'bs-toggle': 'tooltip'}
             %td= render_star(problem.difficulty)
-            %td.text-end
-              = problem.live_dataset.checker.attached? ? mdi(:checkbook) : ''
-              = "#{problem.attachment.attached? ? 1 : 0} - #{problem.dataset_count}(#{problem.tc_count})"
-            %td.text-end= "#{problem.ms_count || '-'}/#{problem.hint_count || '-'}"
+            %td.text-center
+              - if problem.live_dataset&.checker&.attached?
+                %span.text-success ✓
+            %td.text-center= "#{problem.dataset_count}(#{problem.tc_count})"
+            %td.text-center
+              - if problem.hint_count && problem.hint_count > 0
+                = problem.hint_count
+            %td.text-center
+              - if problem.ms_count && problem.ms_count > 0
+                = problem.ms_count
             %td
               - problem.tags.each do |t|
                 %span.badge.text-bg-secondary.bg-opacity-100= t.name
@@ -60,8 +70,7 @@
             %td
               .form-check.form-switch.d-flex.justify-content-center
                 %input.form-check-input{id: "prob-#{problem.id}-available-switch", checked: problem.available, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'available', readonly: @current_user.admin? ? 'false' : 'true'}, disabled: @current_user.admin? == false}
-            %td 
-              -#= toggle_button(@problem.view_testcase?, toggle_view_testcase_problem_path(@problem), "problem-view-testcase-#{@problem.id}")
+            %td
               .form-check.form-switch.d-flex.justify-content-center
                 %input.form-check-input{id: "prob-#{problem.id}-view-testcase-switch", checked: problem.view_testcase, type: "checkbox", data: {action: 'problem#toggle', 'row-id': problem.id, field: 'view_testcase'}}
             %td.py-1.all
@@ -82,7 +91,7 @@
     $("#main_table").DataTable({
       sorting: false,
       columnDefs: [
-        { targets: [3,4,5,6,10], sortable: false },
+        { targets: [3,4,5,6,7,8,9,12], sortable: false },
       ],
       paging: false,
       responsive: true,
