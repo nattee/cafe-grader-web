@@ -29,9 +29,17 @@ class AnnouncementsTest < ApplicationSystemTestCase
     assert_text "test body 12345"
 
   end
-  # test "visiting the index" do
-  #   visit announcements_url
-  #
-  #   assert_selector "h1", text: "Announcement"
-  # end
+  test "update announcement" do
+    visit root_path
+    fill_in "Login", with: "admin"
+    fill_in "Password", with: "admin"
+    click_on "Login"
+
+    visit edit_announcement_path(announcements(:one))
+
+    fill_in "Title", with: "Updated Announcement Title"
+    click_on "Save Changes"
+
+    assert_text "Updated Announcement Title"
+  end
 end
