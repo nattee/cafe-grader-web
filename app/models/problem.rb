@@ -27,6 +27,7 @@ class Problem < ApplicationRecord
   has_many :testcases, dependent: :destroy
 
   has_many :submissions, dependent: :destroy
+  has_one :problem_stat, dependent: :destroy
 
   has_many :comments, as: :commentable, dependent: :destroy
 

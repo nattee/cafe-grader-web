@@ -186,4 +186,56 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
     get "/report/max_score"
     assert_response :success
   end
+
+  # -------------------------------------------------------
+  # SECTION 6: Hall of Fame authorization
+  # -------------------------------------------------------
+
+  test "admin can access hall of fame even when disabled" do
+    set_grader_config("right.user_hall_of_fame", "false")
+    sign_in_as("admin", "admin")
+    get problem_hof_report_path
+    assert_response :success
+  end
+
+  test "normal user can access hall of fame when enabled" do
+    set_grader_config("right.user_hall_of_fame", "true")
+    sign_in_as("john", "hello")
+    get problem_hof_report_path
+    assert_response :success
+  end
+
+  test "normal user blocked from hall of fame when disabled" do
+    set_grader_config("right.user_hall_of_fame", "false")
+    sign_in_as("john", "hello")
+    get problem_hof_report_path
+    assert_redirected_to list_main_path
+  end
+
+  test "hall of fame detail respects can_view_problem" do
+    set_grader_config("system.mode", "contest")
+    set_grader_config("right.user_hall_of_fame", "true")
+    sign_in_as("james", "morning")  # in contest_a only
+
+    # prob_add is in contest_a — allowed
+    get problem_hof_view_report_path(problems(:prob_add))
+    assert_response :success
+
+    # hard is only in contest_b — blocked
+    get problem_hof_view_report_path(problems(:hard))
+    assert_response :redirect
+  end
+
+  test "non-admin cannot access hall of fame recompute" do
+    set_grader_config("right.user_hall_of_fame", "true")
+    sign_in_as("john", "hello")
+    post problem_hof_recompute_report_path
+    assert_redirected_to list_main_path
+  end
+
+  test "admin can access hall of fame recompute" do
+    sign_in_as("admin", "admin")
+    post problem_hof_recompute_report_path, as: :turbo_stream
+    assert_response :success
+  end
 end
