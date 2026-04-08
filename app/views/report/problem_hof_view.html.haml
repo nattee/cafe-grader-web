@@ -1,0 +1,4 @@
+= render 'application/breadcrumb', steps: [{ label: 'Hall of Fame', path: problem_hof_report_path }, { label: @problem.full_name }]
+.mb-3
+  = render partial: 'problems/problem_head', locals: {problem: @problem}
+= render partial: 'task_hof'
