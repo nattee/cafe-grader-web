@@ -388,7 +388,45 @@ class UserAuthorizationTest < ActiveSupport::TestCase
   end
 
   # -------------------------------------------------------
-  # SECTION 8: set_exam_mode lockdown
+  # SECTION 8: can_report_problem?
+  # -------------------------------------------------------
+
+  test "can_report_problem: admin can always report" do
+    assert users(:admin).can_report_problem?(problems(:prob_add))
+    assert users(:admin).can_report_problem?(problems(:prob_sub))
+  end
+
+  test "can_report_problem: normal user cannot report in standard no-group" do
+    set_grader_config("system.mode", "standard")
+    set_grader_config("system.use_problem_group", "false")
+    assert_not users(:john).can_report_problem?(problems(:prob_add))
+  end
+
+  test "can_report_problem: group editor can report problems in their group" do
+    set_grader_config("system.mode", "standard")
+    set_grader_config("system.use_problem_group", "true")
+    assert users(:mary).can_report_problem?(problems(:prob_add))
+  end
+
+  test "can_report_problem: group user cannot report even in their group" do
+    set_grader_config("system.mode", "standard")
+    set_grader_config("system.use_problem_group", "true")
+    assert_not users(:john).can_report_problem?(problems(:prob_add))
+  end
+
+  test "can_report_problem: contest editor can report contest problems" do
+    set_grader_config("system.mode", "contest")
+    mary = users(:mary)  # editor in contest_a
+    assert mary.can_report_problem?(problems(:prob_add))
+  end
+
+  test "can_report_problem: contest user cannot report" do
+    set_grader_config("system.mode", "contest")
+    assert_not users(:james).can_report_problem?(problems(:prob_add))
+  end
+
+  # -------------------------------------------------------
+  # SECTION 9: set_exam_mode lockdown
   # -------------------------------------------------------
 
   test "set_exam_mode disables all permissive configs" do

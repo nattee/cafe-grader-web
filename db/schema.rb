@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_22_021758) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_08_221425) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -268,6 +268,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_22_021758) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "problem_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.integer "problem_id", null: false
+    t.integer "sub_count", default: 0, null: false
+    t.integer "solved_count", default: 0, null: false
+    t.integer "attempted_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["problem_id"], name: "index_problem_stats_on_problem_id", unique: true
+  end
+
   create_table "problems", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", limit: 30
     t.string "full_name"
@@ -323,26 +333,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_22_021758) do
     t.index ["user_id"], name: "index_roles_users_on_user_id"
   end
 
-  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "submission_id", null: false
-    t.decimal "point", precision: 8, scale: 4
+    t.decimal "points", precision: 8, scale: 4
     t.integer "status", limit: 1, default: 0, null: false
-    t.float "max_runtime"
-    t.integer "peak_memory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["dataset_id"], name: "index_score_submissions_on_dataset_id"
     t.index ["submission_id"], name: "index_score_submissions_on_submission_id"
   end
 
-  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "user_id", null: false
-    t.decimal "point", precision: 8, scale: 4
+    t.decimal "points", precision: 8, scale: 4
     t.integer "status", limit: 1, default: 0, null: false
-    t.float "max_runtime"
-    t.integer "peak_memory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["dataset_id"], name: "index_score_users_on_dataset_id"
@@ -510,6 +516,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_22_021758) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "problem_stats", "problems"
   add_foreign_key "problems_tags", "problems"
   add_foreign_key "problems_tags", "tags"
 end

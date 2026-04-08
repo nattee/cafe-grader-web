@@ -12,7 +12,8 @@ class ReportController < ApplicationController
 
   # for hall of fame
   before_action :set_problem, only: [:problem_hof_view]
-  before_action :hall_of_fame_authorization, only: [:problem_hof, :problem_hof_view]
+  before_action :hall_of_fame_authorization, only: [:problem_hof, :problem_hof_query, :problem_hof_view]
+  before_action :admin_authorization, only: [:problem_hof_recompute]
   before_action :can_view_problem, only: [:problem_hof_view]
 
   # render the UI for filtering and the initial blank table
@@ -233,17 +234,32 @@ class ReportController < ApplicationController
   # end
 
   def problem_hof
-    # gen problem list
+  end
+
+  def problem_hof_query
     @user = User.find(session[:user_id])
-    @problems = @user.problems_for_action(:submit)
+    problem_ids = @user.problems_for_action(:submit).pluck(:id)
+
+    @problems = Problem.where(id: problem_ids)
+      .left_joins(:problem_stat)
+      .select(
+        "problems.id, problems.name, problems.full_name",
+        "COALESCE(problem_stats.sub_count, 0) as sub_count",
+        "COALESCE(problem_stats.attempted_count, 0) as attempted_count",
+        "COALESCE(problem_stats.solved_count, 0) as solved_count"
+      )
+  end
+
+  def problem_hof_recompute
+    ProblemStat.recompute_all
+    @toast = { title: "Hall of Fame", body: "Statistics recomputed for #{ProblemStat.count} problems." }
+    render "turbo_toast"
   end
 
   def problem_hof_view
-    # gen problem list
     @user = User.find(session[:user_id])
-    @problems = @user.problems_for_action(:submit)
 
-    # model submisssion
+    # model submission
     @model_subs = Submission.where(problem: @problem, tag: Submission.tags[:model])
 
 
@@ -328,7 +344,6 @@ class ReportController < ApplicationController
     # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
 
-    render 'problem_hof'
   end
 
   def stuck # report struggling user,problem

@@ -7,6 +7,10 @@ default: &default
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
+  recurring:
+    refresh_problem_stats:
+      class: RefreshProblemStatsJob
+      schedule: every hour
 
 development:
   <<: *default

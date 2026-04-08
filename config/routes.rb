@@ -305,6 +305,8 @@ Rails.application.routes.draw do
 
     # hall of fame
     get 'problem_hof'
+    post 'problem_hof_query'
+    post 'problem_hof_recompute'
     get 'problem_hof/:id', action: 'problem_hof_view', as: 'problem_hof_view'
 
     # get 'progress'
