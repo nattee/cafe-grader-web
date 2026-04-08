@@ -1,7 +1,8 @@
-%h1 Manage problems
-
-.mb-3.d-flex.gap-1.align-items-center.align-middle
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1 gap-1 d-flex align-items-center text-decoration-none'
+= render 'application/breadcrumb', steps: [{ label: 'Problems', path: problems_path, icon: resource_icon_name(Problem) }, { label: 'Manage' }]
+.d-flex.justify-content-between.align-items-center.mb-4
+  .d-flex.flex-column.gap-1
+    %small.text-secondary.text-uppercase.fw-bold.ls-1 Management
+    %h2.fw-bold.text-dark.mb-0 Bulk Manage Problems
 
 - if @result && @result.count > 0
   .alert.alert-info
@@ -16,27 +17,28 @@
 
 = form_with url: manage_problems_path, class: 'align-items-center',
   data: {turbo: true, action: 'turbo:submit-end->problem#bulkManageSubmitEnd',controller: 'init-ui-component' } do |f|
-  .card.border-primary.mb-2
-    .card-header.text-bg-primary.border-primary
-      Action
+  .card.card-shadow.mb-4
     .card-body
-      What do you want to do to the selected problem?
-      %br/
-      (You can shift-click to select a range of problems)
+      .d-flex.align-items-start.mb-3
+        .bg-primary-subtle.text-primary.rounded-3.d-flex.align-items-center.justify-content-center.me-3{ style: "width: 48px; height: 48px; flex-shrink: 0;" }
+          %span.mi.md-36.fill build
+        .flex-grow-1
+          %h5.fw-bold.text-dark.mb-0 Bulk Actions
+          %small.text-muted Select problems below, choose actions, then apply. You can shift-click to select a range.
       .row
         .col-md-6
-          .row.my-3.align-items-center
+          .row.mb-3.align-items-center
             .col-md-auto
               .form-check
-                = f.label :change_date_added, 'Change "Date added" to'
                 = f.check_box :change_date_added, class: 'form-check-input manage-action'
+                = f.label :change_date_added, 'Change "Date added" to'
             .col-md-auto
               = f.text_field :date_added, class: 'form-control'
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
-                = f.label :change_enable, 'Set "Available" to'
                 = f.check_box :change_enable, class: 'form-check-input manage-action'
+                = f.label :change_enable, 'Set "Available" to'
             .col-md-auto
               = f.radio_button :enable, "yes", class: 'form-check-input manage-action'
               = f.label :enable_yes, "yes"
@@ -47,55 +49,53 @@
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
-                = f.label :add_group, 'Add to groups'
                 = f.check_box :add_group, class: 'form-check-input manage-action'
+                = f.label :add_group, 'Add to groups'
             .col-md-auto
               = f.select "group_id", options_from_collection_for_select( Group.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select groups'}
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
-                = f.label :add_tags, 'Add tags'
                 = f.check_box :add_tags, class: 'form-check-input manage-action'
+                = f.label :add_tags, 'Add tags'
             .col-md-auto
               = f.select "tag_ids", options_from_collection_for_select( Tag.all, 'id','name'), {},class: 'select2', multiple: true, data: {placeholder: 'Select tags by clicking', width: "400px"}
           .row.mb-3.align-items-center
             .col-md-auto
               .form-check
-                = f.label :set_languages, 'Set permitted languages'
                 = f.check_box :set_languages, class: 'form-check-input manage-action'
+                = f.label :set_languages, 'Set permitted languages'
             .col-md-auto
               = f.select "lang_ids", options_from_collection_for_select( Language.all, 'id','name',params[:group_name]), {}, class: 'select2 form-control', multiple: true, data: {width: "400px", placeholder: 'Click to select languages'}
-      .row.mb-3
-        .col-auto
-          = f.submit :go, class: 'btn btn-primary'
+      .d-flex.justify-content-end
+        = f.submit 'Apply to Selected', class: 'btn btn-primary btn-flex px-4'
 
-  %table#main-table.table.table-hover.datatable
-    %thead
-      %tr
-        %th
-          .form-check
-            %input#select_all.form-check-input.form-check-thick{type: :checkbox}
-        %th Name
-        %th Full name
-        %th Difficulty
-        %th Permitted Languages
-        %th Tags
-        %th Date added
-        %th Available
+  .card.card-shadow
+    .card-body
+      %table#main-table.table.table-hover.table-condense.align-middle.datatable
+        %thead
+          %tr
+            %th
+              .form-check
+                %input#select_all.form-check-input.form-check-thick{type: :checkbox}
+            %th Name
+            %th Full name
+            %th Difficulty
+            %th Permitted Languages
+            %th Tags
+            %th Date added
+            %th Available
 
 :javascript
 
   window.addEventListener("load", function() {
 
-
     badge_renderer = cafe.dt.render_factory.badge()
 
     function permitted_langs_render(data,type,row,meta) {
-      // check if null or undefined
       if (data == null) return ''
 
       if (type == 'display') {
-        // call the badge render
         return badge_renderer(JSON.stringify(data.split(' ')),type,row,meta)
       }
 
@@ -124,21 +124,17 @@
     }
 
     function full_name_render(data,type,row,meta) {
-      // statement link
-      let statement = ' <a href="$(url)" class="link-flex">[Read <span class="mi md-18">description</span>]</a>'
+      let statement = ''
       if (typeof row.url === 'string' && row.url.length > 0)
-        statement = statement.replace('$(url)',row.url)
+        statement = ` <a href="${row.url}" class="ms-1 d-inline-flex text-decoration-none" title="Read statement" data-bs-toggle="tooltip"><span class="mi md-18 text-muted">description</span></a>`
       else if (row.statement_attached)
-        statement = statement.replace('$(url)',row.statement_path)
-      else statement = ''
+        statement = ` <a href="${row.statement_path}" class="ms-1 d-inline-flex text-decoration-none" title="Read statement" data-bs-toggle="tooltip"><span class="mi md-18 text-muted">description</span></a>`
 
-      let attachment = ' <a href="$(url)" class="link-flex">[Files <span class="mi md-18">archive</span>]</a>'
+      let attachment = ''
       if (row.attachment_attached)
-        attachment = attachment.replace('$(url)',row.attachment_path)
-      else attachment = ''
+        attachment = ` <a href="${row.attachment_path}" class="ms-1 d-inline-flex text-decoration-none" title="Download files" data-bs-toggle="tooltip"><span class="mi md-18 text-muted">archive</span></a>`
 
-      // attachment link
-      return data + statement + attachment
+      return `<div class="d-inline-flex align-items-center">${data}${statement}${attachment}</div>`
     }
 
     table = $('.datatable').DataTable({
@@ -150,10 +146,10 @@
         beforeSend: (request) => {
           request.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'));
         },
-      }, //end ajax
-      columns: [ 
+      },
+      columns: [
         {data: 'id', name: 'checkbox', render: check_box_render, className: 'd-flex justify-content-center'},
-        {data: 'name'},
+        {data: 'name', className: 'font-monospace'},
         {data: 'full_name', render: full_name_render},
         {data: 'difficulty', render: difficulty_render, className: 'text-start'},
         {data: 'permitted_lang', render: permitted_langs_render},
@@ -165,22 +161,18 @@
       order: [[0]],
     });
 
-
     td = new TempusDominus(document.getElementById('date_added'), cafe.config.td.date);
 
-    // new shift-click logic
-    let firstRowIndex = null; // row index may change during interaction
-    const checkboxColumnIndex = table.column('checkbox:name').index(); // column index doesn't change
+    let firstRowIndex = null;
+    const checkboxColumnIndex = table.column('checkbox:name').index();
 
-    // Event listener for clicking a cell in the "checkbox" column
     $('#main-table tbody').on('click', 'td', function(e) {
       let cell = table.cell(this).index()
       if (cell.column != checkboxColumnIndex) return
       if (e.shiftKey && firstRowIndex !== null) {
           const lastRowIndex = table.cell(this).index().row;
 
-          // find first,last rows in rowLoop
-          let start = table.rows().count()  + 1
+          let start = table.rows().count() + 1
           let end = -1
           table.rows().every( function(rowIdx, tableLoop, rowLoop) {
             if (rowIdx == firstRowIndex || rowIdx == lastRowIndex) {
@@ -189,28 +181,19 @@
             }
           })
 
-          //mark selection the same as the lastRowIdx going to be
           const target_checked = document.getElementById(`prob-${table.row(lastRowIndex).data().id}`).checked
           table.rows().every( function(rowIdx, tableLoop, rowLoop) {
             if (rowLoop >= start && rowLoop <= end) {
               document.getElementById(`prob-${table.row(rowIdx).data().id}`).checked = target_checked
             }
           })
-
-          // Select all rows between the first clicked row and the current clicked row
-          //for (let i = start; i <= end; i++) {
-          //    table.row(i).select();  // Select the row
-          // }
       } else {
-          // If Shift isn't pressed, store the first clicked row index
           firstRowIndex = table.cell(this).index().row;
       }
     });
 
-    // select all button
     $('#select_all').on('click', function(e) {
       $('.prob-select-check').prop('checked',e.target.checked)
-
     })
 
   });
