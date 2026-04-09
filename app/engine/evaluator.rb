@@ -9,6 +9,7 @@ class Evaluator
   include IsolateRunner
   include JudgeBase
   include Rails.application.routes.url_helpers
+  include EvaluatorCocotb
 
   # main run function
   # run the submission against the testcase
@@ -41,12 +42,15 @@ class Evaluator
     isolate_args += ["-i", "#{@isolate_input_file}"] if input_redirect_by_lang(@sub.language.name) # redirect input, if needed
     isolate_args += ['-f 50000'] # allow max 50MB output
     input = {"#{@isolate_input_path}": @input_file.dirname,
-             "#{@isolate_data_path}": @prob_data_path.cleanpath,
              "#{@isolate_bin_path}": @mybin_path.cleanpath}
+    # cocotb must NOT mount /data read-only here (run.sh writes /data/student.v; cocotb uses input_rw + workspace only).
+    input["#{@isolate_data_path}"] = @prob_data_path.cleanpath unless cocotb_evaluation?
+    input_rw = {}
+    configure_evaluate_isolate_inputs!(isolate_args, input, input_rw)
     output = {"#{@isolate_output_path}": @output_path}
     meta_file = @sub_testcase_path + 'meta.txt'
 
-    out, err, status, meta = run_isolate(cmd_string, input: input, output: output, isolate_args: isolate_args, meta: meta_file,
+    out, err, status, meta = run_isolate(cmd_string, input: input, input_rw: input_rw, output: output, isolate_args: isolate_args, meta: meta_file,
                                   time_limit: @working_dataset.time_limit, mem_limit: @working_dataset.memory_limit,
                                   cg: need_cg)
 

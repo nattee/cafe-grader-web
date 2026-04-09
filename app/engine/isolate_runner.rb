@@ -17,11 +17,12 @@ module IsolateRunner
   # mem_limit is in MB
   # time_limit is in sec
   # uid is only available when the command is ran as root
-  def run_isolate(prog, input: {}, output: {}, time_limit: 1, wall_limit: time_limit + 0.5, mem_limit: 1024,
+  def run_isolate(prog, input: {}, output: {}, input_rw: {}, time_limit: 1, wall_limit: time_limit + 0.5, mem_limit: 1024,
                   isolate_args: [], meta: MetaFilename, cg: false, uid: false)
     # mount directory for input /output
     dir_args = []
     output.each { |k, v| dir_args << ['-d', "#{k}=#{v}:rw"] } # these are mounted read/write
+    input_rw.each { |k, v| dir_args << ['-d', "#{k}=#{v}:rw"] } # rw copy (e.g. cocotb /data — must not mutate shared problem tree)
     input.each { |k, v| dir_args << ['-d', "#{k}=#{v}"] }     # these are mounted readonly
 
     limit_arg = "-t #{time_limit} -x #{wall_limit} -w #{wall_limit} #{cg ? '--cg-mem' : '-m'} #{mem_limit * 1024}"

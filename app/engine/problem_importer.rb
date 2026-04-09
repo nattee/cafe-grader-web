@@ -112,10 +112,36 @@ class ProblemImporter
   end
 
   def load_options
+    @options = {}
     yaml, fn = get_content_of_first_match('config.yml')
     if yaml
-      @options = YAML.safe_load(yaml, symbolize_names: true)
+      @options = YAML.safe_load(yaml, symbolize_names: true) || {}
     end
+  end
+
+  def cocotb_evaluation?
+    t = @options[:evaluation_type]
+    t.to_s.downcase == 'cocotb' || t == :cocotb
+  end
+
+  def read_cocotb_assets
+    base = Pathname.new(@base_dir).cleanpath
+
+    paths = []
+    paths.concat(Dir.glob("#{base}/**/grade.sh").select { |f| File.file?(f) })
+    paths.concat(Dir.glob("#{base}/**/*.py").select { |f| File.file?(f) })
+    # Reference RTL / TB templates (submission is copied to student.v at judge time; do not omit DUT .v).
+    paths.concat(Dir.glob("#{base}/**/*.v").select { |f| File.file?(f) })
+
+    paths.uniq.sort.each do |fn|
+      rel = Pathname.new(fn).relative_path_from(base).to_s
+      @log << "cocotb: attach data file #{rel}"
+      File.open(fn, 'rb') do |io|
+        @dataset.data_files.attach(io: io, filename: rel)
+      end
+    end
+    @dataset.evaluation_type = :cocotb
+    @dataset.save
   end
 
   def read_options
@@ -403,6 +429,7 @@ class ProblemImporter
     read_attachment if do_attachment
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
+    read_cocotb_assets if cocotb_evaluation?
     read_initializers if do_initializers
     read_options # options is put to last, it will override any defaults
     read_solutions if do_solutions

@@ -48,7 +48,7 @@ module JudgeBase
 
   def isolate_need_cg_by_lang(language_name)
     case language_name
-    when 'java', 'digital', 'go', 'python'
+    when 'java', 'digital', 'go', 'python', 'verilog'
       true
     else
       false
@@ -74,6 +74,8 @@ module JudgeBase
       '-p -d /gocache:tmp --env=GOCACHE=/gocache'
     when 'postgres'
       '-p --share-net'
+    when 'verilog'
+      '-p'
     else
       ''
     end
