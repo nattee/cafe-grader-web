@@ -226,6 +226,27 @@ class AuthorizationTest < ActionDispatch::IntegrationTest
     assert_response :redirect
   end
 
+  test "hall of fame query excludes hidden problems" do
+    set_grader_config("right.user_hall_of_fame", "true")
+    problems(:prob_add).update!(hide_from_hall_of_fame: true)
+    sign_in_as("john", "hello")
+
+    post problem_hof_query_report_path, as: :json
+    assert_response :success
+
+    names = JSON.parse(response.body).fetch("data").map { |row| row.fetch("name") }
+    assert_not_includes names, problems(:prob_add).name
+  end
+
+  test "hall of fame detail blocks hidden problem" do
+    set_grader_config("right.user_hall_of_fame", "true")
+    problems(:prob_add).update!(hide_from_hall_of_fame: true)
+    sign_in_as("john", "hello")
+
+    get problem_hof_view_report_path(problems(:prob_add))
+    assert_response :redirect
+  end
+
   test "non-admin cannot access hall of fame recompute" do
     set_grader_config("right.user_hall_of_fame", "true")
     sign_in_as("john", "hello")
