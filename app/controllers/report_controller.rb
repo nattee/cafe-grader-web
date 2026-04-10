@@ -15,6 +15,7 @@ class ReportController < ApplicationController
   before_action :hall_of_fame_authorization, only: [:problem_hof, :problem_hof_query, :problem_hof_view]
   before_action :admin_authorization, only: [:problem_hof_recompute]
   before_action :can_view_problem, only: [:problem_hof_view]
+  before_action :problem_hall_of_fame_visible, only: [:problem_hof_view]
 
   # render the UI for filtering and the initial blank table
   def max_score
@@ -240,7 +241,7 @@ class ReportController < ApplicationController
     @user = User.find(session[:user_id])
     problem_ids = @user.problems_for_action(:submit).pluck(:id)
 
-    @problems = Problem.where(id: problem_ids)
+    @problems = Problem.where(id: problem_ids, hide_from_hall_of_fame: false)
       .left_joins(:problem_stat)
       .select(
         "problems.id, problems.name, problems.full_name",
@@ -592,6 +593,11 @@ ORDER BY submitted_at
     def hall_of_fame_authorization
       return true if @current_user.admin?
       unauthorized_redirect(msg: 'Hall of fame is disabled') unless GraderConfiguration["right.user_hall_of_fame"]
+    end
+
+    def problem_hall_of_fame_visible
+      return true unless @problem.hide_from_hall_of_fame?
+      unauthorized_redirect(msg: 'This problem is hidden from Hall of Fame')
     end
 
     def set_problem
