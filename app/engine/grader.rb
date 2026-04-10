@@ -113,10 +113,17 @@ class Grader
           s.set_grading_error(ge.message_for_user)
         end
       rescue => e
-        judge_log Rainbow('(ERROR)').bg(COLOR_ERROR).color(:black), Logger::ERROR
-        judge_log e, Logger::ERROR
-        # reset job status to be run again
-        @job.update(status: :wait)
+        judge_log Rainbow('(ERROR)').bg(COLOR_ERROR).color(:black) + " #{e.class}: #{e.message}", Logger::ERROR
+        judge_log e.backtrace&.first(5)&.join("\n"), Logger::ERROR
+        # retry up to 3 times, then mark as error to prevent infinite loop
+        retry_count = (@job.result&.match(/retry (\d+)/)&.[](1)&.to_i || 0) + 1
+        if retry_count < 3
+          @job.update(status: :wait, result: "retry #{retry_count}: #{e.class}: #{e.message}")
+        else
+          @job.update(status: :error, result: "gave up after #{retry_count} retries: #{e.class}: #{e.message}")
+          s = Submission.find_by(id: @job.arg)
+          s&.set_grading_error("Internal grading error after #{retry_count} retries, please rejudge.")
+        end
       end
       result = true
     else
@@ -186,7 +193,8 @@ class Grader
 
     GraderProcess.where(worker_id: worker_id).each do |gp|
       # check running status
-      grader_process = `ps -e -o pid,args | grep "start([[:blank:]]*#{gp.box_id}[[:blank:]]*,[[:blank:]]*:#{server_key})$" | grep Grader`
+      escaped_key = Shellwords.escape(server_key.to_s)
+      grader_process = `ps -e -o pid,args | grep "start([[:blank:]]*#{gp.box_id}[[:blank:]]*,[[:blank:]]*:#{escaped_key})$" | grep Grader`
       running = grader_process.lines.count >= 1
       puts "grader process with box_id #{gp.box_id} is #{running ? 'found' : 'not found'}"
       if gp.enabled
@@ -200,20 +208,17 @@ class Grader
           puts "spawning new grader main loop with #{cmd}, redirecting :out,:err to #{stdout_file}"
         end
       else
-        # the process should NOT be running
-        # stall = gp.last_heartbeat < 300.seconds.ago
-        stall = true
-        should_be_killed = false
-        pid = grader_process.split[0].to_i
+        # the process should NOT be running, send TERM to stop gracefully
         if running
-          if should_be_killed
-            puts "sending KILL signal to #{pid}"
+          pid = grader_process.split[0].to_i
+          stalled = gp.last_heartbeat.present? && gp.last_heartbeat < 300.seconds.ago
+          if stalled
+            puts "sending KILL signal to stalled process #{pid} (box_id #{gp.box_id})"
             Process.kill("KILL", pid)
-          elsif stall
-            puts "sending TERM signal to #{pid}"
+          else
+            puts "sending TERM signal to #{pid} (box_id #{gp.box_id})"
             Process.kill("TERM", pid)
           end
-          # kill it
         end
       end
     end

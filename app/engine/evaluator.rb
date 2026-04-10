@@ -10,6 +10,10 @@ class Evaluator
   include JudgeBase
   include Rails.application.routes.url_helpers
 
+  TARGET_SCORE_ABS_LIMIT = 1_000_000_000.to_d
+  # Fallback when score column metadata is unavailable.
+  FALLBACK_STORED_SCORE_MAX = 99.999999.to_d
+
   # main run function
   # run the submission against the testcase
   def execute(sub, testcase)
@@ -20,6 +24,8 @@ class Evaluator
     # init isolate
     need_cg = isolate_need_cg_by_lang(@sub.language.name)
     setup_isolate(@box_id, need_cg)
+
+    begin
 
     # prepare data files
     prepare_submission_directory(@sub)
@@ -53,8 +59,9 @@ class Evaluator
     # also run isolate to chmod the outputfile
     run_isolate('/usr/bin/chmod 0666 '+@isolate_stdout_file.to_s, output: output, meta: nil, cg: need_cg)
 
-    # clean up isolate
-    cleanup_isolate(need_cg)
+    ensure
+      cleanup_isolate(need_cg)
+    end
 
     # there should be nothing in "out" because we redirect it by -o
     # save isolate's stderr to disk
@@ -92,8 +99,10 @@ class Evaluator
       # ends normally, runs the comparator
       checker = Checker.get_checker(@sub).new(@worker_id, @box_id)
       check_result = checker.process(@sub, @testcase)
+
+      normalized_score = normalize_score_for_storage(check_result[:score])
       e.update(time: meta['time'] * 1000, memory: meta['max-rss'],
-                result: check_result[:result], score: check_result[:score],
+                result: check_result[:result], score: normalized_score,
                 result_text: (check_result[:comment] || '').truncate(250))
     end
 
@@ -126,5 +135,41 @@ class Evaluator
   def self.get_evaluator(submission)
     # TODO: should return appropriate compiler class
     return self
+  end
+
+  private
+
+  def normalize_score_for_storage(score)
+    return nil if score.nil?
+
+    numeric_score = score.to_d
+    min_score, max_score = score_bounds_for_dataset
+    return max_score if numeric_score > max_score
+    return min_score if numeric_score < min_score
+
+    numeric_score
+  end
+
+  def score_bounds_for_dataset
+    # Keep all non-raw modes compatible with historical scoring semantics.
+    return [0.to_d, 1.to_d] unless @working_dataset&.custom_cms_raw?
+
+    raw_max_score = [max_score_supported_by_column, TARGET_SCORE_ABS_LIMIT].min
+    [-raw_max_score, raw_max_score]
+  end
+
+  def max_score_supported_by_column
+    @max_score_supported_by_column ||= begin
+      col = Evaluation.columns_hash['score']
+      precision = col&.precision
+      scale = col&.scale || 0
+
+      if precision.present? && precision > scale
+        digits_before_decimal = precision - scale
+        (10.to_d**digits_before_decimal) - (1.to_d / (10.to_d**scale))
+      else
+        FALLBACK_STORED_SCORE_MAX
+      end
+    end
   end
 end

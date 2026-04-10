@@ -22,7 +22,7 @@
     = f.input :managers, label: 'Add manager', wrapper: :horizontal_file
 
   -# --- checker ---
-  - if ['custom_cafe','custom_cms'].include? ds.evaluation_type
+  - if ['custom_cafe','custom_cms','custom_cms_raw'].include? ds.evaluation_type
     %h5.my-2.d-flex.align-items-center.gap-2
       %span.mi checkbook
       Checker

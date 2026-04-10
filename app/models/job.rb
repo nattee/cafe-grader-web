@@ -59,7 +59,7 @@ class Job < ApplicationRecord
   def self.has_waiting_job(job_type = nil)
     q = Job.where(status: :wait)
     q = q.where(job_type: job_type) unless job_type.nil?
-    return q.count > 0
+    return q.exists?
   end
 
   # fetch jobs from the queue, only for given job_type, if given
@@ -84,8 +84,8 @@ class Job < ApplicationRecord
     Job.where(parent_job_id: job.parent_job_id, job_type: :evaluate).where.not(status: :success).count == 0
   end
 
-  # delete finished job older than x
+  # delete successful jobs older than x (errors are kept until admin clears them)
   def self.clean_old_job(x = 1.day)
-    Job.finished.where('updated_at < ?', Time.zone.now - x).delete_all
+    Job.where(status: :success).where('updated_at < ?', Time.zone.now - x).delete_all
   end
 end
