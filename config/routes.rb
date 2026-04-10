@@ -358,6 +358,9 @@ Rails.application.routes.draw do
     collection do
       get 'queues'
       post 'queues_query'
+      post 'retry_error_job'
+      post 'retry_all_error_jobs'
+      post 'clear_all_error_jobs'
     end
   end
 

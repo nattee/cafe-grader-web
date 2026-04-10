@@ -7,6 +7,8 @@ class GradersController < ApplicationController
   def index
     @graders = GraderProcess.all
     @wait_count = Job.where(status: :wait).group(:job_type).count
+    @error_count = Job.where(status: :error).count
+    @error_jobs = Job.where(status: :error).order(updated_at: :desc).limit(50) if @error_count > 0
 
     @submission = Submission.order("id desc").limit(20).includes(:user, :problem)
     @backlog_submission = Submission.where('graded_at is null').includes(:user, :problem)
@@ -42,6 +44,25 @@ class GradersController < ApplicationController
 
     # render partial: 'grader', locals: {grader: @grader}
     render turbo_stream: turbo_stream.replace(helpers.dom_id(@grader), partial: 'grader', locals: {grader: @grader})
+  end
+
+  def retry_error_job
+    job = Job.find(params[:job_id])
+    job.update(status: :wait, result: nil)
+    @toast = { title: "Grader", body: "Job ##{job.id} re-queued." }
+    render "turbo_toast"
+  end
+
+  def retry_all_error_jobs
+    count = Job.where(status: :error).update_all(status: :wait, result: nil)
+    @toast = { title: "Grader", body: "#{count} error #{'job'.pluralize(count)} re-queued." }
+    render "turbo_toast"
+  end
+
+  def clear_all_error_jobs
+    count = Job.where(status: :error).delete_all
+    @toast = { title: "Grader", body: "#{count} error #{'job'.pluralize(count)} cleared." }
+    render "turbo_toast"
   end
 
   # solid_queue dashboard
