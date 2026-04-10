@@ -7,7 +7,7 @@ class Checker
 
   # A language specific sub-class may override this method
   # it should return shell command that do the comparison
-  def check_command(evaluation_type, input_file, output_file, ans_file)
+  def check_command(evaluation_type, input_file, output_file, ans_file, source_file = nil)
     case evaluation_type
     when 'default'
       return "diff -q -b -B -Z #{output_file} #{ans_file}"
@@ -20,12 +20,32 @@ class Checker
       prog = Rails.root.join 'lib', 'checker', 'postgres_checker.rb'
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cms'
-      return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
+      base_cmd = "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
+      return source_file ? "#{base_cmd} #{source_file}" : base_cmd
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
     when 'no_check'
       return ""
     end
+  end
+
+  def get_submission_filename
+    if @sub.problem.with_managers? && @sub.problem.submission_filename.blank?
+      raise GraderError.new("Manager Error: no submission filename",
+                            submission_id: @sub.id)
+    end
+
+    if @sub.problem.submission_filename.blank?
+      @sub.language.default_submission_filename
+    else
+      @sub.problem.submission_filename
+    end
+  end
+
+  def ensure_source_for_custom_cms(source_file)
+    return unless @ds.evaluation_type == 'custom_cms'
+
+    File.write(source_file.cleanpath, @sub.source)
   end
 
   def process_result_cms(out, err)
@@ -126,7 +146,13 @@ class Checker
     prepare_testcase_directory(@sub, @testcase)
     check_for_required_file
 
-    cmd = check_command(@ds.evaluation_type, @input_file, @output_file, @ans_file)
+    source_file = nil
+    if @ds.evaluation_type == 'custom_cms'
+      source_file = @source_path + get_submission_filename
+      ensure_source_for_custom_cms(source_file)
+    end
+
+    cmd = check_command(@ds.evaluation_type, @input_file, @output_file, @ans_file, source_file)
 
     # call the compare command
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check cmd: " + Rainbow(cmd).color(JudgeBase::COLOR_CHECK_CMD)
