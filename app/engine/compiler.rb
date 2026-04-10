@@ -67,6 +67,8 @@ class Compiler
     need_cg = isolate_need_cg_by_lang(@sub.language.name)
     setup_isolate(@box_id, need_cg)
 
+    begin
+
     # prepare source file
     prepare_submission_directory(@sub)
     prepare_files_for_compile
@@ -110,8 +112,9 @@ class Compiler
     # chmod the compile result
     run_isolate("/usr/bin/chmod -R 0777 #{@isolate_bin_path}", output: output)
 
-    # clean up isolate
-    cleanup_isolate(need_cg)
+    ensure
+      cleanup_isolate(need_cg)
+    end
 
     # call language-specific checking of compilation
     compile_result = check_compile_result(out, err, status, meta)

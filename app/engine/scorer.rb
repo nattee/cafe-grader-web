@@ -18,6 +18,7 @@ class Scorer
       sum_user_score += score * weight
       sum_total_weight += weight
     end
+    raise GraderError.new("All testcase weights are zero for Sub ##{@sub.id}", submission_id: @sub.id) if sum_total_weight.zero?
     score = sum_user_score / sum_total_weight * 100.to_d
     return score
   end
@@ -25,7 +26,8 @@ class Scorer
   def group_min
     # evs = evaluations sorted by group
     evs = sorted_evaluation.select(:group, :group_name, :score, :weight, :testcase_id).map { |r| r.attributes.symbolize_keys }
-    max_group = evs.max { |x, y| x[:group] || 0 && y[:group] || 0 }
+    return 0.to_d if evs.empty?
+    max_group = evs.max_by { |x| x[:group] || 0 }
     evs << {group: max_group[:group]+1} # this is sentinel, the after final group
 
     last_group = max_group[:group]+2
@@ -54,6 +56,7 @@ class Scorer
       last_group = group
     end
 
+    raise GraderError.new("All testcase weights are zero for Sub ##{@sub.id}", submission_id: @sub.id) if sum_total_weight.zero?
     score = sum_user_score / sum_total_weight * 100.to_d
     return score
   end
@@ -64,7 +67,8 @@ class Scorer
 
     # gen group info
     evs = sorted_evaluation.select(:group, :group_name, :result, :testcase_id).map { |r| r.attributes.symbolize_keys }
-    max_group = evs.max { |x, y| x[:group] || 0 && y[:group] || 0 }
+    return '' if evs.empty?
+    max_group = evs.max_by { |x| x[:group] || 0 }
     evs << {group: max_group[:group]+1, result: ''} # this is sentinel
 
     last_group = max_group[:group]+2 # some group number that is not in the data and not sentinel
@@ -106,7 +110,7 @@ class Scorer
     @working_dataset = dataset
 
     # validate if sub has evaluations of all testcases of the dataset
-    sub_tc_ids = @sub.evaluations.where.not(result: 'waiting').pluck(:testcase_id).sort
+    sub_tc_ids = @sub.evaluations.where.not(result: :waiting).pluck(:testcase_id).sort
     ds_tc_ids = @working_dataset.testcases.ids.sort
     if sub_tc_ids != ds_tc_ids
       msg = "Evaluations are missing, please rejudge."
