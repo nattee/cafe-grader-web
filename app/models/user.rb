@@ -435,6 +435,7 @@ class User < ApplicationRecord
     # Here, we knows that the user does not have special privileges to the problem
     # problem available is required
     return false unless problems_for_action(:submit).include? submission.problem
+    return false unless submission.problem.view_submission
 
     return (submission.user == self) || (GraderConfiguration["right.user_view_submission"])
   end
