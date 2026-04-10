@@ -131,6 +131,8 @@ class Scorer
       point = sum_of_all_testcases
     when 'group_min'
       point = group_min
+    when 'raw_sum'
+      point = raw_sum
     else
     end
 

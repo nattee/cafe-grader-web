@@ -14,6 +14,7 @@ class DatasetTest < ActiveSupport::TestCase
     ds = datasets(:ds_add)
     assert ds.respond_to?(:st_sum?)
     assert ds.respond_to?(:st_group_min?)
+    assert ds.respond_to?(:st_raw_sum?)
   end
 
   # --- Methods ---

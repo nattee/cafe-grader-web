@@ -13,6 +13,7 @@ class Dataset < ApplicationRecord
 
   enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,
+                           raw_sum: 2,
                          }, prefix: :st
 
   has_one_attached :checker
