@@ -4,6 +4,8 @@ class Scorer
   include JudgeBase
   include Rails.application.routes.url_helpers
 
+  FALLBACK_POINTS_MAX = 9999.9999.to_d
+
   def sorted_evaluation
     @sub.evaluations.joins(:testcase).includes(:testcase)
           .order(:group, :code_name, 'testcases.id ASC')
@@ -58,6 +60,16 @@ class Scorer
 
     raise GraderError.new("All testcase weights are zero for Sub ##{@sub.id}", submission_id: @sub.id) if sum_total_weight.zero?
     score = sum_user_score / sum_total_weight * 100.to_d
+    return score
+  end
+
+  def raw_sum
+    sum_user_score = 0.to_d
+    @sub.evaluations.each do |ev|
+      score = ev.score || 0
+      sum_user_score += score
+    end
+    score = sum_user_score
     return score
   end
 
@@ -125,6 +137,8 @@ class Scorer
       point = sum_of_all_testcases
     when 'group_min'
       point = group_min
+    when 'raw_sum'
+      point = raw_sum
     else
     end
 
@@ -135,7 +149,7 @@ class Scorer
     max_mem = @sub.evaluations.pluck(:memory).map { |x| x || 0 }.max
 
     # update result
-    @sub.set_grading_complete(point, grading_text, max_time, max_mem)
+    @sub.set_grading_complete(normalize_point_for_storage(point), grading_text, max_time, max_mem)
 
     judge_log "#{rb_sub(@sub)} completed with points = " + Rainbow("#{point} (#{grading_text})").color(COLOR_SCORE_RESULT)
     return EngineResponse::Result.success
@@ -145,5 +159,34 @@ class Scorer
   def self.get_scorer(submission)
     # todo: should return appropriate scorer class
     return self
+  end
+
+  private
+
+  def normalize_point_for_storage(point)
+    return nil if point.nil?
+
+    numeric_point = point.to_d
+    max_point = max_points_supported_by_column
+    min_point = -max_point
+    return max_point if numeric_point > max_point
+    return min_point if numeric_point < min_point
+
+    numeric_point
+  end
+
+  def max_points_supported_by_column
+    @max_points_supported_by_column ||= begin
+      col = Submission.columns_hash['points']
+      precision = col&.precision
+      scale = col&.scale || 0
+
+      if precision.present? && precision > scale
+        digits_before_decimal = precision - scale
+        (10.to_d**digits_before_decimal) - (1.to_d / (10.to_d**scale))
+      else
+        FALLBACK_POINTS_MAX
+      end
+    end
   end
 end

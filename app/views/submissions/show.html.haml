@@ -70,7 +70,13 @@
             .col-4.text-end.text-secondary
               Points
             .col
-              #{@submission.points}/100
+              - live_dataset = @submission.problem&.live_dataset
+              - if @submission.points.nil?
+                = '-'
+              - elsif live_dataset&.st_raw_sum?
+                = @submission.points
+              - else
+                = "#{@submission.points}/100"
           .row.mb-2
             .col-4.text-end.text-secondary
               Result

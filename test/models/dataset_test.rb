@@ -8,12 +8,14 @@ class DatasetTest < ActiveSupport::TestCase
     assert ds.respond_to?(:default?)
     assert ds.respond_to?(:exact?)
     assert ds.respond_to?(:custom_cafe?)
+    assert ds.respond_to?(:custom_cms_raw?)
   end
 
   test "score_type enum" do
     ds = datasets(:ds_add)
     assert ds.respond_to?(:st_sum?)
     assert ds.respond_to?(:st_group_min?)
+    assert ds.respond_to?(:st_raw_sum?)
   end
 
   # --- Methods ---
