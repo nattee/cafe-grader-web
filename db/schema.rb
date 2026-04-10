@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_08_221425) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_10_123000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -159,7 +159,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_08_221425) do
     t.integer "result"
     t.integer "time"
     t.integer "memory"
-    t.decimal "score", precision: 8, scale: 6
+    t.decimal "score", precision: 16, scale: 6
     t.string "result_text"
     t.string "isolate_message"
     t.text "output"
@@ -336,7 +336,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_08_221425) do
   create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "submission_id", null: false
-    t.decimal "points", precision: 8, scale: 4
+    t.decimal "points", precision: 16, scale: 6
     t.integer "status", limit: 1, default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -347,7 +347,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_08_221425) do
   create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "user_id", null: false
-    t.decimal "points", precision: 8, scale: 4
+    t.decimal "points", precision: 16, scale: 6
     t.integer "status", limit: 1, default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -390,7 +390,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_08_221425) do
     t.datetime "compiled_at", precision: nil
     t.text "compiler_message", size: :medium
     t.datetime "graded_at", precision: nil
-    t.decimal "points", precision: 8, scale: 4
+    t.decimal "points", precision: 16, scale: 6
     t.text "grader_comment", size: :medium
     t.integer "number"
     t.string "source_filename"
