@@ -50,19 +50,28 @@ class GradersController < ApplicationController
     job = Job.find(params[:job_id])
     job.update(status: :wait, result: nil)
     @toast = { title: "Grader", body: "Job ##{job.id} re-queued." }
-    render "turbo_toast"
+    respond_to do |format|
+      format.turbo_stream { render "turbo_toast" }
+      format.html { redirect_to grader_processes_path, flash: { notice: @toast[:body] } }
+    end
   end
 
   def retry_all_error_jobs
     count = Job.where(status: :error).update_all(status: :wait, result: nil)
     @toast = { title: "Grader", body: "#{count} error #{'job'.pluralize(count)} re-queued." }
-    render "turbo_toast"
+    respond_to do |format|
+      format.turbo_stream { render "turbo_toast" }
+      format.html { redirect_to grader_processes_path, flash: { notice: @toast[:body] } }
+    end
   end
 
   def clear_all_error_jobs
     count = Job.where(status: :error).delete_all
     @toast = { title: "Grader", body: "#{count} error #{'job'.pluralize(count)} cleared." }
-    render "turbo_toast"
+    respond_to do |format|
+      format.turbo_stream { render "turbo_toast" }
+      format.html { redirect_to grader_processes_path, flash: { notice: @toast[:body] } }
+    end
   end
 
   # solid_queue dashboard
