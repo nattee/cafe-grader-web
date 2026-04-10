@@ -58,6 +58,16 @@ class Scorer
     return score
   end
 
+  def raw_sum
+    sum_user_score = 0.to_d
+    @sub.evaluations.each do |ev|
+      score = ev.score || 0
+      sum_user_score += score
+    end
+    score = sum_user_score
+    return score
+  end
+
   # build a combined short string that represent evaluation results of the entire dataset
   def build_grading_text
     result = ''
