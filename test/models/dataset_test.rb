@@ -8,6 +8,7 @@ class DatasetTest < ActiveSupport::TestCase
     assert ds.respond_to?(:default?)
     assert ds.respond_to?(:exact?)
     assert ds.respond_to?(:custom_cafe?)
+    assert ds.respond_to?(:custom_cms_raw?)
   end
 
   test "score_type enum" do
