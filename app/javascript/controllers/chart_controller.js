@@ -27,7 +27,7 @@ const PRESETS = {
   submission_line: {
     type: 'line',
     options: {
-      aspectRatio: 6,
+      aspectRatio: 9,
       plugins: {
         legend: { display: false },
       },
