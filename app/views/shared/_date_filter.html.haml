@@ -1,23 +1,24 @@
-.card.border-primary
-  .card-header.text-bg-primary.border-primary
-    Date ranges
+.card.shadow-sm.mb-2
   .card-body
-    .row.mb-3
-      .col-md-4.col-form-label
-        From Date:
-      .col-md-6
-        .input-group.td-date
-          = text_field_tag :since_datetime, nil, class: 'form-control'
+    %h6.fw-bold.mb-3.d-flex.align-items-center
+      %span.mi.me-2.text-secondary calendar_month
+      Date range
+    .row.g-2.align-items-center.mb-2
+      .col-auto
+        %label.col-form-label.text-secondary.small From
+      .col
+        .input-group.input-group-sm.td-date
+          = text_field_tag :since_datetime, nil, class: 'form-control', placeholder: 'start of today'
           %span.input-group-text
-            %span.mi event
-    .row.mb-3
-      .col-md-4.col-form-label
-        Until Date:
-      .col-md-6
-        .input-group.date
-          = text_field_tag :until_datetime, nil, class: 'form-control'
+            %span.mi.md-18 event
+    .row.g-2.align-items-center
+      .col-auto
+        %label.col-form-label.text-secondary.small Until
+      .col
+        .input-group.input-group-sm.date
+          = text_field_tag :until_datetime, nil, class: 'form-control', placeholder: 'end of today'
           %span.input-group-text
-            %span.mi event
+            %span.mi.md-18 event
 
 :javascript
   window.addEventListener("load", function() {

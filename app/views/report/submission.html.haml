@@ -1,4 +1,6 @@
-%h1 Submissions detail
+.d-flex.flex-column.gap-1.mb-3
+  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
+  %h2.fw-bold.text-dark.mb-0 Submissions
 
 = form_with url: '#', id: 'filter_form' do |f|
   .row{data: {controller: 'init-ui-component'}}
@@ -9,19 +11,11 @@
     .col-lg-4.mt-2
       = render partial: 'user_select'
 
-.row
-  .col-lg-4
-    .card.bg-warning-subtle.mt-2
-      .card-body
-        .card-title
-          %h4
-            .mi.fill help
-            Usage
-        %ul
-          %li Select parameters and then click "Refresh"
-          %li Won't show more than 100,000 entries
-  .col-lg-8
-    %canvas#chart{data: {controller: 'chart', chart_preset_value: 'submission_line', chart_data_value: '{}'}}
+.text-secondary.small.mb-3.d-flex.align-items-center
+  %span.mi.md-18.me-1 sync
+  Select filters above, then click Refresh to load data.
+
+%canvas#chart{data: {controller: 'chart', chart_preset_value: 'submission_line', chart_data_value: '{}'}}
 
 .row
   .col-sm-12
