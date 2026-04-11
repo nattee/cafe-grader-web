@@ -143,7 +143,7 @@ class Compiler
       judge_log rb_sub(@sub) + Rainbow(' compilation completed with error').color(COLOR_COMPILE_ERROR)
       @sub.update(status: :compilation_error, compiler_message: compile_result.result_description.truncate(15000),
                  points: 0, grader_comment: 'Compilation error', graded_at: Time.zone.now)
-      return EngineResponse::Result.failure(error: 'Compilation error')
+      return EngineResponse::Result.success(result_description: 'Compilation error')
     end
   end
 

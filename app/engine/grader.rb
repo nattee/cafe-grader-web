@@ -43,8 +43,8 @@ class Grader
     judge_log "#{@job.to_text} completed with result #{result.to_h}"
     @job.report(result)
 
-    # add next jobs
-    if result.status == :success
+    # add next jobs only when compilation succeeded
+    if sub.compilation_success?
       if dataset.testcases.count > 0
         Job.add_evaluation_jobs(sub, dataset, @job.id, @job.priority)
       else
@@ -107,7 +107,7 @@ class Grader
         # When the job raise an error, log the error and set
         # the main comment to the error message (so that the user can see it)
         judge_log Rainbow('(GraderError)').bg(COLOR_ERROR).color(:yellow) + " " + ge.message, Logger::ERROR
-        @job.update(status: :error) if ge.end_job
+        @job.update(status: :error, result: ge.message) if ge.end_job
         if ge.update_submission
           s = Submission.find(ge.submission_id)
           s.set_grading_error(ge.message_for_user)
