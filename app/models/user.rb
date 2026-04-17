@@ -432,12 +432,15 @@ class User < ApplicationRecord
     # For group mode, reporters can always view the submission of the problem
     return true if problems_for_action(:report).include? submission.problem
 
-    # Here, we knows that the user does not have special privileges to the problem
+    # At this step, we knows that the user does not have special privileges to the problem
+
+    # check global disable
+    return false unless GraderConfiguration["right.user_view_submission"]
+
     # problem available is required
     return false unless problems_for_action(:submit).include? submission.problem
-    return false unless submission.problem.view_submission
 
-    return (submission.user == self) || (GraderConfiguration["right.user_view_submission"])
+    return (submission.user == self) || submission.problem.view_submission
   end
 
   def can_view_testcase?(problem)

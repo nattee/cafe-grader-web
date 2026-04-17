@@ -6,7 +6,7 @@ class ReportController < ApplicationController
   before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query ]
 
   # for all action except hall of fame (which is viewable by any user if the feature is enabled)
-  before_action(except: [:problem_hof, :problem_hof_view]) {
+  before_action(except: [:problem_hof, :problem_hof_view, :problem_hof_query]) {
     group_action_authorization(:report)
   }
 
