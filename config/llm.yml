@@ -21,8 +21,8 @@ llm_services: &services
 # Example on chula_cp:
 #   viva_turn_service:  Llm::VivaTurnGenieAssist
 #   viva_grade_service: Llm::VivaGradeGenieAssist
-viva_turn_service:
-viva_grade_service:
+viva_turn_service:  Llm::VivaTurnGenieAssist
+viva_grade_service: Llm::VivaGradeGenieAssist
 
 development:
   <<: *services
