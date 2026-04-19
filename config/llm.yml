@@ -13,6 +13,15 @@ llm_services: &services
   # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
   # GenieAssist: gemini-2.5-pro,Claude-3.5-Sonnet
 
+# Viva Exam — point these at deployment-specific concrete subclasses of
+# Llm::VivaTurnAssist / Llm::VivaGradeAssist. On master both are unset,
+# so the abstract bases raise NotImplementedError at call time (intentional).
+# Example on chula_cp:
+#   viva_turn_service:  Llm::VivaTurnGenieAssist
+#   viva_grade_service: Llm::VivaGradeGenieAssist
+viva_turn_service:
+viva_grade_service:
+
 development:
   <<: *services
 

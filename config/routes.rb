@@ -124,6 +124,8 @@ Rails.application.routes.draw do
       # attachment
       get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
       delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
+      # viva exam
+      post 'viva/start', to: 'viva_sessions#start', as: 'viva_start'
     end
     collection do
       get 'turn_all_off'
@@ -250,6 +252,10 @@ Rails.application.routes.draw do
       get 'rejudge'
       get 'set_tag'
       post 'evaluations'
+      # viva exam
+      get 'viva', to: 'viva_sessions#show', as: 'viva'
+      post 'viva/turns', to: 'viva_sessions#answer', as: 'viva_answer'
+      get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'

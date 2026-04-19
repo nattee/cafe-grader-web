@@ -50,6 +50,10 @@ class SubmissionsController < ApplicationController
   # GET /submissions/1
   # GET /submissions/1.json
   def show
+    if @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission) and return
+    end
+
     # log the viewing
     user = User.find(session[:user_id])
     SubmissionViewLog.create(user_id: session[:user_id], submission_id: @submission.id) unless user.admin?
@@ -72,6 +76,9 @@ class SubmissionsController < ApplicationController
 
   # on-site new submission on specific problem
   def direct_edit_problem
+    if @problem.viva_exam?
+      redirect_to viva_start_problem_path(@problem), method: :post and return
+    end
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = [] # won't allow llm models on the first submission
     @submission_source = nil
@@ -123,11 +130,14 @@ class SubmissionsController < ApplicationController
 
   # GET /submissions/:id/rejudge
   def rejudge
-    # @task = @submission.task
-    # @task.status_inqueue! if @task
-
-    # add lower priority job
-    @submission.add_judge_job(@submission.problem.live_dataset, -10)
+    if @submission.problem.viva_exam?
+      @submission.viva_grade&.destroy
+      @submission.update(status: :evaluating, points: nil, grader_comment: nil, graded_at: nil)
+      Llm::VivaGradeAssistJob.perform_later(@submission)
+    else
+      # add lower priority job
+      @submission.add_judge_job(@submission.problem.live_dataset, -10)
+    end
     respond_to do |format|
       format.js
     end
