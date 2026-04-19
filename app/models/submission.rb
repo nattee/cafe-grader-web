@@ -9,6 +9,10 @@ class Submission < ApplicationRecord
 
   has_many :evaluations, dependent: :destroy
 
+  # viva exam
+  has_many :viva_turns, -> { order(:sequence) }, dependent: :destroy
+  has_one :viva_grade, dependent: :destroy
+
   # comments
   has_many :comments, as: :commentable, dependent: :destroy
   # Allows you to get all comment reveals for comments belonging to this submission
@@ -267,6 +271,9 @@ class Submission < ApplicationRecord
 
 
   def assign_language
+    # viva submissions carry a sentinel language; skip code-specific language detection
+    return if self.problem&.viva_exam?
+
     if self.language == nil
       # detect from filename
       self.language = Submission.find_language_in_source(self.source,
