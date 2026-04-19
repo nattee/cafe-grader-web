@@ -21,6 +21,8 @@ class Evaluator
     need_cg = isolate_need_cg_by_lang(@sub.language.name)
     setup_isolate(@box_id, need_cg)
 
+    begin
+
     # prepare data files
     prepare_submission_directory(@sub)
     prepare_dataset_directory(@working_dataset)
@@ -53,8 +55,9 @@ class Evaluator
     # also run isolate to chmod the outputfile
     run_isolate('/usr/bin/chmod 0666 '+@isolate_stdout_file.to_s, output: output, meta: nil, cg: need_cg)
 
-    # clean up isolate
-    cleanup_isolate(need_cg)
+    ensure
+      cleanup_isolate(need_cg)
+    end
 
     # there should be nothing in "out" because we redirect it by -o
     # save isolate's stderr to disk

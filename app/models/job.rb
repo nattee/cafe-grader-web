@@ -59,7 +59,7 @@ class Job < ApplicationRecord
   def self.has_waiting_job(job_type = nil)
     q = Job.where(status: :wait)
     q = q.where(job_type: job_type) unless job_type.nil?
-    return q.count > 0
+    return q.exists?
   end
 
   # fetch jobs from the queue, only for given job_type, if given

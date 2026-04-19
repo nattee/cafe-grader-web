@@ -6,8 +6,10 @@ class WorkerController < ApplicationController
   # handle receiving compiled files from worker
   def compiled_submission
     sub = Submission.find(params[:id])
-    sub.compiled_files.purge
+    # atomic replace: attach new files first, then purge old ones
+    old_blobs = sub.compiled_files.map(&:blob)
     sub.compiled_files.attach upload_compiled_params[:compiled_files]
+    old_blobs.each { |blob| blob.purge_later }
   end
 
   def get_compiled_submission

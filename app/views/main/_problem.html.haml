@@ -43,10 +43,16 @@
       locals: {submission: @prob_submissions[problem.id][:submission], problem_name: problem.name, problem_id: problem.id, sub_count: @prob_submissions[problem.id][:count], show_button: false, show_id: true }
   -# Action column
   %td
-    - if @prob_submissions[problem.id][:submission]
-      = link_to 'Edit', edit_submission_path(@prob_submissions[problem.id][:submission]), class: 'btn btn-outline-primary btn-sm'
+    - if problem.viva_exam?
+      - if @prob_submissions[problem.id][:submission]
+        = link_to 'View Viva', viva_submission_path(@prob_submissions[problem.id][:submission]), class: 'btn btn-outline-primary btn-sm'
+      - else
+        = button_to 'Start Viva', viva_start_problem_path(problem), class: 'btn btn-outline-success btn-sm', form: {style: 'display:inline-block'}
     - else
-      = link_to 'New', direct_edit_problem_submissions_path(problem.id), class: 'btn btn-outline-success btn-sm'
+      - if @prob_submissions[problem.id][:submission]
+        = link_to 'Edit', edit_submission_path(@prob_submissions[problem.id][:submission]), class: 'btn btn-outline-primary btn-sm'
+      - else
+        = link_to 'New', direct_edit_problem_submissions_path(problem.id), class: 'btn btn-outline-success btn-sm'
   -# hidden column
   %td
     = problem.public_tags.pluck(:name).join ','

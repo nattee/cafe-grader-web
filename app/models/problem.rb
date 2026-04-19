@@ -1,8 +1,9 @@
 class Problem < ApplicationRecord
   # -- fields --
   # how the submission should be compiled
-  enum :compilation_type,  { self_contained: 0,
-                             with_managers: 1 }
+  enum :compilation_type, { self_contained: 0,
+                            with_managers:  1,
+                            viva_exam:      2 }
   enum :task_type, { batch: 0 }
 
   # belongs_to :description
@@ -35,7 +36,7 @@ class Problem < ApplicationRecord
   has_many :comment_reveals, through: :comments
 
   has_many :datasets, dependent: :destroy
-  belongs_to :live_dataset, class_name: 'Dataset'
+  belongs_to :live_dataset, class_name: 'Dataset', optional: true
 
   # -- validations --
   validates_presence_of :name
@@ -143,6 +144,14 @@ class Problem < ApplicationRecord
   has_one_attached :attachment  # this is public files seen by contestant
 
   def set_default_value
+  end
+
+  def viva_grounding_tags
+    tags.where(kind: :viva_grounding)
+  end
+
+  def viva_prompt_tags
+    tags.where(kind: :llm_prompt)
   end
 
   def can_view_testcase
