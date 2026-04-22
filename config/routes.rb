@@ -89,6 +89,8 @@ Rails.application.routes.draw do
   resources :sites
   resources :test
 
+  resources :audit_logs, only: [:index, :show]
+
   resources :messages do
     member do
       get 'hide'
@@ -271,15 +273,6 @@ Rails.application.routes.draw do
         delete '', action: 'destroy_for_submission'
         patch '', action: 'update_for_submission'
       end
-    end
-  end
-
-  resources :contest_management, only: [:index] do
-    collection do
-      get 'user_stat'
-      get 'clear_stat'
-      get 'clear_all_stat'
-      get 'change_contest_mode'
     end
   end
 

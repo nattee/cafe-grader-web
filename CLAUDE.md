@@ -63,6 +63,7 @@ The system operates in either **contest mode** or **group mode** (configured via
 - **Group** — organizes problems and users (alternative to contests)
 - **Job** — grading jobs (compile, evaluate, score) processed by external judge workers
 - **Comment** — supports LLM-assisted hints with cost tracking
+- **AuditLog** — polymorphic audit trail for changes to `GraderConfiguration`, `Contest`, `Problem`, `Dataset`, `Testcase`, `ContestProblem`, `ContestUser` (see "Audit Logging" below)
 
 ### JSON API (`/api/v1/`)
 
@@ -101,6 +102,50 @@ Session-based auth (`session[:user_id]`). Key controller methods:
 - `app/services/llm/` — LLM service classes
 - `config/llm.yml` — provider configuration
 - Cost tracking integrated into scoring/reports
+
+### Audit Logging
+
+Change history for sensitive models is captured by the `Auditable` concern (`app/models/concerns/auditable.rb`) into the polymorphic `audit_logs` table.
+
+**Audited models** and their tracked attributes are declared in-model via the `audited` DSL:
+
+```ruby
+include Auditable
+audited only: %i[name stop ...]              # Contest / Problem / Dataset
+audited only: %i[input sol ...], redact: %i[input sol]  # Testcase
+audited                                       # GraderConfiguration — all attrs
+```
+
+- `only:` — whitelist of attributes. Omit to log every attribute (except id/timestamps).
+- `redact:` — values for these fields are stored as `"[redacted]"` (use for large blobs like `Testcase#input`/`sol`). Changes are still detected and logged; just the content isn't stored.
+
+**Actor tracking** — `Current.user` and `Current.ip` (from `app/models/current.rb`, an `ActiveSupport::CurrentAttributes`) are set by `ApplicationController#set_current_audit_context` on every request. Background jobs without a user context should set `Current.actor_note` manually (e.g. `"Job: DailyReset"`) so the row isn't anonymous.
+
+**Consolidating bulk events** — when a single user intent touches many rows (mode switch, contest clone, bulk add/remove, reorder), suppress the per-row cascade and emit one semantic log:
+
+```ruby
+AuditLog.paused do                                    # auto-logging off inside block
+  # cascade of row-level updates / saves
+end
+AuditLog.record!(auditable: @contest,                 # one manual row
+                 action: 'bulk_add_users',            # free-form string
+                 object_changes: { 'added_count' => [nil, n] })
+```
+
+`paused` restores the flag on exception via `ensure`; nothing raised means `record!` isn't called (no audit for failed actions). **Put any `save` that triggers autosave-cascading callbacks *inside* the `paused` block** — it's a common mistake to only pause the build phase and let autosave leak through. Example action strings already in use: `mode_change`, `clone`, `bulk_add_users*`, `bulk_add_problems*`, `bulk_enable/disable/remove_*`, `move_up`, `move_down`, `remove_user`, `remove_problem`.
+
+**Bypass warning** — callbacks, and therefore audit rows, are **skipped** by:
+- `update_all`, `update_columns`, raw SQL
+- `delete` (vs `destroy`), `delete_all`
+- **`has_many :through` collections** — `.delete`, `.clear`, and `=` replacement all default to a direct `DELETE` on the join table with no model instantiation. E.g. `@contest.users.delete(@user)` does **not** fire `ContestUser` destroy callbacks. To audit these, either explicitly record (`AuditLog.record!`) after the operation, operate on the join directly (`contests_users.where(user: @user).destroy_all`), or add `dependent: :destroy` to the through association.
+
+**Admin UI** at `/audit_logs` (admin-only, linked from the Manage navbar dropdown). Per-record "Change history" buttons appear on the edit pages of `Contest`, `Problem`, `Dataset`, and `GraderConfiguration`. Two rollups are implemented in `AuditLogsController#apply_scope`:
+- **Dataset** history includes its child `Testcase` rows.
+- **Contest** history includes its child `ContestProblem` and `ContestUser` rows.
+
+**Display customization** — `AuditLogsHelper` holds the display logic: `audit_target_label` produces human-friendly labels (e.g. `Contest: CP2026`, `ContestUser: CP2026 / alice`), and `audit_action_badge` maps each action string to a coloured Bootstrap badge with a Material icon. Add new branches there when introducing new semantic actions.
+
+**Retention** — 6 months, enforced by a Solid Queue recurring task `audit_log_cleanup` in `config/recurring.yml` that calls `AuditLog.cleanup!` daily at 03:00 (production only). Ad-hoc clear: `AuditLog.delete_all` (safe; AuditLog does not audit itself).
 
 ### Multi-Database Setup
 

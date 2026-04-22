@@ -7,3 +7,5 @@
     %span.config-value-text= conf.value.presence || '-'
     = link_to edit_grader_configuration_path(conf), class: 'edit-link', data: {turbo: "true"} do
       %span.mi.md-18 edit
+    = link_to audit_logs_path(auditable_type: 'GraderConfiguration', auditable_id: conf.id), class: 'edit-link', title: 'Change history' do
+      %span.mi.md-18 history

@@ -5,6 +5,9 @@
   .col-md-12.d-flex.justify-content-between.align-items-center
     %h1.mb-0 System configuration
     .actions
+      = link_to audit_logs_path(auditable_type: 'GraderConfiguration'), class: 'btn-flex btn btn-outline-secondary btn-sm me-2', title: 'View change history for all settings' do
+        %span.mi.md-18 history
+        History
       = link_to reload_grader_configuration_index_path, class: 'btn-flex btn btn-outline-secondary btn-sm me-2', title: 'Reload configuration from DB' do
         %span.mi.md-18 refresh
         Reload

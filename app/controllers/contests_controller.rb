@@ -83,11 +83,24 @@ class ContestsController < ApplicationController
     new_contest.name = new_contest.get_next_name(@contest.name + '_copy')
     @contest.contests_users.each { |cu| new_contest.contests_users.build(user_id: cu.user_id, role: cu.role) }
     @contest.contests_problems.each { |cp| new_contest.contests_problems.build(problem_id: cp.problem_id) }
-    if new_contest.save
-      # Turbo also work fine with redirect
+
+    saved = nil
+    AuditLog.paused do
+      saved = new_contest.save
+    end
+
+    if saved
+      AuditLog.record!(
+        auditable:      new_contest,
+        action:         'clone',
+        object_changes: {
+          'source_contest'  => [nil, @contest.name],
+          'users_copied'    => [nil, new_contest.contests_users.size],
+          'problems_copied' => [nil, new_contest.contests_problems.size]
+        }
+      )
       redirect_to contest_path(new_contest), notice: "Contest \"#{@contest.name}\" is cloned to this contest"
     else
-      # render Turbo modal response
       render partial: 'msg_modal_show', locals: {do_popup: true,
                                                  header_msg: 'Contest Cloning Error',
                                                  header_class: 'bg-danger-subtle',
@@ -161,22 +174,38 @@ class ContestsController < ApplicationController
 
   def do_all_users
     @toast = {title: "Contest #{@contest.name}"}
-    if params[:command] == 'enable'
-      ContestUser.where(contest: @contest).update_all(enabled: true)
+    affected_count = @contest.contests_users.count
+    audit_action = nil
+    audit_changes = nil
+
+    case params[:command]
+    when 'enable'
+      AuditLog.paused { ContestUser.where(contest: @contest).update_all(enabled: true) }
       @toast[:body] = "All users were enabled."
-    elsif params[:command] == 'disable'
-      ContestUser.where(contest: @contest).update_all(enabled: false)
+      audit_action = 'bulk_enable_users'
+      audit_changes = { 'affected_count' => [nil, affected_count] }
+    when 'disable'
+      AuditLog.paused { ContestUser.where(contest: @contest).update_all(enabled: false) }
       @toast[:body] = "All users were disabled."
-    elsif params[:command] == 'remove'
-      @contest.users.clear
+      audit_action = 'bulk_disable_users'
+      audit_changes = { 'affected_count' => [nil, affected_count] }
+    when 'remove'
+      AuditLog.paused { @contest.users.clear }
       @toast[:body] = "All users were removed."
-    elsif params[:command] == 'clear_ip'
-      @contest.users.update_all(last_ip: nil)
+      audit_action = 'bulk_remove_users'
+      audit_changes = { 'removed_count' => [nil, affected_count] }
+    when 'clear_ip'
+      AuditLog.paused { @contest.users.update_all(last_ip: nil) }
       @toast[:body] = "Device locks of all users are cleared. The user can now log in from a new device."
+      audit_action = 'bulk_clear_user_ips'
+      audit_changes = { 'affected_count' => [nil, affected_count] }
     else
       @toast[:body] = "ERROR: Unknown command"
       @toast[:type] = :alert
     end
+
+    AuditLog.record!(auditable: @contest, action: audit_action, object_changes: audit_changes) if audit_action
+
     @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
     render 'turbo_toast'
   end
@@ -185,7 +214,12 @@ class ContestsController < ApplicationController
     @toast = {title: "Contest #{@contest.name}"}
     case params[:command]
     when 'remove'
-      @contest.users.delete(@user)
+      AuditLog.paused { @contest.users.delete(@user) }
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'remove_user',
+        object_changes: { 'user' => [@user.login, nil] }
+      )
       @toast[:body] = "#{@user.login} was removed."
     when 'toggle'
       gu = @contest.contests_users.where(user: @user).first
@@ -223,15 +257,29 @@ class ContestsController < ApplicationController
   end
 
   def do_all_problems
-    if params[:command] == 'enable'
-      ContestProblem.where(contest: @contest).update_all(enabled: true)
-    elsif params[:command] == 'disable'
-      ContestProblem.where(contest: @contest).update_all(enabled: false)
-    elsif params[:command] == 'remove'
-      @contest.problems.clear
+    affected_count = @contest.contests_problems.count
+    audit_action = nil
+
+    case params[:command]
+    when 'enable'
+      AuditLog.paused { ContestProblem.where(contest: @contest).update_all(enabled: true) }
+      audit_action = 'bulk_enable_problems'
+    when 'disable'
+      AuditLog.paused { ContestProblem.where(contest: @contest).update_all(enabled: false) }
+      audit_action = 'bulk_disable_problems'
+    when 'remove'
+      AuditLog.paused { @contest.problems.clear }
+      audit_action = 'bulk_remove_problems'
     else
       return
     end
+
+    AuditLog.record!(
+      auditable:      @contest,
+      action:         audit_action,
+      object_changes: { (audit_action == 'bulk_remove_problems' ? 'removed_count' : 'affected_count') => [nil, affected_count] }
+    )
+
     @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
     render 'turbo_toast'
   end
@@ -241,20 +289,31 @@ class ContestsController < ApplicationController
     gp = @contest.contests_problems.where(problem: @problem).first
     case params[:command]
     when 'remove'
-      @contest.problems.delete(@problem)
+      AuditLog.paused { @contest.problems.delete(@problem) }
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'remove_problem',
+        object_changes: { 'problem' => [@problem.name, nil] }
+      )
       @toast[:body] = "Problem #{@problem.name} was removed."
     when 'toggle'
       gp.update(enabled: !gp.enabled?)
     when 'toggle_llm'
       gp.update(allow_llm: !gp.allow_llm?)
-    when 'moveup'
-      gp = @contest.contests_problems.where(problem: @problem).first
-      @contest.set_problem_number(@problem, (gp.number || 2) - 1.2) # instead of -1, we do -0.8 so that  it is placed "before" the original number - 1 rank
-      @toast[:body] = "Problem #{@problem.name} was moved up."
-    when 'movedown'
-      gp = @contest.contests_problems.where(problem: @problem).first
-      @contest.set_problem_number(@problem, (gp.number || 0) + 1.2) # so is here
-      @toast[:body] = "Problem #{@problem.name} was moved down."
+    when 'moveup', 'movedown'
+      old_number = gp.number
+      delta = params[:command] == 'moveup' ? -1.2 : 1.2
+      anchor = params[:command] == 'moveup' ? (gp.number || 2) : (gp.number || 0)
+      AuditLog.paused do
+        @contest.set_problem_number(@problem, anchor + delta)
+      end
+      new_number = @contest.contests_problems.where(problem: @problem).first&.number
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         params[:command] == 'moveup' ? 'move_up' : 'move_down',
+        object_changes: { 'problem' => [nil, @problem.name], 'number' => [old_number, new_number] }
+      )
+      @toast[:body] = "Problem #{@problem.name} was #{params[:command] == 'moveup' ? 'moved up' : 'moved down'}."
     else
       @toast[:body] = "Unknown command"
       @toast[:type] = 'alert'
@@ -266,8 +325,20 @@ class ContestsController < ApplicationController
   def add_user
     begin
       users = User.where(id: params[:user_ids])
-      result = @contest.add_users users
-      @toast = save_adding_and_build_toast(result, User.name.downcase)
+      result = nil
+      AuditLog.paused do
+        result = @contest.add_users users
+        @toast = save_adding_and_build_toast(result, User.name.downcase)
+      end
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'bulk_add_users',
+        object_changes: {
+          'user_ids'      => [nil, Array(params[:user_ids]).map(&:to_i)],
+          'added_count'   => [nil, result.added],
+          'skipped_count' => [nil, result.skipped]
+        }
+      )
       @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
       render 'turbo_toast'
     rescue => e
@@ -278,8 +349,20 @@ class ContestsController < ApplicationController
   def add_user_by_group
     begin
       user_ids = GroupUser.where(group_id: params[:user_group_ids]).pluck :user_id
-      result = @contest.add_users User.where(id: user_ids)
-      @toast = save_adding_and_build_toast(result, User.name.downcase)
+      result = nil
+      AuditLog.paused do
+        result = @contest.add_users User.where(id: user_ids)
+        @toast = save_adding_and_build_toast(result, User.name.downcase)
+      end
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'bulk_add_users_by_group',
+        object_changes: {
+          'group_ids'     => [nil, Array(params[:user_group_ids])],
+          'added_count'   => [nil, result.added],
+          'skipped_count' => [nil, result.skipped]
+        }
+      )
       @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
       render 'turbo_toast'
     rescue => e
@@ -290,11 +373,22 @@ class ContestsController < ApplicationController
   def add_users_from_csv
     lines = params[:user_list]
 
-    res = @contest.add_users_from_csv(lines)
+    res = nil
+    AuditLog.paused do
+      res = @contest.add_users_from_csv(lines)
+    end
     @toast = {title: "Contest #{@contest.name}"}
     body = "#{pluralize(res[:added_users].count, 'user')} were added or updated. "
     body += "#{pluralize(res[:error_logins].count, 'user')} failed to be added. The first error is #{res[:first_error]}" if res[:error_logins].count > 0
     @toast[:body] = body
+    AuditLog.record!(
+      auditable:      @contest,
+      action:         'bulk_add_users_by_csv',
+      object_changes: {
+        'added_count'  => [nil, res[:added_users].count],
+        'failed_count' => [nil, res[:error_logins].count]
+      }
+    )
     @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'user_table'}}
     render 'turbo_toast'
   end
@@ -304,8 +398,20 @@ class ContestsController < ApplicationController
     begin
       # this find multiple problems that matches the ID that is also editable by the user
       problems = @current_user.problems_for_action(:edit).where(id: params[:problem_ids])
-      result = @contest.add_problems_and_assign_number(problems)
-      @toast = save_adding_and_build_toast(result, Problem.name.downcase)
+      result = nil
+      AuditLog.paused do
+        result = @contest.add_problems_and_assign_number(problems)
+        @toast = save_adding_and_build_toast(result, Problem.name.downcase)
+      end
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'bulk_add_problems',
+        object_changes: {
+          'problem_ids'   => [nil, Array(params[:problem_ids]).map(&:to_i)],
+          'added_count'   => [nil, result.added],
+          'skipped_count' => [nil, result.skipped]
+        }
+      )
       @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
       render 'turbo_toast'
     rescue => e
@@ -317,8 +423,20 @@ class ContestsController < ApplicationController
     begin
       problem_ids = GroupProblem.where(group_id: params[:problem_group_ids]).where.not(problem_id: @contest.problems.ids).pluck :problem_id
       problems = Problem.group_editable_by_user(@current_user).where(id: problem_ids)
-      result = @contest.add_problems_and_assign_number(problems)
-      @toast = save_adding_and_build_toast(result, Problem.name.downcase)
+      result = nil
+      AuditLog.paused do
+        result = @contest.add_problems_and_assign_number(problems)
+        @toast = save_adding_and_build_toast(result, Problem.name.downcase)
+      end
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'bulk_add_problems_by_group',
+        object_changes: {
+          'group_ids'     => [nil, Array(params[:problem_group_ids])],
+          'added_count'   => [nil, result.added],
+          'skipped_count' => [nil, result.skipped]
+        }
+      )
       @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
       render 'turbo_toast'
     rescue => e
@@ -338,19 +456,29 @@ class ContestsController < ApplicationController
   end
 
   def set_system_mode
-    if ['standard', 'contest', 'indv-contest', 'analysis'].include? params[:mode]
-      GraderConfiguration.where(key: 'system.mode').update(value: params[:mode])
+    unless ['standard', 'contest', 'indv-contest', 'analysis'].include? params[:mode]
+      redirect_to contests_path, notice: 'Unrecognized mode' and return
+    end
 
+    mode_row = GraderConfiguration.find_by(key: 'system.mode')
+    old_mode = mode_row.value
+
+    AuditLog.paused do
+      mode_row.update(value: params[:mode])
       if ['contest', 'indv-contest'].include? params[:mode]
-        # contest || indv-contest
         GraderConfiguration.set_exam_mode(true)
-      else  # standard || analysis
+      else
         GraderConfiguration.set_exam_mode(false)
       end
-      redirect_to contests_path, notice: 'Mode changed succesfully'
-    else
-      redirect_to contests_path, notice: 'Unrecognized mode'
     end
+
+    AuditLog.record!(
+      auditable:      mode_row,
+      action:         'mode_change',
+      object_changes: { 'system.mode' => [old_mode, params[:mode]] }
+    )
+
+    redirect_to contests_path, notice: 'Mode changed succesfully'
   end
 
   # ---- user action ----

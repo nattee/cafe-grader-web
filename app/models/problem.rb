@@ -1,4 +1,9 @@
 class Problem < ApplicationRecord
+  include Auditable
+  audited only: %i[name full_name full_score available live_dataset_id
+                   view_testcase view_submission allow_hint
+                   permitted_lang submission_filename task_type compilation_type]
+
   # -- fields --
   # how the submission should be compiled
   enum :compilation_type, { self_contained: 0,

@@ -1,4 +1,9 @@
 class Testcase < ApplicationRecord
+  include Auditable
+  audited only:   %i[num group group_name code_name weight
+                     dataset_id problem_id input sol],
+          redact: %i[input sol]
+
   belongs_to :problem, optional: true
   belongs_to :dataset
 

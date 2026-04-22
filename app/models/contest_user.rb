@@ -1,4 +1,8 @@
 class ContestUser < ApplicationRecord
+  include Auditable
+  audited only: %i[contest_id user_id start_offset_second extra_time_second
+                   remark seat enabled role]
+
   self.table_name = 'contests_users'
   belongs_to :contest
   belongs_to :user

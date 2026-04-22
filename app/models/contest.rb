@@ -1,4 +1,8 @@
 class Contest < ApplicationRecord
+  include Auditable
+  audited only: %i[name enabled description start stop finalized
+                   pre_contest_seconds post_contest_seconds allow_hint]
+
   has_many :contests_problems, class_name: 'ContestProblem', dependent: :destroy
   has_many :contests_users, class_name: 'ContestUser', dependent: :destroy
   has_many :problems, through: :contests_problems
