@@ -61,6 +61,7 @@
                   %li
                     %hr.dropdown-divider
                   %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :configurations)
+                  %li= link_to 'Audit Log', audit_logs_path, class: 'dropdown-item'+active_class_when(controller: :audit_logs)
                 %li
                   %hr.dropdown-divider
                 %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites) if @current_user.admin?

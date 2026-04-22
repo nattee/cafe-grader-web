@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :read_grader_configuration
   before_action :current_user
+  before_action :set_current_audit_context
   before_action :current_contest
   before_action :header_info
   before_action :unique_visitor_id
@@ -115,6 +116,13 @@ class ApplicationController < ActionController::Base
     # so that we can override this value inside each action
     @active_controller = controller_name
     @active_action = action_name
+  end
+
+  # Populate Current attributes for the Auditable concern so model callbacks
+  # can attribute changes to the acting user and their IP.
+  def set_current_audit_context
+    Current.user = @current_user
+    Current.ip   = request.remote_ip
   end
 
   def admin_authorization

@@ -78,7 +78,6 @@ module ApplicationHelper
       append_to menu_items, '[Results]', 'user_admin', 'user_stat'
       append_to menu_items, '[Report]', 'report', 'multiple_login'
       append_to menu_items, '[Graders]', 'graders', 'list'
-      append_to menu_items, '[Contests]', 'contest_management', 'index'
       append_to menu_items, '[Sites]', 'sites', 'index'
       append_to menu_items, '[System config]', 'configurations', 'index'
       menu_items << "<br/>"

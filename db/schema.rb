@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -52,6 +52,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
     t.boolean "on_nav_bar", default: false
     t.bigint "group_id"
     t.index ["group_id"], name: "index_announcements_on_group_id"
+  end
+
+  create_table "audit_logs", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "user_id"
+    t.string "actor_note"
+    t.string "auditable_type", null: false
+    t.bigint "auditable_id", null: false
+    t.string "action", null: false
+    t.json "object_changes"
+    t.string "ip_address", limit: 45
+    t.datetime "created_at", null: false
+    t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable_type_and_auditable_id"
+    t.index ["created_at"], name: "index_audit_logs_on_created_at"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
   create_table "comment_reveals", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
@@ -268,7 +282,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
     t.datetime "updated_at", precision: nil, null: false
   end
 
-  create_table "problem_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "problem_stats", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "problem_id", null: false
     t.integer "sub_count", default: 0, null: false
     t.integer "solved_count", default: 0, null: false
@@ -334,22 +348,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
     t.index ["user_id"], name: "index_roles_users_on_user_id"
   end
 
-  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "submission_id", null: false
-    t.decimal "points", precision: 16, scale: 6
+    t.decimal "point", precision: 8, scale: 4
     t.integer "status", limit: 1, default: 0, null: false
+    t.float "max_runtime"
+    t.integer "peak_memory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["dataset_id"], name: "index_score_submissions_on_dataset_id"
     t.index ["submission_id"], name: "index_score_submissions_on_submission_id"
   end
 
-  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "dataset_id", null: false
     t.bigint "user_id", null: false
-    t.decimal "points", precision: 16, scale: 6
+    t.decimal "point", precision: 8, scale: 4
     t.integer "status", limit: 1, default: 0, null: false
+    t.float "max_runtime"
+    t.integer "peak_memory"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["dataset_id"], name: "index_score_users_on_dataset_id"
@@ -504,6 +522,37 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
     t.index ["login"], name: "index_users_on_login", unique: true
   end
 
+  create_table "viva_grades", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "submission_id", null: false
+    t.string "rubric_version"
+    t.text "score_json", size: :medium
+    t.decimal "total_points", precision: 8, scale: 4
+    t.text "narrative", size: :medium
+    t.string "llm_model"
+    t.text "llm_response_raw", size: :medium
+    t.float "cost"
+    t.datetime "graded_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["submission_id"], name: "index_viva_grades_on_submission_id", unique: true
+  end
+
+  create_table "viva_turns", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
+    t.integer "submission_id", null: false
+    t.integer "sequence", null: false
+    t.integer "role", default: 2, null: false
+    t.integer "status", default: 0, null: false
+    t.text "content", size: :medium
+    t.text "llm_response_raw", size: :medium
+    t.string "llm_model"
+    t.float "cost"
+    t.integer "token_count_in"
+    t.integer "token_count_out"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["submission_id", "sequence"], name: "index_viva_turns_on_submission_id_and_sequence", unique: true
+  end
+
   create_table "worker_datasets", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "worker_id"
     t.bigint "dataset_id"
@@ -517,7 +566,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "audit_logs", "users", on_delete: :nullify
   add_foreign_key "problem_stats", "problems"
   add_foreign_key "problems_tags", "problems"
   add_foreign_key "problems_tags", "tags"
+  add_foreign_key "viva_grades", "submissions"
+  add_foreign_key "viva_turns", "submissions"
 end

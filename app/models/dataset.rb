@@ -1,4 +1,9 @@
 class Dataset < ApplicationRecord
+  include Auditable
+  audited only: %i[problem_id name time_limit memory_limit
+                   score_type evaluation_type score_param
+                   main_filename initializer_filename]
+
   belongs_to :problem
 
   has_many :testcases, dependent: :destroy

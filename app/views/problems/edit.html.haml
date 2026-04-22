@@ -16,6 +16,8 @@
       %span.mi finance
     = link_to download_archive_problem_path(@problem), class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: {bs: {toggle: 'tooltip'}, bs_title: 'Download Archive'} do
       %span.mi download
+    = link_to audit_logs_path(auditable_type: 'Problem', auditable_id: @problem.id), class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: {bs: {toggle: 'tooltip'}, bs_title: 'Change history'} do
+      %span.mi history
     .vr.mx-1
     = link_to 'Cancel', problems_path, class: 'btn btn-link text-secondary text-decoration-none'
 

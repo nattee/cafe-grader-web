@@ -8,3 +8,8 @@
 #     command: "SoftDeletedRecord.due.delete_all"
 #     priority: 2
 #     schedule: at 5am every day
+
+production:
+  audit_log_cleanup:
+    command: "AuditLog.cleanup!"
+    schedule: at 3am every day

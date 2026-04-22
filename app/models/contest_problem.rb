@@ -1,4 +1,7 @@
 class ContestProblem < ApplicationRecord
+  include Auditable
+  audited only: %i[contest_id problem_id number weight enabled allow_llm]
+
   self.table_name = 'contests_problems'
   belongs_to :contest
   belongs_to :problem
