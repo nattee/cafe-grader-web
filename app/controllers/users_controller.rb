@@ -73,14 +73,14 @@ class UsersController < ApplicationController
     end
     @user = User.new(user_params)
     @user.password_confirmation = @user.password = User.random_password
-    @user.activated = false
+    @user.activated = true
     if (@user.valid?) and (@user.save)
-      if send_confirmation_email(@user)
-        render action: 'new_splash', layout: 'empty'
-      else
-        @admin_email = GraderConfiguration['system.admin_email']
-        render action: 'email_error', layout: 'empty'
-      end
+      # if send_confirmation_email(@user)
+      render action: 'new_splash', layout: 'empty'
+      # else
+      #   @admin_email = GraderConfiguration['system.admin_email']
+      #   render action: 'email_error', layout: 'empty'
+      # end
     else
       @user.errors.add(:base, "Email cannot be blank") if @user.email==''
       render action: 'new', layout: 'empty'
