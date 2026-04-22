@@ -434,13 +434,17 @@ class User < ApplicationRecord
 
     # At this step, we knows that the user does not have special privileges to the problem
 
-    # check global disable
-    return false unless GraderConfiguration["right.user_view_submission"]
-
     # problem available is required
     return false unless problems_for_action(:submit).include? submission.problem
 
-    return (submission.user == self) || submission.problem.view_submission
+    # a user can view their own submissions
+    return true if submission.user == self
+
+    # check global disable
+    return false unless GraderConfiguration["right.user_view_submission"]
+
+    # finally, the view_submission of the problem must be true
+    return submission.problem.view_submission
   end
 
   def can_view_testcase?(problem)
