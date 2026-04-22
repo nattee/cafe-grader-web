@@ -1,11 +1,20 @@
 class ConfigurationsController < ApplicationController
-
   before_action :admin_authorization
   before_action :set_config, only: [:update, :toggle, :edit]
 
   def index
     @configurations = GraderConfiguration.order(:key)
-    @group = GraderConfiguration.pluck("grader_configurations.key").map{ |x| x[0...(x.index('.'))] }.uniq.sort
+
+    # pick the first key of the group name
+    first_key = GraderConfiguration.pluck("grader_configurations.key").map { |x| x[0...(x.index('.'))] }.uniq.sort
+    pre_defined_group = %w[chula ui right system]
+    missing_group_less_contest = first_key - pre_defined_group - ['contest']
+
+    # default grouping
+    @group = [ %w[chula ui], 'right', 'system']
+
+    # add any missing group
+    @group += missing_group_less_contest
   end
 
   def edit
@@ -13,11 +22,13 @@ class ConfigurationsController < ApplicationController
 
   def reload
     GraderConfiguration.reload
-    redirect_to :action => 'index'
+    redirect_to action: 'index'
   end
 
   def clear_user_ip
     User.clear_last_login
+    @toast = {title: 'User Device Lock', body: 'Device locks of all users are cleared. The users can now log in from a new device'}
+    render 'turbo_toast'
   end
 
   def update
@@ -48,21 +59,16 @@ class ConfigurationsController < ApplicationController
 
   def set_exam_right
     value = params[:value] || 'false'
-    GraderConfiguration.where(key: "right.bypass_agreement").update(value: value);
-    GraderConfiguration.where(key: "right.multiple_ip_login").update(value: value);
-    GraderConfiguration.where(key: "right.user_hall_of_fame").update(value: value);
-    GraderConfiguration.where(key: "right.user_view_submission").update(value: value);
-    GraderConfiguration.where(key: "right.view_testcase").update(value: value);
-    redirect_to :action => 'index'
+    GraderConfiguration.set_exam_mode(value)
+    redirect_to action: 'index'
   end
 
 private
   def configuration_params
-    params.require(:grader_configuration).permit(:key,:value_type,:value,:description)
+    params.require(:grader_configuration).permit(:key, :value_type, :value, :description)
   end
 
   def set_config
     @config = GraderConfiguration.find(params[:id])
   end
-
 end

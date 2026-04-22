@@ -1,0 +1,101 @@
+module Llm
+  # Abstract base: builds messages and parses responses for a single viva interview turn.
+  # Provider-agnostic; speaks OpenAI-compatible chat-completion shape for both request
+  # (messages: [{role, content}, ...]) and response (choices[0].message.content + usage{prompt_tokens, completion_tokens}).
+  #
+  # Deployment-specific branches must provide a concrete subclass that implements #execute_call
+  # (e.g. Llm::VivaTurnGenieAssist on the chula_cp branch). See Llm::VivaTurnAssistJob for wiring.
+  class VivaTurnAssist < SubmissionAssist
+    DONE_SENTINEL = '[[VIVA_DONE]]'.freeze
+    MAX_TOKENS    = 2048
+    DEFAULT_MODEL = nil
+
+    def initialize(submission:, turn:, model: nil, **args)
+      @submission = submission
+      @problem    = submission.problem
+      @turn       = turn
+      @model      = model.presence || self.class::DEFAULT_MODEL
+      @error      = nil
+      @other_args = args
+    end
+
+    private
+
+    def provider_name
+      'abstract'
+    end
+
+    def prepare_data
+      {
+        model:      @model,
+        messages:   messages_array,
+        max_tokens: MAX_TOKENS
+      }
+    end
+
+    def messages_array
+      msgs = [{role: 'system', content: assemble_system_prompt}]
+      msgs.concat(prior_turn_messages)
+      msgs << {role: 'user', content: '(begin the interview)'} if prior_turn_messages.empty?
+      msgs
+    end
+
+    def assemble_system_prompt
+      prompt    = @problem.viva_prompt_tags.map(&:params).reject(&:blank?).join("\n\n")
+      grounding = @problem.viva_grounding_tags.map(&:grounding_payload).reject(&:blank?).join("\n\n---\n\n")
+
+      sections = []
+      sections << prompt unless prompt.blank?
+      sections << "## Grounding Material\n\n#{grounding}" unless grounding.blank?
+      sections << "When you are satisfied you have enough signal to grade the student, append exactly `#{DONE_SENTINEL}` at the very end of your final message to end the interview."
+      sections.join("\n\n")
+    end
+
+    def prior_turn_messages
+      @prior_turn_messages ||= @submission.viva_turns.ordered.filter_map do |t|
+        next if t.id == @turn&.id
+        next if t.processing? || t.error?
+        next if t.system?
+        {role: t.role, content: t.content.to_s}
+      end
+    end
+
+    def execute_call(data)
+      raise NotImplementedError, "#{self.class} must implement #execute_call — configure a deployment-specific provider subclass"
+    end
+
+    def handle_response(response)
+      parsed = JSON.parse(response.body)
+      text   = parsed.dig('choices', 0, 'message', 'content').to_s
+      done   = text.include?(DONE_SENTINEL)
+      clean  = text.sub(DONE_SENTINEL, '').strip
+      usage  = parsed['usage'] || {}
+
+      @turn.update!(
+        content:          clean,
+        llm_model:        parsed['model'] || @model,
+        llm_response_raw: response.body,
+        token_count_in:   usage['prompt_tokens'],
+        token_count_out:  usage['completion_tokens'],
+        cost:             compute_cost(usage),
+        status:           :ok
+      )
+
+      if done
+        @submission.update!(status: :evaluating)
+        Llm::VivaGradeAssistJob.perform_later(@submission, model: @model)
+      end
+
+      {done: done}
+    end
+
+    def handle_error
+      @turn&.update(status: :error, content: "LLM error: #{@error}")
+    end
+
+    # Subclasses should override to reflect their provider's pricing.
+    def compute_cost(_usage)
+      0.0
+    end
+  end
+end

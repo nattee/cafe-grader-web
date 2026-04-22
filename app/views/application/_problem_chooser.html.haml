@@ -1,4 +1,4 @@
-.row.row-cols-lg-auto.g-1.align-items-center
+.row.row-cols-lg-auto.g-1.align-items-center{'data-controller': 'init-ui-component'}
   .col-12
     = select("submission", :problems, problems.map { |p| ["[#{p.name}] #{p.full_name}", send(target_url_method,p.id)] }, {prompt: "Select a problem", selected: selected_problem ? send(target_url_method,selected_problem.id) : nil}, class: "select2 form-control")
 :javascript

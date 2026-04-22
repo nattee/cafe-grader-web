@@ -3,10 +3,10 @@
 = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
   %input{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput'}}
   .col-12
-    .form-check
+    .form-check.d-inline-flex.align-items-center.gap-1
       Testcase config
       %a{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank'} 
-        %span.mi.mi-bs.md-18 help_center
+        %span.mi.md-18 help_center
   .col-12
     = text_field_tag :weight_param, nil, class: 'form-control'
   .col-12

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_10_165652) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -41,7 +41,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
 
   create_table "announcements", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "author"
-    t.text "body", size: :long
+    t.text "body", size: :medium
     t.boolean "published"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
@@ -54,7 +54,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.index ["group_id"], name: "index_announcements_on_group_id"
   end
 
-  create_table "comment_reveals", charset: "utf8mb3", force: :cascade do |t|
+  create_table "comment_reveals", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.bigint "comment_id", null: false
     t.bigint "user_id", null: false
     t.boolean "enabled", default: true
@@ -64,7 +64,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.index ["user_id"], name: "index_comment_reveals_on_user_id"
   end
 
-  create_table "comments", charset: "utf8mb3", force: :cascade do |t|
+  create_table "comments", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.string "commentable_type", null: false
     t.bigint "commentable_id", null: false
     t.bigint "user_id", null: false
@@ -76,6 +76,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.text "remark"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "llm_response", size: :medium
+    t.string "llm_model"
+    t.integer "status", default: 0
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
@@ -102,6 +105,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.integer "number"
     t.float "weight", default: 1.0
     t.boolean "enabled", default: true
+    t.boolean "allow_llm", default: false
     t.index ["contest_id"], name: "index_contests_problems_on_contest_id"
     t.index ["problem_id"], name: "index_contests_problems_on_problem_id"
   end
@@ -143,7 +147,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
   end
 
   create_table "descriptions", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.text "body", size: :long
+    t.text "body", size: :medium
     t.boolean "markdowned"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
@@ -155,7 +159,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.integer "result"
     t.integer "time"
     t.integer "memory"
-    t.decimal "score", precision: 8, scale: 6
+    t.decimal "score", precision: 16, scale: 6
     t.string "result_text"
     t.string "isolate_message"
     t.text "output"
@@ -169,7 +173,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.string "value"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
-    t.text "description", size: :long
+    t.text "description", size: :medium
   end
 
   create_table "grader_processes", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -213,7 +217,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.index ["user_id", "group_id"], name: "index_groups_users_on_user_id_and_group_id"
   end
 
-  create_table "heart_beats", id: :integer, charset: "latin1", force: :cascade do |t|
+  create_table "heart_beats", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
@@ -245,7 +249,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.boolean "binary", default: false
   end
 
-  create_table "logins", id: :integer, charset: "latin1", force: :cascade do |t|
+  create_table "logins", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.string "ip_address"
     t.datetime "created_at", precision: nil, null: false
@@ -258,14 +262,24 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.integer "sender_id"
     t.integer "receiver_id"
     t.integer "replying_message_id"
-    t.text "body", size: :long
+    t.text "body", size: :medium
     t.boolean "replied"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
   end
 
+  create_table "problem_stats", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.integer "problem_id", null: false
+    t.integer "sub_count", default: 0, null: false
+    t.integer "solved_count", default: 0, null: false
+    t.integer "attempted_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["problem_id"], name: "index_problem_stats_on_problem_id", unique: true
+  end
+
   create_table "problems", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.string "name", limit: 100
+    t.string "name", limit: 30
     t.string "full_name"
     t.integer "full_score"
     t.date "date_added"
@@ -286,6 +300,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.string "permitted_lang"
     t.text "log", size: :medium
     t.boolean "allow_hint", default: true
+    t.boolean "view_submission", default: true
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
@@ -303,7 +318,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.string "action"
   end
 
-  create_table "rights_roles", id: false, charset: "utf8mb3", force: :cascade do |t|
+  create_table "rights_roles", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "right_id"
     t.integer "role_id"
     t.index ["role_id"], name: "index_rights_roles_on_role_id"
@@ -313,15 +328,37 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.string "name"
   end
 
-  create_table "roles_users", id: false, charset: "utf8mb3", force: :cascade do |t|
+  create_table "roles_users", id: false, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "role_id"
     t.integer "user_id"
     t.index ["user_id"], name: "index_roles_users_on_user_id"
   end
 
+  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "dataset_id", null: false
+    t.bigint "submission_id", null: false
+    t.decimal "points", precision: 16, scale: 6
+    t.integer "status", limit: 1, default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dataset_id"], name: "index_score_submissions_on_dataset_id"
+    t.index ["submission_id"], name: "index_score_submissions_on_submission_id"
+  end
+
+  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "dataset_id", null: false
+    t.bigint "user_id", null: false
+    t.decimal "points", precision: 16, scale: 6
+    t.integer "status", limit: 1, default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["dataset_id"], name: "index_score_users_on_dataset_id"
+    t.index ["user_id"], name: "index_score_users_on_user_id"
+  end
+
   create_table "sessions", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "session_id"
-    t.text "data", size: :long
+    t.text "data", size: :medium
     t.datetime "updated_at", precision: nil
     t.index ["session_id"], name: "index_sessions_on_session_id"
     t.index ["updated_at"], name: "index_sessions_on_updated_at"
@@ -337,7 +374,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.string "password"
   end
 
-  create_table "submission_view_logs", id: :integer, charset: "latin1", force: :cascade do |t|
+  create_table "submission_view_logs", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.integer "submission_id"
     t.datetime "created_at", precision: nil, null: false
@@ -352,10 +389,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.binary "binary", size: :long
     t.datetime "submitted_at", precision: nil
     t.datetime "compiled_at", precision: nil
-    t.text "compiler_message", size: :long
+    t.text "compiler_message", size: :medium
     t.datetime "graded_at", precision: nil
-    t.decimal "points", precision: 8, scale: 4
-    t.text "grader_comment", size: :long
+    t.decimal "points", precision: 16, scale: 6
+    t.text "grader_comment", size: :medium
     t.integer "number"
     t.string "source_filename"
     t.float "max_runtime"
@@ -380,10 +417,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "color", default: "#6C757D"
-    t.boolean "primary", default: false
+    t.text "params", size: :medium
+    t.integer "kind", default: 0
   end
 
-  create_table "tasks", id: :integer, charset: "utf8mb3", force: :cascade do |t|
+  create_table "tasks", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "submission_id"
     t.datetime "created_at", precision: nil
     t.integer "status"
@@ -411,7 +449,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.datetime "updated_at", precision: nil, null: false
     t.datetime "submitted_at", precision: nil
     t.datetime "compiled_at", precision: nil
-    t.text "compiler_message", size: :long
+    t.text "compiler_message", size: :medium
     t.datetime "graded_at", precision: nil
     t.string "grader_comment"
     t.datetime "created_at", precision: nil, null: false
@@ -428,8 +466,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.integer "weight"
     t.text "input", size: :long
     t.text "sol", size: :long
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "created_at", precision: nil
+    t.datetime "updated_at", precision: nil
     t.bigint "dataset_id"
     t.string "group_name"
     t.string "code_name"
@@ -437,7 +475,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.index ["problem_id"], name: "index_testcases_on_problem_id"
   end
 
-  create_table "user_contest_stats", id: :integer, charset: "utf8mb3", force: :cascade do |t|
+  create_table "user_contest_stats", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
     t.datetime "started_at", precision: nil
     t.datetime "created_at", precision: nil, null: false
@@ -457,10 +495,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
     t.boolean "activated", default: false
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
-    t.string "section"
     t.boolean "enabled", default: true
     t.string "remark"
     t.string "last_ip"
+    t.string "section"
     t.integer "default_language_id"
     t.datetime "last_heartbeat"
     t.index ["login"], name: "index_users_on_login", unique: true
@@ -479,6 +517,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_154731) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "problem_stats", "problems"
   add_foreign_key "problems_tags", "problems"
   add_foreign_key "problems_tags", "tags"
 end

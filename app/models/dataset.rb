@@ -9,10 +9,12 @@ class Dataset < ApplicationRecord
                            relative: 2, # token match float relate
                            custom_cafe: 3,
                            custom_cms: 4,
-                           postgres: 5}
+                           postgres: 5,
+                           custom_cms_raw: 6}
 
   enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,
+                           raw_sum: 2,
                          }, prefix: :st
 
   has_one_attached :checker
@@ -60,14 +62,17 @@ class Dataset < ApplicationRecord
   end
 
   # set testcases parameters *field* by array
-  def set_by_array(field, array)
+  def set_by_array(field, array, can_use_cms_mode: true)
     tc_ids = testcases.display_order.ids
     idx = 0
+    group = 0
+    cms_mode = array[0].is_a?(Array) && can_use_cms_mode
     array.each do |config|
       count = 1
+      group += 1
       if config.is_a? Array
-        count = config[1].to_i
         value = config[0]
+        count = config[1].to_i
       else
         value = config
       end
@@ -76,14 +81,15 @@ class Dataset < ApplicationRecord
       idx += count
       hash = {}
       hash[field] = value
+      hash['group'] = group if cms_mode
       Testcase.where(id: ids).update(hash)
     end
   end
 
   def set_by_hash(options)
-    set_by_array(:weight, options[:weight]) if options.has_key? :weight
-    set_by_array(:group, options[:group]) if options.has_key? :group
-    set_by_array(:group_name, options[:group_name]) if options.has_key? :group_name
+    set_by_array(:weight, options[:weight], can_use_cms_mode: false) if options.has_key? :weight
+    set_by_array(:group, options[:group], can_use_cms_mode: false) if options.has_key? :group
+    set_by_array(:group_name, options[:group_name], can_use_cms_mode: false) if options.has_key? :group_name
   end
 
   def invalidate_worker

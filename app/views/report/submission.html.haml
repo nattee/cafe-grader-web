@@ -1,7 +1,9 @@
-%h1 Submissions detail
+.d-flex.flex-column.gap-1.mb-3
+  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
+  %h2.fw-bold.text-dark.mb-0 Submissions
 
 = form_with url: '#', id: 'filter_form' do |f|
-  .row
+  .row{data: {controller: 'init-ui-component'}}
     .col-lg-4.mt-2
       = render partial: 'problem_select', locals: {all: true}
     .col-lg-4.mt-2
@@ -9,19 +11,11 @@
     .col-lg-4.mt-2
       = render partial: 'user_select'
 
-.row
-  .col-lg-4
-    .card.bg-warning-subtle.mt-2
-      .card-body
-        .card-title
-          %h4
-            .mi.mi-bs.fill help
-            Usage
-        %ul
-          %li Select parameters and then click "Refresh"
-          %li Won't show more than 100,000 entries
-  .col-lg-8
-    %canvas#chart
+.text-secondary.small.mb-3.d-flex.align-items-center
+  %span.mi.md-18.me-1 sync
+  Select filters above, then click Refresh to load data.
+
+%canvas#chart{data: {controller: 'chart', chart_preset_value: 'submission_line', chart_data_value: '{}'}}
 
 .row
   .col-sm-12
@@ -34,13 +28,21 @@
   user_path = "#{stat_user_admin_path(-1234)}"
   problem_path = "#{stat_problem_path(-1234)}"
 
-  function sub_link_renderer( data, type, row) {
-    return `<a href="${submission_path.replace("-1234",row['id'])}">\#${row['id']}</a>`;
+  function sub_link_renderer(data, type, row) {
+    if (type == 'display' || type == 'filter') {
+      return `<a href="${submission_path.replace("-1234",row['id'])}">\#${row['id']}</a>`;
+    }
+    //for sort, we just return the data which is supposed to be iso8601
+    return row['id']
   }
-  function user_link_renderer( data, type, row) {
-    return `<a href="${user_path.replace("-1234",row['user_id'])}">(${row['login']})</a> ${row['user_full_name']}`;
+  function user_link_renderer(data, type, row) {
+    if (type == 'display' || type == 'filter') {
+      return `<a href="${user_path.replace("-1234",row['user_id'])}">(${row['login']})</a> ${row['user_full_name']}`;
+    }
+    //for sort, we just return the data which is supposed to be iso8601
+    return row['login']
   }
-  function problem_link_renderer( data, type, row) {
+  function problem_link_renderer(data, type, row) {
     return `<a href="${problem_path.replace("-1234",row['problem_id'])}">[${row['name']}]</a> ${row['full_name']}`;
   }
   function date_time_renderer( data, type, row) {
@@ -105,36 +107,7 @@
               },
             ]
           }
-          config = {
-            type: 'line',
-            data: data,
-            options: {
-              aspectRatio: 6,
-              plugins: {
-                legend: {
-                  display: false,
-                }
-              },
-              scales: {
-                y: {
-                  title: {
-                    text: '#sub',
-                    display: true,
-                  }
-                },
-                x: {
-                  ticks: {
-                    maxRotation: 0,
-                  }
-                }
-              }
-            },
-          }
-          if (typeof my_chart !== 'undefined') {
-            my_chart.destroy()
-          }
-          Chart.defaults.font.size = 15
-          my_chart = new Chart($('#chart'),config)
+          document.getElementById('chart').setAttribute('data-chart-data-value', JSON.stringify(data))
 
           return json.data
         }

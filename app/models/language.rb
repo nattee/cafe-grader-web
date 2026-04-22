@@ -22,6 +22,7 @@ class Language < ApplicationRecord
     Language.find_or_create_by( name: 'postgres').update(pretty_name: 'PostgreSQL', ext: 'sql', common_ext: 'sql' )
     Language.find_or_create_by( name: 'archive').update(pretty_name: 'Archive', ext: 'zip', common_ext: 'zip,jar', binary: true )
     Language.find_or_create_by( name: 'text').update(pretty_name: 'Text', ext: 'txt', common_ext: 'txt' )
+    Language.find_or_create_by( name: 'viva').update(pretty_name: 'Viva Exam', ext: nil, common_ext: nil, binary: false )
   end
 
   def self.cache_ext_hash

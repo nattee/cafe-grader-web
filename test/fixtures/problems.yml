@@ -1,26 +1,27 @@
-# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
 prob_add:
   name: add
   full_name: add_full_name
   full_score: 100
   available: true
+  live_dataset: ds_add
 
 prob_sub:
   name: subtract
   full_name: subtract_full_name
   full_score: 100
   available: false
+  live_dataset: ds_sub
 
 easy:
   name: easy_problem
   full_name: Easy Problem
   available: true
   full_score: 10
-  contests: contest_a, contest_b
+  live_dataset: ds_add
 
 hard:
   name: hard_problem
   full_name: Hard Problem
   available: true
-  full_score: 20 
-  contests: contest_b
+  full_score: 20
+  live_dataset: ds_sub

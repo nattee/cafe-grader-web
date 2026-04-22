@@ -1,5 +1,4 @@
 module ContestsHelper
-
   def mode_to_class(mode = GraderConfiguration.get('system.mode'))
     case mode
     when 'standard'
@@ -18,7 +17,7 @@ module ContestsHelper
   def mode_to_text(mode = GraderConfiguration.get('system.mode'))
     case mode
     when 'standard'
-      'Standard'
+      'Normal'
     when 'contest'
       'Contest'
     when 'indv-contest'
@@ -29,5 +28,4 @@ module ContestsHelper
       'Unrecognized!!!'
     end
   end
-
 end

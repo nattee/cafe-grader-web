@@ -32,6 +32,6 @@
             = link_to "Download",download_sol_testcase_path(tc),class: 'btn btn-info btn-sm'
       .row.my-2
         .col-lg-6
-          %textarea{ rows: 25,readonly: true,style: "width:100%;resize=none;overflow-y: scroll;"}= tc.inp_file.download
+          %textarea.font-monospace{ rows: 25,readonly: true,style: "width:100%;resize=none;overflow-y: scroll;"}= tc.inp_file.download.force_encoding('UTF-8')
         .col-lg-6
-          %textarea{ rows: 25,readonly: true,style: "width:100%;resize=none;overflow-y: scroll;"}= tc.ans_file.download
+          %textarea.font-monospace{ rows: 25,readonly: true,style: "width:100%;resize=none;overflow-y: scroll;"}= tc.ans_file.download.force_encoding('UTF-8')

@@ -1,0 +1,33 @@
+require "application_system_test_case"
+
+class ContestsTest < ApplicationSystemTestCase
+  test "create new contest" do
+    login("admin", "admin")
+    visit contests_path
+
+    click_on "New Contest"
+    fill_in "Name", with: "System Test Contest"
+    click_on "Create Contest"
+
+    assert_text "Contest was successfully created."
+  end
+
+  test "update contest" do
+    login("admin", "admin")
+    visit edit_contest_path(contests(:contest_a))
+
+    fill_in "Name", with: "Updated Contest"
+    click_on "Save Changes"
+
+    assert_text "Contest was successfully updated."
+  end
+
+  private
+
+  def login(username, password)
+    visit root_path
+    fill_in "Login", with: username
+    fill_in "Password", with: password
+    click_on "Login"
+  end
+end

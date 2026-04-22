@@ -9,7 +9,7 @@ gem "rails", "~>8.0.0"
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 # gem "sprockets-rails"
 gem "propshaft" # Replaces sprockets-rails for serving assets
-gem "cssbundling-rails" # Replaces sassc-rails for compiling CSS
+gem "dartsass-rails" # Replaces cssbundling-rails; no Node.js dependency
 
 gem "puma"
 
@@ -38,6 +38,12 @@ gem "solid_cable"
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
+
+# faraday for API call
+gem "faraday"
+
+# JWT for API authentication
+gem "jwt"
 
 
 #------------- assset pipeline -----------------
@@ -87,12 +93,16 @@ gem "simple_form"
 gem "mail"
 gem "rdiscount"  # markdown
 gem "redcarpet"  # new markdown
+gem "kramdown"
 gem "rainbow"
 
 gem "whenever", require: false
 
 # fix some ???? bugs???
 gem "concurrent-ruby", "1.3.4"
+
+# silence rswag-ui ostruct warning (will be required from Ruby 3.5)
+gem "ostruct"
 
 
 group :development, :test do
@@ -124,4 +134,15 @@ group :test do
   # Adds support for Capybara system testing and selenium driver
   gem "capybara"
   gem "selenium-webdriver"
+  gem "minitest-reporters"
+end
+
+# Swagger UI for API docs (served at /api-docs in all environments)
+gem "rswag-api"
+gem "rswag-ui"
+
+group :development, :test do
+  # RSpec + rswag for API spec testing & swagger generation
+  gem "rspec-rails"
+  gem "rswag-specs"
 end

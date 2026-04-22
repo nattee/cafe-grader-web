@@ -5,7 +5,7 @@ class Checker
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-  # A langauge specific sub-class may override this method
+  # A language specific sub-class may override this method
   # it should return shell command that do the comparison
   def check_command(evaluation_type, input_file, output_file, ans_file)
     case evaluation_type
@@ -19,7 +19,7 @@ class Checker
     when 'postgres'
       prog = Rails.root.join 'lib', 'checker', 'postgres_checker.rb'
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
-    when 'custom_cms'
+    when 'custom_cms', 'custom_cms_raw'
       return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
@@ -30,25 +30,34 @@ class Checker
 
   def process_result_cms(out, err)
     score = out.chomp.strip
+    err = err.chomp.strip
+    err = nil if ['translate:success', 'translate:wrong'].include? err   # remove CMS default "translate:success" and "translate:wrong" from the comment
     err = nil if err.blank?
-    return report_check(score, err)
+    return EngineResponse::CheckerResult.by_score(score: score, comment: err)
+  end
+
+  def process_result_cms_raw(out, err)
+    score = out.chomp.strip.to_d
+    err = err.chomp.strip
+    err = nil if err.blank?
+    return EngineResponse::CheckerResult.partial(score: score, comment: err)
   end
 
   def process_result_cafe(out, err)
     arr = out.split("\n")
     if arr.count < 2
-      return report_check_error('(cafe-checker) output from checker is malformed')
+      return EngineResponse::CheckerResult.grader_error(comment: '(cafe-checker) output from checker is malformed')
     end
     score = arr[1].to_d/10
     if arr[0].upcase == "CORRECT"
-      return report_check_correct(score)
+      return EngineResponse::CheckerResult.correct(score: score)
     elsif arr[0].upcase == "INCORRECT"
-      return report_check_wrong(score)
+      return EngineResponse::CheckerResult.wrong(score: score)
     elsif arr[0].split(':')[0].upcase == 'COMMENT'
       comment = arr[0][8...]
-      return report_check_partial(score, comment)
+      return EngineResponse::CheckerResult.partial(score: score, comment: comment)
     else
-      return report_check_error('(cafe-checker) output from checker is malformed')
+      return EngineResponse::CheckerResult.grader_error(comment: '(cafe-checker) output from checker is malformed')
     end
   end
 
@@ -57,27 +66,29 @@ class Checker
     when 'default', 'exact', 'relative'
       # these standard check return 0 when correct
       if status.exitstatus == 0
-        return report_check_correct
+        return EngineResponse::CheckerResult.correct
       else
-        return report_check_wrong
+        return EngineResponse::CheckerResult.wrong
       end
     when 'postgres'
       return process_result_cms(out, err)
-    when 'custom_cms', 'custom_cafe'
+    when 'custom_cms', 'custom_cms_raw', 'custom_cafe'
       if status.exitstatus == 0
         if evaluation_type == 'custom_cms'
           return process_result_cms(out, err)
+        elsif evaluation_type == 'custom_cms_raw'
+          return process_result_cms_raw(out, err)
         else
           return process_result_cafe(out, err)
         end
       else
         comment = "ERROR IN CHECKER!!!\n-- stderr --\n#{err}-- status -- #{status}"
-        return report_check_error(comment)
+        return EngineResponse::CheckerResult.grader_error(comment: comment)
       end
     when 'no_check'
-      return report_check_partial(0)
+      return EngineResponse::CheckerResult.partial(score: 0)
     else
-      return report_check_error('unknown evaluation type')
+      return EngineResponse::CheckerResult.grader_error(comment: 'Unknown evaluation type')
     end
   end
 
@@ -86,6 +97,10 @@ class Checker
   def check_for_required_file
     raise "Output file [#{@output_file.cleanpath}] does not exists" unless @output_file.exist?
     raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
+    if ['custom_cms', 'custom_cms_raw', 'custom_cafe'].include?(@ds.evaluation_type) &&
+        (@prob_checker_file.nil? || @prob_checker_file.exist? == false)
+      raise GraderError.new("Checker file does not exists", submission_id: @sub.id)
+    end
   end
 
   def result_status_with_color(result)
@@ -129,50 +144,6 @@ class Checker
     result = process_result(@ds.evaluation_type, out, err, status)
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_status_with_color(result)
     return result
-  end
-
-  def report_check(score, comment)
-    x = {score: score, comment: comment}
-    if score.to_f == 1
-      x[:result] = :correct
-    elsif score.to_f == 0
-      x[:result] = :wrong
-    else
-      x[:result] = :partial
-    end
-    return x
-  end
-
-  def report_check_correct(score = 1.to_d, comment = nil)
-    {
-      result: :correct,
-      score: score,
-      comment: comment
-    }
-  end
-
-  def report_check_wrong(score = 0.to_d, comment = nil)
-    {
-      result: :wrong,
-      score: score,
-      comment: comment
-    }
-  end
-
-  def report_check_partial(score, comment = nil)
-    {
-      result: :partial,
-      score: score,
-      comment: comment
-    }
-  end
-
-  def report_check_error(comment = 'checker error')
-    {
-      result: :grader_error,
-      score: nil,
-      comment: comment
-    }
   end
 
   # return appropriate evaluator class for the submission

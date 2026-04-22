@@ -5,7 +5,7 @@ class ProblemsController < ApplicationController
   MEMBER_METHOD = [:edit, :update, :destroy,
                    :toggle_available, :toggle_view_testcase, :stat,
                    :add_dataset, :import_testcases,
-                   :download_archive, :helpers, :download_by_type, :delete_by_type,
+                   :download_archive, :download_by_type, :delete_by_type,
                   ]
 
   before_action :set_problem, only: MEMBER_METHOD
@@ -85,6 +85,9 @@ class ProblemsController < ApplicationController
   # as turbo
   # render a card displaying all problem helpers (hint, solution, LLM, etc)
   def helpers
+    # submission may be null
+    @submission = Submission.where(id: params[:submission_id]).take
+    @assists = @submission&.comments&.where(kind: 'llm_assist', enabled: true)
     respond_to do |format|
       format.html { render partial: 'helpers' }
       format.turbo_stream { render 'helpers' }
@@ -400,8 +403,8 @@ class ProblemsController < ApplicationController
 
     def problem_params
       params.require(:problem).permit(:name, :full_name, :change_date_added, :date_added, :available, :compilation_type,
-                                      :submission_filename, :difficulty, :attachment, :statement, :markdown,
-                                      :test_allowed, :output_only, :url, :description, :description, tag_ids: [], group_ids: [])
+                                      :submission_filename, :difficulty, :attachment, :statement, :markdown, :view_testcase,
+                                      :test_allowed, :output_only, :url, :description, :description, :view_submission, tag_ids: [], group_ids: [])
     end
 
     def description_params
@@ -449,12 +452,16 @@ class ProblemsController < ApplicationController
     def problem_for_manage(user)
       tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
       ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
+      hint_count_sql = Comment.hints.group(:commentable_id).select('commentable_id as problem_id, count(commentable_id) as count').to_sql
       return @problems = user.problems_for_action(:edit).joins(:datasets)
-        .joins("LEFT JOIN (#{tc_count_sql}) TC ON problems.id = TC.problem_id")
-        .joins("LEFT JOIN (#{ms_count_sql}) MS ON problems.id = MS.problem_id")
+        .joins("LEFT JOIN (#{tc_count_sql}  ) TC ON problems.id = TC.problem_id")
+        .joins("LEFT JOIN (#{ms_count_sql}  ) MS ON problems.id = MS.problem_id")
+        .joins("LEFT JOIN (#{hint_count_sql}) HC ON problems.id = HC.problem_id")
         .includes(:tags).order(date_added: :desc).group('problems.id')
+        .includes(live_dataset: {checker_attachment: :blob})
         .select("problems.*", "count(datasets_problems.id) as dataset_count, MIN(TC.tc_count) as tc_count")
         .select("MIN(MS.ms_count) as ms_count")
+        .select("HC.count as hint_count")
         .with_attached_statement
         .with_attached_attachment
     end

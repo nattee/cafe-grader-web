@@ -6,7 +6,6 @@ class Compiler
   include JudgeBase
   include Rails.application.routes.url_helpers
 
-
   # Each language-specific sub-class MAY implement this method
   # this is used to check pre-condition of compilation
   # if implemented, the overridden function must call super()
@@ -17,20 +16,20 @@ class Compiler
                           submission_id: @sub.id) unless @working_dataset
   end
 
-  # Each langauge specific sub-class MUST implement this method
+  # Each language specific sub-class MUST implement this method
   # it should return shell command that do the compilation
   #   [isolate_source] is a full pathname to the source file (in isolate env.) to be compiled
   #   [isolate_bin] is a full pathname to the source file (in isolate env.) to store the compiled file
   def build_compile_command(isolate_source, isolate_bin)
   end
 
-  # Each langauge specific sub-class MAY implement this method
+  # Each language specific sub-class MAY implement this method
   # it will be run BEFORE a compilation is success
   # normal use case is for java when we have to detect the classname of the file
   def pre_compile
   end
 
-  # Each langauge specific sub-class MAY implement this method
+  # Each language specific sub-class MAY implement this method
   # it will be run after a compilation is success
   # normal use case is for scripting language
   # where compilation is actually linting and
@@ -40,7 +39,7 @@ class Compiler
   def post_compile
   end
 
-  # Each langauge specific sub-class MAY override this method
+  # Each language specific sub-class MAY override this method
   # This should return {success: true, compiler_message: xxx}
   #   out = stdout
   #   err = stderr
@@ -49,21 +48,26 @@ class Compiler
   def check_compile_result(out, err, status, meta)
     if meta['exitcode'] == 0
       # compiler finished successfully
-      return {success: true, compiler_message: out}
+      return EngineResponse::Result.success(result_description: out)
     else
       # compiler found some error
-      return {success: false, compiler_message: err}
+      return EngineResponse::Result.failure(error: err)
     end
   end
 
   # main compile function
-  def compile(sub, dataset)
-    @sub = sub
+  # return EngineResponse::Result
+  def compile(submission, dataset)
+    @sub = submission
     @working_dataset = dataset
-
+    # validate the pre-condition
     validate
+
     # init isolate
-    setup_isolate(@box_id, isolate_need_cg_by_lang(@sub.language.name))
+    need_cg = isolate_need_cg_by_lang(@sub.language.name)
+    setup_isolate(@box_id, need_cg)
+
+    begin
 
     # prepare source file
     prepare_submission_directory(@sub)
@@ -99,7 +103,7 @@ class Compiler
                        output: output,
                        isolate_args: isolate_args,
                        meta: compile_meta,
-                       cg: isolate_need_cg_by_lang(@sub.language.name))
+                       cg: need_cg)
 
     # save result
     File.write(compile_stdout_file, out)
@@ -108,13 +112,14 @@ class Compiler
     # chmod the compile result
     run_isolate("/usr/bin/chmod -R 0777 #{@isolate_bin_path}", output: output)
 
-    # clean up isolate
-    cleanup_isolate
+    ensure
+      cleanup_isolate(need_cg)
+    end
 
     # call language-specific checking of compilation
     compile_result = check_compile_result(out, err, status, meta)
 
-    if compile_result[:success]
+    if compile_result.status == :success
       # run any post compilation
       begin
         post_compile
@@ -130,15 +135,15 @@ class Compiler
         raise GraderError.new("Error upload compiled file to server \"#{he}\"", submission_id: @sub.id)
       end
 
-      sub.update(status: :compilation_success, compiler_message: compile_result[:compiler_message].truncate(15000))
+      @sub.update(status: :compilation_success, compiler_message: compile_result.result_description.truncate(15000))
       judge_log rb_sub(@sub) + Rainbow(' compilation completed successfully').color(COLOR_COMPILE_SUCCESS)
-      return {status: :success, result_description: 'Compiled successfully', compile_result: :success}
+      return EngineResponse::Result.success(result_description: 'Compiled successfully')
     else
       # error in compilation
       judge_log rb_sub(@sub) + Rainbow(' compilation completed with error').color(COLOR_COMPILE_ERROR)
-      sub.update(status: :compilation_error, compiler_message: compile_result[:compiler_message].truncate(15000),
+      @sub.update(status: :compilation_error, compiler_message: compile_result.result_description.truncate(15000),
                  points: 0, grader_comment: 'Compilation error', graded_at: Time.zone.now)
-      return {status: :success, result_description: 'Compilation error', compile_result: :error}
+      return EngineResponse::Result.success(result_description: 'Compilation error')
     end
   end
 

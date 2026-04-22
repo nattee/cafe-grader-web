@@ -1,41 +1,84 @@
 class ReportController < ApplicationController
+  include ProblemAuthorization
 
   before_action :check_valid_login
-  before_action :selected_problems, only: [ :show_max_score, :submission_query ]
-  before_action :selected_users, only: [ :show_max_score, :submission_query ]
+  before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query ]
+  before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query ]
 
-  before_action(except: [:problem_hof]) {
+  # for all action except hall of fame (which is viewable by any user if the feature is enabled)
+  before_action(except: [:problem_hof, :problem_hof_view, :problem_hof_query]) {
     group_action_authorization(:report)
   }
 
-  before_action :hall_of_fame_authorization, only: [:problem_hof]
+  # for hall of fame
+  before_action :set_problem, only: [:problem_hof_view]
+  before_action :hall_of_fame_authorization, only: [:problem_hof, :problem_hof_query, :problem_hof_view]
+  before_action :admin_authorization, only: [:problem_hof_recompute]
+  before_action :can_view_problem, only: [:problem_hof_view]
 
+  # render the UI for filtering and the initial blank table
   def max_score
+    # this is for rendering the filter selection
     @problems = @current_user.problems_for_action(:report)
     @groups = @current_user.groups_for_action(:report)
+  end
+
+  # turbo update the table (also with blank table but with columns)
+  def max_score_table
+    render turbo_stream: turbo_stream.update(:max_score_result, partial: 'score_table', locals: {problems: @problems, link_for_data: max_score_query_report_path, refresh_submit_form_id: 'max-score-filter-form' })
+  end
+
+  def max_score_query
+    # when @problems is blank, it is very likely that the user hasn't select anything in the form at all
+    # which default to showing all user with no problem selected. We then force the user to be blank as well to speed up
+
+    @users = User.none if @problems.blank?
+    submissions = submission_in_range(params[:sub_range]).where(user: @users, problem: @problems)
+
+    # the max score report need range of time to check for hint acquiring,
+    # we use the time from the first submission to the last submission of the filtered submission
+    start = submissions.minimum(:submitted_at)
+    stop = submissions.maximum(:submitted_at)
+    records = submissions.max_score_report(@problems, start, stop)
+
+    # calculate the maximum score
+    @result = Submission.calculate_max_score(records, @users, @problems)
+
+    render json: {
+      # for data, we need some alias as we use the same render for both the report and contest stat,
+      # these fields are required in the contest view but not in the report view
+      # we also have to alias the user.id to user_id as well
+      data: @users.select(:id, :login, :full_name, :remark)
+        .select(' NULL as seat').select('NULL as last_heartbeat').select(' id as user_id'),
+      result: @result,
+      problem: @problems
+    }
   end
 
   # post max_score
   def show_max_score
     # calculate submission with max score
-    max_records = Submission.where(user_id: @users.ids, problem_id: @problems).group('user_id,problem_id')
+    max_records = submission_in_range(params[:sub_range])
+      .where(user_id: @users.ids, problem_id: @problems).group('user_id,problem_id')
       .select('MAX(submissions.points) as max_score, user_id, problem_id')
-    max_records = submission_in_range(max_records,params[:sub_range])
 
-    records = submission_in_range(Submission.all,params[:sub_range]).joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
-                               'submissions.points = MAX_RECORD.max_score AND ' +
-                               'submissions.user_id = MAX_RECORD.user_id AND ' +
-                               'submissions.problem_id = MAX_RECORD.problem_id ').joins(:user).joins(:problem)
+    records = submission_in_range(params[:sub_range])
+      .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+             'submissions.points = MAX_RECORD.max_score AND ' +
+             'submissions.user_id = MAX_RECORD.user_id AND ' +
+             'submissions.problem_id = MAX_RECORD.problem_id ')
+      .joins(:user).joins(:problem)
       .select('users.id,users.login,users.full_name,users.remark')
       .select('problems.name')
       .select('max_score')
-      .select('submitted_at')
+      .select('submissions.submitted_at')
+      .select('submissions.problem_id')
       .select('submissions.id as sub_id')
 
     @show_time = params['show-time'] == 'on'
 
-    #calculate the score
-    @result = calculate_max_score(records,@problems,@users)
+    # calculate the score
+    @result = Submission.calculate_max_score(records, @users, @problems, with_comments: false)
 
     # this only render as turbo stream
     # see show_max_score.turbo_stream
@@ -46,11 +89,11 @@ class ReportController < ApplicationController
 
   def login_summary_query
     @users = Array.new
-    @since_time = Time.zone.parse( params[:since_datetime] ) || Time.zone.now rescue Time.zone.now
-    @until_time = Time.zone.parse( params[:until_datetime] ) || DateTime.new(3000,1,1) rescue DateTime.new(3000,1,1)
+    @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
+    @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
     record = User
       .left_outer_joins(:logins).group('users.id')
-      .where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
+      .where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
     case params[:users]
     when 'enabled'
       record = record.where(enabled: true)
@@ -60,7 +103,7 @@ class ReportController < ApplicationController
 
     record = record.pluck("users.id,users.login,users.full_name,count(logins.created_at),min(logins.created_at),max(logins.created_at)")
     record.each do |user|
-      query = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?",user[0],@since_time,@until_time)
+      query = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?", user[0], @since_time, @until_time)
       ips =  query.pluck(:ip_address).uniq
       cookie = query.pluck(:cookie).uniq
 
@@ -78,10 +121,10 @@ class ReportController < ApplicationController
 
   def login_detail_query
     @logins = Array.new
-    @since_time = Time.zone.parse( params[:since_datetime] ) || Time.zone.now rescue Time.zone.now
-    @until_time = Time.zone.parse( params[:until_datetime] ) || DateTime.new(3000,1,1) rescue DateTime.new(3000,1,1)
+    @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
+    @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
 
-    @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?",@since_time, @until_time)
+    @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
     case params[:users]
     when 'enabled'
       @logins = @logins.where(users: {enabled: true})
@@ -96,10 +139,8 @@ class ReportController < ApplicationController
   end
 
   def submission_query
-    @submissions = Submission
+    @submissions = submission_in_range(params[:sub_range])
       .joins(:problem).joins(:language).joins(:user)
-      #.includes(:problem).includes(:user).includes(:language)
-    @submissions = submission_in_range(@submissions,params[:sub_range])
 
     # filter users
     unless @users = User.all
@@ -121,62 +162,131 @@ class ReportController < ApplicationController
     # render json:  {data: @submissions,sub_count_by_date: {a:1}}
   end
 
-  def progress
+  def ai
+    # this is "selectable" problems, groups and for rendering the filter selection
+    @problems = @current_user.problems_for_action(:report)
+    @groups = @current_user.groups_for_action(:report)
   end
 
-  def progress_query
-  end
+  def ai_query
+    submissions = submission_in_range(params[:sub_range]).order(:submitted_at)
+    first_sub = submissions.first
+    last_sub = submissions.last
 
-  def problem_hof
-    # gen problem list
-    @user = User.find(session[:user_id])
-    @problems = @user.available_problems
+    first_submission_datetime = first_sub&.submitted_at
+    first_sub_id = first_sub&.id
+    last_sub_id = last_sub&.id
 
-    # get selected problems or the default
-    if params[:id]
-      begin
-        @problem = Problem.available.find(params[:id])
-      rescue
-        redirect_to action: :problem_hof
-        flash[:notice] = 'Error: submissions for that problem are not viewable.'
-        return
+
+    # We can't efficiently filter only for the job inside the selected submissions id range
+    # because we then need to unserialize the argument first.
+    # Therefore, we just use the first submission date to filter the "start" submission
+    # and then use select at the end to actually filtering out the submissions
+    jobs_scope = SolidQueue::Job
+      .where('created_at > ?', first_submission_datetime)
+      .where('class_name LIKE "Llm::%"')
+      .order(created_at: :desc)
+
+    # We need to eager load the submission, else this will be N+1 queries
+    # First, we need all gid of the submission
+
+    job_submission_map = {} # { job_id => gid_string }
+    all_gids = []
+
+    jobs_scope.each do |job|
+      arguments = job.arguments['arguments']
+      if job.class_name.safe_constantize&.<(Llm::SubmissionAssistJob) && arguments.present?
+        gid_string = arguments.first.values.last
+        if gid_string.is_a?(String)
+          job_submission_map[job.id] = gid_string
+          all_gids << gid_string
+        end
       end
     end
 
-    return unless @problem
-
-    #model submisssion
-    @model_subs = Submission.where(problem: @problem,tag: Submission.tags[:model])
+    # load these submissions, also eager load the user and problem
+    submissions_hash = GlobalID::Locator.locate_many(all_gids, includes: [:user, :problem]).index_by { |submission| submission.to_gid.to_s }
 
 
-    #calculate best submission
-    @by_lang = {} #aggregrate by language
+    @jobs = jobs_scope.map do |job|
+      gid_string = job_submission_map[job.id]
+      # Pass the pre-loaded submission (or nil) to the presenter
+      submission = gid_string ? submissions_hash[gid_string] : nil
+      SubmissionAssistJobPresenter.new(job, submission)
+    end
 
-    range =65
-    #@histogram = { data: Array.new(range,0), summary: {} }
+    # @jobs[i] is now a presenter object of the job
+    # We will do filtering here
+    selected_problem_ids = @problems.ids
+    selected_user_ids = @users.ids
+    @jobs = @jobs
+      .select { |job| selected_problem_ids.include? job.problem_id }
+      .select { |job| selected_user_ids.include? job.user_id }
+      .select { |job| job.submission_id >= first_sub_id && job.submission_id <= last_sub_id }
+  end
+
+
+  # -- not used --
+  # def progress
+  # end
+
+  # def progress_query
+  # end
+
+  def problem_hof
+  end
+
+  def problem_hof_query
+    @user = User.find(session[:user_id])
+    problem_ids = @user.problems_for_action(:submit).pluck(:id)
+
+    @problems = Problem.where(id: problem_ids)
+      .left_joins(:problem_stat)
+      .select(
+        "problems.id, problems.name, problems.full_name",
+        "COALESCE(problem_stats.sub_count, 0) as sub_count",
+        "COALESCE(problem_stats.attempted_count, 0) as attempted_count",
+        "COALESCE(problem_stats.solved_count, 0) as solved_count"
+      )
+  end
+
+  def problem_hof_recompute
+    ProblemStat.recompute_all
+    @toast = { title: "Hall of Fame", body: "Statistics recomputed for #{ProblemStat.count} problems." }
+    render "turbo_toast"
+  end
+
+  def problem_hof_view
+    @user = User.find(session[:user_id])
+
+    # model submission
+    @model_subs = Submission.where(problem: @problem, tag: Submission.tags[:model])
+
+
+    # calculate best submission
+    @by_lang = {} # aggregrate by language
+
     @summary = {count: 0, solve: 0, attempt: 0}
     user = Hash.new(0)
     Submission.where(problem_id: @problem.id).includes(:language).each do |sub|
-      #histogram
-      d = (DateTime.now.in_time_zone - sub.submitted_at) / 24 / 60 / 60
-      #@histogram[:data][d.to_i] += 1 if d < range
+      # histogram
 
       next unless sub.points
       @summary[:count] += 1
       user[sub.user_id] = [user[sub.user_id], (sub.points >= 100) ? 1 : 0].max
 
-      #lang = Language.find_by_id(sub.language_id)
+      # lang = Language.find_by_id(sub.language_id)
       lang = sub.language
       next unless lang
       next unless sub.points >= 100
 
-      #initialize
+      # initialize
       unless @by_lang.has_key?(lang.pretty_name)
         @by_lang[lang.pretty_name] = {
           runtime: { avail: false, value: 2**30-1 },
           memory: { avail: false, value: 2**30-1 },
           length: { avail: false, value: 2**30-1 },
-          first: { avail: false, value: DateTime.new(3000,1,1) }
+          first: { avail: false, value: DateTime.new(3000, 1, 1) }
         }
       end
 
@@ -194,21 +304,21 @@ class ReportController < ApplicationController
       end
 
       if @by_lang[lang.pretty_name][:length][:value] > (sub.source.length || 2**30-1)
-        @by_lang[lang.pretty_name][:length] = { avail: true, user_id: sub.user_id, value: (sub.source.length || 2**30-1) , sub_id: sub.id }
+        @by_lang[lang.pretty_name][:length] = { avail: true, user_id: sub.user_id, value: (sub.source.length || 2**30-1), sub_id: sub.id }
       end
     end
 
-    #process user_id
-    @by_lang.each do |lang,prop|
-      prop.each do |k,v|
+    # process user_id
+    @by_lang.each do |lang, prop|
+      prop.each do |k, v|
         v[:user] = User.exists?(v[:user_id]) ? User.find(v[:user_id]).full_name : "(NULL)"
       end
     end
 
-    #sum into best
+    # sum into best
     if @by_lang and @by_lang.first
       @best = @by_lang.first[1].clone
-      @by_lang.each do |lang,prop|
+      @by_lang.each do |lang, prop|
         if @best[:runtime][:value] >= prop[:runtime][:value]
           @best[:runtime] = prop[:runtime]
           @best[:runtime][:lang] = lang
@@ -228,28 +338,27 @@ class ReportController < ApplicationController
       end
     end
 
-    #@histogram[:summary][:max] = [@histogram[:data].max,1].max
     @summary[:attempt] = user.count
     user.each_value { |v| @summary[:solve] += 1 if v == 1 }
 
-
-    #for new graph
+    # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
+
   end
 
-  def stuck #report struggling user,problem
+  def stuck # report struggling user,problem
     # init
-    user,problem = nil
+    user, problem = nil
     solve = true
     tries = 0
     @struggle = Array.new
     record = {}
-    Submission.includes(:problem,:user).order(:problem_id,:user_id).find_each do |sub|
+    Submission.includes(:problem, :user).order(:problem_id, :user_id).find_each do |sub|
       next unless sub.problem and sub.user
       if user != sub.user_id or problem != sub.problem_id
         @struggle << { user: record[:user], problem: record[:problem], tries: tries } unless solve
         record = {user: sub.user, problem: sub.problem}
-        user,problem = sub.user_id, sub.problem_id
+        user, problem = sub.user_id, sub.problem_id
         solve = false
         tries = 0
       end
@@ -259,15 +368,15 @@ class ReportController < ApplicationController
         tries += 1
       end
     end
-    @struggle.sort!{|a,b| b[:tries] <=> a[:tries] }
+    @struggle.sort! { |a, b| b[:tries] <=> a[:tries] }
     @struggle = @struggle[0..50]
   end
 
 
   def multiple_login
-    #user with multiple IP
+    # user with multiple IP
     raw = Submission.joins(:user).joins(:problem).where("problems.available != 0").group("login,ip_address").order(:login)
-    last,count = 0,0
+    last, count = 0, 0
     first = 0
     @users = []
     raw.each do |r|
@@ -282,9 +391,9 @@ class ReportController < ApplicationController
       end
     end
 
-    #IP with multiple user
+    # IP with multiple user
     raw = Submission.joins(:user).joins(:problem).where("problems.available != 0").group("login,ip_address").order(:ip_address)
-    last,count = 0,0
+    last, count = 0, 0
     first = 0
     @ip = []
     raw.each do |r|
@@ -304,19 +413,19 @@ class ReportController < ApplicationController
     date_and_time = '%Y-%m-%d %H:%M'
     begin
       md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
+      @since_time = Time.zone.local(md[1].to_i, md[2].to_i, md[3].to_i, md[4].to_i, md[5].to_i)
     rescue
-      @since_time = Time.zone.now.ago( 90.minutes)
+      @since_time = Time.zone.now.ago(90.minutes)
     end
     begin
       md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @until_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
+      @until_time = Time.zone.local(md[1].to_i, md[2].to_i, md[3].to_i, md[4].to_i, md[5].to_i)
     rescue
       @until_time = Time.zone.now
     end
 
-    #multi login
-    @ml = Login.joins(:user).where("logins.created_at >= ? and logins.created_at <= ?",@since_time,@until_time).select('users.login,count(distinct ip_address) as count,users.full_name').group("users.id").having("count > 1")
+    # multi login
+    @ml = Login.joins(:user).where("logins.created_at >= ? and logins.created_at <= ?", @since_time, @until_time).select('users.login,count(distinct ip_address) as count,users.full_name').group("users.id").having("count > 1")
 
     st = <<-SQL
   SELECT l2.*
@@ -369,37 +478,36 @@ UNION
     WHERE s.submitted_at >= ? and s.submitted_at <= ?
 ORDER BY ip_address,submitted_at
             SQL
-    @subs = Submission.joins(:problem).find_by_sql([st,@since_time,@until_time,
-                                       @since_time,@until_time,
-                                       @since_time,@until_time,
-                                       @since_time,@until_time])
-
+    @subs = Submission.joins(:problem).find_by_sql([st, @since_time, @until_time,
+                                       @since_time, @until_time,
+                                       @since_time, @until_time,
+                                       @since_time, @until_time])
   end
 
   def cheat_scrutinize
-    #convert date & time
+    # convert date & time
     date_and_time = '%Y-%m-%d %H:%M'
     begin
       md = params[:since_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @since_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
+      @since_time = Time.zone.local(md[1].to_i, md[2].to_i, md[3].to_i, md[4].to_i, md[5].to_i)
     rescue
-      @since_time = Time.zone.now.ago( 90.minutes)
+      @since_time = Time.zone.now.ago(90.minutes)
     end
     begin
       md = params[:until_datetime].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/)
-      @until_time = Time.zone.local(md[1].to_i,md[2].to_i,md[3].to_i,md[4].to_i,md[5].to_i)
+      @until_time = Time.zone.local(md[1].to_i, md[2].to_i, md[3].to_i, md[4].to_i, md[5].to_i)
     rescue
       @until_time = Time.zone.now
     end
 
-    #convert sid
+    # convert sid
     @sid = params[:SID].split(/[,\s]/) if params[:SID]
     unless @sid and @sid.size > 0
-      return 
+      return
       redirect_to actoin: :cheat_scrutinize
       flash[:notice] = 'Please enter at least 1 student id'
     end
-    mark = Array.new(@sid.size,'?')
+    mark = Array.new(@sid.size, '?')
     condition = "(u.login = " + mark.join(' OR u.login = ') + ')'
 
     @st = <<-SQL
@@ -412,8 +520,8 @@ UNION
   WHERE s.submitted_at >= ? AND s.submitted_at <= ? AND #{condition}
 ORDER BY submitted_at
   SQL
-    
-    p = [@st,@since_time,@until_time] + @sid + [@since_time,@until_time] + @sid
+
+    p = [@st, @since_time, @until_time] + @sid + [@since_time, @until_time] + @sid
     @logs = Submission.joins(:problem).find_by_sql(p)
   end
 
@@ -422,31 +530,28 @@ ORDER BY submitted_at
     # receive an ActiveRecord::AAssociation *query* of submissions
     # and add more where clause limiting the submission to be in the
     # rnage specified only
-    def submission_in_range(query,range_params)
+    def submission_in_range(range_params)
+      range_params ||= {}
       if range_params[:use] ==  'sub_id'
-        #use sub id
-        since_id = range_params.fetch(:from_id,0).to_i
-        until_id = range_params.fetch(:to_id,0).to_i
-        query = query.where('submissions.id >= ?',range_params[:from_id]) if since_id > 0
-        query = query.where('submissions.id <= ?',range_params[:to_id]) if until_id > 0
+        Submission.by_id_range(range_params[:from_id], range_params[:to_id])
       else
-        #use sub time
-        since_time = Time.zone.parse( range_params[:from_time] ) || Time.zone.now.beginning_of_day rescue Time.zone.now.beginning_of_day
-        until_time = Time.zone.parse( range_params[:to_time] ) || Time.zone.now.end_of_day rescue Time.zone.now.end_of_day
-        datetime_range= since_time..until_time
-        query = query.where(submitted_at: datetime_range)
+        # use sub time
+        since_time = Time.zone.parse(range_params[:from_time]) || Time.zone.now.beginning_of_day rescue Time.zone.now.beginning_of_day
+        until_time = Time.zone.parse(range_params[:to_time]) || Time.zone.now.end_of_day rescue Time.zone.now.end_of_day
+        Submission.by_submitted_at(since_time, until_time)
       end
-      return query
     end
 
     # build @problems that matches the given params
     def selected_problems
       # start with reportable problems (this already consider when @current_user is an admin)
-      @problems = @current_user.problems_for_action(:report)
+      @problems = Problem.where(id: @current_user.problems_for_action(:report).ids)
 
-      #problem
+      # problem
       prob_use = params[:probs][:use] rescue ''
-      if prob_use == 'ids'
+      if prob_use == 'all'
+        @problems = Problem.all
+      elsif prob_use == 'ids'
         @problems = @problems.where(id: params[:probs][:ids])
       elsif prob_use == 'groups'
         ids = Group.where(id: params[:probs][:group_ids]).joins(:problems).pluck(:problem_id).uniq
@@ -455,92 +560,41 @@ ORDER BY submitted_at
         ids = Tag.where(id: params[:probs][:tag_ids]).joins(:problems).pluck(:problem_id).uniq
         @problems = @problems.where(id: ids)
       else
-        @problems = Problem.where('id > 0 and id < 0')
+        # wrong PARAM
+        @problems = Problem.none
       end
 
       # sort it
-      @problems = @problems.order(:date_added)
+      @problems = @current_user.problems_for_action(:report).where(id: @problems.ids).order(:date_added)
     end
 
     def selected_users
+      return (@users = User.none) unless params.has_key? :users
       @users = if params[:users][:use] == "group" then
                  if params[:users][:only_users]
-                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).where(groups_users: {role: 'user'}).pluck(:user_id) )
+                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).where(groups_users: {role: 'user'}).pluck(:user_id))
                  else
-                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).pluck(:user_id) )
+                   User.where(id: Group.where(id: params[:users][:group_ids]).joins(:groups_users).pluck(:user_id))
                  end
-               elsif params[:users][:use] == 'enabled'
+      elsif params[:users][:use] == 'enabled'
                  User.where(enabled: true)
-               else
+      elsif params[:users][:use] == 'all'
                  User.all
-               end
+      else
+                 # wrong PARAM
+                 User.none
+      end
 
       # if user is not admin, filter problem to be only that are reportable
       @users = @users.where(id: @current_user.reportable_users) unless @current_user.admin?
     end
 
-    # return  a hash {score: xx, stat: yy}
-    # xx is {
-    #   #{user.login}: {
-    #     id:, full_name:, remark:,
-    #     prob_#{prob.name}:, time_#{prob.name}, sub_#{prob.name}
-    #     ...
-    # }
-    # TODO: should be moved to Submission.calculate_max_score
-    def calculate_max_score(records,problems,users)
-      result = {score: Hash.new { |h,k| h[k] = {} }, stat: Hash.new {|h,k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
-      users.each do |u|
-        result[:score][u.login]['id'] = u.id;
-        result[:score][u.login]['full_name'] = u.full_name;
-        result[:score][u.login]['remark'] = u.remark;
-      end
-      records.each do |score|
-        #result[:score][score.login]['id'] = score.id
-        #result[:score][score.login]['full_name'] = score.full_name
-        result[:score][score.login]['prob_'+score.name] = score.max_score || 0
-
-        # we pick the latest
-        unless (result[:score][score.login]['time'+score.name] || Date.new) > score.submitted_at
-          result[:score][score.login]['time'+score.name] = score.submitted_at
-          result[:score][score.login]['sub_'+score.name] = score.sub_id
-        end
-      end
-
-      # calculate stats (min, max, zero, partial)
-      result[:score].each do |k,v|
-        sum = 0
-        v.each do |k2,v2|
-          if k2[0..4] == 'prob_'
-            #v2 is the score
-            prob_name = k2[5...]
-            result[:stat][prob_name][:score] << v2
-            result[:stat][prob_name][:sum] += v2 || 0
-            sum += v2 || 0;
-            if v2 == 0
-              result[:stat][prob_name][:zero] += 1
-            elsif v2 == 100
-              result[:stat][prob_name][:full] += 1
-            else
-              result[:stat][prob_name][:partial] += 1
-            end
-          end
-        end
-        v[:user_sum] = sum
-      end
-
-      # summary graph result
-      count = {zero: [], partial: [], full: []}
-      problems.each do |p|
-        count[:zero] << result[:stat][p.name][:zero]
-        count[:full] << result[:stat][p.name][:full]
-        count[:partial] << result[:stat][p.name][:partial]
-      end
-      result[:count] = count
-      return result
-    end
-
     def hall_of_fame_authorization
       return true if @current_user.admin?
       unauthorized_redirect(msg: 'Hall of fame is disabled') unless GraderConfiguration["right.user_hall_of_fame"]
+    end
+
+    def set_problem
+      @problem = Problem.find(params[:id])
     end
 end

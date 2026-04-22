@@ -1,8 +1,9 @@
 class Problem < ApplicationRecord
   # -- fields --
   # how the submission should be compiled
-  enum :compilation_type,  { self_contained: 0,
-                             with_managers: 1 }
+  enum :compilation_type, { self_contained: 0,
+                            with_managers:  1,
+                            viva_exam:      2 }
   enum :task_type, { batch: 0 }
 
   # belongs_to :description
@@ -14,8 +15,12 @@ class Problem < ApplicationRecord
   has_many :groups_problems, class_name: 'GroupProblem', dependent: :destroy
   has_many :groups, through: :groups_problems
 
+  has_many :contests_problems, class_name: 'ContestProblem', dependent: :destroy
+  has_many :contests, through: :contests_problems
+
   has_many :problems_tags, class_name: 'ProblemTag', dependent: :destroy
   has_many :tags, through: :problems_tags
+  has_many :public_tags, -> { where(public: true) }, class_name: 'Tag', through: :problems_tags, source: :tag
 
   has_many :test_pairs, dependent: :delete_all
 
@@ -23,6 +28,7 @@ class Problem < ApplicationRecord
   has_many :testcases, dependent: :destroy
 
   has_many :submissions, dependent: :destroy
+  has_one :problem_stat, dependent: :destroy
 
   has_many :comments, as: :commentable, dependent: :destroy
 
@@ -30,7 +36,7 @@ class Problem < ApplicationRecord
   has_many :comment_reveals, through: :comments
 
   has_many :datasets, dependent: :destroy
-  belongs_to :live_dataset, class_name: 'Dataset'
+  belongs_to :live_dataset, class_name: 'Dataset', optional: true
 
   # -- validations --
   validates_presence_of :name
@@ -48,11 +54,14 @@ class Problem < ApplicationRecord
   # -- scope --
   scope :available, -> { where(available: true) }
 
+  # These group_xxx scopes ALWAYS take groups into account
+  # REGARDLESS of the group mode configuration
+  # It also NEGLECT admin privileges, i.e., you won't get any special treatment if you are an admin
+  #
+  # Please use User.problems_for_action if you want config and admin to be taken into account
+
   # return problems that is enabled and is in an enabled group that has the given user
   # this does not check whether the user is enabled
-  #
-  # It always considers groups, REGARDLESS of the group mode configuration
-  # When group mode is false, use Problem.available_problems instead
   #
   # please use User#problems_for_action when we want to consider everything
   scope :group_submittable_by_user, ->(user_id) {
@@ -84,6 +93,13 @@ class Problem < ApplicationRecord
       .distinct(:id)                            # get distinct
   }
 
+  # These contest_xxx scope ALWAYS take contest into account
+  # REGARDLESS of the contest mode configuration
+  # It also NEGLECT admin privileges, i.e., you won't get any special treatment if you are an admin
+  #
+  # Please use User.problems_for_action if you want config and admin to be taken into account
+  #
+  # This returns all Problem that is submittable by the user in a contest
   scope :contests_problems_for_user, ->(user_id) {
     now = Time.zone.now
     joins(contests_problems: {contest: :contests_users})
@@ -92,12 +108,31 @@ class Problem < ApplicationRecord
       .where('contests_users.user_id': user_id) # user is in the contest
       .where('contests_users.enabled': true)    # user in the contest is enabled
       .where('contests_problems.enabled': true) # problem is enabled
-      .where('ADDTIME(contests.start,contests_users.start_offset_second) <= ?', now)
+      .where('ADDTIME(contests.start,-contests_users.start_offset_second) <= ?', now)
       .where('ADDTIME(contests.stop,contests_users.extra_time_second) >= ?', now)
-      .distinct(:problem_id)                    # get distinct
+      .group('problems.id')
   }
 
-  scope :default_order, -> { order(date_added: :desc).order(:name)  }
+  # return all problem that the user has "editing" rights in a contest
+  #   if the user is an editor of the contest, they can always see the problems
+  #   even if the contest is not "enabled"
+  scope :contests_editable_problems_for_user, ->(user_id) {
+    joins(contests_problems: {contest: :contests_users})
+      .where(available: true)                   # available problems only
+      .where('contests.enabled': true)          # contests is enabled
+      .where('contests_users.user_id': user_id) # user is in the contest
+      .where('contests_users.enabled': true)    # user in the contest is enabled
+      .where('contests_users.role': 'editor')   # user must have 'editor' role
+      .distinct('problems.id')
+  }
+
+  scope :default_order, -> {
+    if GraderConfiguration.contest_mode?
+      order('MIN(contests_problems.number)')
+    else
+      order(date_added: :desc).order(:name)
+    end
+  }
 
   DEFAULT_TIME_LIMIT = 1
   DEFAULT_MEMORY_LIMIT = 32
@@ -111,10 +146,13 @@ class Problem < ApplicationRecord
   def set_default_value
   end
 
-  def public_tags
-    tags.where(public: true)
+  def viva_grounding_tags
+    tags.where(kind: :viva_grounding)
   end
 
+  def viva_prompt_tags
+    tags.where(kind: :llm_prompt)
+  end
 
   def can_view_testcase
     GraderConfiguration.show_testcase && self.view_testcase
@@ -203,12 +241,14 @@ class Problem < ApplicationRecord
     "[#{name}] #{full_name}"
   end
 
+  # ------------------------
   # -- HINT section begin --
+  # ------------------------
   def hints
     comments.where(kind: :hint)
   end
 
-  # indicate weather this problem has a helper
+  # indicate weather this problem has a helper (hints, comments)
   def helpers?
     hints.any?
   end
@@ -218,7 +258,7 @@ class Problem < ApplicationRecord
   def comments_with_reveal_status(user, kind: nil)
     query = comments
     query = query.where(kind: kind) if kind.present?
-    query.left_joins(:comment_reveals).select('comments.*', "CASE WHEN comment_reveals.user_id = #{user.id} THEN TRUE ELSE FALSE END AS is_acquired")
+    query.select('comments.*', "EXISTS(SELECT 1 FROM comment_reveals WHERE user_id = #{user.id} AND comment_id = comments.id) AS is_acquired")
   end
 
   # this method is used both in acquiring and viewing
@@ -246,11 +286,17 @@ class Problem < ApplicationRecord
     end
   end
 
+  def helpers_cost(user,contest)
+    Comment.cost_summary_for(user,contest)
+  end
+
   # return the enabled comments of the specified *kind* that are revealed by *user*
   def revealed_comments_for_user(user, kind)
     commens.joins(:comment_reveals).where(enabled: true, comment_reveals: {user: user, kind: kind})
   end
+  # ----------------------
   # -- HINT section end --
+  # ----------------------
 
   # ids_string is something like ['1','3','7']
   # which correspond to the submitted value from  select2 multiple selection

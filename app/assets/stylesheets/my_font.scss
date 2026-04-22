@@ -148,28 +148,51 @@
 }
 
 
-// Caskadia
+// Cascadia Mono
 @font-face {
-  font-family: 'Cascadia Code';
+  font-family: 'Cascadia Mono';
   font-weight: 400;
   font-style: normal;
-  src: url('cascadia_code/CascadiaCode-Regular.ttf') format('truetype'),
+  src: url('cascadia_mono/CascadiaMono-VariableFont_wght.ttf') format('truetype'),
 }
 @font-face {
-  font-family: 'Cascadia Code';
+  font-family: 'Cascadia Mono';
   font-weight: 400;
   font-style: italic;
-  src: url('cascadia_code/CascadiaCode-Italic.ttf') format('truetype'),
+  src: url('cascadia_mono/CascadiaMono-Italic-VariableFont_wght.ttf') format('truetype'),
+}
+
+// Inconsolata
+@font-face {
+  font-family: 'Inconsolata';
+  font-weight: 500;
+  font-style: normal;
+  src: url('inconsolata/Inconsolata-VariableFont_wdth,wght.ttf') format('truetype'),
+}
+
+
+// courier prime
+@font-face {
+  font-family: 'Courier Prime';
+  font-weight: 400;
+  font-style: normal;
+  src: url('courier_prime/CourierPrime-Regular.ttf') format('truetype'),
 }
 @font-face {
-  font-family: 'Cascadia Code';
+  font-family: 'Courier Prime';
+  font-weight: 400;
+  font-style: italic;
+  src: url('cascadia_code/CourierPrime-Italic.ttf') format('truetype'),
+}
+@font-face {
+  font-family: 'Courier Prime';
   font-weight: 700;
   font-style: normal;
-  src: url('cascadia_code/CascadiaCode-Bold.ttf') format('truetype'),
+  src: url('cascadia_code/CourierPrime-Bold.ttf') format('truetype'),
 }
 @font-face {
-  font-family: 'Cascadia Code';
+  font-family: 'Courier Prime';
   font-weight: 700;
   font-style: italic;
-  src: url('cascadia_code/CascadiaCode-BoldItalic.ttf') format('truetype'),
+  src: url('cascadia_code/CourierPrime-BoldItalic.ttf') format('truetype'),
 }

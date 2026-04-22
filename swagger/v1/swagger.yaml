@@ -1,0 +1,761 @@
+---
+openapi: 3.0.1
+info:
+  title: Cafe Grader API
+  version: v1
+  description: API for the Cafe Grader online judge platform
+paths:
+  "/api/v1/auth/login":
+    post:
+      summary: Log in and receive a JWT token
+      tags:
+      - Auth
+      parameters: []
+      responses:
+        '200':
+          description: login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  token:
+                    type: string
+                    description: JWT token
+                  user:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      id:
+                        type: integer
+                      login:
+                        type: string
+                      full_name:
+                        type: string
+                required:
+                - token
+                - user
+        '401':
+          description: invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                  description: Username
+                password:
+                  type: string
+                  description: Password
+              required:
+              - login
+              - password
+  "/api/v1/contests/{id}":
+    get:
+      summary: Get contest info
+      tags:
+      - Contests
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: contest found
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  description:
+                    type: string
+                    nullable: true
+                  start:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  stop:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  finalized:
+                    type: boolean
+                  status:
+                    type: string
+                required:
+                - id
+                - name
+        '404':
+          description: contest not found or not accessible
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+  "/api/v1/contests/{id}/problems":
+    get:
+      summary: List problems in a contest
+      tags:
+      - Contests
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: problems list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    full_name:
+                      type: string
+                    difficulty:
+                      type: integer
+                      nullable: true
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    submission_count:
+                      type: integer
+                    best_score:
+                      type: number
+                      nullable: true
+                    last_score:
+                      type: number
+                      nullable: true
+                    last_result:
+                      type: string
+                      nullable: true
+                    last_submission_time:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    has_testcase:
+                      type: boolean
+                    has_attachment:
+                      type: boolean
+                    permitted_languages:
+                      type: array
+                      nullable: true
+                      items:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+                          ext:
+                            type: string
+                      description: Allowed languages, or null if all are allowed
+  "/api/v1/languages":
+    get:
+      summary: List all available languages
+      tags:
+      - Languages
+      security:
+      - bearer: []
+      responses:
+        '200':
+          description: languages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    pretty_name:
+                      type: string
+                    ext:
+                      type: string
+                  required:
+                  - id
+                  - name
+                  - pretty_name
+                  - ext
+  "/api/v1/problems":
+    get:
+      summary: List all accessible problems
+      tags:
+      - Problems
+      security:
+      - bearer: []
+      responses:
+        '200':
+          description: problems list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    full_name:
+                      type: string
+                    difficulty:
+                      type: integer
+                      nullable: true
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    submission_count:
+                      type: integer
+                    best_score:
+                      type: number
+                      nullable: true
+                    last_score:
+                      type: number
+                      nullable: true
+                    last_result:
+                      type: string
+                      nullable: true
+                    last_submission_time:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    has_testcase:
+                      type: boolean
+                    has_attachment:
+                      type: boolean
+                    permitted_languages:
+                      type: array
+                      nullable: true
+                      items:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+                          ext:
+                            type: string
+                      description: Allowed languages, or null if all are allowed
+  "/api/v1/problems/{id}":
+    get:
+      summary: Get problem detail
+      tags:
+      - Problems
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: problem detail
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  full_name:
+                    type: string
+                  full_score:
+                    type: integer
+                    nullable: true
+                  difficulty:
+                    type: integer
+                    nullable: true
+                  tags:
+                    type: array
+                    items:
+                      type: string
+                  submission_count:
+                    type: integer
+                  best_score:
+                    type: number
+                    nullable: true
+                  last_score:
+                    type: number
+                    nullable: true
+                  last_result:
+                    type: string
+                    nullable: true
+                  last_submission_time:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  has_testcase:
+                    type: boolean
+                  has_attachment:
+                    type: boolean
+                  permitted_languages:
+                    type: array
+                    nullable: true
+                    items:
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        ext:
+                          type: string
+                    description: Allowed languages, or null if all are allowed
+                  submission_ids:
+                    type: array
+                    items:
+                      type: integer
+                required:
+                - id
+                - name
+                - full_name
+                - submission_count
+                - submission_ids
+        '404':
+          description: problem not found
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+  "/api/v1/problems/{id}/description":
+    get:
+      summary: Get problem description (markdown)
+      tags:
+      - Problems
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: description returned
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  markdown:
+                    type: boolean
+                  description:
+                    type: string
+                    nullable: true
+  "/api/v1/problems/{id}/files/{type}":
+    get:
+      summary: Get problem file by type
+      tags:
+      - Problems
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: type
+        in: path
+        required: true
+        enum:
+        - pdf
+        - attachment
+        - checker
+        - manager
+        description: "File type to retrieve:\n * `pdf` \n * `attachment` \n * `checker`
+          \n * `manager` \n "
+        schema:
+          type: string
+      responses:
+        '404':
+          description: file not found
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+        '400':
+          description: unknown file type
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+  "/api/v1/problems/{id}/testcases":
+    get:
+      summary: List testcase metadata for a problem
+      tags:
+      - Problems
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '403':
+          description: testcase viewing not allowed
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+  "/api/v1/problems/{problem_id}/submissions":
+    get:
+      summary: List user's submissions for a problem
+      tags:
+      - Submissions
+      security:
+      - bearer: []
+      parameters:
+      - name: problem_id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: submissions list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: integer
+                    number:
+                      type: integer
+                    language:
+                      type: string
+                    submitted_at:
+                      type: string
+                      format: date-time
+                    points:
+                      type: number
+                      nullable: true
+                    status:
+                      type: string
+                      nullable: true
+                    grader_comment:
+                      type: string
+                      nullable: true
+    post:
+      summary: Submit code to a problem
+      tags:
+      - Submissions
+      security:
+      - bearer: []
+      parameters:
+      - name: problem_id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '201':
+          description: submission created
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  number:
+                    type: integer
+                  status:
+                    type: string
+                required:
+                - id
+                - number
+                - status
+        '422':
+          description: missing source code
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source:
+                  type: string
+                  description: Source code
+                filename:
+                  type: string
+                  description: Filename (for language detection)
+                language_id:
+                  type: integer
+                  description: Language ID
+              required:
+              - source
+  "/api/v1/submissions/{id}":
+    get:
+      summary: Get submission detail
+      tags:
+      - Submissions
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: submission detail
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  problem_id:
+                    type: integer
+                  problem_name:
+                    type: string
+                  user_id:
+                    type: integer
+                  language:
+                    type: string
+                  source:
+                    type: string
+                    nullable: true
+                  source_filename:
+                    type: string
+                    nullable: true
+                  submitted_at:
+                    type: string
+                    format: date-time
+                  points:
+                    type: number
+                    nullable: true
+                  status:
+                    type: string
+                    nullable: true
+                  grader_comment:
+                    type: string
+                    nullable: true
+                  compiler_message:
+                    type: string
+                    nullable: true
+                  max_runtime:
+                    type: number
+                    nullable: true
+                  peak_memory:
+                    type: integer
+                    nullable: true
+                  number:
+                    type: integer
+                  evaluations:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: false
+                      properties:
+                        testcase_id:
+                          type: integer
+                        result:
+                          type: string
+                          nullable: true
+                        score:
+                          type: number
+                          nullable: true
+                        time:
+                          type: integer
+                          nullable: true
+                        memory:
+                          type: integer
+                          nullable: true
+                required:
+                - id
+                - problem_id
+                - language
+                - submitted_at
+        '404':
+          description: submission not found
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+  "/api/v1/testcases/{id}/input":
+    get:
+      summary: Download testcase input file
+      tags:
+      - Testcases
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '403':
+          description: not allowed to view testcase
+  "/api/v1/testcases/{id}/sol":
+    get:
+      summary: Download testcase solution file
+      tags:
+      - Testcases
+      security:
+      - bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '403':
+          description: not allowed to view testcase
+  "/api/v1/me":
+    get:
+      summary: Get current user profile
+      tags:
+      - User
+      security:
+      - bearer: []
+      responses:
+        '200':
+          description: user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id:
+                    type: integer
+                  login:
+                    type: string
+                  full_name:
+                    type: string
+                  alias:
+                    type: string
+                    nullable: true
+                  email:
+                    type: string
+                    nullable: true
+                  section:
+                    type: string
+                    nullable: true
+                  remark:
+                    type: string
+                    nullable: true
+                  admin:
+                    type: boolean
+                required:
+                - id
+                - login
+                - full_name
+                - admin
+        '401':
+          description: missing or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
+servers:
+- url: "{server}"
+  variables:
+    server:
+      default: https://your-server.example.com
+      description: Server URL
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

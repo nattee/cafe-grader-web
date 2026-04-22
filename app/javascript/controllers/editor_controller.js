@@ -1,5 +1,23 @@
 // For setting the ace editor
 import { Controller } from "@hotwired/stimulus"
+import ace from 'ace-builds'
+
+// ace themes
+import 'ace-theme-merbivore'
+import 'ace-theme-merbivore_soft'
+import 'ace-theme-dracula'
+// ace modes
+import 'ace-mode-c_cpp'
+import 'ace-mode-pascal'
+import 'ace-mode-python'
+import 'ace-mode-ruby'
+import 'ace-mode-haskell'
+import 'ace-mode-php'
+import 'ace-mode-java'
+import 'ace-mode-rust'
+import 'ace-mode-golang'
+import 'ace-mode-xml'
+import 'ace-mode-sql'
 
 export default class extends Controller {
 
@@ -46,6 +64,11 @@ export default class extends Controller {
     // load the ace editor
     this.editor = ace.edit(this.editorTarget.id)
 
+    // set theme * tabsize
+    this.editor.setTheme('ace/theme/merbivore_soft');
+    this.editor.getSession().setTabSize(2);
+    this.editor.getSession().setUseSoftTabs(true);
+
     // load the source code from the element
     this.editor.setValue(this.sourceTarget.value)
     this.editor.gotoLine(1)
@@ -55,9 +78,13 @@ export default class extends Controller {
 
     // set readonly mode, if indicated
     if (this.editorTarget.dataset.editorMode == 'view') {
-      this.editor.setOptions({ maxLines: Infinity })
+      //this.editor.setOptions({ maxLines: Infinity })
+      this.editor.setOptions({ maxLines: 49 })
       this.editor.setReadOnly(true)
+    } else {
+      this.editor.setOptions({ maxLines: 40, minLines: 40 })
     }
+
   }
 
   // attached to the file input, load the file

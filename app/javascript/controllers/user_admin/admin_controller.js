@@ -28,7 +28,7 @@ export default class extends BaseController {
         {data: 'login'},
         {data: 'full_name'},
         // clear ip action
-        {data: 'id', render: cafe.dt.render.button(`[${cafe.msi('lock_reset','md-18')} Clear]`, {element_type: 'link', action: 'user-admin--admin#postUserAction', command: 'revoke'} )},
+        {data: 'id', render: cafe.dt.render.button(`[${cafe.msi('remove_moderator','md-18')} Revoke]`, {element_type: 'link', action: 'user-admin--admin#postUserAction', command: 'revoke', className: 'link-danger'} )},
       ],
       columnDefs: [{orderable: false, targets: [2]} ],
     })

@@ -161,6 +161,11 @@ Cheers!
       comment:
         kinds:
           hint: Hint
+      tag:
+        kinds:
+          normal: Normal tag
+          topic: Topic tag
+          llm_prompt: Prompt For LLM Assist
       evaluation:
         results:
           waiting: Judging
@@ -169,9 +174,14 @@ Cheers!
           partial: Partially Correct
           time_limit: Time Limit Exceed
           memory_limit: Memory Limit Exceed
-          crash: Crashed
+          crash: Program Crashed
           unknown_error: UNKNOWN ERROR
           grader_error: GRADER ERROR
+      contest:
+        finalized: Read Only
+  errors:
+    messages:
+      name_format: contains invalid characters. Only letters, numbers, <code>( )</code>, <code>[ ]</code>, <code>-</code> and <code>_</code> are allowed.
 
 
 

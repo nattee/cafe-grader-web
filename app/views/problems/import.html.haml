@@ -1,85 +1,130 @@
-%h2 Import problems
+= render 'application/breadcrumb', steps: [{ label: 'Problems', path: problems_path, icon: resource_icon_name(Problem) }, { label: 'Import' }]
+
+.d-flex.align-items-center.gap-2.mb-4
+  %h2.fw-bold.text-dark.mb-0 Import Problem
+  %span.badge.bg-success-subtle.text-success.border.border-success-subtle.rounded-pill.fw-medium
+    %small New
 
 - if @errors
-  -# show errors
-  .alert.alert-danger
-    There are following errors
-    %ul
-      - @errors.each do |msg|
-        %li= msg.html_safe
+  .alert.alert-danger.d-flex.align-items-start.gap-2
+    = mdi(:error, 'text-danger mt-1')
+    %div
+      %strong Import failed
+      %ul.mb-0.mt-1
+        - @errors.each do |msg|
+          %li= msg.html_safe
 
 .row
   .col-md-6
-    = simple_form_for :problem, url: do_import_problems_path, html: {multipart: true}, wrapper: :horizontal_form do |f|
-      = f.input :name
-      = f.input :full_name
-      = f.input :time_limit, required: false
-      = f.input :memory_limit, required: false
-      = f.input :groups, collection: @current_user.groups_for_action(:edit), label_method: :name, value_method: :id, input_html: {class: 'select2'}, include_blank: @allow_blank_group, style: 'width: 100%', wrapper: :horizontal_select
-      .card.mb-2
-        .card-body
-          %h5.card-title Dataset
-          = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
-          = f.input :input_pattern, input_html: { value: '*.in' }
-          = f.input :sol_pattern, input_html: { value: '*.sol' }
-          = f.input :replace, label: 'replace all existing datasets of this problem', as: :boolean, wrapper: :horizontal_boolean
-      = f.button :submit, class: 'btn-primary'
-  .col-md-6
-    .card.bg-warning-subtle.mt-2
+    .card.shadow-sm.mb-4
       .card-body
-        .card-title
-          %h4
-            Usage
-            .mi.mi-bs.fill help
-          %ul
-            %li
-              Upload a ZIP file to create a new problem with your specified name. 
-              If a problem with that name already exists, the system will add the ZIP content as 
-              a new dataset within the existing problem, rather than replacing it.
-            %li
-              You can assign newly imported problems to a specific group by setting the
-              %strong Groups
-              property.
+        %h5.fw-bold.text-secondary.mb-3
+          = mdi(:upload_file, 'me-1')
+          Import Details
+        = simple_form_for :problem, url: do_import_problems_path, html: {multipart: true}, wrapper: :horizontal_form do |f|
+          = f.input :name
+          = f.input :full_name
+          = f.input :time_limit, required: false
+          = f.input :memory_limit, required: false
+          = f.input :groups, collection: @current_user.groups_for_action(:edit), label_method: :name, value_method: :id, input_html: {class: 'select2'}, include_blank: @allow_blank_group, style: 'width: 100%', wrapper: :horizontal_select
+          .card.bg-light.border-0.mb-3
+            .card-body.py-3
+              %h6.fw-bold.text-secondary.mb-3
+                = mdi(:dataset, 'me-1')
+                Dataset
+              = f.input :file, label: 'ZIP file', as: :file, wrapper: :horizontal_file
+              = f.input :input_pattern, input_html: { value: '*.in' }
+              = f.input :sol_pattern, input_html: { value: '*.sol' }
+              = f.input :replace, label: 'Replace all existing datasets', as: :boolean, wrapper: :horizontal_boolean
+          = f.button :submit, class: 'btn-primary'
 
-        %h5.my-2 Zip File Format
-        %ul
-          %li
-            The zip file should have multiple testcases where each testcase 
-            are pair of files with the same filename but different extension
-            where
-            %span.rounded.bg-light.p-1.font-monospace .in
-            is for input and
-            %span.rounded.bg-light.p-1.font-monospace .sol
-            is for output.
+  .col-md-6
+    .card.border-0.shadow-sm.border-start.border-4.border-info.mb-4
+      .card-body.p-4
+        .d-flex.align-items-center.mb-4
+          .bg-info-subtle.text-info-emphasis.rounded-circle.d-flex.align-items-center.justify-content-center.me-3.lh-1{style: "width: 48px; height: 48px"}
+            %span.mi.md-24.fill help
+          %div
+            %h5.fw-bold.text-dark.mb-0 Usage Guide
+            %small.text-secondary How to import problems via ZIP upload.
 
-          %li
-            Any
-            %span.rounded.bg-light.p-1.font-monospace .pdf
-            file will be used as a statement of the problem.
-          %li
-            Example: A zip file that contains
-            %span.rounded.bg-light.p-1.font-monospace 1.in
-            ,
-            %span.rounded.bg-light.p-1.font-monospace 1.sol
-            ,
-            %span.rounded.bg-light.p-1.font-monospace 2.in
-            and
-            %span.rounded.bg-light.p-1.font-monospace 2.sol
-            will have a new dataset consisting of two testcases: one with the input and output of 
-            %span.rounded.bg-light.p-1.font-monospace 1.in
-            and
-            %span.rounded.bg-light.p-1.font-monospace 1.sol
-            and another one with
-            %span.rounded.bg-light.p-1.font-monospace 2.in
-            and
-            %span.rounded.bg-light.p-1.font-monospace 2.sol
-          %li
-            Zip file may contain many more files, see
-            %a{href: '#'} the wiki
-            for more detail.
+        .row.g-4
+          .col-12
+            .d-flex.gap-3
+              .text-info.flex-shrink-0
+                %span.mi.md-24 upload_file
+              %div
+                %h6.fw-bold.text-dark.mb-2 Upload Behavior
+                %ul.small.text-muted.lh-sm.mb-0
+                  %li
+                    Upload a ZIP file to create a new problem with your specified name.
+                    If a problem with that name already exists, the system will add the ZIP content as
+                    a new dataset within the existing problem.
+                  %li.mt-1
+                    You can assign newly imported problems to a specific group by setting the
+                    %strong Groups
+                    property.
 
+          .col-12
+            .d-flex.gap-3
+              .text-info.flex-shrink-0
+                %span.mi.md-24 folder_zip
+              %div
+                %h6.fw-bold.text-dark.mb-2 ZIP File Format
+                %ul.small.text-muted.lh-sm.mb-0
+                  %li
+                    Each testcase is a pair of files with the same name but different extension:
+                    %code.text-info-emphasis .in
+                    for input and
+                    %code.text-info-emphasis .sol
+                    for output.
+                  %li.mt-1
+                    Any
+                    %code.text-info-emphasis .pdf
+                    file will be used as the problem statement.
+                  %li.mt-1
+                    Example:
+                    %code 1.in
+                    ,
+                    %code 1.sol
+                    ,
+                    %code 2.in
+                    ,
+                    %code 2.sol
+                    creates two testcases.
+
+          .col-12
+            .d-flex.gap-3
+              .text-info.flex-shrink-0
+                %span.mi.md-24 download
+              %div
+                %h6.fw-bold.text-dark.mb-2 Example ZIP Files
+                %p.small.text-muted.lh-sm.mb-2 Download an example to see the expected format. All examples use an A+B problem (read two integers, print their sum).
+                .d-flex.flex-column.gap-2
+                  %div
+                    %a.btn.btn-sm.btn-outline-info.d-inline-flex.align-items-center.gap-1{href: '/example_import_basic.zip', download: 'example_import_basic.zip'}
+                      = mdi(:download, 'md-16')
+                      Basic
+                    %span.small.text-muted.ms-2
+                      1 testcase &mdash; bare minimum
+                  %div
+                    %a.btn.btn-sm.btn-outline-info.d-inline-flex.align-items-center.gap-1{href: '/example_import_minimal.zip', download: 'example_import_minimal.zip'}
+                      = mdi(:download, 'md-16')
+                      Standard
+                    %span.small.text-muted.ms-2
+                      3 testcases + PDF statement
+                  %div
+                    %a.btn.btn-sm.btn-outline-info.d-inline-flex.align-items-center.gap-1{href: '/example_import_advanced.zip', download: 'example_import_advanced.zip'}
+                      = mdi(:download, 'md-16')
+                      Advanced
+                    %span.small.text-muted.ms-2
+                      5 testcases, PDF, config.yml (groups, weights, tags, limits)
 
 - if @log
-  %h3 Import log
-  %pre.import-log
-    = @log
+  .card.shadow-sm.mb-4
+    .card-body
+      %h5.fw-bold.text-secondary.mb-3
+        = mdi(:receipt_long, 'me-1')
+        Import Log
+      %pre.import-log.bg-light.rounded.p-3.mb-0.small
+        = @log

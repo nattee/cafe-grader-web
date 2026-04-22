@@ -9,7 +9,7 @@ export default class extends Controller {
     this.setupTurboConfirm();
   }
 
-  // this setup the Turbo confirmation 
+  // this setup the Turbo confirmation to use Bootstrap Modal
   setupTurboConfirm() {
     Turbo.config.forms.confirm = (dataConfirmMessage, element) => {
     //Turbo.setConfirmMethod((dataConfirmMessage, element) => {
@@ -115,5 +115,6 @@ export default class extends Controller {
       });
     }
   }
+
 
 }

@@ -9,8 +9,12 @@ class Submission < ApplicationRecord
 
   has_many :evaluations, dependent: :destroy
 
+  # viva exam
+  has_many :viva_turns, -> { order(:sequence) }, dependent: :destroy
+  has_one :viva_grade, dependent: :destroy
+
   # comments
-  has_many :comments, as: :commentable
+  has_many :comments, as: :commentable, dependent: :destroy
   # Allows you to get all comment reveals for comments belonging to this submission
   has_many :comment_reveals, through: :comments
 
@@ -26,22 +30,72 @@ class Submission < ApplicationRecord
 
   has_many_attached :compiled_files
 
-  # filter submissions in the range
-  scope :in_range, ->(by, from, to) {
-    if by.to_sym == :sub_id
-      # use sub id
-      from_id = from.to_i
-      to_id = to.to_i
-      query = self
-      query = query.where('submissions.id >= ?', from_id) if from_id > 0
-      query = query.where('submissions.id <= ?', to_id) if to_id > 0
-      return query
-    else
-      # use sub time
-      datetime_range= from..to
-      return self.where(submitted_at: datetime_range)
-    end
+  scope :by_id_range, ->(from, to) {
+    query = all
+    query = query.where('submissions.id >= ?', from) if from.present?
+    query = query.where('submissions.id <= ?', to) if to.present?
+    query
   }
+
+  scope :by_submitted_at, ->(from, to) {
+    query = all
+    query = query.where('submissions.submitted_at >= ?', from) if from.present?
+    query = query.where('submissions.submitted_at <= ?', to) if to.present?
+    query
+  }
+
+  scope :with_llm_stat_by_problem, ->  {
+    joins(:comments)
+      .where('comments.kind': 'llm_assist')
+      .group(:problem_id)
+      .select('problem_id', 'count(comments.id) as count', 'sum(comments.cost) as cost')
+  }
+
+  # this is a large one used for buildling data for _score_table and datatables/init_score_table_controller.js
+  # the final result should be processed further by Submission.calculate_max_score
+  scope :max_score_report, ->(problems, start, stop) {
+    max_records = all
+      .group('submissions.user_id,submissions.problem_id')
+      .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
+
+    llm_assist_count = Comment.llm_assists_for_submissions(all)
+      .select('SUM(comments.cost) as llm_cost')
+      .select('COUNT(comments.id) as llm_count')
+      .select('comments.commentable_id as submission_id')
+
+    # should I includes all hint? or just hint reveal during the given time?
+    hint_reveal = Comment.hint_reveal_for_problems(problems, start..stop)
+      .select('comment_reveals.user_id as user_id')
+      .select('comments.commentable_id as problem_id')
+      .select('SUM(comments.cost) as hint_cost')
+      .select('count(comments.id) as hint_count')
+
+    # records having the same score as the max record
+    # this is what we returned
+    all.joins(:user)
+      .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
+                   'submissions.points = MAX_RECORD.max_score AND ' +
+                   'submissions.user_id = MAX_RECORD.user_id AND ' +
+                   'submissions.problem_id = MAX_RECORD.problem_id ')
+      .joins("LEFT JOIN (#{llm_assist_count.to_sql}) LLM_ASSIST ON " +
+        "submissions.id = LLM_ASSIST.submission_id"
+       )
+      .joins("LEFT JOIN (#{hint_reveal.to_sql}) HINT_REVEAL ON " +
+        "submissions.user_id = HINT_REVEAL.user_id AND " +
+        "submissions.problem_id = HINT_REVEAL.problem_id "
+       )
+      .joins(:problem)
+      .select('submissions.user_id,users.login,users.full_name,users.remark')
+      .select('problems.name')
+      .select('max_score')
+      .select('LEAST(max_score,100.0-IFNULL(LLM_ASSIST.llm_cost,0.0)-IFNULL(HINT_REVEAL.hint_cost,0.0)) as final_score')
+      .select('submitted_at')
+      .select('submissions.id as sub_id')
+      .select('submissions.problem_id,submissions.user_id')
+      .select('LLM_ASSIST.llm_cost, LLM_ASSIST.llm_count')
+      .select('HINT_REVEAL.hint_cost, HINT_REVEAL.hint_count')
+  }
+
 
   def add_judge_job(dataset = problem.live_dataset, priority = 0)
     evaluations.delete_all
@@ -89,18 +143,21 @@ class Submission < ApplicationRecord
     submissions
   end
 
-
   def download_filename
     if self.problem.output_only
       return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{Pathname.new(self.source_filename).extname}"
     else
       if self.language.binary?
-        # for binary langauge (such as archive), we extract the extension from the source filename
+        # for binary language (such as archive), we extract the extension from the source filename
         return "#{self.problem.name}-#{self.user.login}-#{self.id}#{Pathname.new(self.source_filename).extname rescue ''}"
       else
         return "#{self.problem.name}-#{self.user.login}-#{self.id}.#{self.language.ext}"
       end
     end
+  end
+
+  def has_processing_comments?
+    comments.where(status: 'processing').any?
   end
 
   #
@@ -113,14 +170,16 @@ class Submission < ApplicationRecord
   # xx is {
   #   #{user.login}: {
   #     id:, full_name:, remark:,
-  #     prob_#{prob.id}:     # score
-  #     time_#{prob.id}:     # the latest time of that score
-  #     sub_#{prob.id}:      # the sub_id of that score
+  #     raw_#{prob.id}:        # score
+  #     time_#{prob.id}:       # the latest time of that score
+  #     sub_#{prob.id}:        # the sub_id of that score
+  #     deduction_#{prob.id}:  # the sub_id of that score
+  #     final_#{prob.id}:      # the sub_id of that score
   #     ...
   # }
-  def self.calculate_max_score(records, users, problems)
+  def self.calculate_max_score(records, users, problems, with_comments: true)
     result = {score: Hash.new { |h, k| h[k] = {} },
-              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, score: [] } } }
+              stat: Hash.new { |h, k| h[k] = { zero: 0, partial: 0, full: 0, sum: 0, sum_deduced: 0, score: [] } } }
 
     # build users
     users.each do |u|
@@ -130,46 +189,30 @@ class Submission < ApplicationRecord
     end
 
 
+    # iterates each sub and extract
+    #   max score
+    #   id and time of last submission with that max score
+    #   cost of llm, count of llm
     records.each do |sub|
-      result[:score][sub.login]["prob_#{sub.problem_id}"] = sub.max_score || 0
+      result[:score][sub.login]["raw_score_#{sub.problem_id}"] = sub.max_score || 0
 
-      # we pick the latest
+      # we pick the latest and save all related info
       unless (result[:score][sub.login]["time_#{sub.problem_id}"] || Date.new) > sub.submitted_at
         result[:score][sub.login]["time_#{sub.problem_id}"] = sub.submitted_at
         result[:score][sub.login]["sub_#{sub.problem_id}"] = sub.sub_id
-      end
-    end
+        if with_comments
+          result[:score][sub.login]["llm_count_#{sub.problem_id}"] = sub.llm_count
+          result[:score][sub.login]["llm_cost_#{sub.problem_id}"] = sub.llm_cost
+          result[:score][sub.login]["hint_count_#{sub.problem_id}"] = sub.hint_count
+          result[:score][sub.login]["hint_cost_#{sub.problem_id}"] = sub.hint_cost
+          result[:score][sub.login]["final_score_#{sub.problem_id}"] = sub.final_score.to_d
 
-    # calculate stats (min, max, zero, partial)
-    result[:score].each do |k, v|
-      sum = 0
-      v.each do |k2, v2|
-        if k2[0..4] == 'prob_'
-          # v2 is the score
-          prob_name = k2[5...]
-          result[:stat][prob_name][:score] << v2
-          result[:stat][prob_name][:sum] += v2 || 0
-          sum += v2 || 0
-          if v2 == 0
-            result[:stat][prob_name][:zero] += 1
-          elsif v2 == 100
-            result[:stat][prob_name][:full] += 1
-          else
-            result[:stat][prob_name][:partial] += 1
-          end
+          result[:score][sub.login]["total_cost_#{sub.problem_id}"] = nil
+          result[:score][sub.login]["total_cost_#{sub.problem_id}"] = 0.to_d + (sub.llm_cost || 0.0) + (sub.hint_cost || 0.0) unless sub.llm_cost.nil? && sub.hint_cost.nil?
         end
       end
-      v[:user_sum] = sum
     end
 
-    # summary graph result
-    count = {zero: [], partial: [], full: []}
-    problems.each do |p|
-      count[:zero] << result[:stat][p.name][:zero]
-      count[:full] << result[:stat][p.name][:full]
-      count[:partial] << result[:stat][p.name][:partial]
-    end
-    result[:count] = count
     return result
   end
 
@@ -228,6 +271,9 @@ class Submission < ApplicationRecord
 
 
   def assign_language
+    # viva submissions carry a sentinel language; skip code-specific language detection
+    return if self.problem&.viva_exam?
+
     if self.language == nil
       # detect from filename
       self.language = Submission.find_language_in_source(self.source,
@@ -264,7 +310,7 @@ class Submission < ApplicationRecord
       return if self.user.admin?
 
       # check if user has the right to submit the problem
-      errors[:base] << "Authorization error: you have no right to submit to this problem" if (!self.user.available_problems.include?(self.problem)) and (self.new_record?)
+      errors[:base] << "Authorization error: you have no right to submit to this problem" if (!self.user.problems_for_action(:submit).include?(self.problem)) and (self.new_record?)
     end
   end
 

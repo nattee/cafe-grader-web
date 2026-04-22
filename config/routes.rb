@@ -1,4 +1,42 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
+  # ---- API ----
+  namespace :api do
+    namespace :v1 do
+      post "auth/login", to: "auth#login"
+
+      get "me", to: "users#me"
+      resources :languages, only: [:index]
+
+      resources :contests, only: [:show] do
+        get "problems", on: :member
+      end
+
+      resources :problems, only: [:index, :show] do
+        member do
+          get "description"
+          get "files/:type", action: "file", as: "file"
+          get "data_files"
+          get "testcases"
+        end
+        resources :submissions, only: [:index, :create]
+      end
+
+      resources :testcases, only: [] do
+        member do
+          get "input"
+          get "sol"
+        end
+      end
+
+      resources :submissions, only: [:show]
+    end
+  end
+
+  resources :languages, except: [:show] do
+    post :index_query, on: :collection
+  end
 
   resources :tags do
     post :toggle_public, on: :member
@@ -8,7 +46,7 @@ Rails.application.routes.draw do
 
   get "sources/direct_edit"
 
-  root :to => 'main#login'
+  root to: 'main#login'
 
   # logins
   match 'login/login',  to: 'login#login', via: [:get, :post]
@@ -82,20 +120,12 @@ Rails.application.routes.draw do
       post 'import_testcases'
       delete 'attachment', action: 'delete_attachment'
       delete 'statement', action: 'delete_statement'
-      get 'helpers'
+      get 'helpers(/:submission_id)', as: 'helpers', action: 'helpers'
       # attachment
       get 'download/:attachment_type', to: 'download_by_type', as: 'download_by_type'
       delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
-      # nested hint
-      post 'manage_hint'
-      get 'edit_hint(/:hint_id)', action: 'edit_hint', as: 'edit_hint'
-      patch 'update_hint/:hint_id', action: 'update_hint', as: 'update_hint'
-      get 'show_hint/:hint_id', action: :show_hint, as: :show_hint
-    end
-    resources :comments, as: :hint, path: :hint, only: [:update, :show] do
-      get 'edit(/:hint_id)', on: :collection, action: :edit, as: :edit
-      post 'manage_problem', on: :collection, as: :manage
-      post 'acquire', on: :member
+      # viva exam
+      post 'viva/start', to: 'viva_sessions#start', as: 'viva_start'
     end
     collection do
       get 'turn_all_off'
@@ -107,11 +137,17 @@ Rails.application.routes.draw do
       post 'manage', action: 'do_manage'
       post 'do_import'
     end
+    resources :comments, as: :hint, path: :hint, only: [:update] do
+      get 'edit(/:id)', on: :collection, action: :edit, as: :edit
+      post 'manage_problem', on: :collection, as: :manage
+      post 'acquire', on: :member
+      get '', on: :member, as: '', action: :show_hint
+    end
   end
 
   resources :datasets, only: [:edit, :update, :destroy] do
     member do
-      #turbo render
+      # turbo render
       get 'settings'
       get 'testcases'
       get 'files'
@@ -147,10 +183,6 @@ Rails.application.routes.draw do
       post 'add_problem_by_group'
       post 'do_all_problems'
       post 'do_problem'
-
-    end
-    collection do
-
     end
   end
 
@@ -167,6 +199,7 @@ Rails.application.routes.draw do
 
   resources :grader_configuration, controller: 'configurations' do
     collection do
+      get 'reload'
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
       post 'clear_user_ip'
     end
@@ -221,15 +254,27 @@ Rails.application.routes.draw do
       get 'rejudge'
       get 'set_tag'
       post 'evaluations'
+      # viva exam
+      get 'viva', to: 'viva_sessions#show', as: 'viva'
+      post 'viva/turns', to: 'viva_sessions#answer', as: 'viva_answer'
+      get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
     end
     collection do
       get 'prob/:problem_id', to: 'submissions#index', as: 'problem'
       get 'direct_edit_problem/:problem_id(/:user_id)', to: 'submissions#direct_edit_problem', as: 'direct_edit_problem'
       get 'get_latest_submission_status/:uid/:pid', to: 'submissions#get_latest_submission_status', as: 'get_latest_submission_status'
     end
+    resources :comments, only: [] do
+      post 'llm_assist/:model', on: :collection, as: 'llm_assist', action: 'llm_assist'
+      get '', to: 'index_partial', as: '', on: :collection
+      post '', action: 'create_for_submission', on: :collection
+      member do
+        get '', action: 'show_for_submission', as: ''
+        delete '', action: 'destroy_for_submission'
+        patch '', action: 'update_for_submission'
+      end
+    end
   end
-
-
 
   resources :contest_management, only: [:index] do
     collection do
@@ -244,16 +289,35 @@ Rails.application.routes.draw do
   # ---- BEWARE ---- singular resource maps to plural controller by default, we can override by provide controller name directly
   # report
   resource :report, only: [], controller: 'report' do
+    # max score report
     get 'max_score'
+    post 'max_score_table'
+    post 'max_score_query'
     post 'show_max_score'
+
+    # submission report
+    get 'submission'
+    post 'submission_query'
+
+    # login report
     get 'login'
     get 'login_stat'
     post 'login_stat'
     post 'login_summary_query'
     post 'login_detail_query'
     get 'multiple_login'
-    get 'problem_hof(/:id)', action: 'problem_hof', as: 'problem_hof'
-    get 'progress'
+
+    # ai report
+    get 'ai'
+    post 'ai_query'
+
+    # hall of fame
+    get 'problem_hof'
+    post 'problem_hof_query'
+    post 'problem_hof_recompute'
+    get 'problem_hof/:id', action: 'problem_hof_view', as: 'problem_hof_view'
+
+    # get 'progress'
 
 
     get 'stuck'
@@ -261,8 +325,6 @@ Rails.application.routes.draw do
     post 'cheat_report'
     get 'cheat_scrutinize'
     post 'cheat_scrutinize'
-    get 'submission'
-    post 'submission_query'
   end
   # get 'report/current_score', to: 'report#current_score', as: 'report_current_score'
   # get 'report/problem_hof(/:id)', to: 'report#problem_hof', as: 'report_problem_hof'
@@ -300,6 +362,13 @@ Rails.application.routes.draw do
     member do
       post 'edit_job_type'
       post 'set_enabled/:enabled', as: :set_enabled, action: :set_enabled
+    end
+    collection do
+      get 'queues'
+      post 'queues_query'
+      post 'retry_error_job'
+      post 'retry_all_error_jobs'
+      post 'clear_all_error_jobs'
     end
   end
 

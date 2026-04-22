@@ -1,27 +1,48 @@
-%h2 
-  Edit problem #{@problem.name}
-.mb-3
-  [
-  = link_to "#{mdi(:arrow_back)} Back".html_safe, problems_path, class: 'mx-1'
-  |
-  = link_to mdi(:finance) + 'Stat', stat_problem_path(@problem), class: 'mx-1'
-  |
-  = link_to '<span class="mi mi-bs">download</span> Download'.html_safe, download_archive_problem_path(@problem), class: 'mx-1'
-  ]
+= render 'application/breadcrumb', steps: [{ label: 'Problems', path: problems_path, icon: resource_icon_name(Problem) }, { label: 'Edit' }]
+
+.d-flex.justify-content-between.align-items-center.mb-3
+  .d-flex.align-items-center.gap-2
+    %h2.fw-bold.text-dark.mb-0
+      - if @problem.full_name.present?
+        = @problem.full_name
+      - else
+        %span.text-muted.fst-italic [Untitled Problem ##{@problem.id}]
+      %span.font-monospace.text-secondary.fw-normal= "[#{@problem.name}]"
+    %span.badge.bg-primary-subtle.text-primary.border.border-primary-subtle.rounded-pill.fw-medium
+      %small Editing
+
+  .d-flex.gap-2.align-items-center{'data-controller': 'init-ui-component'}
+    = link_to stat_problem_path(@problem), class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: {bs: {toggle: 'tooltip'}, bs_title: 'Statistics'} do
+      %span.mi finance
+    = link_to download_archive_problem_path(@problem), class: 'btn btn-sm bg-white shadow-sm border-0 text-secondary d-inline-flex align-items-center justify-content-center', data: {bs: {toggle: 'tooltip'}, bs_title: 'Download Archive'} do
+      %span.mi download
+    .vr.mx-1
+    = link_to 'Cancel', problems_path, class: 'btn btn-link text-secondary text-decoration-none'
+
 .row
   -# problem card
   .col-md-5
-    .card.shadow-sm.my-2
+    .card.shadow-sm.mb-4
       .card-body
-        %h4 Detail
+        %h5.fw-bold.text-secondary.mb-3 Detail
         = render 'form', problem: @problem
   -# dataset card
   .col-md-7
-    .card.shadow-sm.my-2
+    .card.shadow-sm.mb-4
       .card-body{'data-controller': 'bs-tab'}
-        %h4 Datasets
-        -# dataset selector
-        = turbo_frame_tag :dataset_select do
-          = render partial: 'datasets/dataset_select', locals: {ds: @problem.live_dataset, problem: @problem}
-        -# dataset form
-        = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset), data: {'problem-target': 'dataset', 'current-id': @problem.live_dataset.id}
+        - if @problem.viva_exam?
+          %h5.fw-bold.text-secondary.mb-3 Viva Exam
+          %p.text-secondary
+            This problem is a Viva Exam. Interview flow is driven by
+            %code llm_prompt
+            tags (interviewer persona + rubric) and
+            %code viva_grounding
+            tags (course materials), attached in the tags picker on the left. Test-case datasets do not apply.
+        - else
+          %h5.fw-bold.text-secondary.mb-3 Datasets
+          -# dataset selector
+          = turbo_frame_tag :dataset_select do
+            = render partial: 'datasets/dataset_select', locals: {ds: @problem.live_dataset, problem: @problem}
+          -# dataset form
+          - if @problem.live_dataset
+            = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset), data: {'problem-target': 'dataset', 'current-id': @problem.live_dataset.id}

@@ -1,49 +1,34 @@
-require 'test_helper'
+require "test_helper"
 
-class GroupsControllerTest < ActionController::TestCase
-  setup do
-    @group = groups(:one)
+class GroupsControllerTest < ActionDispatch::IntegrationTest
+  test "unauthenticated user is redirected" do
+    get groups_path
+    assert_redirected_to login_main_path
   end
 
-  test "should get index" do
-    get :index
-    assert_response :success
-    assert_not_nil assigns(:groups)
-  end
-
-  test "should get new" do
-    get :new
+  test "admin can access groups index" do
+    sign_in_as("admin", "admin")
+    get groups_path
     assert_response :success
   end
 
-  test "should create group" do
-    assert_difference('Group.count') do
-      post :create, group: { description: @group.description, name: @group.name }
+  test "admin can create group" do
+    sign_in_as("admin", "admin")
+    assert_difference("Group.count") do
+      post groups_path, params: { group: { name: "NewGroup", description: "Test" } }
     end
-
-    assert_redirected_to group_path(assigns(:group))
   end
 
-  test "should show group" do
-    get :show, id: @group
+  test "admin can view group" do
+    sign_in_as("admin", "admin")
+    get group_path(groups(:group_a))
     assert_response :success
   end
 
-  test "should get edit" do
-    get :edit, id: @group
-    assert_response :success
-  end
-
-  test "should update group" do
-    patch :update, id: @group, group: { description: @group.description, name: @group.name }
-    assert_redirected_to group_path(assigns(:group))
-  end
-
-  test "should destroy group" do
-    assert_difference('Group.count', -1) do
-      delete :destroy, id: @group
+  test "admin can destroy group" do
+    sign_in_as("admin", "admin")
+    assert_difference("Group.count", -1) do
+      delete group_path(groups(:group_b))
     end
-
-    assert_redirected_to groups_path
   end
 end

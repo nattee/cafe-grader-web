@@ -1,6 +1,5 @@
 - content_for :header do
   = stylesheet_link_tag 'tablesorter-theme.cafe'
-  = javascript_include_tag 'local_jquery'
 
 %script{:type=>"text/javascript"}
   $(function () {
@@ -11,7 +10,9 @@
   $('#sub_table').tablesorter({widthFixed: true, widgets: ['zebra']});
   });
 
-%h1 Login status
+.d-flex.flex-column.gap-1.mb-3
+  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
+  %h2.fw-bold.text-dark.mb-0 Login Status
 
 .panel.panel-primary
   .panel-heading

@@ -1,4 +1,6 @@
-%h1 Score Progress
+.d-flex.flex-column.gap-1.mb-3
+  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
+  %h2.fw-bold.text-dark.mb-0 Score Progress
 
 = form_with url: progress_query_report_path, data: {turbo: true} do |f|
   .row

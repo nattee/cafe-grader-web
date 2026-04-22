@@ -1,26 +1,33 @@
 %header
-  %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg.shadow-sm
+  %nav.navbar.fixed-top.navbar-dark.bg-primary.navbar-expand-lg.shadow
     .container-fluid
-      %a.navbar-brand{href: list_main_path}
-        %span.mi.mi-bs home
-        MAIN
+      %a.navbar-brand.d-flex.align-items-center.gap-1{href: list_main_path}
+        %span.mi home
+        = GraderConfiguration.site_name&.html_safe || 'MAIN'
       .navbar-expand
         / display MODE button (with countdown in contest mode)
         - if GraderConfiguration.analysis_mode?
           %div.btn.btn-success#countdown= "ANALYSIS MODE"
         - elsif GraderConfiguration.time_limit_mode?
-          - if @current_contest&.contest_status == :ended
-            %div.btn.btn-danger#countdown= "Contest is over"
-          - elsif !@current_contest&.contest_status == :later
-            %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
-          - elsif @current_contest
-            %div.btn.btn-dark#countdown
-            :javascript
-              $(() => {
-                too_early_count = 0
-                setInterval(updateRemainingTime,500)
-                setTimeout(checkInLoop,1000)
-              })
+          - if @current_contest
+            -# we have a contest
+            - if @current_contest.stop + @current_contest_user.extra_time_second < Time.zone.now
+              -# contest is over
+              %div.btn.btn-danger#countdown= "Contest is over"
+            - elsif !@current_contest&.contest_status == :later
+              -# contest is not started
+              %div.btn.btn-primary#countdown= (t 'title_bar.contest_not_started')
+            - else
+              -# during a contest
+              %div.btn.btn-dark#countdown
+              :javascript
+                window.addEventListener("load", function() {
+                  too_early_count = 0
+                  setInterval(updateRemainingTime,500)
+                  setTimeout(checkInLoop,1000)
+                })
+          - else
+            %div.btn.btn-dark#countdown NO CONTEST
       %button.navbar-toggler{ type: :button, data: {bs: {toggle: 'collapse', target: '#navbar-collapse'}} }
         %span.navbar-toggler-icon
       .collapse.navbar-collapse#navbar-collapse
@@ -53,11 +60,12 @@
                 - if @current_user.admin?
                   %li
                     %hr.dropdown-divider
-                  %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :grader_configuration)
+                  %li= link_to 'System config', grader_configuration_index_path, class: 'dropdown-item'+active_class_when(controller: :configurations)
                 %li
                   %hr.dropdown-divider
                 %li= link_to 'Sites', sites_path, class: 'dropdown-item'+active_class_when(controller: :sites) if @current_user.admin?
-                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contest_management)
+                %li= link_to 'Contests', contests_path, class: 'dropdown-item'+active_class_when(controller: :contests)
+                %li= link_to 'Languages', languages_path, class: 'dropdown-item'+active_class_when(controller: :languages) if @current_user.admin?
                 -#
           / report
           - if @current_user && (@current_user.admin? || @current_user.groups_for_action(:report).any?)
@@ -68,6 +76,7 @@
                 %li= link_to 'Score Report', max_score_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :max_score)
                 %li= link_to 'Submission Report', submission_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :submission)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
+                %li= link_to 'AI Report', ai_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :ai)
             .d-flex
               =link_to "#{@backlog} backlogs!",
                 grader_processes_path,
@@ -85,17 +94,17 @@
           -#
             %li.nav-item
               %a.nav-link{href: help_main_path}
-                %span.mi.mi-bs.md-18 help
+                %span.mi.md-18 help
             %li.nav-item
               %a.nav-link{href: messages_path}
-                %span.mi.mi-bs.md-18 chat
+                %span.mi.md-18 chat
           - if GraderConfiguration['system.user_setting_enabled']
-            %li.nav-item
-              %a.nav-link{href: profile_users_path, 'data-user-id': @current_user.id}
-                %span.mi.mi-bs.md-18 settings
-          %li.nav-item
-            %a.nav-link{href: logout_main_path}
-              %span.mi.mi-bs.md-18 exit_to_app
+            %li.nav-item.d-flex.align-items-center
+              %a.nav-link.link-flex{href: profile_users_path, 'data-user-id': @current_user.id}
+                %span.mi.md-18 settings
+          %li.nav-item.d-flex.align-items-center
+            %a.nav-link.link-flex.gap-2{href: logout_main_path}
+              %span.mi.md-18 exit_to_app
               = @current_user.full_name
 :javascript
   let server_time_offset_ms = 0
@@ -189,7 +198,8 @@
     if (!contestEndTime) return; // No contest end time to display
 
     const now = (new Date())
-    const remainingTime = contestEndTime - now + server_time_offset_ms
+    const extraTime = #{ @current_user.contests_users.where(contest: @current_contest).take&.extra_time_second || 0}
+    const remainingTime = contestEndTime - now + server_time_offset_ms + (extraTime * 1000)
 
     if (remainingTime > 0) {
       const hours = Math.floor(remainingTime / (1000 * 60 * 60));
@@ -204,7 +214,7 @@
   }
 
   // time should be a string in iso8601 format
-  function humanize_time(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
+  function humanizeTime(time_iso8601,prepend_text_before = 'in ', prepend_text_after = '') {
     const time = Date.parse(time_iso8601)
     const now = new Date() ;
     const remainingTime = time - now + server_time_offset_ms;

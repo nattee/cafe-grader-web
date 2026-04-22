@@ -1,10 +1,24 @@
-.card.bg-warning-subtle.shadow-sm
-  .card-body
-    .card-title
-      %h4 What is a contest?
-    :markdown
-      Contest is a specific time span where a set of users are challenged with a set of problems. It is designed to accomodate management of exam or competition. Contest is a lot like group where users and problems are associated with a contest. However, a contest provides a way to manage and record what happens during the contest period.
+.card.border-0.shadow-sm.border-start.border-4.border-info.mb-3
+  .card-body.p-4
+    .d-flex.align-items-center.mb-3
+      .bg-info-subtle.text-info-emphasis.rounded-circle.d-flex.align-items-center.justify-content-center.me-3.lh-1{style: "width: 48px; height: 48px"}
+        %span.mi.md-24.fill lightbulb
+      %div
+        %h5.fw-bold.text-dark.mb-0 What is a contest?
+        %small.text-secondary Understanding timed events.
 
-      For example, we can use contest to view if any users missing from the contest and how the score progress during the contest.It also stores the finalized score at the end of the contest.
-
-      A contest must be prepared with start and finish time. A contest is considered active when it is enabled and the current time is between the start and finish time. When a contest is active and the system mode must be set to **Contest mode**, only users in the contest can login and only the problem in the active contest are shown to the user.
+    .text-secondary.small
+      %p
+        A contest is a defined time period during which a specific group of users is challenged with a set of problems. 
+        It is designed to support the management of exams or competitions. A contest functions similarly to a group, 
+        where users and problems are associated with it. However, contests offer additional tools to track and manage activity during the contest period.
+      %p
+        Every contest must be configured with a 
+        %strong.text-dark start
+        and 
+        %strong.text-dark end time
+        . A contest becomes active when it is enabled and the current time falls within its defined time span.
+      %p.mb-0
+        When a contest is active and the system is in 
+        %strong.text-dark Contest Mode
+        , only users assigned to the contest can log in, and only the problems included in the contest are visible to them.
