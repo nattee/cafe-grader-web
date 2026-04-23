@@ -67,3 +67,6 @@
 
 /app/assets/builds/*
 #!/app/assets/builds/.keep
+
+# vscode workspace
+/.vscode
