@@ -70,3 +70,6 @@
 
 # vscode workspace
 /.vscode
+
+# rails secrets
+/config/master.key

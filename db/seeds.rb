@@ -267,7 +267,7 @@ def seed_root
   root = User.new(login: 'root',
                   full_name: 'Administrator',
                   alias: 'root')
-  root.password = 'ioionrails'
+  root.password = ENV.fetch('GRADER_ADMIN_PASSWORD', 'ioionrails')
 
   class << root
     public :encrypt_new_password
