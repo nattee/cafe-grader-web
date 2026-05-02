@@ -31,7 +31,8 @@
       - groups = [groups] unless groups.is_a? Array
       - groups.each do |group|
         .card.config-card.mb-4.shadow-sm.rounded-3{data: {group: group}}
-          .card-header.bg-light.bg-info-subtle.p-3
+          .card-header.p-3
+
             %h3
               %span.mi= section_icons[group] || 'settings'
               = section_names[group] || group.upcase

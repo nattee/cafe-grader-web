@@ -1,10 +1,10 @@
 tr {
   &.available {
-    background: #c0ffc0;
+    background: $color-success-bg;
   }
 
   &.not-available {
-    background: #ffc0c0;
+    background: $color-danger-bg;
   }
 }
 

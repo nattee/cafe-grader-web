@@ -23,11 +23,12 @@
 
   .card-header {
     border: none;
+    background: $color-info-subtle;
 
     h3 {
       font-size: 1.1rem;
       font-weight: 600;
-      color: #334488;
+      color: $color-primary-dark;
       margin: 0;
       text-transform: none;
       display: flex;
@@ -35,7 +36,7 @@
 
       i {
         margin-right: 8px;
-        color: #5566bb;
+        color: $color-primary-light;
       }
     }
   }
@@ -44,7 +45,7 @@
 
 .config-item {
   padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid $color-surface-hover;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -67,7 +68,7 @@
     .config-key {
       font-weight: 600;
       font-size: 0.95rem;
-      color: #1e293b;
+      color: $color-text-dark;
       display: block;
       word-break: break-all;
       text-transform: bold;
@@ -75,7 +76,7 @@
 
     .config-description {
       font-size: 0.85rem;
-      color: #64748b;
+      color: $color-text-muted;
       margin-top: 2px;
     }
 
@@ -85,8 +86,8 @@
       letter-spacing: 0.05em;
       padding: 2px 6px;
       border-radius: 4px;
-      background: #f1f5f9;
-      color: #475569;
+      background: $color-surface-hover;
+      color: $color-text-slate;
       font-weight: 700;
       margin-right: 8px;
     }
@@ -103,16 +104,16 @@
   .config-value-text {
     font-family: 'Inconsolata', monospace;
     font-size: 1rem;
-    color: #334488;
-    background: #f8fafc;
+    color: $color-primary-dark;
+    background: $color-surface-alt;
     padding: 4px 10px;
     border-radius: 6px;
     margin-right: 8px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid $color-border-light;
   }
 
   .edit-link {
-    color: #5566bb;
+    color: $color-primary-light;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -121,7 +122,7 @@
     transition: background 0.2s;
 
     &:hover {
-      background: #f1f5f9;
+      background: $color-surface-hover;
     }
   }
 }
@@ -136,7 +137,7 @@
   .input-group-text {
     background: transparent;
     border-right: none;
-    color: #94a3b8;
+    color: $color-text-light;
   }
 
   .form-control {
@@ -145,7 +146,7 @@
 
     &:focus {
       box-shadow: none;
-      border-color: #dee2e6;
+      border-color: $color-border-bs;
     }
   }
 }

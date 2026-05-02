@@ -7,7 +7,7 @@ table.graders tr {
 
   &.inactive {
     border: 1px solid black;
-    background: #ffcccc;
+    background: $color-danger-light-bg;
     text-align: center;
   }
 }

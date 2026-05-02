@@ -1,4 +1,5 @@
 // Entry point for your Sass build
+@import 'globals';
 @import "my_bootstrap_var";
 @import "bootstrap/scss/bootstrap";
 //@use "select2/dist/css/select2.min.css";

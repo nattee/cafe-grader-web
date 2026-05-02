@@ -1,0 +1,93 @@
+// Define SCSS Variables first (so SASS functions like Bootstrap's mix() can use them)
+$color-primary: #0074d9;
+$color-primary-dark: #334488;
+$color-primary-light: #5566bb;
+$color-primary-lightest: #bbddee;
+
+$color-secondary: #116699;
+$color-secondary-dark: #224455;
+$color-secondary-light: #99aaee;
+
+$color-text-main: #333333;
+$color-text-muted: #64748b;
+$color-text-dark: #1e293b;
+$color-text-light: #94a3b8;
+$color-text-slate: #475569;
+
+$color-bg-main: #fcfcfc;
+$color-surface: #ffffff;
+$color-surface-hover: #f1f5f9;
+$color-surface-alt: #f8fafc;
+$color-surface-gray: #ececec;
+
+$color-border-light: #e2e8f0;
+$color-border-main: #ccc;
+$color-border-dark: #666666;
+$color-border-muted: #dddddd;
+$color-border-gray: #e2e2e5;
+$color-border-lightest: #f1f5f9;
+$color-border-bs: #dee2e6;
+
+$color-success-bg: #c0ffc0;
+$color-danger-bg: #ffc0c0;
+$color-danger-light-bg: #ffcccc;
+$color-danger-text: #cc1111;
+$color-danger-text-alt: #bb2222;
+
+$color-info-subtle: #cff4fc;
+
+$color-highlight-blue: #eeeeff;
+$color-highlight-yellow: #fefeee;
+$color-highlight-pink: #feeefe;
+
+$color-gray-dark: #444444;
+$color-gray-medium: #777777;
+$color-gray-light: #eeeeee;
+
+// Export them as CSS Custom Properties (so they can be used at runtime or in dev tools)
+:root {
+  --color-primary: #{$color-primary};
+  --color-primary-dark: #{$color-primary-dark};
+  --color-primary-light: #{$color-primary-light};
+  --color-primary-lightest: #{$color-primary-lightest};
+
+  --color-secondary: #{$color-secondary};
+  --color-secondary-dark: #{$color-secondary-dark};
+  --color-secondary-light: #{$color-secondary-light};
+
+  --color-text-main: #{$color-text-main};
+  --color-text-muted: #{$color-text-muted};
+  --color-text-dark: #{$color-text-dark};
+  --color-text-light: #{$color-text-light};
+  --color-text-slate: #{$color-text-slate};
+  
+  --color-bg-main: #{$color-bg-main};
+  --color-surface: #{$color-surface};
+  --color-surface-hover: #{$color-surface-hover};
+  --color-surface-alt: #{$color-surface-alt};
+  --color-surface-gray: #{$color-surface-gray};
+  
+  --color-border-light: #{$color-border-light};
+  --color-border-main: #{$color-border-main};
+  --color-border-dark: #{$color-border-dark};
+  --color-border-muted: #{$color-border-muted};
+  --color-border-gray: #{$color-border-gray};
+  --color-border-lightest: #{$color-border-lightest};
+  --color-border-bs: #{$color-border-bs};
+
+  --color-success-bg: #{$color-success-bg};
+  --color-danger-bg: #{$color-danger-bg};
+  --color-danger-light-bg: #{$color-danger-light-bg};
+  --color-danger-text: #{$color-danger-text};
+  --color-danger-text-alt: #{$color-danger-text-alt};
+  
+  --color-info-subtle: #{$color-info-subtle};
+  
+  --color-highlight-blue: #{$color-highlight-blue};
+  --color-highlight-yellow: #{$color-highlight-yellow};
+  --color-highlight-pink: #{$color-highlight-pink};
+  
+  --color-gray-dark: #{$color-gray-dark};
+  --color-gray-medium: #{$color-gray-medium};
+  --color-gray-light: #{$color-gray-light};
+}
