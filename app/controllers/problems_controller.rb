@@ -107,18 +107,35 @@ class ProblemsController < ApplicationController
 
   def quick_create
     @problem = Problem.new(problem_params)
-    @problem.full_name = @problem.name if @problem.full_name == ''
+    @problem.full_name = @problem.name if @problem.full_name.blank?
     @problem.available = false
     @problem.test_allowed = true
     @problem.output_only = false
-    @problem.date_added = Time.new
-    if @problem.save
-      flash[:notice] = 'Problem was successfully created.'
-      redirect_to action: :index
-    else
-      flash[:notice] = 'Error saving problem'
-      redirect_to action: :index
+    @problem.date_added = Time.zone.now
+
+    # Wrap problem creation + default dataset + live_dataset assignment in a
+    # transaction so a partial half-create can't happen. The default dataset
+    # is required because problem_for_manage (used by index/manage) joins on
+    # :datasets — a dataset-less problem is invisible to those views.
+    success = Problem.transaction do
+      next false unless @problem.save
+      ds = @problem.datasets.create!(name: @problem.get_next_dataset_name)
+      @problem.update!(live_dataset: ds)
+      true
     end
+
+    if success
+      @toast = {title: 'Problem created',
+                body:  "Problem <code>#{@problem.name}</code> was successfully created.",
+                type:  :notice}
+      @event_dispatcher = {event_name: 'datatable:reload', event_detail: {}}
+    else
+      @toast = {title: 'Quick create failed',
+                body:  "Could not create problem.",
+                errors: @problem.errors.full_messages,
+                type:  :alert}
+    end
+    render 'turbo_toast'
   end
 
   def edit
@@ -454,7 +471,10 @@ class ProblemsController < ApplicationController
       tc_count_sql = Testcase.joins(:dataset).group('datasets.problem_id').select('datasets.problem_id,count(testcases.id) as tc_count').to_sql
       ms_count_sql = Submission.where(tag: 'model').group(:problem_id).select('count(*) as ms_count, problem_id').to_sql
       hint_count_sql = Comment.hints.group(:commentable_id).select('commentable_id as problem_id, count(commentable_id) as count').to_sql
-      return @problems = user.problems_for_action(:edit).joins(:datasets)
+      # left_joins (not joins) so that problems without any Dataset still appear
+      # in the list with dataset_count = 0, instead of being silently filtered
+      # out by an INNER JOIN.
+      return @problems = user.problems_for_action(:edit).left_joins(:datasets)
         .joins("LEFT JOIN (#{tc_count_sql}  ) TC ON problems.id = TC.problem_id")
         .joins("LEFT JOIN (#{ms_count_sql}  ) MS ON problems.id = MS.problem_id")
         .joins("LEFT JOIN (#{hint_count_sql}) HC ON problems.id = HC.problem_id")
