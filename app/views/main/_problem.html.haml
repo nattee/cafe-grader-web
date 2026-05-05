@@ -9,8 +9,10 @@
           %span.mi{style: 'font-size: 1.2rem; vertical-align: middle;'} edit
   - @numbering+=1
   -# problem name, pdf, attachments, etc.
+  - limit_reached = problem.submission_limit_reached?(@current_user)
   %td
     = render partial: 'problems/problem_name', locals: {problem: problem}
+
   -# score column
   - score = @prob_submissions[problem.id][:max_score] || 0
   - raw_sum_mode = problem.live_dataset&.st_raw_sum?
@@ -48,7 +50,11 @@
       locals: {submission: @prob_submissions[problem.id][:submission], problem_name: problem.name, problem_id: problem.id, sub_count: @prob_submissions[problem.id][:count], show_button: false, show_id: true }
   -# Action column
   %td
-    - if problem.viva_exam?
+    - if limit_reached
+      %span.badge.text-bg-danger.d-inline-flex.align-items-center.gap-1
+        %span.mi{style: 'font-size: 0.9rem;'} block
+        Limit reached
+    - elsif problem.viva_exam?
       - if @prob_submissions[problem.id][:submission]
         = link_to 'View Viva', viva_submission_path(@prob_submissions[problem.id][:submission]), class: 'btn btn-outline-primary btn-sm'
       - else

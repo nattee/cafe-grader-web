@@ -25,6 +25,7 @@ class Submission < ApplicationRecord
   validates_length_of :source, maximum: 1_000_000, allow_blank: true, message: 'code too long, the limit is 1,000,000 bytes'
   validate :must_have_valid_problem
   validate :must_specify_language
+  validate :must_not_exceed_submission_limit
 
   has_one :task
 
@@ -319,6 +320,16 @@ class Submission < ApplicationRecord
     return if !self.new_record?
     latest = Submission.find_last_by_user_and_problem(self.user_id, self.problem_id)
     self.number = (latest==nil) ? 1 : latest.number + 1
+  end
+
+  def must_not_exceed_submission_limit
+    return unless self.new_record?
+    return if self.problem.nil? || self.user.nil?
+    return if self.user.admin?
+    if self.problem.submission_limit_reached?(self.user)
+      remaining = self.problem.submissions_remaining_for(self.user)
+      errors.add(:base, "Submission limit reached: this problem allows a maximum of #{self.problem.max_submissions} submissions (#{remaining} remaining)")
+    end
   end
 
   public

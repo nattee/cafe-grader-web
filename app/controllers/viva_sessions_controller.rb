@@ -15,6 +15,10 @@ class VivaSessionsController < ApplicationController
       redirect_to list_main_path, alert: 'Authorization error: you have no right to start a viva for this problem.' and return
     end
 
+    if @problem.submission_limit_reached?(@current_user)
+      redirect_to list_main_path, alert: "Submission limit reached: this problem allows a maximum of #{@problem.max_submissions} submissions." and return
+    end
+
     viva_lang = Language.find_by(name: VIVA_LANGUAGE_NAME)
     unless viva_lang
       redirect_to list_main_path, alert: 'Viva language is not seeded. Run Language.seed.' and return

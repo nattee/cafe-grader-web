@@ -38,6 +38,8 @@
           %th
             Submit
             = render partial: 'tooltip', locals: {title: 'Admin can always submit to any problem'}
+          %th
+            %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Submission Limit'}} counter_1
           %th Date added
           %th.text-center.all
             %span.mi{data: {'bs-toggle': 'tooltip', 'bs-title': 'Available to students'}} toggle_on
@@ -70,6 +72,11 @@
               - problem.tags.each do |t|
                 %span.badge.text-bg-secondary.bg-opacity-100= t.name
             %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
+            %td.text-center
+              - if problem.submission_limit?
+                %span.badge.text-bg-info= problem.max_submissions
+              - else
+                %span.text-muted –
             %td= problem.date_added
             %td
               .form-check.form-switch.d-flex.justify-content-center
@@ -95,7 +102,7 @@
     $("#main_table").DataTable({
       sorting: false,
       columnDefs: [
-        { targets: [3,4,5,6,7,8,9,12], sortable: false },
+        { targets: [3,4,5,6,7,8,9,10,13], sortable: false },
       ],
       paging: false,
       responsive: true,

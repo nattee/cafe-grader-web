@@ -53,6 +53,16 @@ class Api::V1::SubmissionsController < Api::V1::BaseController
       render json: { error: "You are not allowed to submit to this problem" }, status: :forbidden and return
     end
 
+    # Check submission limit
+    if @problem.submission_limit_reached?(current_user)
+      remaining = @problem.submissions_remaining_for(current_user)
+      render json: {
+        error: "Submission limit reached: this problem allows a maximum of #{@problem.max_submissions} submissions",
+        max_submissions: @problem.max_submissions,
+        submissions_remaining: remaining
+      }, status: :forbidden and return
+    end
+
     language = Language.find_by(id: params[:language_id])
     language ||= Language.find_by_extension(params[:filename]&.split(".")&.last)
     permitted = @problem.get_permitted_lang_as_ids
@@ -94,7 +104,13 @@ class Api::V1::SubmissionsController < Api::V1::BaseController
 
     if submission.save
       submission.add_judge_job
-      render json: { id: submission.id, number: submission.number, status: submission.status }, status: :created
+      render json: {
+        id: submission.id,
+        number: submission.number,
+        status: submission.status,
+        max_submissions: @problem.max_submissions,
+        submissions_remaining: @problem.submissions_remaining_for(current_user)
+      }, status: :created
     else
       render json: { errors: submission.errors.full_messages }, status: :unprocessable_entity
     end
