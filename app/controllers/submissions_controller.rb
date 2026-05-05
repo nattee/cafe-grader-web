@@ -97,6 +97,16 @@ class SubmissionsController < ApplicationController
     @problem = Problem.find(params[:pid])
     @submission = @current_user.last_submission_by_problem(@problem)
     @delay_value = @submission.nil? ? -1 : (Time.zone.now - @submission.submitted_at).clamp(1, 10).to_i * 1000
+    # Determine language settings for the submit form partial
+    problem_lang_ids = @problem.get_permitted_lang_as_ids
+    language_forced = problem_lang_ids.count == 1
+    if language_forced
+      language = Language.find(problem_lang_ids[0]) rescue Language.first
+    else
+      language = @submission&.language || @current_user.default_language || Language.first
+    end
+    as_binary = language&.binary? || false
+
     render turbo_stream: [
       turbo_stream.update("latest_status",
                            partial: 'submission_short',
@@ -104,7 +114,15 @@ class SubmissionsController < ApplicationController
                                     refresh_if_not_graded: @delay_value > 0,
                                     show_id: true,
                                     sub_count: @submission&.number,
-                                    show_button: false })
+                                    show_button: false }),
+      turbo_stream.update("submission_limit_badge",
+                           partial: 'submission_limit_badge',
+                           locals: {problem: @problem, user: @current_user}),
+      turbo_stream.update("submit_form_area",
+                           partial: 'submissions/submit_form',
+                           locals: {problem: @problem, user: @current_user,
+                                    as_binary: as_binary, language: language,
+                                    language_forced: language_forced})
     ]
   end
   # Turbo render evaluations as modal popup

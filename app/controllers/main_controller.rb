@@ -58,6 +58,11 @@ class MainController < ApplicationController
       redirect_to list_main_path, alert: "Problem #{problem.name} is currently not available for you" and return
     end
 
+    # check submission limit
+    if problem.submission_limit_reached?(@current_user)
+      redirect_to list_main_path, alert: "Submission limit reached: this problem allows a maximum of #{problem.max_submissions} submissions" and return
+    end
+
     # set language
     if params['file'] && params['file']!=''
       language = Language.find_by_extension params['file'].original_filename.ext

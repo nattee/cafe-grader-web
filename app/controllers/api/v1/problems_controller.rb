@@ -36,7 +36,9 @@ class Api::V1::ProblemsController < Api::V1::BaseController
       has_testcase: @problem.can_view_testcase,
       has_attachment: @problem.attachment.attached?,
       permitted_languages: permitted_languages_for(@problem),
-      submission_ids: submissions.order(submitted_at: :desc).pluck(:id)
+      submission_ids: submissions.order(submitted_at: :desc).pluck(:id),
+      max_submissions: @problem.max_submissions,
+      submissions_remaining: @problem.submissions_remaining_for(current_user)
     }
   end
 
@@ -184,7 +186,9 @@ class Api::V1::ProblemsController < Api::V1::BaseController
       last_submission_time: last&.submitted_at,
       has_testcase: problem.can_view_testcase,
       has_attachment: problem.attachment.attached?,
-      permitted_languages: permitted_languages_for(problem)
+      permitted_languages: permitted_languages_for(problem),
+      max_submissions: problem.max_submissions,
+      submissions_remaining: problem.submissions_remaining_for(current_user)
     }
   end
 

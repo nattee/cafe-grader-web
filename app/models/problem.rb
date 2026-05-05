@@ -2,7 +2,8 @@ class Problem < ApplicationRecord
   include Auditable
   audited only: %i[name full_name full_score available live_dataset_id
                    view_testcase view_submission allow_hint
-                   permitted_lang submission_filename task_type compilation_type]
+                   permitted_lang submission_filename task_type compilation_type
+                   max_submissions]
 
   # -- fields --
   # how the submission should be compiled
@@ -51,6 +52,8 @@ class Problem < ApplicationRecord
     message: 'contains invalid characters. Only letters, numbers, <code>( )</code>, <code>[ ]</code>, <code>-</code> and <code>_</code> are allowed.'.html_safe
 
   validates_presence_of :full_name
+
+  validates :max_submissions, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
 
 
   # -- callback --
@@ -149,6 +152,33 @@ class Problem < ApplicationRecord
   has_one_attached :attachment  # this is public files seen by contestant
 
   def set_default_value
+  end
+
+  # -- submission limit helpers --
+
+  # Returns true if this problem has a submission limit configured
+  def submission_limit?
+    max_submissions.present? && max_submissions > 0
+  end
+
+  # Returns the number of submissions the given user has made to this problem
+  def submission_count_for(user)
+    submissions.where(user: user).count
+  end
+
+  # Returns how many submissions remain for the user, or nil if unlimited
+  def submissions_remaining_for(user)
+    return nil if user&.admin?
+    return nil unless submission_limit?
+    [max_submissions - submission_count_for(user), 0].max
+  end
+
+  # Returns true if the user has reached the submission limit
+  # Admins are never subject to submission limits
+  def submission_limit_reached?(user)
+    return false if user.admin?
+    return false unless submission_limit?
+    submission_count_for(user) >= max_submissions
   end
 
   def viva_grounding_tags
