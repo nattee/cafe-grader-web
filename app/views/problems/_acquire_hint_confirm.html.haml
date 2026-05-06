@@ -1,8 +1,10 @@
 :markdown
-  This hint **costs #{hint.cost || 0} points** to reveal
-  and you haven't revealed it yet. By proceeding, the __full score__
-  for this problem will be __reduced by #{hint.cost || 0} points__
-  and the hint will then be permanently unlocked for you 
-  to view whenever you wish.
+  - This hint costs **#{hint.all_points ? "all your current points" : "#{hint.point_cost || 0} points"}** to reveal.
+  - Additionally, the **full score** for this problem will be **capped/reduced by #{hint.cost || 0} points**.
+  
+  By proceeding:
+  - Your **global points will be reduced** immediately.
+  - Your potential score on this problem will be limited.
+  - The hint will be permanently unlocked for you.
 
   **Do you want to confirm and reveal the hint?**

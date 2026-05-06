@@ -87,7 +87,9 @@ class User < ApplicationRecord
     
     # records is an ActiveRecord::Relation with final_score
     # we can just sum the final_score
-    records.to_a.sum { |r| r.final_score.to_d }
+    problem_scores = records.to_a.sum { |r| r.final_score.to_d }
+    global_deductions = comment_reveals.sum(:points_deducted) || 0
+    [0.0, (problem_scores - global_deductions).to_f].max
   end
 
   # ---- problem for the users for specific action ------
