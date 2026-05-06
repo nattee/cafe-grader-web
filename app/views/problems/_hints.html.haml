@@ -19,7 +19,7 @@
             %span{title: 'Points Cost'} 💰#{p_cost}
             %span{title: 'Score Cap'} 📉#{fs_cost}
             - if rate < 100.0
-              %span.badge.rounded-pill.text-white{style: "background-color: var(--color-loot-box-bg); font-size: 0.7rem;", title: 'Success Rate'} 🎲#{number_with_precision(rate, precision: 2, strip_insignificant_zeros: true)}%
+              %span{title: 'Success Rate'} 🎲#{number_with_precision(rate, precision: 2, strip_insignificant_zeros: true)}%
           
           - if !can_buy
             %button.btn.btn-sm.btn-secondary{disabled: true, style: 'min-width: 60px;'} Get
