@@ -316,7 +316,8 @@ class Problem < ApplicationRecord
 
       # check if the user has enough points globally
       if comment.all_points
-        return false if user.current_score <= 0
+        # any score is fine, including 0
+        return true
       else
         cost = comment.point_cost || 0
         return false if cost > 0 && user.current_score < cost
