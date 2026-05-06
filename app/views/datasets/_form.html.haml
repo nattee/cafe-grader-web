@@ -11,10 +11,11 @@
 .tab-content
   %div#settings.tab-pane.fade{class: (' show active ' if @active_dataset_tab == '#settings')}
     %div.mb-3
-      = turbo_frame_tag 'dataset_settings', src: settings_dataset_path(ds,{active_dataset_tab: @active_dataset_tab}), data: {'problem-target': 'datasetSettings'}
+      = turbo_frame_tag 'dataset_settings', data: {'problem-target': 'datasetSettings'} do
+        = render partial: 'settings', locals: {ds: ds}
   %div#testcases.tab-pane.fade{class: (' show active ' if @active_dataset_tab == '#testcases')}
     %div.mb-3
-      = turbo_frame_tag 'dataset_testcases', src: testcases_dataset_path(ds,{active_dataset_tab: @active_dataset_tab}), data: {'problem-target': 'datasetTestcases'}
+      = turbo_frame_tag 'dataset_testcases', src: testcases_dataset_path(ds,{active_dataset_tab: @active_dataset_tab}), loading: :lazy, data: {'problem-target': 'datasetTestcases'}
   %div#files.tab-pane.fade{class: (' show active ' if @active_dataset_tab == '#files')}
     %div.mb-3
-      = turbo_frame_tag 'dataset_files', src: files_dataset_path(ds,{active_dataset_tab: @active_dataset_tab}), data: {'problem-target': 'datasetFiles'}
+      = turbo_frame_tag 'dataset_files', src: files_dataset_path(ds,{active_dataset_tab: @active_dataset_tab}), loading: :lazy, data: {'problem-target': 'datasetFiles'}
