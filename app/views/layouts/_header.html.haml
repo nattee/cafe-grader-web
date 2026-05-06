@@ -103,6 +103,11 @@
             %li.nav-item.d-flex.align-items-center
               %a.nav-link.link-flex{href: profile_users_path, 'data-user-id': @current_user.id}
                 %span.mi.md-18 settings
+          - if GraderConfiguration['point_hint.show_user_points']
+            %li.nav-item.d-flex.align-items-center.mx-2
+              %span.badge.bg-success.rounded-pill.d-flex.align-items-center.gap-1.py-2
+                %span.mi.md-18{style: 'font-size: 1.1rem; line-height: 0.5;'} monetization_on
+                %span.fw-bold= "Points: #{number_with_precision(@current_user.current_score, precision: 2, strip_insignificant_zeros: true)}"
           %li.nav-item.d-flex.align-items-center
             %a.nav-link.link-flex.gap-2{href: logout_main_path}
               %span.mi.md-18 exit_to_app

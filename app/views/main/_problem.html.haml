@@ -15,8 +15,9 @@
 
   -# score column
   - score = @prob_submissions[problem.id][:max_score] || 0
+  - full_score = problem.full_score || 100
   - raw_sum_mode = problem.live_dataset&.st_raw_sum?
-  - cc = score == 100 ? 'bg-success' : 'bg-warning text-dark'
+  - cc = score >= full_score ? 'bg-success' : 'bg-warning text-dark'
   %td{style: "width: 12em; vertical-align: middle", 'data-order': score || 0}
     - if raw_sum_mode
       %span.fw-semibold
@@ -31,14 +32,16 @@
       - ai_count = @prob_submissions[problem.id][:ai_assist_count]
       - ai_cost = @prob_submissions[problem.id][:ai_assist_cost] || 0
       - sum_cost += ai_cost
-      - sum_cost = [100, sum_cost].min
+      - sum_cost = [full_score, sum_cost].min
       - text << "AI Assist: #{ai_count}" if ai_count
       -# display progress bar
-      - adjusted_score = [100 - sum_cost, score].min
+      - adjusted_score = [full_score - sum_cost, score].min
+      - pct_adj = (adjusted_score / full_score.to_f) * 100
+      - pct_diff = ((score - adjusted_score) / full_score.to_f) * 100
       .progress.rounded-pill{style: 'height: 0.85rem;'}
-        .progress-bar{style: "width: #{adjusted_score}%", class: cc}
+        .progress-bar{style: "width: #{pct_adj}%", class: cc}
           = number_with_precision adjusted_score, precision: 2
-        .progress-bar{style: "width: #{score - adjusted_score}%", class: 'bg-danger'}
+        .progress-bar{style: "width: #{pct_diff}%", class: 'bg-danger'}
           = number_with_precision score - adjusted_score, precision: 2
       %div
         %small= text.join(', ')

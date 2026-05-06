@@ -72,6 +72,24 @@ class User < ApplicationRecord
   before_save :assign_default_site
   before_save :assign_default_contest
 
+  def current_score
+    problems = problems_for_action(:submit, respect_admin: false)
+    
+    # calculate range of time (in contest mode)
+    time_range = active_contests_range if GraderConfiguration.contest_mode?
+    start_time = time_range ? time_range.begin : nil
+    stop_time = time_range ? time_range.end : nil
+
+    records = Submission.where(user: self, problem: problems)
+    records = records.where(submitted_at: time_range) if time_range
+
+    records = records.max_score_report(problems, start_time, stop_time)
+    
+    # records is an ActiveRecord::Relation with final_score
+    # we can just sum the final_score
+    records.to_a.sum { |r| r.final_score.to_d }
+  end
+
   # ---- problem for the users for specific action ------
   # Determines which problems a user is authorized to perform the specified action on.
   #
