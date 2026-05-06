@@ -7,11 +7,11 @@ class ConfigurationsController < ApplicationController
 
     # pick the first key of the group name
     first_key = GraderConfiguration.pluck("grader_configurations.key").map { |x| x[0...(x.index('.'))] }.uniq.sort
-    pre_defined_group = %w[chula ui right system]
+    pre_defined_group = %w[chula ui right system point_hint]
     missing_group_less_contest = first_key - pre_defined_group - ['contest']
 
     # default grouping
-    @group = [ %w[chula ui], 'right', 'system']
+    @group = [ %w[chula ui point_hint], 'right', 'system']
 
     # add any missing group
     @group += missing_group_less_contest

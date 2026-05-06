@@ -1,7 +1,7 @@
 - if problem.submission_limit?
   - limit_reached = problem.submission_limit_reached?(user)
   - remaining = problem.submissions_remaining_for(user)
-  %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1{class: (limit_reached ? 'text-bg-danger' : 'text-bg-info')}
+  %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1{class: (limit_reached ? 'badge-limit-danger' : 'badge-limit-info')}
     %span.mi{style: 'font-size: 0.85rem;'} upload
     - if limit_reached
       Submission limit reached (#{problem.max_submissions}/#{problem.max_submissions})

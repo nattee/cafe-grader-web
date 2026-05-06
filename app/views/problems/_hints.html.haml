@@ -1,13 +1,27 @@
-- problem.comments_with_reveal_status(@current_user,kind: [:hint]).each do |hint|
+- hints = problem.comments_with_reveal_status(@current_user,kind: [:hint])
+- if hints.any?
+  - hints.each do |hint|
+    .row.mb-2
+      .col-5
+        .badge.rounded-pill.text-success.bg-success-subtle.me-2 Hint
+        #{hint.title}
+      .col-7.text-end.d-flex.justify-content-end.align-items-center.gap-1.flex-nowrap
+        -# view the hint
+        - if hint.is_acquired?
+          = link_to 'View', problem_hint_path(problem,hint), data: {turbo_stream: true}, class: 'btn btn-sm btn-outline-success'
+        - else
+          - fs_cost = number_with_precision(hint.cost || 0, precision: 2, strip_insignificant_zeros: true)
+          - p_cost = hint.all_points ? "All Points" : number_with_precision(hint.point_cost || 0, precision: 2, strip_insignificant_zeros: true)
+          - can_buy = hint.acquirable_by?(@current_user)
+          - if !can_buy
+            %span.text-muted.small{title: "Not enough points"} (P: #{p_cost}, FS: #{fs_cost})
+            %button.btn.btn-sm.btn-secondary{disabled: true} Get
+          - else
+            %span.text-muted.small (P: #{p_cost}, FS: #{fs_cost})
+            - body_text = render partial: 'problems/acquire_hint_confirm', locals: {hint: hint}
+            - confirmation = {title: "Confirm getting a hint", body: body_text}
+            = link_to 'Get', acquire_problem_hint_path(problem,hint), data: {turbo_stream: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json}, class: 'btn btn-sm btn-outline-primary'
+- else
   .row
-    .col-8
-      .badge.rounded-pill.text-success.bg-success-subtle.me-2 Hint
-      #{hint.title}
-    .col-4.text-end
-      -# view the hint
-      - if hint.is_acquired?
-        = link_to 'View', problem_hint_path(problem,hint), data: {turbo_stream: true}
-      - else
-        - body_text = render partial: 'problems/acquire_hint_confirm', locals: {hint: hint}
-        - confirmation = {title: "Confirm getting a hint", body: body_text}
-        = link_to 'Get', acquire_problem_hint_path(problem,hint), data: {turbo_stream: true, turbo_method: 'POST', turbo_confirm: confirmation.to_json}
+    .col
+      %em.text-muted.small -- There is no hint for this problem --

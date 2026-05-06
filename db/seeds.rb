@@ -210,6 +210,14 @@ CONFIGURATIONS =
      description: "When true, a user can request LLM assist on each submission"
    },
 
+   #---------------------------- point_hint --------------------------------
+   {
+     key: 'point_hint.show_user_points',
+     value_type: 'boolean',
+     default_value: 'true',
+     description: 'If true, shows the total user points on the top menu bar.'
+   },
+
   ]
 
 

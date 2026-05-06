@@ -314,6 +314,14 @@ class Problem < ApplicationRecord
         return false unless self.contests.enabled.where(allow_hint: true).any?
       end
 
+      # check if the user has enough points globally
+      if comment.all_points
+        return false if user.current_score <= 0
+      else
+        cost = comment.point_cost || 0
+        return false if cost > 0 && user.current_score < cost
+      end
+
       # pass all checks
       return true
     else

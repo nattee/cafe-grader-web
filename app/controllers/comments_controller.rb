@@ -66,7 +66,7 @@ class CommentsController < ApplicationController
   end
 
   def update
-    hint_params = params.require(:comment).permit(:body, :title, :cost, :kind)
+    hint_params = params.require(:comment).permit(:body, :title, :cost, :kind, :point_cost, :all_points)
     if @hint.update(hint_params)
       @toast = {title: "Problem #{@problem.name}'s hint", body: "Hint #{@hint.title} updated"}
     else
@@ -82,8 +82,9 @@ class CommentsController < ApplicationController
 
   def acquire
     if @hint.acquirable_by?(@current_user)
-      @hint.comment_reveals.create(user: @current_user)
-      @toast = {title: "Hint acquired", body: "You received the hint. It can now be viewed at any time."}
+      deduction = @hint.all_points ? @current_user.current_score : (@hint.point_cost || 0)
+      @hint.comment_reveals.create(user: @current_user, points_deducted: deduction)
+      @toast = {title: "Hint acquired", body: "You received the hint. It cost #{deduction} points. It can now be viewed at any time."}
       render turbo_stream: [
         turbo_stream.update('problem_hints', partial: 'problems/hints', locals: {problem: @problem}),
         turbo_stream.append('toast-area', partial: 'toast', locals: {toast: @toast})
