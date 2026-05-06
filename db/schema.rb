@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_06_220000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -206,7 +206,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
     t.string "key"
     t.boolean "enabled", default: false
     t.integer "status", default: 0
-    t.index ["host", "pid"], name: "index_grader_processes_on_ip_and_pid"
+    t.index ["host", "pid"], name: "index_grader_processes_on_host_and_pid"
   end
 
   create_table "groups", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -216,14 +216,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
     t.boolean "hidden", default: false
   end
 
-  create_table "groups_problems", charset: "latin1", force: :cascade do |t|
+  create_table "groups_problems", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "problem_id", null: false
     t.integer "group_id", null: false
     t.boolean "enabled", default: true
     t.index ["group_id", "problem_id"], name: "index_groups_problems_on_group_id_and_problem_id"
   end
 
-  create_table "groups_users", charset: "latin1", force: :cascade do |t|
+  create_table "groups_users", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "group_id", null: false
     t.integer "user_id", null: false
     t.integer "role", default: 0
@@ -318,7 +318,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 
-  create_table "problems_tags", id: :integer, charset: "latin1", force: :cascade do |t|
+  create_table "problems_tags", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "problem_id"
     t.integer "tag_id"
     t.index ["problem_id", "tag_id"], name: "index_problems_tags_on_problem_id_and_tag_id", unique: true
@@ -346,28 +346,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
     t.integer "role_id"
     t.integer "user_id"
     t.index ["user_id"], name: "index_roles_users_on_user_id"
-  end
-
-  create_table "score_submissions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "dataset_id", null: false
-    t.bigint "submission_id", null: false
-    t.decimal "points", precision: 16, scale: 6
-    t.integer "status", limit: 1, default: 0, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["dataset_id"], name: "index_score_submissions_on_dataset_id"
-    t.index ["submission_id"], name: "index_score_submissions_on_submission_id"
-  end
-
-  create_table "score_users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
-    t.bigint "dataset_id", null: false
-    t.bigint "user_id", null: false
-    t.decimal "points", precision: 16, scale: 6
-    t.integer "status", limit: 1, default: 0, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["dataset_id"], name: "index_score_users_on_dataset_id"
-    t.index ["user_id"], name: "index_score_users_on_user_id"
   end
 
   create_table "sessions", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -460,13 +438,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
     t.string "output_file_name"
     t.string "running_stat"
     t.integer "status"
-    t.datetime "updated_at", precision: nil, null: false
     t.datetime "submitted_at", precision: nil
     t.datetime "compiled_at", precision: nil
     t.text "compiler_message", size: :medium
     t.datetime "graded_at", precision: nil
     t.string "grader_comment"
     t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.float "running_time"
     t.string "exit_status"
     t.integer "memory_usage"
@@ -491,7 +469,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
 
   create_table "user_contest_stats", id: :integer, charset: "utf8mb4", collation: "utf8mb4_unicode_ci", force: :cascade do |t|
     t.integer "user_id"
-    t.datetime "started_at", precision: nil
+    t.datetime "started_at"
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.boolean "forced_logout"
@@ -509,10 +487,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_22_120000) do
     t.boolean "activated", default: false
     t.datetime "created_at", precision: nil
     t.datetime "updated_at", precision: nil
+    t.string "section"
     t.boolean "enabled", default: true
     t.string "remark"
     t.string "last_ip"
-    t.string "section"
     t.integer "default_language_id"
     t.datetime "last_heartbeat"
     t.index ["login"], name: "index_users_on_login", unique: true
