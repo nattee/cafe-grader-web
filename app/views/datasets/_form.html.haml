@@ -12,7 +12,7 @@
   .tab-content
     %div#settings.tab-pane.fade{class: (' show active ' if @active_dataset_tab == '#settings')}
       %div.mb-3
-        = render partial: 'settings', locals: {ds: ds}
+        = render partial: 'datasets/settings', locals: {ds: ds}
     %div#testcases.tab-pane.fade{class: (' show active ' if @active_dataset_tab == '#testcases')}
       %div.mb-3
         = turbo_frame_tag 'dataset_testcases', src: testcases_dataset_path(ds,{active_dataset_tab: @active_dataset_tab}), loading: :lazy, data: {'problem-target': 'datasetTestcases'}
