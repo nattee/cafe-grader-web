@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_06_110836) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_06_190455) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -75,6 +75,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_110836) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.float "points_deducted"
+    t.boolean "is_success", default: true
     t.index ["comment_id"], name: "index_comment_reveals_on_comment_id"
     t.index ["user_id"], name: "index_comment_reveals_on_user_id"
   end
@@ -96,6 +97,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_06_110836) do
     t.integer "status", default: 0
     t.float "point_cost"
     t.boolean "all_points", default: false
+    t.float "success_rate", default: 100.0
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
     t.index ["user_id"], name: "index_comments_on_user_id"
   end

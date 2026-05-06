@@ -66,6 +66,7 @@ class Submission < ApplicationRecord
 
     # should I includes all hint? or just hint reveal during the given time?
     hint_reveal = Comment.hint_reveal_for_problems(problems, start..stop)
+      .where(comment_reveals: {is_success: true})
       .select('comment_reveals.user_id as user_id')
       .select('comments.commentable_id as problem_id')
       .select('SUM(comments.cost) as hint_cost')

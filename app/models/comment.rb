@@ -39,6 +39,13 @@ class Comment < ApplicationRecord
   }
 
   validates :title, presence: true
+  
+  def is_acquired?(user = nil)
+    # if it is already selected by comments_with_reveal_status
+    return self.is_acquired == 1 if self.respond_to?(:is_acquired)
+    return false if user.nil?
+    comment_reveals.where(user: user, is_success: true).exists?
+  end
 
   def to_label
     "#{kind}: #{title}"

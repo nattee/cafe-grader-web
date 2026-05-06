@@ -12,11 +12,16 @@
         - else
           - fs_cost = number_with_precision(hint.cost || 0, precision: 2, strip_insignificant_zeros: true)
           - p_cost = hint.all_points ? "All Points" : number_with_precision(hint.point_cost || 0, precision: 2, strip_insignificant_zeros: true)
+          - rate = hint.success_rate || 100.0
+          - rate_text = rate < 100.0 ? ", Rate: #{number_with_precision(rate, precision: 2, strip_insignificant_zeros: true)}%" : ""
           - can_buy = hint.acquirable_by?(@current_user)
           - if !can_buy
-            %span.text-muted.small{title: "Not enough points"} (P: #{p_cost}, FS: #{fs_cost})
+            %span.text-muted.small{title: "Not enough points"} (P: #{p_cost}, FS: #{fs_cost}#{rate_text})
             %button.btn.btn-sm.btn-secondary{disabled: true} Get
           - else
+            - if rate < 100.0
+              .badge.rounded-pill.text-white.me-2{style: "background-color: var(--color-loot-box-bg)"}
+                #{number_with_precision(rate, precision: 2, strip_insignificant_zeros: true)}%
             %span.text-muted.small (P: #{p_cost}, FS: #{fs_cost})
             - body_text = render partial: 'problems/acquire_hint_confirm', locals: {hint: hint}
             - confirmation = {title: "Confirm getting a hint", body: body_text}

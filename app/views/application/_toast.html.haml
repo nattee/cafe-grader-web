@@ -9,8 +9,9 @@
 - toast_params.merge!( local_assigns.fetch(:toast, {}))
 - toast_header_class = case toast_params[:type].to_sym
   - when :notice then 'bg-info-subtle'
-  - when :alert then 'bg-danger-subtle'
+  - when :alert, :danger then 'bg-danger-subtle'
   - when :warning then 'bg-warning-subtle'
+  - when :success then 'bg-success-subtle'
   - else ''
 .toast.mb-1{"aria-atomic": true, "aria-live": :assertive, role: :alert}
   .toast-header.py-1{class: toast_header_class}

@@ -8,6 +8,7 @@
         = f.input :cost, label: 'Full score cost (Problem cap)'
         = f.input :point_cost, label: 'Current points cost (Currency)'
         = f.input :all_points, label: 'Cost All Points', wrapper: :horizontal_boolean
+        = f.input :success_rate, label: 'Success Rate (%)'
         = f.button :submit, class: 'btn btn-primary me-2'
 - else
   %em -- There is no hint for this problem. Click "Add" to add a hint. --

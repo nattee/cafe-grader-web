@@ -1,6 +1,8 @@
 :markdown
   - This hint costs **#{hint.all_points ? "all your current points" : "#{hint.point_cost || 0} points"}** to reveal.
-  - Additionally, the **full score** for this problem will be **capped/reduced by #{hint.cost || 0} points**.
+  - Success Rate: **#{number_with_precision(hint.success_rate || 100.0, precision: 2, strip_insignificant_zeros: true)}%**.
+  - **IMPORTANT**: If the acquisition fails, your points will **NOT** be refunded.
+  - Additionally, the **full score** for this problem will be **capped/reduced by #{hint.cost || 0} points** (only if successful).
   
   By proceeding:
   - Your **global points will be reduced** immediately.

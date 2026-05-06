@@ -293,7 +293,7 @@ class Problem < ApplicationRecord
   def comments_with_reveal_status(user, kind: nil)
     query = comments
     query = query.where(kind: kind) if kind.present?
-    query.select('comments.*', "EXISTS(SELECT 1 FROM comment_reveals WHERE user_id = #{user.id} AND comment_id = comments.id) AS is_acquired")
+    query.select('comments.*', "EXISTS(SELECT 1 FROM comment_reveals WHERE user_id = #{user.id} AND comment_id = comments.id AND is_success = 1) AS is_acquired")
   end
 
   # this method is used both in acquiring and viewing

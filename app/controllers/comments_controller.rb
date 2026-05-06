@@ -66,7 +66,7 @@ class CommentsController < ApplicationController
   end
 
   def update
-    hint_params = params.require(:comment).permit(:body, :title, :cost, :kind, :point_cost, :all_points)
+    hint_params = params.require(:comment).permit(:body, :title, :cost, :kind, :point_cost, :all_points, :success_rate)
     if @hint.update(hint_params)
       @toast = {title: "Problem #{@problem.name}'s hint", body: "Hint #{@hint.title} updated"}
     else
@@ -82,9 +82,20 @@ class CommentsController < ApplicationController
 
   def acquire
     if @hint.acquirable_by?(@current_user)
+      success = true
+      if (@hint.success_rate || 100.0) < 100.0
+        roll = rand(0.0..100.0)
+        success = roll <= @hint.success_rate
+      end
+
       deduction = @hint.all_points ? @current_user.current_score : (@hint.point_cost || 0)
-      @hint.comment_reveals.create(user: @current_user, points_deducted: deduction)
-      @toast = {title: "Hint acquired", body: "You received the hint. It cost #{deduction} points. It can now be viewed at any time."}
+      @hint.comment_reveals.create(user: @current_user, points_deducted: deduction, is_success: success)
+      
+      if success
+        @toast = {title: "Hint acquired!", body: "Success! You received the hint. It cost #{deduction} points.", type: 'success'}
+      else
+        @toast = {title: "Hint acquisition failed", body: "Bad luck! You didn't get the hint, but it still cost you #{deduction} points. Better luck next time!", type: 'danger'}
+      end
       render turbo_stream: [
         turbo_stream.update('problem_hints', partial: 'problems/hints', locals: {problem: @problem}),
         turbo_stream.append('toast-area', partial: 'toast', locals: {toast: @toast})
