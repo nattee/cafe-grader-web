@@ -46,7 +46,9 @@
         = form.input :view_submission, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false
         -# Submission Limit
         .row.mb-3
-          %label.col-sm-3.col-form-label Submission Limit
+          %label.col-sm-3.col-form-label
+            Submission Limit
+            %span.mi.md-18.text-body-tertiary{data: {bs: {toggle: 'tooltip', placement: 'top', title: 'Leave unchecked for unlimited submissions. When enabled, non-admin users cannot exceed this number of submissions.'}}} help_center
           .col-sm-9
             .d-flex.align-items-center.gap-3
               .form-check
@@ -55,7 +57,6 @@
               .input-group{style: 'max-width: 200px;'}
                 %input.form-control#problem_max_submissions{type: 'number', name: 'problem[max_submissions]', value: problem.max_submissions, min: 1, placeholder: 'Max', disabled: !problem.submission_limit?}
                 %span.input-group-text submissions
-            .form-text Leave unchecked for unlimited submissions. When enabled, non-admin users cannot exceed this number of submissions.
         = form.input :full_score, tooltip: 'Maximum points a contestant can get from this problem (default 100)'
         = form.input :difficulty, tooltip: 'Input integer value from 0 to 10'
         = form.input :compilation_type, collection: [['[Self Contained] The submissions can be compiled by itself','self_contained'],['[With managers] The submission will be compiled with the managers','with_managers'],['[Viva Exam] LLM-driven Socratic interview + rubric grading','viva_exam']], wrapper: :horizontal_select, tooltip: 'For Viva Exam, attach llm_prompt tags (interviewer persona + rubric) and viva_grounding tags (course materials). Test-case datasets do not apply.'
