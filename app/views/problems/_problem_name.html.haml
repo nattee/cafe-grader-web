@@ -9,7 +9,7 @@
   - limit_reached = problem.submission_limit_reached?(@current_user)
   - sub_count = problem.submission_count_for(@current_user)
   - remaining = problem.submissions_remaining_for(@current_user)
-  %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1.ms-1{class: (limit_reached ? 'text-bg-danger' : 'text-bg-info'), 'data-bs-toggle' => 'tooltip', title: (limit_reached ? 'Submission limit reached' : "#{remaining} submission#{'s' unless remaining == 1} remaining")}
+  %span.badge.rounded-pill.d-inline-flex.align-items-center.gap-1.ms-1{class: (limit_reached ? 'badge-limit-danger' : 'badge-limit-info'), 'data-bs-toggle' => 'tooltip', title: (limit_reached ? 'Submission limit reached' : "#{remaining} submission#{'s' unless remaining == 1} remaining")}
     %span.mi{style: 'font-size: 0.85rem;'} upload
     = "#{sub_count}/#{problem.max_submissions} subs"
 

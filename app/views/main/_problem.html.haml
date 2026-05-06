@@ -51,7 +51,7 @@
   -# Action column
   %td
     - if limit_reached
-      %span.badge.text-bg-danger.d-inline-flex.align-items-center.gap-1
+      %span.badge.badge-limit-danger.d-inline-flex.align-items-center.gap-1
         %span.mi{style: 'font-size: 0.9rem;'} block
         Limit reached
     - elsif problem.viva_exam?

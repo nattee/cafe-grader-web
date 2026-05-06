@@ -90,4 +90,19 @@ $color-gray-light: #eeeeee;
   --color-gray-dark: #{$color-gray-dark};
   --color-gray-medium: #{$color-gray-medium};
   --color-gray-light: #{$color-gray-light};
+
+  --color-limit-info-bg: #0dcaf0;
+  --color-limit-danger-bg: #dc3545;
+  --color-limit-text: #fff;
+}
+
+// Submission Limit Badges
+.badge-limit-info {
+  background-color: var(--color-limit-info-bg) !important;
+  color: var(--color-limit-text) !important;
+}
+
+.badge-limit-danger {
+  background-color: var(--color-limit-danger-bg) !important;
+  color: var(--color-limit-text) !important;
 }

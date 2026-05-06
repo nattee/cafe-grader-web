@@ -74,7 +74,7 @@
             %td.py-1.align-middle= link_to "Submit", direct_edit_problem_submissions_path(problem,@current_user.id), class: 'btn btn-sm btn-primary'
             %td.text-center
               - if problem.submission_limit?
-                %span.badge.text-bg-info= problem.max_submissions
+                %span.badge.badge-limit-info= problem.max_submissions
               - else
                 %span.text-muted –
             %td= problem.date_added
