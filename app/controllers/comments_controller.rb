@@ -92,13 +92,21 @@ class CommentsController < ApplicationController
       @hint.comment_reveals.create(user: @current_user, points_deducted: deduction, is_success: success)
       
       if success
-        @toast = {title: "Hint acquired!", body: "Success! You received the hint. It cost #{deduction} points.", type: 'success'}
+        @header_msg = "Hint acquired!"
+        @body_msg = "Success! You received the hint. It cost #{deduction} points."
+        @header_class = 'bg-success-subtle'
       else
-        @toast = {title: "Hint acquisition failed", body: "Bad luck! You didn't get the hint, but it still cost you #{deduction} points. Better luck next time!", type: 'danger'}
+        @header_msg = "Hint acquisition failed"
+        @body_msg = "Bad luck! You didn't get the hint, but it still cost you #{deduction} points. Better luck next time!"
+        @header_class = 'bg-danger-subtle'
       end
+
       render turbo_stream: [
         turbo_stream.update('problem_hints', partial: 'problems/hints', locals: {problem: @problem}),
-        turbo_stream.append('toast-area', partial: 'toast', locals: {toast: @toast})
+        turbo_stream.update('msg_modal_main', partial: 'msg_modal', locals: {header_msg: @header_msg, body_msg: @body_msg, header_class: @header_class}),
+        turbo_stream.append('js-response') do
+          "<script>$('#msg_modal').modal('show')</script>".html_safe
+        end
       ]
     else
       render partial: 'msg_modal_show', locals: {do_popup: true,
