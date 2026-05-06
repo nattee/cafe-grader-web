@@ -8,7 +8,7 @@
       .col-7.text-end.d-flex.justify-content-end.align-items-center.gap-1.flex-nowrap
         -# view the hint
         - if hint.is_acquired?
-          = link_to 'View', problem_hint_path(problem,hint), data: {turbo_stream: true}, class: 'btn btn-sm btn-outline-primary', style: 'min-width: 60px;'
+          = link_to 'View', problem_hint_path(problem,hint), data: {turbo_stream: true}, class: 'btn btn-sm btn-outline-success', style: 'min-width: 60px;'
         - else
           - fs_cost = number_with_precision(hint.cost || 0, precision: 2, strip_insignificant_zeros: true)
           - p_cost = hint.all_points ? "All" : number_with_precision(hint.point_cost || 0, precision: 2, strip_insignificant_zeros: true)
