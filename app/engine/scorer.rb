@@ -21,7 +21,7 @@ class Scorer
       sum_total_weight += weight
     end
     raise GraderError.new("All testcase weights are zero for Sub ##{@sub.id}", submission_id: @sub.id) if sum_total_weight.zero?
-    score = sum_user_score / sum_total_weight * 100.to_d
+    score = sum_user_score / sum_total_weight * (@sub.problem.full_score || 100.to_d)
     return score
   end
 
@@ -59,7 +59,7 @@ class Scorer
     end
 
     raise GraderError.new("All testcase weights are zero for Sub ##{@sub.id}", submission_id: @sub.id) if sum_total_weight.zero?
-    score = sum_user_score / sum_total_weight * 100.to_d
+    score = sum_user_score / sum_total_weight * (@sub.problem.full_score || 100.to_d)
     return score
   end
 
