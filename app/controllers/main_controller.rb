@@ -203,11 +203,10 @@ class MainController < ApplicationController
 
     # calculate hint acquired
     Problem.joins(comments: :comment_reveals)
-      .where(id: @problems.ids, comment_reveals: {user: @current_user})
+      .where(id: @problems.ids, comment_reveals: {user: @current_user, is_success: true})
       .group(:id)
-      .select('problems.id', 'count(comments.id) as count', 'sum(comments.cost) as cost')
+      .select('problems.id', 'sum(comments.cost) as cost')
       .each do |row|
-        @prob_submissions[row.id][:hint_count] = row.count
         @prob_submissions[row.id][:hint_cost] = row.cost
       end
   end

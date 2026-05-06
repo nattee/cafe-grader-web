@@ -24,25 +24,30 @@
         = number_with_precision score, precision: 2, strip_insignificant_zeros: true
     - else
       - text = []
-      - sum_cost = 0
-      - hint_count = @prob_submissions[problem.id][:hint_count]
       - hint_cost = @prob_submissions[problem.id][:hint_cost] || 0
-      - text << "Hint: #{hint_count}" if hint_count
-      - sum_cost += hint_cost
-      - ai_count = @prob_submissions[problem.id][:ai_assist_count]
       - ai_cost = @prob_submissions[problem.id][:ai_assist_cost] || 0
-      - sum_cost += ai_cost
-      - sum_cost = [full_score, sum_cost].min
+      - sum_cost = [full_score, hint_cost + ai_cost].min
+      - ai_count = @prob_submissions[problem.id][:ai_assist_count]
       - text << "AI Assist: #{ai_count}" if ai_count
       -# display progress bar
       - adjusted_score = [full_score - sum_cost, score].min
       - pct_adj = (adjusted_score / full_score.to_f) * 100
-      - pct_diff = ((score - adjusted_score) / full_score.to_f) * 100
-      .progress.rounded-pill{style: 'height: 0.85rem;'}
-        .progress-bar{style: "width: #{pct_adj}%", class: cc}
-          = number_with_precision adjusted_score, precision: 2
-        .progress-bar{style: "width: #{pct_diff}%", class: 'bg-danger'}
-          = number_with_precision score - adjusted_score, precision: 2
+      - extra_points = [0, score - adjusted_score].max
+      - pct_extra = (extra_points / full_score.to_f) * 100
+      - deduction_rem = [0, sum_cost - extra_points].max
+      - pct_deduct_rem = (deduction_rem / full_score.to_f) * 100
+      
+      .progress.rounded-pill.bg-secondary-subtle{style: 'height: 0.85rem;'}
+        - if pct_adj > 0
+          .progress-bar{style: "width: #{pct_adj}%", class: cc}
+            = number_with_precision adjusted_score, precision: 2, strip_insignificant_zeros: true
+        - if pct_extra > 0
+          .progress-bar.bg-danger{style: "width: #{pct_extra}%", 'data-bs-toggle' => 'tooltip', title: 'Points lost due to hint cap'}
+            = number_with_precision extra_points, precision: 2, strip_insignificant_zeros: true
+        -# spacer
+        .progress-bar.bg-transparent{style: "width: #{[0, 100 - pct_adj - pct_extra - pct_deduct_rem].max}%"}
+        - if pct_deduct_rem > 0
+          .progress-bar.bg-danger-subtle.border-start.border-danger{style: "width: #{pct_deduct_rem}%", 'data-bs-toggle' => 'tooltip', title: 'Full score reduction from hints'}
       %div
         %small= text.join(', ')
       %div
