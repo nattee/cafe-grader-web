@@ -46,7 +46,7 @@
       %div
         %small= text.join(', ')
       %div
-        %small= "Full score reduced by #{sum_cost}" if sum_cost > 0
+        %small= "Full score reduced by #{number_with_precision(sum_cost, precision: 2, strip_insignificant_zeros: true)}" if sum_cost > 0
   -# last submission column
   %td
     = render partial: 'submission_short',
