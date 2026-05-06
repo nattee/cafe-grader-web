@@ -47,7 +47,7 @@
         -# spacer
         .progress-bar.bg-transparent{style: "width: #{[0, 100 - pct_adj - pct_extra - pct_deduct_rem].max}%"}
         - if pct_deduct_rem > 0
-          .progress-bar.bg-danger-subtle.border-start.border-danger{style: "width: #{pct_deduct_rem}%", 'data-bs-toggle' => 'tooltip', title: 'Full score reduction from hints'}
+          .progress-bar.bg-danger{style: "width: #{pct_deduct_rem}%", 'data-bs-toggle' => 'tooltip', title: 'Full score reduction from hints'}
       %div
         %small= text.join(', ')
       %div
