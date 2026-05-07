@@ -2,7 +2,7 @@ module Llm
   # Abstract base: grades a completed viva transcript against the problem's rubric
   # and writes VivaGrade + updates Submission. Provider-agnostic; speaks OpenAI-compatible
   # chat-completion shape. Deployment branches provide a concrete #execute_call subclass.
-  class VivaGradeAssist < SubmissionAssist
+  class VivaGradeAssist < Request
     MAX_TOKENS    = 2048
     DEFAULT_MODEL = nil
 
@@ -89,7 +89,7 @@ module Llm
       parsed = JSON.parse(response.body)
       text   = parsed.dig('choices', 0, 'message', 'content').to_s
       json   = text.match(/\{.*\}/m)&.[](0)
-      raise JSON::ParserError, 'no JSON object found in response' unless json
+      raise ResponseError.new('no JSON object found in response', body: response&.body) unless json
 
       data  = JSON.parse(json)
       usage = parsed['usage'] || {}
@@ -114,13 +114,10 @@ module Llm
       )
 
       {ok: true}
-    rescue JSON::ParserError => e
-      @submission.update(status: :grader_error, grader_comment: "Grader JSON parse failed: #{e.message}")
-      {error: true}
     end
 
     def handle_error
-      @submission&.update(status: :grader_error, grader_comment: "Grader error: #{@error}")
+      @submission&.update!(status: :grader_error, grader_comment: "Grader error: #{@error}")
     end
 
     def compute_cost(_usage)

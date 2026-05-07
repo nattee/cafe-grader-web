@@ -1,5 +1,5 @@
 module Llm
-  class GenieAssist < SubmissionAssist
+  class GenieAssist < CommentAssist
     PERMITTED_MODEL = ["gemini-2.5-pro", "gemini-2.5-flash", "Claude-3.5-Sonnet", "Claude-3.5-Haiku"]
 
     private
@@ -11,12 +11,12 @@ module Llm
       end
     end
 
-    # required implementation from SubmissionAssist
+    # required implementation from Llm::CommentAssist
     def provider_name
       'Chula Genie'
     end
 
-    # required implementation from SubmissionAssist
+    # required implementation from Llm::CommentAssist
     def prepare_data
       @model = @other_args[:model] || PERMITTED_MODEL.first
       @model = PERMITTED_MODEL.first unless PERMITTED_MODEL.include? @model
@@ -27,7 +27,7 @@ module Llm
       }.to_json
     end
 
-    # required implementation from SubmissionAssist
+    # required implementation from Llm::CommentAssist
     def execute_call(data)
       token = Llm::TokenManager.fetch_chula_genie_token
 
@@ -41,14 +41,14 @@ module Llm
       genie = Rails.application.credentials.llm.genie
 
       # call
-      conn = SubmissionAssist.connection(genie[:host])
+      conn = Llm::Request.connection(genie[:host])
       conn.post(genie[:completion_path]) do |req|
         req.headers['Authorization'] = "Bearer #{token}"
         req.body = data
       end
     end
 
-    # required implementation from SubmissionAssist
+    # required implementation from Llm::CommentAssist
     def parse_response
       {
         body: @parsed_body['choices'][0]['message']['content'],

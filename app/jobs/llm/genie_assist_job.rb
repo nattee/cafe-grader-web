@@ -1,5 +1,5 @@
 module Llm
-  class GenieAssistJob < SubmissionAssistJob
+  class GenieAssistJob < CommentAssistJob
     queue_as :default
 
     private

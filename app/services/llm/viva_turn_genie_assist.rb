@@ -24,7 +24,7 @@ module Llm
       end
 
       genie = Rails.application.credentials.llm.genie
-      conn  = SubmissionAssist.connection(genie[:host])
+      conn  = Llm::Request.connection(genie[:host])
       conn.post(genie[:completion_path]) do |req|
         req.headers['Authorization'] = "Bearer #{token}"
         req.body = data
