@@ -137,16 +137,23 @@ visibility). We want admins to see misconfigured-deployment failures.
 
 ## What's left
 
-### chula_cp follow-up commit (4 mechanical edits)
+### chula_cp follow-up commit — DONE at rev 1638
 
-After merging `default` into `chula_cp`:
+Merged `default` into `chula_cp` and applied the four mechanical edits as a
+single merge commit. Resolution: `submission_assist.rb` deleted (the
+chula_cp-side modifications were already grafted onto `default` at rev 1633
+before the refactor split the file into `request.rb` + `comment_assist.rb`).
 
-| File | Change |
+| File | Change applied |
 |---|---|
-| `app/services/llm/genie_assist.rb` | `class GenieAssist < SubmissionAssist` → `class GenieAssist < Llm::CommentAssist` |
-| `app/services/llm/viva_turn_genie_assist.rb` | `SubmissionAssist.connection(genie[:host])` → `Llm::Request.connection(genie[:host])` |
+| `app/services/llm/genie_assist.rb` | `class GenieAssist < SubmissionAssist` → `class GenieAssist < CommentAssist`; runtime `SubmissionAssist.connection(...)` → `Llm::Request.connection(...)`; doc comments updated |
+| `app/services/llm/viva_turn_genie_assist.rb` | `SubmissionAssist.connection(...)` → `Llm::Request.connection(...)` |
 | `app/services/llm/viva_grade_genie_assist.rb` | Same as `viva_turn_genie_assist.rb` |
-| `app/jobs/llm/genie_assist_job.rb` | `class GenieAssistJob < SubmissionAssistJob` → `class GenieAssistJob < Llm::CommentAssistJob` |
+| `app/jobs/llm/genie_assist_job.rb` | `class GenieAssistJob < SubmissionAssistJob` → `class GenieAssistJob < CommentAssistJob` |
+
+Verified: `bin/rails test test/services/llm/` 11/11 pass; `bundle exec rubocop`
+on `app/services/llm app/jobs/llm app/presenters` 14 files, 0 offenses;
+no `SubmissionAssist` references in tracked source on chula_cp.
 
 `Llm::TokenManager` is independent; no change.
 
@@ -212,6 +219,28 @@ Not blockers, but flagged during planning:
    comment-style job" in its parent class. If you're tempted to add
    behavior to it that applies to *every* LLM job, push it up to
    `Llm::RequestJob` instead.
+6. **Comment flow isn't DRY across providers — lift assembly logic up
+   when a second `CommentAssist` subclass is added.** The viva flow is
+   symmetric: `Llm::VivaTurnAssist` and `Llm::VivaGradeAssist` own the
+   provider-agnostic OpenAI-shape message assembly, and concrete
+   subclasses (`VivaTurnGenieAssist`, etc.) only override
+   `provider_name` / `execute_call` / `compute_cost` (~30 lines each).
+   The comment flow is asymmetric: `Llm::GenieAssist` mixes the
+   provider-specific HTTP/auth call WITH ~150 lines of provider-agnostic
+   comment-on-submission assembly (`build_messages`, `build_content_array`,
+   `pdf_attachment`, `user_source_code`, `build_system_content_array`,
+   `parse_response`, `validate_response_body!`). Adding a second comment
+   provider (OpenAI direct, Anthropic, etc.) today would require
+   duplicating all of that. **Trigger to do the lift:** when a real second
+   `CommentAssist` subclass arrives. The fix is mechanical: move the
+   listed methods from `GenieAssist` (chula_cp) up to `CommentAssist`
+   (default). After the lift, both `GenieAssist` and the new sibling
+   become ~40 lines each. Same shape of fix as the recent viva refactor.
+   Note: many providers (Gemini, Claude, OpenAI, most Chinese models)
+   ship OpenAI-compatible endpoints, so a single generalized
+   `Llm::OpenaiCompatibleAssist` adapter taking `base_url` + `api_key`
+   from config could cover several at once — the lift makes that pattern
+   trivial to introduce.
 
 ## Earlier work in the same session (already committed before the refactor)
 
