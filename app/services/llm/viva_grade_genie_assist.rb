@@ -8,6 +8,23 @@ module Llm
     COST_PER_1K_IN  = 0.0003
     COST_PER_1K_OUT = 0.0025
 
+    # Models accessible through Chula Genie's chat-completion endpoint. Drives
+    # the admin "Re-run grading" model picker on /submissions/:id/viva.
+    # Source: Llm::GenieAssist.list_model output (run from console).
+    # If genie's roster changes, update this list — out-of-list values still
+    # work if the admin types one in (the form's <select> doesn't enforce
+    # exact match; the upstream rejects unknown models with a 4xx).
+    KNOWN_MODELS = %w[
+      gemini-2.5-pro
+      gemini-2.5-flash
+      gemini-2.5-flash-lite
+      gemini-2.0-flash
+      gemini-2.0-flash-lite
+      Claude-Sonnet
+      Claude-Haiku
+      gpt-4o-mini
+    ].freeze
+
     private
 
     def provider_name
