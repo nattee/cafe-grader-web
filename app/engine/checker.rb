@@ -21,6 +21,8 @@ class Checker
       return "#{prog} #{input_file} #{output_file} #{ans_file}"
     when 'custom_cms', 'custom_cms_raw'
       return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
+    when 'custom_cms_original'
+      return "#{@prob_checker_file} #{input_file} #{ans_file} #{output_file}"
     when 'custom_cafe'
       return "#{@prob_checker_file} #{@sub.language.name} #{@testcase.num} #{input_file} #{output_file} #{ans_file} 10"
     when 'no_check'
@@ -72,9 +74,9 @@ class Checker
       end
     when 'postgres'
       return process_result_cms(out, err)
-    when 'custom_cms', 'custom_cms_raw', 'custom_cafe'
+    when 'custom_cms', 'custom_cms_raw', 'custom_cms_original', 'custom_cafe'
       if status.exitstatus == 0
-        if evaluation_type == 'custom_cms'
+        if evaluation_type == 'custom_cms' || evaluation_type == 'custom_cms_original'
           return process_result_cms(out, err)
         elsif evaluation_type == 'custom_cms_raw'
           return process_result_cms_raw(out, err)
@@ -97,7 +99,7 @@ class Checker
   def check_for_required_file
     raise "Output file [#{@output_file.cleanpath}] does not exists" unless @output_file.exist?
     raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
-    if ['custom_cms', 'custom_cms_raw', 'custom_cafe'].include?(@ds.evaluation_type) &&
+    if ['custom_cms', 'custom_cms_raw', 'custom_cms_original', 'custom_cafe'].include?(@ds.evaluation_type) &&
         (@prob_checker_file.nil? || @prob_checker_file.exist? == false)
       raise GraderError.new("Checker file does not exists", submission_id: @sub.id)
     end

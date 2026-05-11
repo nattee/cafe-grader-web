@@ -15,7 +15,8 @@ class Dataset < ApplicationRecord
                            custom_cafe: 3,
                            custom_cms: 4,
                            postgres: 5,
-                           custom_cms_raw: 6}
+                           custom_cms_raw: 6,
+                           custom_cms_original:7 }
 
   enum :score_type,      { sum: 0,       # summation of all testcase, default
                            group_min: 1,
