@@ -17,11 +17,7 @@ module Llm
 
     def execute_call(data)
       token = Llm::TokenManager.fetch_chula_genie_token
-      unless token
-        @error = 'Could not obtain authentication token for ChulaGenie. Aborting.'
-        handle_error
-        return nil
-      end
+      raise RuntimeError, 'Could not obtain authentication token for ChulaGenie' unless token
 
       genie = Rails.application.credentials.llm.genie
       conn  = Llm::Request.connection(genie[:host])
