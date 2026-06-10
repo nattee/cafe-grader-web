@@ -167,6 +167,11 @@ paths:
                       type: string
                       format: date-time
                       nullable: true
+                    last_submission_id:
+                      type: integer
+                      nullable: true
+                      description: Id of the user's latest submission for this problem
+                        — fetch details via /api/v1/submissions/{id}
                     has_testcase:
                       type: boolean
                     has_attachment:
@@ -262,6 +267,11 @@ paths:
                       type: string
                       format: date-time
                       nullable: true
+                    last_submission_id:
+                      type: integer
+                      nullable: true
+                      description: Id of the user's latest submission for this problem
+                        — fetch details via /api/v1/submissions/{id}
                     has_testcase:
                       type: boolean
                     has_attachment:
@@ -333,6 +343,11 @@ paths:
                     type: string
                     format: date-time
                     nullable: true
+                  last_submission_id:
+                    type: integer
+                    nullable: true
+                    description: Id of the user's latest submission for this problem
+                      — fetch details via /api/v1/submissions/{id}
                   has_testcase:
                     type: boolean
                   has_attachment:
@@ -468,6 +483,39 @@ paths:
         schema:
           type: integer
       responses:
+        '200':
+          description: testcase metadata list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    id:
+                      type: integer
+                      description: Global testcase id — pass this as {id} to /api/v1/testcases/{id}/input
+                        and /api/v1/testcases/{id}/sol
+                    num:
+                      type: integer
+                      description: Display number within the problem (1, 2, 3, …)
+                        — not usable as {id} for the download endpoints
+                    group:
+                      type: integer
+                      nullable: true
+                      description: Testcase group number
+                    group_name:
+                      type: string
+                      nullable: true
+                      description: Testcase group name
+                    weight:
+                      type: integer
+                      nullable: true
+                      description: Score weight of this testcase
+                  required:
+                  - id
+                  - num
         '403':
           description: testcase viewing not allowed
           content:
@@ -688,6 +736,11 @@ paths:
         schema:
           type: integer
       responses:
+        '200':
+          description: input file content
+        '404':
+          description: testcase not found (body hints to use the global id from /problems/{id}/testcases,
+            not num)
         '403':
           description: not allowed to view testcase
   "/api/v1/testcases/{id}/sol":
@@ -704,6 +757,11 @@ paths:
         schema:
           type: integer
       responses:
+        '200':
+          description: solution file content
+        '404':
+          description: testcase not found (body hints to use the global id from /problems/{id}/testcases,
+            not num)
         '403':
           description: not allowed to view testcase
   "/api/v1/me":
