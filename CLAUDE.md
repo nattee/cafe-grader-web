@@ -12,6 +12,12 @@ Cafe-Grader is an online programming contest and assignment grading platform (us
 
 Local VCS is **Mercurial (hg)**, mirrored to **GitHub** via the **hg-git** extension. Use `hg` for all local operations (`hg status`, `hg commit`, `hg diff`, `hg push`). Issues and PRs live on GitHub — use the `gh` CLI for those (e.g., `gh issue close 51`).
 
+**Branch workflow (`master` ↔ `chula_cp`).** Two long-lived bookmarks:
+- **`master`** — trunk / the upstream-facing line. **All commits land here.**
+- **`chula_cp`** — the Chula CP deployment branch. It carries deployment-specific config that is intentionally absent on master (e.g. the viva LLM services in `config/llm.yml` are `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist` on chula_cp but blank on master). The dev server / Solid Queue worker should run **on chula_cp**, since those classes only exist there.
+
+`chula_cp` **only ever receives batch-merges from master** — `hg update chula_cp && hg merge master && hg commit -m "merge master: …"` — bundled at logical stopping points, not per commit. **Never commit directly on `chula_cp`** (it skips master and creates divergence to clean up later). Before any `hg commit`, check the active bookmark (`hg log -r . --template '{activebookmark}\n'`); if `chula_cp` is active, `hg update master` first. One `hg push` mirrors both bookmarks via hg-git. Fuller context: the `/release` skill's conventions and `doc/llm-refactor-handoff-2026-05-07.md`.
+
 ## Changelog
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/); the top `[Unreleased]` section accumulates changes between releases. **Maintain it incrementally — don't reconstruct it from the commit log at release time.** When a commit makes a *user- or operator-facing* change (new feature/report/endpoint, behavior change, bug fix, or a config/setup change that affects fresh clones), add a curated `### Added/Changed/Fixed/Security` bullet under `[Unreleased]` in the *same commit*, citing the rev. Skip pure internals — refactors, test-only changes, dependency bumps, and Claude/dev tooling (skills, editor config) that don't change app behavior (e.g. the `/release` and `/upstream-sync` skills are deliberately not in the changelog). Cutting a release is then just renaming `[Unreleased]` → `[X.Y.Z] — YYYY-MM-DD`; the `/release` skill's log-backfill step is a safety net, not the primary path.
