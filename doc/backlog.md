@@ -29,9 +29,6 @@ button is a future enhancement using the existing cookie-based
 the visible label alone is enough.
 
 **Open items under this split.**
-- **Orphan partial.** `app/views/contests/_contest_help.html.haml` is
-  defined but rendered nowhere (no `render.*contest_help` hits). Either
-  wire it into `contests/index.html.haml` (inline card pattern) or delete.
 - **Shared offcanvas helper.** When a second view gets a help drawer,
   extract `app/views/shared/_help_drawer.html.haml` taking `id:`, `title:`,
   `body_partial:` locals so we don't copy-paste the offcanvas chrome. One
@@ -46,49 +43,6 @@ the visible label alone is enough.
 **Out of scope.** `app/views/main/help.html.haml` is a full-page
 student-facing help with i18n — different concern, not covered by the
 admin help-pattern split.
-
----
-
-## `/problems/edit` icon polish
-
-**Done (2026-05-17).** `finance` → `query_stats` everywhere
-(`problems/edit`, `problems/index`, `report/problem_hof_view`,
-`_edit_help` body text). Magic 480px → `.offcanvas-help` class in
-`my_custom.scss`.
-
-**Still pending.** Drawer content density rewrite — `_edit_help` is still
-text-heavy. The point of the drawer was to relieve a dense page; the help
-inside shouldn't reproduce that density. Consider tabs inside the drawer
-(Basics / Datasets / Viva / Tags) or a numbered walkthrough rather than
-field-by-field reference. Defer until a second drawer exists for comparison.
-
-## Legacy tooltip attribute form
-
-**Done (2026-05-17).** Rewrote ~13 occurrences across 8 views to flat
-`data: {bs_toggle: …, bs_title: …}` form. Files touched:
-`graders/index`, `report/problem_hof_view`, `report/problem_hof`,
-`viva_sessions/show`, `problems/index` (×8), `problems/_ds_import`,
-`datasets/_testcases`. Verified by grep — no `'bs-toggle'` /
-`'bs-dismiss'` / `'bs-title'` string-key forms remain (excluding the
-`graders/index.html.haml.orig` merge backup; that file is unrelated
-to the convention sweep).
-
-**Stale backup.** `app/views/graders/index.html.haml.orig` is a
-Mercurial merge backup. Worth deleting if it's no longer needed.
-
----
-
-## Dead partial: `contests/_contest_help`
-
-**Why.** `app/views/contests/_contest_help.html.haml` exists but is rendered
-nowhere (grep `render.*contest_help` → no hits). Either there's a forgotten
-intent to surface it, or it should be deleted.
-
-**Proposed direction.** Decide during help-pattern unification — if we keep
-offcanvas drawers everywhere, this content might want to live in a
-`contests/edit` drawer. If not, delete.
-
-**Size.** Trivial. Roll into the unification pass.
 
 ---
 
