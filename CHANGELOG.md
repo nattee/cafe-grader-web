@@ -10,6 +10,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Changed
+
+- **Config templates pruned and made consistent** — `config/application.rb`
+  is now tracked directly (it was ignored behind a byte-identical sample); the
+  redundant `llm.yml` / `cafe_grader.rb` `.SAMPLE` files and the dead 2016-era
+  `abstract_mysql2_adapter.rb.SAMPLE` were removed (the real configs are
+  tracked and secret-free), and the identifiers in `credentials.yml.SAMPLE`
+  were scrubbed. Fresh clones now boot without hand-copying samples (rev 1769).
+
 ## [4.4.1] — 2026-06-13
 
 ### Added

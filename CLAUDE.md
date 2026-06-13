@@ -12,6 +12,10 @@ Cafe-Grader is an online programming contest and assignment grading platform (us
 
 Local VCS is **Mercurial (hg)**, mirrored to **GitHub** via the **hg-git** extension. Use `hg` for all local operations (`hg status`, `hg commit`, `hg diff`, `hg push`). Issues and PRs live on GitHub — use the `gh` CLI for those (e.g., `gh issue close 51`).
 
+## Changelog
+
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/); the top `[Unreleased]` section accumulates changes between releases. **Maintain it incrementally — don't reconstruct it from the commit log at release time.** When a commit makes a *user- or operator-facing* change (new feature/report/endpoint, behavior change, bug fix, or a config/setup change that affects fresh clones), add a curated `### Added/Changed/Fixed/Security` bullet under `[Unreleased]` in the *same commit*, citing the rev. Skip pure internals — refactors, test-only changes, dependency bumps, and Claude/dev tooling (skills, editor config) that don't change app behavior (e.g. the `/release` and `/upstream-sync` skills are deliberately not in the changelog). Cutting a release is then just renaming `[Unreleased]` → `[X.Y.Z] — YYYY-MM-DD`; the `/release` skill's log-backfill step is a safety net, not the primary path.
+
 ## Tech Stack
 
 - **Ruby 3.4.4, Rails 8.0.0** (with `load_defaults 7.0`)
