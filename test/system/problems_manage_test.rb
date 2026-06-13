@@ -136,7 +136,12 @@ class ProblemsManageTest < ApplicationSystemTestCase
 
   def select2_select(text, from:)
     find("##{from} + .select2-container").click
-    find(".select2-search__field").fill_in(with: text)
-    find(".select2-results__option", text: text).click
+    # Scope the search field + results to the widget we just opened. The page
+    # has several select2 widgets, and multi-selects (tag_ids, lang_ids) keep an
+    # always-visible .select2-search__field, so an unscoped find is ambiguous.
+    # Only the open widget carries .select2-container--open.
+    find(".select2-container--open .select2-search__field").set(text)
+    # exact_text so e.g. searching "c" picks the "c" option, not "cpp" too
+    find(".select2-container--open .select2-results__option", exact_text: text).click
   end
 end

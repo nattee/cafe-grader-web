@@ -70,9 +70,9 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ---
 
-## System-test suite has 20 stale failures
+## System-test suite has 19 stale failures
 
-**Why.** `bin/rails test:system` currently reports **12 failures + 8 errors** out of 30 tests on master tip (verified 2026-05-21). Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**Why.** `bin/rails test:system` reports **11 failures + 8 errors** out of 46 tests (re-verified 2026-06-14; was 12+8 / 30 tests on 2026-05-21 — suite grew by 16 all-passing tests, one Cluster-1 test got fixed, and the six-cluster split below still maps every failure). Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
@@ -80,22 +80,26 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 Tests use names like `"Updated Group"`, `"GroupA"`, `"easybeginner"` that contain characters the new validation rejects:
 > "Name contains invalid characters. Only letters, numbers, `( ) [ ] - _` are allowed."
 
-Failing:
-- `test/system/tags_test.rb#test_update_tag`
+Failing (`tags_test#test_update_tag` was here on 2026-05-21 but now passes):
 - `test/system/groups_test.rb#test_create_new_group`, `#test_update_group`
 - `test/system/contests_test.rb#test_create_new_contest`, `#test_update_contest`
 
 **Decision needed:** is the regex (no spaces) the desired behavior, or did it get tightened by accident? Either relax the validation OR update the test names. Probably the former — spaces in user-facing names are normal.
 
-### Cluster 2 — `select2_select` helper now ambiguous (~15 min)
-`test/system/problems_manage_test.rb:139` (`select2_select` helper) does `find('.select2-search__field')`. The problems-edit page now has 3 select2 fields (tags, groups, allowed languages), so the helper hits `Capybara::Ambiguous`.
+### Cluster 2 — `select2_select` helper ambiguous — FIXED 2026-06-14
+The helper now scopes the search field + results to the just-opened widget
+(`.select2-container--open`) and matches options by `exact_text` (so searching
+"c" picks the `c` option, not `cpp` too). `test_add_tags_to_problem` and
+`test_add_problem_to_group` are green.
 
-Failing:
-- `ProblemsManageTest#test_add_tags_to_problem`
-- `ProblemsManageTest#test_set_permitted_languages`
-- `ProblemsManageTest#test_add_problem_to_group`
-
-**Fix:** scope the helper to take a `within:` block or a label argument so callers identify *which* select2 they mean.
+`test_set_permitted_languages` is unblocked from the ambiguity but now fails one
+layer deeper: after selecting two languages and applying, `permitted_lang`
+comes back `nil` — i.e. the `set_languages` branch of
+`ProblemsController#do_manage` apparently didn't fire, even though tags/groups
+(identical form + param pattern) persist. Controller logic and form field look
+correct on inspection, so this is most likely a test-interaction quirk with the
+*double* `select2_select` on one multi-select (or the checkbox state) rather
+than a production bug. **Moved to Cluster 3 — verify in a browser first.**
 
 ### Cluster 3 — Problem available-toggle UI flow drift (~30-60 min)
 The available/view_testcase toggle clicks succeed but the test's read-back doesn't show the new value.
@@ -135,7 +139,7 @@ Each needs a quick look at the corresponding view to find the new selector. Poss
 
 ### Recommended sequence
 
-1. Clusters 1 + 2 first — clearly test-needs-update with low risk. Knock them out in one short session.
+1. ~~Cluster 2~~ done 2026-06-14. Cluster 1 next — clearly test-needs-update, low risk (but settle the spaces-in-names decision first).
 2. Cluster 5 — small, just need to know the new button name.
 3. Cluster 6 — multiple small issues, but each is local.
 4. Clusters 3 + 4 — bigger; verify the feature in a browser before touching tests, as these might be real regressions.
