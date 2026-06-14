@@ -46,6 +46,23 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "do_manage set_languages persists permitted_lang" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    c   = languages(:Language_c)
+    cpp = languages(:Language_cpp)
+    post manage_problems_path, params: {
+      "prob-#{prob.id}" => "on",
+      set_languages: "1",
+      lang_ids: [c.id, cpp.id]
+    }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+    prob.reload
+    assert_not_nil prob.permitted_lang, "permitted_lang should be set by the bulk action"
+    assert_includes prob.permitted_lang.split, "c"
+    assert_includes prob.permitted_lang.split, "cpp"
+  end
+
   test "problems without any dataset still appear on index" do
     sign_in_as("admin", "admin")
     # Build a Problem with no associated Dataset. The previous INNER JOIN

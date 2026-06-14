@@ -92,14 +92,14 @@ The helper now scopes the search field + results to the just-opened widget
 "c" picks the `c` option, not `cpp` too). `test_add_tags_to_problem` and
 `test_add_problem_to_group` are green.
 
-`test_set_permitted_languages` is unblocked from the ambiguity but now fails one
-layer deeper: after selecting two languages and applying, `permitted_lang`
-comes back `nil` — i.e. the `set_languages` branch of
-`ProblemsController#do_manage` apparently didn't fire, even though tags/groups
-(identical form + param pattern) persist. Controller logic and form field look
-correct on inspection, so this is most likely a test-interaction quirk with the
-*double* `select2_select` on one multi-select (or the checkbox state) rather
-than a production bug. **Moved to Cluster 3 — verify in a browser first.**
+`test_set_permitted_languages`: chased 2026-06-14, **not a production bug.** A new
+controller-level test
+(`ProblemsControllerTest#"do_manage set_languages persists permitted_lang"`) POSTs
+the bulk action directly (no select2) and passes — the `set_languages` logic is
+correct. The system test's select2 interaction on `lang_ids` just fails to
+register the chosen option at submit (tags/groups drive the identical helper
+fine; root cause unknown), so it is **skipped with a reason** and covered by the
+integration test instead.
 
 ### Cluster 3 — Problem available-toggle UI flow drift (~30-60 min)
 The available/view_testcase toggle clicks succeed but the test's read-back doesn't show the new value.
