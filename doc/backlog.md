@@ -70,9 +70,9 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ---
 
-## System-test suite has 5 stale failures
+## System-test suite — RESOLVED 2026-06-15
 
-**Why.** `bin/rails test:system` reports **4 failures + 1 error (+2 skips)** out of 46 tests (2026-06-15, after Clusters 1, 2, 5 & 6 fixed; was 14 failing on 2026-06-14, 20 on 2026-05-21). Remaining failures are Clusters 3 & 4. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**RESOLVED.** `bin/rails test:system` is now green — **46 tests, 0 failures, 0 errors, 2 skips** (was 20 failing on 2026-05-21). All six clusters fixed, plus a flaky `tags_test#test_update_tag` (a plain `fill_in` intermittently appended to the pre-filled name → fixed with `fill_options: {clear: :backspace}`). The **2 remaining skips** are documented and covered by controller tests instead: `ProblemsManageTest#test_set_permitted_languages` (flaky `lang_ids` select2) and `UsersTest#test_login_then_change_password` (flaky profile form submit). The per-cluster history below is kept as a record. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
@@ -101,20 +101,15 @@ register the chosen option at submit (tags/groups drive the identical helper
 fine; root cause unknown), so it is **skipped with a reason** and covered by the
 integration test instead.
 
-### Cluster 3 — Problem available-toggle UI flow drift (~30-60 min)
-The available/view_testcase toggle clicks succeed but the test's read-back doesn't show the new value.
-
-Failing:
-- `ProblemsManageTest#test_set_available_to_yes` / `#test_set_available_to_no`
-- `ProblemsManageTest#test_select_all_then_apply_action`
-- `ProblemsManageTest#test_apply_action_to_multiple_individually_selected_problems`
-
-**Verify manually first:** does the toggle actually work in the browser? If yes, the test's wait/assertion needs an update (probably needs to wait for the turbo_stream update). If no, real regression — likely from our recent Pass B `link_to → button_to` migration or related polish.
-
-### Cluster 4 — date_added handling regression (~30 min)
-`ProblemsManageTest#test_change_date_added` raises `NoMethodError: undefined method 'to_date' for nil` at line 53. The test reads back the date_added; somewhere it's nil where it shouldn't be.
-
-**Verify manually first**, same as cluster 3 — could be feature-broken or test-out-of-date.
+### Clusters 3 & 4 — available-toggle / date_added — FIXED 2026-06-15, NOT regressions
+Both verified at the controller level (new `ProblemsControllerTest` tests:
+`do_manage change_enable toggles available`, `do_manage change_date_added sets
+date_added`) — the bulk-action logic is correct, no regression. The system tests
+were just reading the DB *immediately* after "Apply to Selected", racing the async
+turbo_stream submission. Fixed by waiting for the response toast
+(`assert_selector ".toast"`) before the DB assertion. All 5 tests green
+(`set_available_to_yes/no`, `select_all_then_apply_action`,
+`apply_action_to_multiple_individually_selected_problems`, `change_date_added`).
 
 ### Cluster 5 — "Go" button gone — FIXED 2026-06-15
 The submissions index replaced the old problem-dropdown + "Go" submit button with a
@@ -155,7 +150,7 @@ Five distinct drifts, all resolved:
 1. ~~Clusters 1, 2 & 5~~ done (2026-06-14/15). Cluster 1: kept the no-spaces rule (intentional), updated the test names.
 2. ~~Cluster 5~~ done 2026-06-15.
 3. ~~Cluster 6~~ done 2026-06-15.
-4. Clusters 3 + 4 — bigger; verify the feature in a browser before touching tests, as these might be real regressions.
+4. ~~Clusters 3 + 4~~ done 2026-06-15 — verified NOT regressions (controller tests pass); the system tests just raced the async turbo_stream submit.
 
 **`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
 

@@ -63,6 +63,26 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_includes prob.permitted_lang.split, "cpp"
   end
 
+  test "do_manage change_enable toggles available" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_sub) # starts available: false
+    post manage_problems_path, params: {
+      "prob-#{prob.id}" => "on", change_enable: "1", enable: "yes"
+    }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+    assert prob.reload.available?, "change_enable=yes should set available true"
+  end
+
+  test "do_manage change_date_added sets date_added" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    post manage_problems_path, params: {
+      "prob-#{prob.id}" => "on", change_date_added: "1", date_added: "2025-01-15"
+    }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+    assert_equal Date.new(2025, 1, 15), prob.reload.date_added.to_date
+  end
+
   test "problems without any dataset still appear on index" do
     sign_in_as("admin", "admin")
     # Build a Problem with no associated Dataset. The previous INNER JOIN
