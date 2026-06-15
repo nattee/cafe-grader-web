@@ -70,21 +70,21 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ---
 
-## System-test suite has 9 stale failures
+## System-test suite has 5 stale failures
 
-**Why.** `bin/rails test:system` reports **8 failures + 1 error (+2 skips)** out of 46 tests (2026-06-15, after Clusters 2, 5 & 6 fixed; was 14 failing on 2026-06-14, 20 on 2026-05-21). Remaining failures are Clusters 1, 3, 4. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**Why.** `bin/rails test:system` reports **4 failures + 1 error (+2 skips)** out of 46 tests (2026-06-15, after Clusters 1, 2, 5 & 6 fixed; was 14 failing on 2026-06-14, 20 on 2026-05-21). Remaining failures are Clusters 3 & 4. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
-### Cluster 1 — Name-validation tightened, tests use spaces (~15 min)
-Tests use names like `"Updated Group"`, `"GroupA"`, `"easybeginner"` that contain characters the new validation rejects:
-> "Name contains invalid characters. Only letters, numbers, `( ) [ ] - _` are allowed."
-
-Failing (`tags_test#test_update_tag` was here on 2026-05-21 but now passes):
-- `test/system/groups_test.rb#test_create_new_group`, `#test_update_group`
-- `test/system/contests_test.rb#test_create_new_contest`, `#test_update_contest`
-
-**Decision needed:** is the regex (no spaces) the desired behavior, or did it get tightened by accident? Either relax the validation OR update the test names. Probably the former — spaces in user-facing names are normal.
+### Cluster 1 — Name-validation rejects spaces — FIXED 2026-06-15
+**Decision (2026-06-15): keep the no-spaces rule.** `Group`/`Contest` `name` is a
+machine-readable identifier validated by `NameFormatValidator`
+(`/\A[a-zA-Z\d\-\_\[\]()]+\z/`, no spaces) — identical to `Problem#name`; the
+human-readable text lives in each model's `description`. So the constraint is
+intentional, not accidental (despite landing in a "wip" commit). The 4 tests were
+using spaced names for `name`; updated them to slug names (`Test_Group`,
+`Updated_Group`, `System_Test_Contest`, `Updated_Contest`). `groups_test` +
+`contests_test` green.
 
 ### Cluster 2 — `select2_select` helper ambiguous — FIXED 2026-06-14
 The helper now scopes the search field + results to the just-opened widget
@@ -152,7 +152,7 @@ Five distinct drifts, all resolved:
 
 ### Recommended sequence
 
-1. ~~Clusters 2 & 5~~ done (2026-06-14/15). Cluster 1 next — clearly test-needs-update, low risk (but settle the spaces-in-names decision first).
+1. ~~Clusters 1, 2 & 5~~ done (2026-06-14/15). Cluster 1: kept the no-spaces rule (intentional), updated the test names.
 2. ~~Cluster 5~~ done 2026-06-15.
 3. ~~Cluster 6~~ done 2026-06-15.
 4. Clusters 3 + 4 — bigger; verify the feature in a browser before touching tests, as these might be real regressions.
