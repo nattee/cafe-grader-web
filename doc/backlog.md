@@ -70,9 +70,9 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ---
 
-## System-test suite has 14 stale failures
+## System-test suite has 9 stale failures
 
-**Why.** `bin/rails test:system` reports **11 failures + 3 errors (+1 skip)** out of 46 tests (2026-06-15, after Clusters 2 & 5 fixed; was 11+8 on 2026-06-14, 12+8 / 30 tests on 2026-05-21). The six-cluster split below still maps every remaining failure. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**Why.** `bin/rails test:system` reports **8 failures + 1 error (+2 skips)** out of 46 tests (2026-06-15, after Clusters 2, 5 & 6 fixed; was 14 failing on 2026-06-14, 20 on 2026-05-21). Remaining failures are Clusters 1, 3, 4. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
@@ -126,23 +126,56 @@ stale assertions: the redesigned submission show page no longer renders
 "Grading Task Status". Both `test_admin_view_submissions` and
 `test_user_view_submissions` are green (confirmed stable over two runs).
 
-### Cluster 6 — Users-page UI drift (~60-90 min)
-Multiple distinct UI changes; tests reference elements that have moved.
-
-Failing:
-- `UsersTest#test_add_new_user_and_edit` — email `a@a.com` no longer shown on the list page
-- `UsersTest#test_add_multiple_users` — `remark1` not visible after bulk add (similar to above; columns differ?)
-- `UsersTest#test_try_using_admin_from_normal_user` — `/main/list` returned where `/main/login` expected (auth flow differs)
-- `UsersTest#test_grant_admin_right` — `Unable to find field "login"` (Admins-grant form changed)
-- `UsersTest#test_login_then_change_password` — `Unable to find css 'button[type="submit"]'` on profile page
-
-Each needs a quick look at the corresponding view to find the new selector. Possibly the Users admin index dropped some columns to make the table denser (good change; tests need updating).
+### Cluster 6 — Users-page UI drift — FIXED 2026-06-15
+Five distinct drifts, all resolved:
+- **DataTable never initialised** (created users never showed): the users-index init
+  did `document.querySelector('meta[name="csrf-token"]').getAttribute(...)`, which
+  *throws* when the CSRF meta tag is absent (forgery protection is off in test) →
+  the whole `DataTable()` call aborted. Made it null-safe (`?.`) in
+  `user_admin/index.html.haml`, matching the null-safe jQuery `.attr()` the problems
+  page already used. (See the new "CSRF meta null-safety" item below — 5 other views
+  share the unguarded lookup.)
+- **Unauthorized redirect** now sends *logged-in* non-admins to `list_main_path`
+  (only nil/logout → `login_main_path`); tests updated.
+- **Grant-admin**: the `login` text field is now a per-role select2 (`#admin_user_id`,
+  options by `login_with_name`); test selects via select2 and scopes the (now
+  duplicated admin/TA) "Grant" button.
+- **Profile change-password button**: simple_form `f.button :submit` renders an
+  `<input type=submit>`, so `button[type=submit]` no longer matched → use `click_on`.
+- **Edit / profile form submits are flaky under Selenium** (the redesigned simple_form
+  submit doesn't reliably fire; the user-edit page's prominent "Save Changes" button
+  also sits *outside* the form via an HTML5 `form=` association). The logic —
+  `user_admin#update` (alias/remark) and `update_self` (password) — is now covered by
+  reliable controller tests in `UsersControllerTest`; the system tests verify
+  create+list and skip/trim the flaky submit. Whether the dual-submit-button edit
+  page is worth simplifying is an open UI question.
 
 ### Recommended sequence
 
 1. ~~Clusters 2 & 5~~ done (2026-06-14/15). Cluster 1 next — clearly test-needs-update, low risk (but settle the spaces-in-names decision first).
 2. ~~Cluster 5~~ done 2026-06-15.
-3. Cluster 6 — multiple small issues, but each is local.
+3. ~~Cluster 6~~ done 2026-06-15.
 4. Clusters 3 + 4 — bigger; verify the feature in a browser before touching tests, as these might be real regressions.
 
 **`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
+
+---
+
+## CSRF meta null-safety in DataTable inits
+
+**Why.** Several DataTable AJAX configs read the CSRF token with the *unguarded*
+`document.querySelector('meta[name="csrf-token"]').getAttribute('content')`, which
+throws when the meta tag is absent — aborting the whole `DataTable()` init (empty
+table). The meta is always present in production (no user impact), but it's absent
+when forgery protection is off (test env), which is how Cluster 6 surfaced it.
+`user_admin/index.html.haml` was fixed with `?.`; the same unguarded lookup remains in:
+- `app/views/groups/show.html.haml` (×2)
+- `app/views/languages/index.html.haml`
+- `app/views/tags/index.html.haml`
+- `app/views/layouts/_header.html.haml`
+
+**Proposed direction.** Add `?.` to each (or switch to the null-safe jQuery
+`$('meta[name="csrf-token"]').attr('content')` pattern the problems page already uses).
+
+**Size.** Trivial — one character each. Low priority (no production impact), but
+prevents the same latent DataTable-init breakage in those pages' tests.
