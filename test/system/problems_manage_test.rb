@@ -24,6 +24,10 @@ class ProblemsManageTest < ApplicationSystemTestCase
     check "change_enable"
     choose "yes"
     click_on "Apply to Selected"
+    # the bulk action submits via turbo_stream and updates the DB before the
+    # response toast is appended — wait for the toast so we don't read the DB
+    # before the async submission lands
+    assert_selector ".toast", wait: 10
 
     assert @prob_sub.reload.available?, "Expected problem to become available"
   end
@@ -36,6 +40,10 @@ class ProblemsManageTest < ApplicationSystemTestCase
     check "change_enable"
     choose "no"
     click_on "Apply to Selected"
+    # the bulk action submits via turbo_stream and updates the DB before the
+    # response toast is appended — wait for the toast so we don't read the DB
+    # before the async submission lands
+    assert_selector ".toast", wait: 10
 
     assert_not @prob_add.reload.available?, "Expected problem to become unavailable"
   end
@@ -49,6 +57,10 @@ class ProblemsManageTest < ApplicationSystemTestCase
     # Set value directly — TempusDominus may intercept normal input
     page.execute_script("document.getElementById('date_added').value = '2025-01-15'")
     click_on "Apply to Selected"
+    # the bulk action submits via turbo_stream and updates the DB before the
+    # response toast is appended — wait for the toast so we don't read the DB
+    # before the async submission lands
+    assert_selector ".toast", wait: 10
 
     assert_equal Date.new(2025, 1, 15), @prob_add.reload.date_added.to_date
   end
@@ -95,6 +107,10 @@ class ProblemsManageTest < ApplicationSystemTestCase
     check "set_languages"
     select2_select "c", from: "lang_ids"
     click_on "Apply to Selected"
+    # the bulk action submits via turbo_stream and updates the DB before the
+    # response toast is appended — wait for the toast so we don't read the DB
+    # before the async submission lands
+    assert_selector ".toast", wait: 10
 
     assert_includes @prob_add.reload.permitted_lang.to_s.split, "c"
   end
@@ -109,6 +125,10 @@ class ProblemsManageTest < ApplicationSystemTestCase
     check "change_enable"
     choose "no"
     click_on "Apply to Selected"
+    # the bulk action submits via turbo_stream and updates the DB before the
+    # response toast is appended — wait for the toast so we don't read the DB
+    # before the async submission lands
+    assert_selector ".toast", wait: 10
 
     assert_not @prob_add.reload.available?, "Expected prob_add to become unavailable"
     assert_not @prob_sub.reload.available?, "Expected prob_sub to become unavailable"
@@ -125,6 +145,10 @@ class ProblemsManageTest < ApplicationSystemTestCase
     check "change_enable"
     choose "yes"
     click_on "Apply to Selected"
+    # the bulk action submits via turbo_stream and updates the DB before the
+    # response toast is appended — wait for the toast so we don't read the DB
+    # before the async submission lands
+    assert_selector ".toast", wait: 10
 
     Problem.where(id: [@prob_add.id, @prob_sub.id]).each do |p|
       assert p.reload.available?, "Expected problem #{p.name} to be available"
