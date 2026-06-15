@@ -70,9 +70,9 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ---
 
-## System-test suite has 19 stale failures
+## System-test suite has 14 stale failures
 
-**Why.** `bin/rails test:system` reports **11 failures + 8 errors** out of 46 tests (re-verified 2026-06-14; was 12+8 / 30 tests on 2026-05-21 — suite grew by 16 all-passing tests, one Cluster-1 test got fixed, and the six-cluster split below still maps every failure). Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**Why.** `bin/rails test:system` reports **11 failures + 3 errors (+1 skip)** out of 46 tests (2026-06-15, after Clusters 2 & 5 fixed; was 11+8 on 2026-06-14, 12+8 / 30 tests on 2026-05-21). The six-cluster split below still maps every remaining failure. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
@@ -116,14 +116,15 @@ Failing:
 
 **Verify manually first**, same as cluster 3 — could be feature-broken or test-out-of-date.
 
-### Cluster 5 — "Go" button gone (~15 min)
-Submissions index has lost a `Go` button.
-
-Failing:
-- `SubmissionsTest#test_admin_view_submissions`
-- `SubmissionsTest#test_user_view_submissions`
-
-**Possible:** the per-row action was renamed to `View` or replaced with an icon-only button during recent polish. Update the test selector; confirm the user-visible name today is correct.
+### Cluster 5 — "Go" button gone — FIXED 2026-06-15
+The submissions index replaced the old problem-dropdown + "Go" submit button with a
+select2 problem chooser (`#submission_problems`) that navigates to
+`problem_submissions_path` on pick. The tests now select a problem via the chooser
+(new `choose_submission_problem` helper) instead of clicking "Go". Also repointed
+stale assertions: the redesigned submission show page no longer renders
+"Source Code"/"Task" headings, so the tests assert "Submission Detail" /
+"Grading Task Status". Both `test_admin_view_submissions` and
+`test_user_view_submissions` are green (confirmed stable over two runs).
 
 ### Cluster 6 — Users-page UI drift (~60-90 min)
 Multiple distinct UI changes; tests reference elements that have moved.
@@ -139,8 +140,8 @@ Each needs a quick look at the corresponding view to find the new selector. Poss
 
 ### Recommended sequence
 
-1. ~~Cluster 2~~ done 2026-06-14. Cluster 1 next — clearly test-needs-update, low risk (but settle the spaces-in-names decision first).
-2. Cluster 5 — small, just need to know the new button name.
+1. ~~Clusters 2 & 5~~ done (2026-06-14/15). Cluster 1 next — clearly test-needs-update, low risk (but settle the spaces-in-names decision first).
+2. ~~Cluster 5~~ done 2026-06-15.
 3. Cluster 6 — multiple small issues, but each is local.
 4. Clusters 3 + 4 — bigger; verify the feature in a browser before touching tests, as these might be real regressions.
 
