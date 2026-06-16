@@ -96,12 +96,6 @@ class UsersTest < ApplicationSystemTestCase
   end
 
   test "login then change password" do
-    # The profile change-password path (update_self) is covered reliably by
-    # UsersControllerTest "update_self changes the password (profile form path)".
-    # Driving the redesigned simple_form submit through the browser is flaky under
-    # Selenium (the submit doesn't always fire), so this end-to-end variant is skipped.
-    skip "profile change-password form submit is flaky under Selenium; logic covered by controller test"
-
     newpassword = '1234asdf'
     login 'john', 'hello'
     visit profile_users_path
@@ -111,8 +105,9 @@ class UsersTest < ApplicationSystemTestCase
 
     click_on 'Save changes'
     # wait for the password change to persist before logging out (else the logout
-    # can race the update and the old password still works)
-    assert_text 'Updated successfully'
+    # can race the update and the old password still works). Explicit wait so a
+    # slow turbo submit under load doesn't time out at the default ~2s.
+    assert_text 'Updated successfully', wait: 10
 
     visit logout_main_path
     # the old password should now fail — don't use the success-asserting login helper
@@ -120,7 +115,7 @@ class UsersTest < ApplicationSystemTestCase
     fill_in "Login", with: 'john'
     fill_in "Password", with: 'hello'
     click_on "Login"
-    assert_text 'Wrong password'
+    assert_text 'Wrong password', wait: 10
 
     login 'john', newpassword
     assert_text "MAIN"
