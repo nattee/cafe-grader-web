@@ -72,7 +72,11 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ## System-test suite — RESOLVED 2026-06-15
 
-**RESOLVED.** `bin/rails test:system` is now green — **46 tests, 0 failures, 0 errors, 1 skip** (was 20 failing on 2026-05-21). All six clusters fixed, plus a flaky `tags_test#test_update_tag` (a plain `fill_in` intermittently appended to the pre-filled name → fixed with `fill_options: {clear: :backspace}`). The **1 remaining skip** is `ProblemsManageTest#test_set_permitted_languages` — the `lang_ids` multi-select select2 doesn't register the picked option at submit under Selenium (the *identical* helper works for tags/groups; root cause unknown); the logic is covered by the `do_manage set_languages` controller test. (`UsersTest#test_login_then_change_password` was briefly skipped too, but that was premature — it's a normal in-form submit; the flakiness was the `Updated successfully` assert timing out under load → hardened with `wait: 10`, 2026-06-16.) The per-cluster history below is kept as a record. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**RESOLVED.** `bin/rails test:system` is fully green — **46 tests, 0 failures, 0 errors, 0 skips** (was 20 failing on 2026-05-21). All six clusters fixed, plus a flaky `tags_test#test_update_tag` (a plain `fill_in` appended to the pre-filled name → `fill_options: {clear: :backspace}`). Two tests were briefly skipped during the cleanup, but **both turned out premature — neither was a real Selenium limitation** (2026-06-16):
+- `UsersTest#test_login_then_change_password` — a normal in-form submit; the `Updated successfully` assert was just timing out under suite load → `wait: 10`.
+- `ProblemsManageTest#test_set_permitted_languages` — a DOM diagnostic proved the `lang_ids` select2 pick **does** register in `#lang_ids`; the failure was the same async-turbo-submit race as Clusters 3 & 4 → wait for `.toast` before the DB read. (My earlier "select2 doesn't register" note was wrong.)
+
+The per-cluster history below is kept as a record. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
@@ -92,14 +96,14 @@ The helper now scopes the search field + results to the just-opened widget
 "c" picks the `c` option, not `cpp` too). `test_add_tags_to_problem` and
 `test_add_problem_to_group` are green.
 
-`test_set_permitted_languages`: chased 2026-06-14, **not a production bug.** A new
+`test_set_permitted_languages`: chased 2026-06-14, then fixed 2026-06-16. A
 controller-level test
-(`ProblemsControllerTest#"do_manage set_languages persists permitted_lang"`) POSTs
-the bulk action directly (no select2) and passes — the `set_languages` logic is
-correct. The system test's select2 interaction on `lang_ids` just fails to
-register the chosen option at submit (tags/groups drive the identical helper
-fine; root cause unknown), so it is **skipped with a reason** and covered by the
-integration test instead.
+(`ProblemsControllerTest#"do_manage set_languages persists permitted_lang"`)
+confirms the logic. The system test was *briefly* skipped on a wrong diagnosis
+("select2 doesn't register") — a DOM diagnostic later proved the `lang_ids`
+select2 pick **does** register in `#lang_ids`; the real failure was the same
+async-turbo-submit race as Clusters 3 & 4. Fixed by waiting for the `.toast`
+before the DB read; un-skipped and back to testing `c` + `cpp`.
 
 ### Clusters 3 & 4 — available-toggle / date_added — FIXED 2026-06-15, NOT regressions
 Both verified at the controller level (new `ProblemsControllerTest` tests:
