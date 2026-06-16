@@ -72,7 +72,7 @@ Cover at least one audited model per shape (own-row destroy + cascade via
 
 ## System-test suite — RESOLVED 2026-06-15
 
-**RESOLVED.** `bin/rails test:system` is now green — **46 tests, 0 failures, 0 errors, 2 skips** (was 20 failing on 2026-05-21). All six clusters fixed, plus a flaky `tags_test#test_update_tag` (a plain `fill_in` intermittently appended to the pre-filled name → fixed with `fill_options: {clear: :backspace}`). The **2 remaining skips** are documented and covered by controller tests instead: `ProblemsManageTest#test_set_permitted_languages` (flaky `lang_ids` select2) and `UsersTest#test_login_then_change_password` (flaky profile form submit). The per-cluster history below is kept as a record. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
+**RESOLVED.** `bin/rails test:system` is now green — **46 tests, 0 failures, 0 errors, 1 skip** (was 20 failing on 2026-05-21). All six clusters fixed, plus a flaky `tags_test#test_update_tag` (a plain `fill_in` intermittently appended to the pre-filled name → fixed with `fill_options: {clear: :backspace}`). The **1 remaining skip** is `ProblemsManageTest#test_set_permitted_languages` — the `lang_ids` multi-select select2 doesn't register the picked option at submit under Selenium (the *identical* helper works for tags/groups; root cause unknown); the logic is covered by the `do_manage set_languages` controller test. (`UsersTest#test_login_then_change_password` was briefly skipped too, but that was premature — it's a normal in-form submit; the flakiness was the `Updated successfully` assert timing out under load → hardened with `wait: 10`, 2026-06-16.) The per-cluster history below is kept as a record. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
 
 **Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
 
@@ -137,13 +137,13 @@ Five distinct drifts, all resolved:
   duplicated admin/TA) "Grant" button.
 - **Profile change-password button**: simple_form `f.button :submit` renders an
   `<input type=submit>`, so `button[type=submit]` no longer matched → use `click_on`.
-- **Edit / profile form submits are flaky under Selenium** (the redesigned simple_form
-  submit doesn't reliably fire; the user-edit page's prominent "Save Changes" button
-  also sits *outside* the form via an HTML5 `form=` association). The logic —
-  `user_admin#update` (alias/remark) and `update_self` (password) — is now covered by
-  reliable controller tests in `UsersControllerTest`; the system tests verify
-  create+list and skip/trim the flaky submit. Whether the dual-submit-button edit
-  page is worth simplifying is an open UI question.
+- **The user-edit form submit** is finicky under Selenium — its prominent "Save
+  Changes" button sits *outside* the form via an HTML5 `form=` association.
+  `user_admin#update` (alias/remark) is covered by a `UsersControllerTest` case, and
+  the system test verifies create + list-membership, leaving the edit to that
+  controller test. Whether the dual-submit-button edit page is worth simplifying is
+  an open UI question. (The *profile* password change — a normal in-form submit — was
+  briefly skipped here but is now un-skipped and passing; see the skip note above.)
 
 ### Recommended sequence
 
