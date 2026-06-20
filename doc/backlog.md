@@ -46,27 +46,20 @@ admin help-pattern split.
 
 ---
 
-## AuditLog destroy test
+## AuditLog destroy test — RESOLVED 2026-06-20
 
-**Why.** The "Auditable must exist" bug (fixed 2026-05-17 by making
-`belongs_to :auditable` optional) wasn't caught because there's no test
-for the destroy path on any audited model. There's only an integration
-test for the controller (`test/integration/audit_logs_controller_test.rb`),
-not a model-level test that confirms an audit row is created on destroy.
+**RESOLVED.** Added `test/models/auditable_test.rb` (4 tests). Covers both
+shapes: own-row destroy writes a `destroy` audit row (Contest), and the
+cascade through `dependent: :destroy` writes destroy rows for the child
+`ContestProblem`/`ContestUser` join models. Also asserts the destroy
+snapshot stores tracked attrs as `[value, nil]`, and that `AuditLog.paused`
+suppresses the row. Confirms `after_destroy_commit` does fire under
+transactional tests (Rails 5+ runs `after_commit` callbacks in tests).
 
-**Proposed direction.** Add a model test like:
-```ruby
-test "destroying an audited record writes a destroy audit row" do
-  c = contests(:something)
-  assert_difference -> { AuditLog.for(c).where(action: 'destroy').count }, 1 do
-    c.destroy!
-  end
-end
-```
-Cover at least one audited model per shape (own-row destroy + cascade via
-`dependent: :destroy`).
-
-**Size.** Small. ~30 min.
+**Original why.** The "Auditable must exist" bug (fixed 2026-05-17 by making
+`belongs_to :auditable` optional) wasn't caught because there was no test
+for the destroy path on any audited model — only an integration test for
+the controller read paths (`test/integration/audit_logs_controller_test.rb`).
 
 ---
 
@@ -160,21 +153,18 @@ Five distinct drifts, all resolved:
 
 ---
 
-## CSRF meta null-safety in DataTable inits
+## CSRF meta null-safety in DataTable inits — RESOLVED 2026-06-20
 
-**Why.** Several DataTable AJAX configs read the CSRF token with the *unguarded*
-`document.querySelector('meta[name="csrf-token"]').getAttribute('content')`, which
-throws when the meta tag is absent — aborting the whole `DataTable()` init (empty
-table). The meta is always present in production (no user impact), but it's absent
-when forgery protection is off (test env), which is how Cluster 6 surfaced it.
-`user_admin/index.html.haml` was fixed with `?.`; the same unguarded lookup remains in:
-- `app/views/groups/show.html.haml` (×2)
-- `app/views/languages/index.html.haml`
-- `app/views/tags/index.html.haml`
-- `app/views/layouts/_header.html.haml`
+**RESOLVED.** Added `?.` to every remaining unguarded
+`document.querySelector('meta[name="csrf-token"]').getAttribute('content')`
+lookup. Fixed the 4 views listed below (5 sites: `groups/show` ×2,
+`languages/index`, `tags/index`, `layouts/_header`) **plus 4 more sites in
+the shared `app/javascript/controllers/datatables/configs.js`** that the
+original scan missed — leaving the shared DataTables config module unguarded
+would have left the same latent breakage in any table built from it.
+Grep for the unguarded form now returns nothing.
 
-**Proposed direction.** Add `?.` to each (or switch to the null-safe jQuery
-`$('meta[name="csrf-token"]').attr('content')` pattern the problems page already uses).
-
-**Size.** Trivial — one character each. Low priority (no production impact), but
-prevents the same latent DataTable-init breakage in those pages' tests.
+**Original why.** The unguarded lookup throws when the meta tag is absent —
+aborting the whole `DataTable()` init (empty table). The meta is always
+present in production (no user impact), but it's absent when forgery
+protection is off (test env), which is how Cluster 6 surfaced it.
