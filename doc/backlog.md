@@ -168,3 +168,43 @@ Grep for the unguarded form now returns nothing.
 aborting the whole `DataTable()` init (empty table). The meta is always
 present in production (no user impact), but it's absent when forgery
 protection is off (test env), which is how Cluster 6 surfaced it.
+
+---
+
+## Reporter role: let it report on finished (unavailable / archived) courses
+
+**Problem (confirmed 2026-06-30 on production).** A non-admin `reporter`/
+`editor` only sees report data for problems that are **`available = TRUE`** in
+an **enabled** group — that's what `Problem.group_actionable_by_user`
+(`app/models/problem.rb:92`) filters on. But reporters are assigned to
+*finished* courses/exams, which are exactly the ones whose problems get set
+unavailable and whose group gets disabled. Result: **every** non-admin reporter
+on production currently sees 0 reportable problems. They can still *reach* the
+report screen, because the gate (`groups_for_action(:report)` →
+`Group.reportable_by_user`, `app/models/group.rb:15`) ignores `group.enabled`
+and the problem-level flags — hence "reaches screen, sees nothing".
+
+The data-hiding itself is **working as intended**: `available` is meant to be
+an absolute, student-exposure kill-switch (admins bypass via `Problem.all`,
+everyone else is blocked across submit / report / edit / PDF / view-submission /
+view-testcase). The 2026-06-30 session fixed the two *surface* defects (scoped
+the user-group dropdown to `@groups`; added an empty-state notice explaining
+hidden problems) but deliberately left the policy unchanged.
+
+**Open design decision — should reporters self-serve finished-course reports?**
+If yes, the clean approach is **option B: split scores from content.** Add a
+scores-only report scope that ignores `available` / `group.enabled`, while the
+problem *content* surfaces (PDF/statement via `User#can_view_problem_pdf?`,
+source via `can_view_submission?`) stay gated by `available`. This honours
+"availability is absolute" for *content* while letting a TA pull aggregate
+scores for a finished exam. The work is the decoupling: today
+`group_reportable_by_user` is reused by those content predicates, so loosening
+it in place would leak PDFs/source to reporters — the scope must be split first.
+
+**Alternative (no code): workflow change.** Stop disabling the group when a
+course ends; rely on `groups_problems.enabled` / `available` for student hiding
+and keep the group enabled so reporters retain access. Cheaper but relies on
+operator discipline.
+
+**Size.** Option B ~ half a day (new scope + audit every caller of
+`group_reportable_by_user` + tests). Decide intent first.

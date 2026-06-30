@@ -13,7 +13,7 @@
       = radio_button_tag :'users[use]', :group, false, class: 'form-check-input', data: {'form--filter-user-target': 'useOption'}
       = label_tag :users_use_group, 'Only users from this group', class: 'form-check-label'
     .ms-4.mb-3
-      = select_tag "users[group_ids]", options_from_collection_for_select( Group.all.order('id DESC'), 'id','name',params[:group_id]),
+      = select_tag "users[group_ids]", options_from_collection_for_select(@groups.order('id DESC'), 'id','name',params[:group_id]),
         class: 'select2', style: 'width: 100%', data: {'form--filter-user-target': 'groupSelect'};
     .form-check
       %input#only-users.form-check-input{type: 'checkbox', name: 'users[only_users]', checked: true, data: {'form--filter-user-target': 'onlyUsers'}}

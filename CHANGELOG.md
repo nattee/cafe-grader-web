@@ -10,6 +10,25 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Fixed
+
+- **Report filters: user-group dropdown now respects reporter scope** — on the
+  report filter pages (Best Score / Submissions / User Activity / AI Assist),
+  the "Only users from this group" dropdown listed **every** group in the
+  system for non-admins; it now lists only the groups the user can report on
+  (`@groups`), matching the problem-group dropdown. No user data leaked (results
+  were already intersected with `reportable_users`), but group names no longer
+  do. The `login` analytics report now sets `@groups` so its user filter renders.
+
+### Added
+
+- **Empty-report explanation for reporters** — a non-admin reporter whose
+  problems are all unavailable or whose group is archived (disabled) reaches the
+  report screen but sees no data (by design — `available` is an absolute
+  student-exposure switch only admins bypass). The report filter pages now show
+  an info notice counting the hidden problems and explaining why, instead of a
+  silent empty table.
+
 ### Changed
 
 - **Config templates pruned and made consistent** — `config/application.rb`
