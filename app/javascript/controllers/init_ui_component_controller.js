@@ -41,6 +41,8 @@ export default class extends Controller {
   initializeSelect2() {
     $(".select2").select2({
       theme: "bootstrap-5",
+      templateResult: this.formatArchivableOption,
+      templateSelection: this.formatArchivableOption,
     });
     // Bridge select2's jQuery-triggered `select2:select` event to a native
     // `change` event. select2 v4 dispatches its events through jQuery, which
@@ -53,6 +55,20 @@ export default class extends Controller {
                  .on("select2:select.cafe_bridge", (event) => {
                    event.target.dispatchEvent(new Event("change", { bubbles: true }));
                  });
+  }
+
+  // Render a muted "archived" pill on options flagged data-archived="true"
+  // (disabled/archived groups in the report filters, which — under the 3b
+  // authorization model — appear only for editors, who can still report on
+  // them). A plain no-op for every other option, so it's safe on all select2s.
+  formatArchivableOption(state) {
+    if (!state.id || !state.element) return state.text;
+    if (state.element.dataset && state.element.dataset.archived === "true") {
+      return $("<span>").text(state.text).append(
+        ' <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">archived</span>'
+      );
+    }
+    return state.text;
   }
 
   initializeTempusDominus() {

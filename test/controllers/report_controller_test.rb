@@ -89,9 +89,11 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
 
   # --- reporter scoping & empty-state feedback (group mode) ---
   #
-  # mary is an editor (role 2) of the enabled group_a, which holds prob_add
-  # (available) and prob_sub (unavailable). The reports are group-scoped, so
-  # these tests flip the grader into problem-group mode first.
+  # group_a (enabled) holds prob_add (available) and prob_sub (unavailable).
+  # reba is a plain reporter of group_a; mary is an editor. Reporters are gated
+  # by availability, so the empty-state notice is a reporter concern (an editor
+  # bypasses the flags and never hits it). The reports are group-scoped, so these
+  # tests flip the grader into problem-group mode first.
 
   def enable_group_mode
     set_grader_config("system.use_problem_group", true)
@@ -102,20 +104,20 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
     enable_group_mode
     problems(:prob_add).update_columns(available: false)   # now BOTH group_a problems are unavailable
 
-    sign_in_as("mary", "mary")
+    sign_in_as("reba", "reba")
     get max_score_report_path
-    assert_response :success   # gate is group-based, so she still reaches the screen
+    assert_response :success   # gate is group-based, so he still reaches the screen
 
-    # report scope is empty, but 2 problems exist in her group -> explained, not a silent blank
+    # report scope is empty, but 2 problems exist in his group -> explained, not a silent blank
     assert_match(/Nothing to report yet/, response.body)
     assert_match(/2 problems/, response.body)
     assert_match(/hidden from reports/, response.body)
   end
 
   test "empty-report notice is suppressed when the reporter has reportable data" do
-    enable_group_mode   # prob_add stays available -> mary can report on it
+    enable_group_mode   # prob_add stays available -> reba can report on it
 
-    sign_in_as("mary", "mary")
+    sign_in_as("reba", "reba")
     get max_score_report_path
     assert_response :success
     assert_no_match(/Nothing to report yet/, response.body)
@@ -153,5 +155,56 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
     options = css_select('select[name="users[group_ids]"] option').map { |o| o.text.strip }
     assert_includes options, "GroupA"
     assert_includes options, "GroupB"
+  end
+
+  test "an archived group an editor can still report on is flagged archived in the filter" do
+    enable_group_mode
+    groups(:group_a).update!(enabled: false)   # archive mary's (editor) group
+
+    sign_in_as("mary", "mary")
+    get max_score_report_path
+    assert_response :success
+
+    archived = css_select('select[name="users[group_ids]"] option[data-archived="true"]').map { |o| o.text.strip }
+    assert_includes archived, "GroupA", "an editor's archived group must be marked archived in the dropdown"
+  end
+
+  test "a reporter of only an archived group is blocked from the report screen" do
+    enable_group_mode
+    groups(:group_a).update!(enabled: false)   # reba (reporter) now has no live report groups
+
+    sign_in_as("reba", "reba")
+    get max_score_report_path
+    assert_response :redirect,
+      "a reporter with no live report groups should be turned away at the gate, not shown an empty screen"
+  end
+
+  # --- role-aware scope help band ---
+
+  test "scope help shows a reporter their live-courses-only line and courses" do
+    sign_in_as("reba", "reba")
+    get max_score_report_path
+    assert_response :success
+    assert_match(/Reporter/, response.body)
+    assert_match(/live courses only/, response.body)
+    assert_match(/GroupA/, response.body)
+    assert_match(/Courses you report on/, response.body)   # the drawer breakdown
+  end
+
+  test "scope help tells an editor they have full access incl. archived" do
+    sign_in_as("mary", "mary")
+    get max_score_report_path
+    assert_response :success
+    assert_match(/Editor/, response.body)
+    assert_match(/including archived courses/, response.body)
+    assert_match(/Courses you edit/, response.body)
+  end
+
+  test "scope help tells an admin they see everything" do
+    sign_in_as("admin", "admin")
+    get max_score_report_path
+    assert_response :success
+    assert_match(/Admin/, response.body)
+    assert_match(/no role limits apply/, response.body)
   end
 end
