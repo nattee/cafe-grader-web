@@ -5,6 +5,7 @@ class ReportController < ApplicationController
   before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query, :activity_query ]
   before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query, :activity_query ]
   before_action :set_report_empty_hint, only: [ :max_score, :submission, :activity, :ai ]
+  before_action :set_report_scope_help, only: [ :max_score, :submission, :activity, :ai ]
 
   # for all action except hall of fame (which is viewable by any user if the feature is enabled)
   before_action(except: [:problem_hof, :problem_hof_view, :problem_hof_query]) {
@@ -591,6 +592,21 @@ ORDER BY submitted_at
       group_ids = @current_user.groups_users.where(enabled: true, role: [ :reporter, :editor ]).pluck(:group_id)
       @hidden_report_problem_count = Problem.joins(:groups_problems)
         .where(groups_problems: { group_id: group_ids }).distinct.count
+    end
+
+    # Role-aware scope help for the report filter pages. Access differs per group
+    # (a user may edit some groups and report on others), so the help lists the
+    # actual courses. Editors curate archived courses too, so their list includes
+    # disabled groups (flagged in the drawer); reporters only see live courses, so
+    # theirs is limited to enabled groups. Skipped for admins (scope = everything).
+    def set_report_scope_help
+      return if @current_user.admin?
+      @help_editor_groups = @current_user.groups_users
+        .where(role: :editor, enabled: true).joins(:group)
+        .order('groups.name').pluck('groups.name', 'groups.enabled')
+      @help_reporter_groups = @current_user.groups_users
+        .where(role: :reporter, enabled: true).joins(:group)
+        .where('groups.enabled': true).order('groups.name').pluck('groups.name')
     end
 
     # receive an ActiveRecord::AAssociation *query* of submissions
