@@ -86,4 +86,72 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
     assert_nil rows["mary"]["first_sub"]
     assert_equal 2, rows["admin"]["sub_count"], "active rows unaffected by show_inactive"
   end
+
+  # --- reporter scoping & empty-state feedback (group mode) ---
+  #
+  # mary is an editor (role 2) of the enabled group_a, which holds prob_add
+  # (available) and prob_sub (unavailable). The reports are group-scoped, so
+  # these tests flip the grader into problem-group mode first.
+
+  def enable_group_mode
+    set_grader_config("system.use_problem_group", true)
+    assert GraderConfiguration.use_problem_group?, "group mode must be on for these tests"
+  end
+
+  test "reporter whose problems are all hidden sees the empty-report notice" do
+    enable_group_mode
+    problems(:prob_add).update_columns(available: false)   # now BOTH group_a problems are unavailable
+
+    sign_in_as("mary", "mary")
+    get max_score_report_path
+    assert_response :success   # gate is group-based, so she still reaches the screen
+
+    # report scope is empty, but 2 problems exist in her group -> explained, not a silent blank
+    assert_match(/Nothing to report yet/, response.body)
+    assert_match(/2 problems/, response.body)
+    assert_match(/hidden from reports/, response.body)
+  end
+
+  test "empty-report notice is suppressed when the reporter has reportable data" do
+    enable_group_mode   # prob_add stays available -> mary can report on it
+
+    sign_in_as("mary", "mary")
+    get max_score_report_path
+    assert_response :success
+    assert_no_match(/Nothing to report yet/, response.body)
+  end
+
+  test "empty-report notice never shows for an admin" do
+    enable_group_mode
+    Problem.update_all(available: false)   # nothing reportable at all
+
+    sign_in_as("admin", "admin")
+    get max_score_report_path
+    assert_response :success
+    assert_no_match(/Nothing to report yet/, response.body)  # admin sees Problem.all, no hint
+  end
+
+  test "user-group filter is scoped to the reporter's groups, not all groups" do
+    enable_group_mode
+
+    sign_in_as("mary", "mary")
+    get max_score_report_path
+    assert_response :success
+
+    options = css_select('select[name="users[group_ids]"] option').map { |o| o.text.strip }
+    assert_includes options, "GroupA"
+    refute_includes options, "GroupB", "a reporter must not see groups they cannot report on"
+  end
+
+  test "admin still sees every group in the user-group filter" do
+    enable_group_mode
+
+    sign_in_as("admin", "admin")
+    get max_score_report_path
+    assert_response :success
+
+    options = css_select('select[name="users[group_ids]"] option').map { |o| o.text.strip }
+    assert_includes options, "GroupA"
+    assert_includes options, "GroupB"
+  end
 end
