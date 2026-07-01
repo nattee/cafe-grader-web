@@ -29,10 +29,11 @@ button is a future enhancement using the existing cookie-based
 the visible label alone is enough.
 
 **Open items under this split.**
-- **Shared offcanvas helper.** When a second view gets a help drawer,
-  extract `app/views/shared/_help_drawer.html.haml` taking `id:`, `title:`,
-  `body_partial:` locals so we don't copy-paste the offcanvas chrome. One
-  drawer doesn't justify the partial yet; two do.
+- **Shared offcanvas helper.** ✅ DONE 2026-07-01. `app/views/shared/_help_drawer.html.haml`
+  now provides the offcanvas chrome (header icon/title/subtitle + close + body),
+  used as a layout: `= render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:} do … end`.
+  Both drawers migrated onto it: `problems/_edit_help` and the report scope help
+  (`report/_report_help`). New drawers should use it instead of hand-rolling the chrome.
 - **Edit-drawer content density.** `problems/_edit_help.html.haml` content
   is still text-heavy. The point of the drawer was to relieve a dense
   page; the help inside shouldn't reproduce that density. Consider tabs
@@ -171,7 +172,23 @@ protection is off (test env), which is how Cluster 6 surfaced it.
 
 ---
 
-## Reporter role: let it report on finished (unavailable / archived) courses
+## Reporter role: let it report on finished (unavailable / archived) courses — RESOLVED 2026-07-01
+
+**RESOLVED via option 3b.** Editors are now group-scoped content curators:
+`Problem.group_editable_by_user` dropped the `available` / `groups.enabled`
+filters, and `group_reportable_by_user` = editor-set ∪ reporter-gated-set, so an
+editor sees/edits/reports on archived courses and unavailable/draft problems in
+their groups while reporters stay scoped to live content (`app/models/problem.rb`).
+`Group.reportable_by_user` was made role-aware to match, keeping the report gate,
+the filter dropdowns, and `reportable_users` consistent (`app/models/group.rb`).
+The report filters tag an editor's archived groups; a reporter with no live
+groups is turned away at the gate. Covered by `test/models/problem_scope_authorization_test.rb`
++ report controller tests. **Operational rule:** to grant a non-admin access to a
+finished course, make them an *editor* of its group. The option-B "scores-only
+split" below was **not** taken (3b delivers the need without decoupling the
+content predicates). Kept for history.
+
+---
 
 **Problem (confirmed 2026-06-30 on production).** A non-admin `reporter`/
 `editor` only sees report data for problems that are **`available = TRUE`** in
@@ -208,3 +225,33 @@ operator discipline.
 
 **Size.** Option B ~ half a day (new scope + audit every caller of
 `group_reportable_by_user` + tests). Decide intent first.
+
+**Leaning (2026-07-01 discussion).** Prefer **option 3b**: make the *Editor*
+role a group-scoped content curator that bypasses **both** `group.enabled` and
+`available` within its groups, while *Reporters* stay gated by both. Editor
+stays a strict superset of Reporter; admin remains the user-management tier.
+Keep `group.enabled = off` meaning "archived for everyone by default", and
+surface archived groups to editors as a **read-only "View archived" area** (no
+re-enable, no student re-exposure, no stateful toggle). This also fixes a
+latent bug — `group_editable_by_user` currently requires `available: true`, so a
+non-admin editor can't even edit a draft/unavailable problem in their own group
+(likely why production has zero functional non-admin editors). Rejected the
+"editor temporarily re-enables the group to read" idea: re-enabling re-exposes
+the course to students, is a shared-state write that destroys the "finished"
+cue, and doesn't even work when problems are `available: false`.
+
+---
+
+## Publish "Users, Roles & Access Control" wiki page — RESOLVED 2026-07-01
+
+**RESOLVED.** Published to the upstream wiki:
+https://github.com/cafe-grader-team/cafe-grader-web/wiki/Users-Roles-and-Access-Control
+(wiki commit `54b2c8d`). The `doc/Users-Roles-and-Access-Control.md` in this repo
+is the source draft; it's current with the shipped 3b behavior (editors are
+group-scoped curators, reporters see live courses only, filters tag archived
+groups). If the model changes again, update the draft here and re-push to the
+wiki repo (`git@github.com:cafe-grader-team/cafe-grader-web.wiki.git`, a separate
+repo — clone, copy the page in, commit, push).
+
+**Note:** the wiki's `Home.md` is intentionally minimal (no page TOC); pages
+surface via GitHub's auto-generated sidebar, so no Home edit was needed.
