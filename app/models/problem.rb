@@ -79,23 +79,32 @@ class Problem < ApplicationRecord
       .distinct(:id)                            # get distinct
   }
 
-  # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
-  scope :group_reportable_by_user, ->(user_id) {
-    group_actionable_by_user(user_id, ['editor', 'reporter'])
-  }
-
-  # Similar to group_submittable_by_user, but does not required GroupProblem.enabled to be enabled
+  # EDITOR = group-scoped content curator. An editor sees EVERY problem in a
+  # group they edit, regardless of Problem#available, Group#enabled, or
+  # GroupProblem#enabled — the group-scoped analogue of an admin's Problem.all,
+  # minus user management. This lets an editor manage a finished (archived) or
+  # not-yet-available (draft) problem in their own group; the old scope required
+  # available: true, which silently locked editors out of their own drafts.
   scope :group_editable_by_user, ->(user_id) {
-    group_actionable_by_user(user_id, ['editor'])
+    joins(groups_problems: {group: :groups_users})
+      .where('groups_users.user_id': user_id)   # user is in the group
+      .where('groups_users.role': 'editor')     # ...as an editor
+      .distinct
   }
 
-  scope :group_actionable_by_user, ->(user_id, roles = ['editor']) {
-    joins(groups_problems: {group: :groups_users})
+  # REPORTER = read-only on LIVE content: available problems in an enabled group.
+  # The report set is the editor set (curators see everything, incl. archived /
+  # unavailable) UNIONed with the reporter-gated set, so "editor >= reporter"
+  # holds everywhere. GroupProblem#enabled is intentionally ignored for both (a
+  # problem disabled within a group is a student-only hide; staff still report).
+  scope :group_reportable_by_user, ->(user_id) {
+    reporter_gated = Problem.joins(groups_problems: {group: :groups_users})
       .where(available: true)                   # available problems only
       .where('groups.enabled': true)            # groups is enabled
       .where('groups_users.user_id': user_id)   # user is in the group
-      .where('groups_users.role': roles)        # filter for user with roles
-      .distinct(:id)                            # get distinct
+      .where('groups_users.role': 'reporter')   # ...as a reporter
+    Problem.where(id: Problem.group_editable_by_user(user_id))
+           .or(Problem.where(id: reporter_gated))
   }
 
   # These contest_xxx scope ALWAYS take contest into account
