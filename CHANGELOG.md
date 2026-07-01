@@ -10,6 +10,8 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.4.2] — 2026-07-01
+
 ### Fixed
 
 - **Report filters: user-group dropdown now respects reporter scope** — on the
@@ -22,6 +24,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **Role-aware scope help on the report pages** — each report filter page (Best
+  Score / Submissions / User Activity / AI Assist) now shows an always-visible
+  line stating what *you* can see (Admin: everything; Editor: full access incl.
+  archived, listing your courses; Reporter: live courses only), with a
+  "What you can see" drawer detailing every course you edit/report on and the
+  three visibility switches. Answers "who can see what?" at the point of use.
 - **Empty-report explanation for reporters** — a non-admin reporter whose
   problems are all unavailable or whose group is archived (disabled) reaches the
   report screen but sees no data (by design — `available` is an absolute
@@ -31,6 +39,22 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Changed
 
+- **Group editors are now content curators of their groups** — an editor can
+  see, edit, and report on **every** problem in a group they edit, regardless of
+  the problem's `available` flag or whether the group itself is disabled
+  (archived). Previously the editor scope required `available: true` **and** an
+  enabled group, so editors were locked out of their own draft (unavailable)
+  problems and of any finished/archived course exactly like students — only an
+  admin could get in. Reporters are unchanged: they remain scoped to available
+  problems in enabled groups, and editor visibility stays a strict superset of
+  reporter visibility. **Operational note:** to give a non-admin access to a
+  finished/archived course, make them an **editor** of its group (a reporter
+  still sees only live courses).
+- **Report filters are archive-aware** — the group dropdowns now list an
+  archived (disabled) group only for users who can still report on it (its
+  editors), and mark it with an "archived" pill; reporters no longer see
+  archived groups as dead-end filter options, and a reporter left with no live
+  groups is turned away at the report gate instead of shown a blank screen.
 - **Config templates pruned and made consistent** — `config/application.rb`
   is now tracked directly (it was ignored behind a byte-identical sample); the
   redundant `llm.yml` / `cafe_grader.rb` `.SAMPLE` files and the dead 2016-era
