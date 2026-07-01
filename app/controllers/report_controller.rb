@@ -4,6 +4,7 @@ class ReportController < ApplicationController
   before_action :check_valid_login
   before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query, :activity_query ]
   before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query, :activity_query ]
+  before_action :set_report_empty_hint, only: [ :max_score, :submission, :activity, :ai ]
 
   # for all action except hall of fame (which is viewable by any user if the feature is enabled)
   before_action(except: [:problem_hof, :problem_hof_view, :problem_hof_query]) {
@@ -85,6 +86,7 @@ class ReportController < ApplicationController
   end
 
   def login
+    @groups = @current_user.groups_for_action(:report)
   end
 
   def login_summary_query
@@ -572,6 +574,24 @@ ORDER BY submitted_at
   end
 
   protected
+
+    # Explain an empty report to a non-admin reporter. The report screen is
+    # reachable whenever the user is a reporter/editor of *any* group (the gate
+    # ignores group.enabled), but the data scope (problems_for_action(:report))
+    # additionally requires the problem to be `available` and its group enabled.
+    # So a reporter whose problems are all unavailable / whose group is archived
+    # passes the gate but sees nothing. When that happens, count the problems
+    # that exist in their reporter/editor groups (ignoring those two flags) so
+    # the view can tell them WHY the report is blank instead of showing a silent
+    # empty table. Admins see Problem.all, so they never need the hint.
+    def set_report_empty_hint
+      return if @current_user.admin?
+      return if @current_user.problems_for_action(:report).exists?
+
+      group_ids = @current_user.groups_users.where(enabled: true, role: [ :reporter, :editor ]).pluck(:group_id)
+      @hidden_report_problem_count = Problem.joins(:groups_problems)
+        .where(groups_problems: { group_id: group_ids }).distinct.count
+    end
 
     # receive an ActiveRecord::AAssociation *query* of submissions
     # and add more where clause limiting the submission to be in the
