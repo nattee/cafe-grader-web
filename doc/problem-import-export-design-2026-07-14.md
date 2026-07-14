@@ -25,8 +25,12 @@ Communication (~5), OutputOnly (2); scores GroupMin / GroupMinPrereq / Sum.
   Eventually cafe intends to support everything CMS supports; each such project
   later flips its converter rule from "reject" to "map".
 - No TPS *export* (TPS is an authoring system; export target is Italian only).
-- No rewrite of the trusted importer (Approach C / in-memory IR — backlog,
-  only if supported formats multiply).
+- No **architectural rewrite** of the trusted importer (Approach C / in-memory
+  IR — backlog, only if supported formats multiply). "Rewrite" here means
+  replacing `ProblemImporter`'s direct directory→DB structure with a
+  parse→IR→materialize pipeline. It does **not** mean the importer's code is
+  frozen — the targeted, in-place bug fixes of Package 1 are the heart of this
+  project and are fully in scope.
 
 ## Key decisions
 
@@ -157,7 +161,7 @@ Tests come first (characterization), then each fix lands red→green.
 ```
 import:  upload.zip → unzip → sniff format
            task.yaml    → CmsItalianConverter ─┐
-           problem.json → TpsConverter        ─┼→ cafe staging dir → ProblemImporter (unchanged)
+           problem.json → TpsConverter        ─┼→ cafe staging dir → ProblemImporter (no format-specific branches added)
            otherwise    → (existing path, no conversion)
 export:  ProblemExporter → cafe dir → CmsItalianConverter.reverse → Italian dir → zip
 ```
