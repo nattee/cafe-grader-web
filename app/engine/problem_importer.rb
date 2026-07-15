@@ -300,29 +300,36 @@ class ProblemImporter
     return result
   end
 
-  def read_solutions
+  def read_solutions(user: nil)
+    user ||= User.first
     solutions_dir = @options[OptionConst::YAML_KEY[:dir][:model_sols]] || OptionConst::DEFAULT[:dir][:model_sols]
     pattern = build_glob('*', recursive: true, path: solutions_dir)
-    managers_fn = {}
     Dir.glob(pattern).each do |fn|
       pn = Pathname.new(fn)
       next if pn.directory?
 
       @log << "Found a model solution file [#{fn}]"
-      lang_name = pn.basename.to_s.split('_')
-      source_name = pn.basename.to_s[(lang_name.length)...]
+      # filename convention: <language>_<original_filename>, e.g. cpp_fibo.cpp
+      lang_name, sep, source_name = pn.basename.to_s.partition('_')
+      if sep.empty?
+        @log << "  ERROR: solution filename '#{pn.basename}' has no <lang>_ prefix; skipped"
+        next
+      end
 
       language = Language.where(name: lang_name).first
-      sub =  Submission.new(user: User.first,
+      sub =  Submission.new(user: user,
                             problem: @problem,
                             submitted_at: Time.zone.now,
                             language: language,
-                            source_filename: source_name)
+                            source_filename: source_name,
+                            tag: :model)
       sub.source = File.open(fn, 'r:UTF-8', &:read)
       sub.source.encode!('UTF-8', 'UTF-8', invalid: :replace, replace: '')
 
       if sub.save
         sub.add_judge_job
+      else
+        @log << "  ERROR: could not save solution: #{sub.errors.full_messages.join('; ')}"
       end
     end
   end
@@ -349,7 +356,8 @@ class ProblemImporter
     do_cpp_extras: true,
     do_attachment: true,
     do_solutions: true,
-    do_initializers: true
+    do_initializers: true,
+    user: nil             # attributed owner of imported model solutions
   )
     @log = []
     @base_dir = dir
@@ -405,7 +413,7 @@ class ProblemImporter
     read_cpp_extras if do_cpp_extras
     read_initializers if do_initializers
     read_options # options is put to last, it will override any defaults
-    read_solutions if do_solutions
+    read_solutions(user: user) if do_solutions
     @problem.save
     @dataset.save
     @log << "Done successfully"

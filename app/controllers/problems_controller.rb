@@ -352,6 +352,7 @@ class ProblemsController < ApplicationController
       delete_existing: params[:problem][:replace] == '1',
       memory_limit: memory_limit,
       time_limit: time_limit,
+      user: @current_user,
     )
 
     if pi.errors.count > 0

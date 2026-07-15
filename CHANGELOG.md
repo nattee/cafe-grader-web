@@ -16,6 +16,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   code-name extraction regex accepted by `ProblemImporter` was parsed but its
   result discarded; testcase code names always fell back to the raw wildcard
   match.
+- **Problem import: model solutions survive round-trips** — imported model
+  solutions had garbled source filenames (`cpp_fibo.cpp` → `p_fibo.cpp`), were
+  not tagged as model solutions (so the *next* export silently dropped them),
+  and were attributed to an arbitrary user; they are now split on the first
+  `_`, tagged `:model`, and owned by the importing user.
 
 ## [4.4.2] — 2026-07-01
 

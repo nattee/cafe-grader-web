@@ -47,4 +47,23 @@ class ProblemImportTest < ActiveSupport::TestCase
                    "code_name_regex should reduce 'case_1' to '1'"
     end
   end
+
+  test "model solutions import with correct filename, model tag, and user" do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "1.in"), "1\n")
+      File.write(File.join(dir, "1.sol"), "1\n")
+      sol_dir = File.join(dir, "model_solutions")
+      FileUtils.mkdir_p(sol_dir)
+      File.write(File.join(sol_dir, "cpp_fibo.cpp"), "int main(){}\n")
+
+      pi = import_example(dir, "sol_test", user: users(:admin))
+      subs = pi.problem.submissions
+      assert_equal 1, subs.count, "model solution should create one submission"
+      sub = subs.first
+      assert_equal "fibo.cpp", sub.source_filename
+      assert_equal "cpp", sub.language.name
+      assert sub.tag_model?, "imported solution must be tagged :model"
+      assert_equal users(:admin), sub.user
+    end
+  end
 end
