@@ -63,6 +63,27 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated by admin", @problem.reload.full_name
   end
 
+  test "non-admin editor of the existing problem can re-import to update it" do
+    set_grader_config("system.use_problem_group", "true")
+    group = Group.create!(name: "marys_edit_group", enabled: true)
+    group.problems << @problem
+    GroupUser.create!(group: group, user: users(:mary), role: :editor)
+    sign_in_as("mary", "mary")
+
+    # setup sanity: mary can actually edit the existing problem now
+    assert users(:mary).problems_for_action(:edit).where(id: @problem.id).exists?,
+           "test setup: mary must be able to edit the existing problem"
+
+    post do_import_problems_path, params: {
+      problem: { name: @problem.name, full_name: "Mary Updated",
+                 file: fixture_zip, groups: group.id,
+                 input_pattern: "*.in", sol_pattern: "*.sol",
+                 time_limit: 1, memory_limit: 64 }
+    }, as: :turbo_stream
+
+    assert_equal "Mary Updated", @problem.reload.full_name
+  end
+
   private
 
   # A zip whose root has 9.in, 9.sol, and attachment/sneaky.txt — the
