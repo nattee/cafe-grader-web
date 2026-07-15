@@ -75,4 +75,26 @@ class ProblemImportTest < ActiveSupport::TestCase
       assert_equal "fn_test", pi.problem.full_name
     end
   end
+
+  test "legacy package with .md but no markdown key defaults markdown to true" do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "1.in"), "1\n")
+      File.write(File.join(dir, "1.sol"), "1\n")
+      File.write(File.join(dir, "desc.md"), "# Legacy\n")
+      pi = import_example(dir, "md_legacy", do_solutions: false)
+      assert_equal "# Legacy\n", pi.problem.description
+      assert pi.problem.markdown, "markdown should default true for legacy .md packages"
+    end
+  end
+
+  test "explicit markdown false in config.yml is honored" do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "1.in"), "1\n")
+      File.write(File.join(dir, "1.sol"), "1\n")
+      File.write(File.join(dir, "desc.md"), "plain text\n")
+      File.write(File.join(dir, "config.yml"), "---\nmarkdown: false\n")
+      pi = import_example(dir, "md_false", do_solutions: false)
+      assert_equal false, pi.problem.markdown
+    end
+  end
 end
