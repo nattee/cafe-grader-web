@@ -18,6 +18,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Fixed
 
+- **"Import testcases" is stricter and no longer crashes on errors** — replacing
+  into a dataset that no longer exists now shows an error toast instead of
+  silently creating a new dataset; the testcases-only flow no longer overwrites
+  the problem's public attachment when the uploaded zip contains an
+  `attachment/` directory; and all import-testcases error paths surface as a
+  toast (they previously raised a template error by re-rendering the standalone
+  import page).
 - **Problem import: `code_name_regex` now actually applies** — the custom
   code-name extraction regex accepted by `ProblemImporter` was parsed but its
   result discarded; testcase code names always fell back to the raw wildcard

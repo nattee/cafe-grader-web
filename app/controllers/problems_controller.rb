@@ -377,10 +377,7 @@ class ProblemsController < ApplicationController
 
   # import into existing problem
   def import_testcases
-    unless params[:import][:file]
-      @errors = ['There is no uploaded file']
-      return
-    end
+    return render_import_testcases_error('There is no uploaded file') unless params[:import][:file]
 
     replacing = params[:import][:target] == 'replace'
     uploaded_file_path = params[:import][:file].to_path
@@ -393,14 +390,12 @@ class ProblemsController < ApplicationController
       @problem.name,
       Rails.configuration.worker[:directory][:judge_raw_path])
 
-    if pi.errors.count > 0
-      @errors = pi.errors
-      render :import and return
-    end
+    return render_import_testcases_error(pi.errors.join('; ')) if pi.errors.count > 0
 
     if replacing
       @dataset = @problem.datasets.where(id: params[:import][:dataset]).first
-      WorkerDataset.where(dataset_id: @dataset).delete_all
+      return render_import_testcases_error('The dataset to replace was not found') unless @dataset
+      WorkerDataset.where(dataset_id: @dataset.id).delete_all
     end
 
     # load data
@@ -412,7 +407,8 @@ class ProblemsController < ApplicationController
                                 do_statement: false,
                                 do_checker: false,
                                 do_cpp_extras: false,
-                                do_solutions: false
+                                do_solutions: false,
+                                do_attachment: false
                               )
     @updated = 'Testcases has been imported'
     @log = pi.log
@@ -430,6 +426,15 @@ class ProblemsController < ApplicationController
 
     def set_problem
       @problem = Problem.find(params[:id])
+    end
+
+    # import_testcases responds as a turbo_stream rendered into the problem
+    # edit page's frame; surface errors as a toast rather than re-rendering
+    # the standalone import page (simple_form_for :problem binds to @problem
+    # and reads dataset-only fields, crashing for a persisted problem).
+    def render_import_testcases_error(message)
+      @toast = {title: 'Import testcases failed', body: message, type: :alert}
+      render 'turbo_toast'
     end
 
     def problem_params
