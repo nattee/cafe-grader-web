@@ -66,4 +66,13 @@ class ProblemImportTest < ActiveSupport::TestCase
       assert_equal users(:admin), sub.user
     end
   end
+
+  test "blank full_name falls back to problem name" do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "1.in"), "1\n")
+      File.write(File.join(dir, "1.sol"), "1\n")
+      pi = import_example(dir, "fn_test", full_name: "", do_solutions: false)
+      assert_equal "fn_test", pi.problem.full_name
+    end
+  end
 end

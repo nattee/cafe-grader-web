@@ -21,6 +21,8 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   not tagged as model solutions (so the *next* export silently dropped them),
   and were attributed to an arbitrary user; they are now split on the first
   `_`, tagged `:model`, and owned by the importing user.
+- **Problem import: empty "Full name" no longer blanks the title** — it now
+  falls back to the short name (a `config.yml` `full_name` still wins).
 
 ## [4.4.2] — 2026-07-01
 

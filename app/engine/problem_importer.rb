@@ -382,7 +382,7 @@ class ProblemImporter
     @log << "Found existing problem with the same name ('#{name}') !!! This import will UPDATE the existing problem." if @problem.id
     @problem.date_added = Time.zone.now unless @problem.date_added
     @problem.available = false if @problem.available.nil?
-    @problem.full_name = full_name
+    @problem.full_name = full_name.presence || name
     @problem.set_default_value unless @problem.id
     if dataset && dataset.problem == @problem
       @dataset = dataset
