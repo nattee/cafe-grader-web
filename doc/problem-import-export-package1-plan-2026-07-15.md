@@ -81,7 +81,9 @@ class ProblemImportTest < ActiveSupport::TestCase
     assert_equal (1..8).to_a, ds.testcases.order(:num).pluck(:group)
     assert_equal [10] * 8, ds.testcases.order(:num).pluck(:weight)
     tc1 = ds.testcases.find_by(code_name: "1")
-    assert_equal "1\n", tc1.inp_file.download
+    # content identical to the fixture file (importer only strips \r)
+    assert_equal File.read(EXAMPLES.join("fibo", "testcases", "1.in")),
+                 tc1.inp_file.download
   end
 end
 ```
