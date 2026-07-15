@@ -120,8 +120,7 @@ class ProblemImporter
 
   def read_options
     # process options for dataset
-    # MUST MATCH ONES IN problem_exporter.rb
-    p_options = %i[full_name submission_filename task_type compilation_type permitted_lang]
+    p_options = OptionConst::PROBLEM_OPTION_FIELDS
     p_options.each do |opt|
       if @options.has_key? opt
         @log << "problem.#{opt} is set to '#{@options[opt]}' by options file"
@@ -130,8 +129,7 @@ class ProblemImporter
     end
 
     # live dataset fields
-    # MUST MATCH ONES IN problem_exporter.rb
-    d_options = %i[time_limit memory_limit score_type evaluation_type main_filename initializer_filename]
+    d_options = OptionConst::DATASET_OPTION_FIELDS
     d_options.each do |opt|
       if @options.has_key? opt
         @log << "dataset.#{opt} is set to '#{@options[opt]}' by options file"
@@ -164,7 +162,11 @@ class ProblemImporter
     # additional description
     md, fn = get_content_of_first_match('*.md')
     if md
-      @problem.update(description: md)
+      @problem.description = md
+      # config.yml's :markdown (applied later in read_options) wins;
+      # legacy packages without the key: a .md present means markdown
+      @problem.markdown = true unless @options.has_key?(:markdown)
+      @problem.save
       @log << "Found addtional Markdown file [#{fn}]"
       @got << fn
     end
@@ -269,6 +271,29 @@ class ProblemImporter
     @dataset.save
   end
 
+  def read_data_files
+    path = @options[OptionConst::YAML_KEY[:dir][:data_files]] || OptionConst::DEFAULT[:dir][:data_files]
+    pattern = build_glob('*', path: path)
+    seen = {}
+    Dir.glob(pattern).each do |fn|
+      pn = Pathname.new(fn)
+      next if pn.directory?
+
+      @log << "Found a data file [#{fn}]"
+      @got << fn
+      basename = pn.basename
+      if seen.has_key? basename
+        @log << "  ERROR: multiple data files of the same name #{basename}"
+      else
+        seen[basename] = true
+        @dataset.data_files.each { |f| f.purge if f.filename == basename }
+        @dataset.reload
+        @dataset.data_files.attach(io: File.open(fn), filename: basename)
+      end
+    end
+    @dataset.save
+  end
+
   def get_content_of_first_match(glob_pattern, recursive: true, path: '')
     pattern = build_glob(glob_pattern, recursive: recursive, path: path)
     files = Dir.glob(pattern).select { |path| File.file?(path) }
@@ -357,6 +382,7 @@ class ProblemImporter
     do_attachment: true,
     do_solutions: true,
     do_initializers: true,
+    do_data_files: true,
     user: nil             # attributed owner of imported model solutions
   )
     @log = []
@@ -412,6 +438,7 @@ class ProblemImporter
     read_checker if do_checker
     read_cpp_extras if do_cpp_extras
     read_initializers if do_initializers
+    read_data_files if do_data_files
     read_options # options is put to last, it will override any defaults
     read_solutions(user: user) if do_solutions
     @problem.save

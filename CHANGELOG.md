@@ -23,6 +23,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   `_`, tagged `:model`, and owned by the importing user.
 - **Problem import: empty "Full name" no longer blanks the title** — it now
   falls back to the short name (a `config.yml` `full_name` still wins).
+- **Problem export now round-trips everything the author created** — the
+  markdown description, `markdown` flag, `score_param`, and dataset data
+  files were silently dropped by export (or never imported); an exported zip
+  re-imports field-identical. `ProblemExporter.dump_problems` (console bulk
+  export) no longer crashes on a typo'd default, and the exported statement
+  is named `statement.pdf` (was `statment.pdf`).
 
 ## [4.4.2] — 2026-07-01
 

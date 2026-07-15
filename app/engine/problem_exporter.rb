@@ -99,30 +99,46 @@ class ProblemExporter
     end
   end
 
+  def export_description
+    return if @problem.description.blank?
+    File.write(@main_dir + OptionConst::DEFAULT[:file][:description], @problem.description)
+  end
+
+  def export_data_files
+    @data_files_dir = @main_dir + OptionConst::DEFAULT[:dir][:data_files]
+    @data_files_dir.mkpath
+    @ds.data_files.each do |df|
+      filename = @data_files_dir + df.filename.to_s
+      File.open(filename, 'w:ASCII-8BIT') { |f| df.download { |chunk| f.write chunk } }
+    end
+  end
+
   # save the @options hash into a YAML file
   def export_options
     # problem fields
-    # MUST MATCH ONES IN problem_importer.rb + "name"
-    p_options = %i[name full_name submission_filename task_type compilation_type permitted_lang]
+    p_options = [:name] + OptionConst::PROBLEM_OPTION_FIELDS
     p_options.each do |opt|
       @options[opt] = @problem.send(opt) unless @problem.send(opt).blank?
       @options[opt] = @options[opt].to_f if @options[opt].is_a? BigDecimal
     end
 
     # live dataset fields
-    # MUST MATCH ONES IN problem_importer.rb
-    d_options = %i[time_limit memory_limit score_type evaluation_type main_filename initializer_filename]
+    d_options = OptionConst::DATASET_OPTION_FIELDS
     d_options.each do |opt|
       @options[opt] = @ds.send(opt) unless @ds.send(opt).blank?
       @options[opt] = @options[opt].to_f if @options[opt].is_a? BigDecimal
     end
     @options[OptionConst::YAML_KEY[:ds_name]] = @ds.name
 
+    # markdown is boolean; export explicitly whenever a description exists
+    @options[:markdown] = !!@problem.markdown if @problem.description.present?
+
     # managers, checker, initializers
     @options[OptionConst::YAML_KEY[:dir][:managers]] = OptionConst::DEFAULT[:dir][:managers]
     @options[OptionConst::YAML_KEY[:dir][:checker]] = OptionConst::DEFAULT[:dir][:checker]
     @options[OptionConst::YAML_KEY[:dir][:model_sols]] = OptionConst::DEFAULT[:dir][:model_sols]
     @options[OptionConst::YAML_KEY[:dir][:initializers]] = OptionConst::DEFAULT[:dir][:initializers]
+    @options[OptionConst::YAML_KEY[:dir][:data_files]] = OptionConst::DEFAULT[:dir][:data_files]
 
     # tags
     @options[OptionConst::YAML_KEY[:tags]] = @problem.tags.pluck :name if @problem.tags.count > 0
@@ -136,7 +152,7 @@ class ProblemExporter
   # this export the problem and its live dataset to a dir
   # with the name of the problem into *base_dir*
   # when zip is true, "#{problem.name}.zip" is also generated and saved to *base_dir*
-  def export_problem_to_dir(problem, base_dir: Rails.root.join('../judge/dump'), zip: fasle)
+  def export_problem_to_dir(problem, base_dir: Rails.root.join('../judge/dump'), zip: false)
     result = {}
     @problem = problem
     @ds = @problem.live_dataset
@@ -151,9 +167,11 @@ class ProblemExporter
 
     export_pdf
     export_attachment
+    export_description
     export_testcases
     export_managers_checker
     export_initializers
+    export_data_files
     export_options
     export_solutions
     result[:status] = :ok
