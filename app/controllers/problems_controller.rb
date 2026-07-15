@@ -192,6 +192,10 @@ class ProblemsController < ApplicationController
   end
 
   def download_archive
+    unless @problem.live_dataset
+      redirect_to problems_path, alert: "Problem '#{@problem.name}' has no live dataset to export."
+      return
+    end
     result = @problem.export
     send_file result[:zip], type: 'application/x-zip',  disposition: 'attachment', filename: result[:zip].basename.to_s
   end

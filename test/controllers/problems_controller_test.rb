@@ -84,6 +84,13 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Mary Updated", @problem.reload.full_name
   end
 
+  test "download_archive on a problem without live dataset redirects with alert" do
+    bare = Problem.create!(name: "no_live_ds", full_name: "Bare")
+    get download_archive_problem_path(bare)
+    assert_redirected_to problems_path
+    assert_match(/no live dataset/i, flash[:alert])
+  end
+
   private
 
   # A zip whose root has 9.in, 9.sol, and attachment/sneaky.txt — the

@@ -42,6 +42,8 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   re-imports field-identical. `ProblemExporter.dump_problems` (console bulk
   export) no longer crashes on a typo'd default, and the exported statement
   is named `statement.pdf` (was `statment.pdf`).
+- **Downloading the archive of a problem with no live dataset** shows an
+  alert instead of a 500 error page.
 
 ### Security
 
