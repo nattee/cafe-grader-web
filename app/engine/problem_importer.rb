@@ -28,7 +28,7 @@ class ProblemImporter
 
       # parse codename according to regex
       codename_mc = name.match code_name_regex
-      codename = mc[1] if mc
+      codename = codename_mc[1] if codename_mc
 
       @tc[codename][:input] = input_fn.cleanpath
     end
@@ -46,7 +46,7 @@ class ProblemImporter
 
       # parse codename according to regex
       codename_mc = name.match code_name_regex
-      codename = mc[1] if mc
+      codename = codename_mc[1] if codename_mc
 
       @tc[codename][:sol] = sol_fn.cleanpath
     end

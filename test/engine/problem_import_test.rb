@@ -36,4 +36,15 @@ class ProblemImportTest < ActiveSupport::TestCase
     assert_equal File.read(EXAMPLES.join("fibo", "testcases", "1.in")),
                  tc1.inp_file.download
   end
+
+  test "code_name_regex extracts codename from wildcard match" do
+    Dir.mktmpdir do |dir|
+      File.write(File.join(dir, "case_1.in"), "in1\n")
+      File.write(File.join(dir, "case_1.sol"), "out1\n")
+      pi = import_example(dir, "cnr_test", do_solutions: false,
+                          code_name_regex: /_(\d+)\z/)
+      assert_equal ["1"], pi.dataset.testcases.pluck(:code_name),
+                   "code_name_regex should reduce 'case_1' to '1'"
+    end
+  end
 end

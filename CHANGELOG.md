@@ -10,6 +10,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Fixed
+
+- **Problem import: `code_name_regex` now actually applies** — the custom
+  code-name extraction regex accepted by `ProblemImporter` was parsed but its
+  result discarded; testcase code names always fell back to the raw wildcard
+  match.
+
 ## [4.4.2] — 2026-07-01
 
 ### Fixed
