@@ -183,12 +183,11 @@ class ProblemExporter
       # remove old file, if exists
       FileUtils.rm(zip_path) if File.exist?(zip_path)
 
-      cmd = "zip ../#{zip_name} -r *"
-      out, err, status = Open3.capture3(cmd, chdir: @main_dir)
+      out, err, status = Open3.capture3('zip', "../#{zip_name}", '-r', '.', chdir: @main_dir.to_s)
       @log << out
 
       result[:zip] = zip_path
-      if status != 0
+      if !status.success?
         result[:status] = :error
         result[:error] = err
       end

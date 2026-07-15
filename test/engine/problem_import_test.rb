@@ -116,4 +116,28 @@ class ProblemImportTest < ActiveSupport::TestCase
              "expected mixed-weight warning, log was: #{pi.log.inspect}"
     end
   end
+
+  test "unzip_to_dir survives hostile problem names" do
+    zip = Rails.root.join("test", "problem_examples", "fibo_minimal.zip")
+    Dir.mktmpdir do |raw|
+      pi = ProblemImporter.new
+      dest = pi.unzip_to_dir(zip.to_s, "evil; touch /tmp/pwned name", raw)
+      assert dest, "extraction should succeed, errors: #{pi.errors.inspect}"
+      assert File.directory?(dest)
+      assert_match(/\Aevil-touch-tmp-pwned-name/, File.basename(dest),
+                   "destination dir must be parameterized")
+    end
+  end
+
+  test "validate_containment! rejects symlink escapes" do
+    Dir.mktmpdir do |raw|
+      dest = File.join(raw, "pkg")
+      FileUtils.mkdir_p(dest)
+      File.symlink("/etc", File.join(dest, "escape"))
+      pi = ProblemImporter.new
+      refute pi.validate_containment!(dest)
+      assert pi.errors.any? { |e| e =~ /escape/i }
+      refute File.exist?(dest), "offending extraction dir must be removed"
+    end
+  end
 end

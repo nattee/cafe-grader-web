@@ -462,23 +462,40 @@ class ProblemImporter
 
   def unzip_to_dir(file, name, dir)
     Pathname.new(dir).mkpath
-    pn  = Pathname.new(dir)+name
+    safe_name = name.to_s.parameterize
+    safe_name = 'problem' if safe_name.blank?
+    pn  = Pathname.new(dir) + safe_name
     num = 1
     while pn.exist?
-      pn  = Pathname.new(dir)+"#{name}.#{num}"
-      num+=1
+      pn  = Pathname.new(dir) + "#{safe_name}.#{num}"
+      num += 1
     end
 
     destination = pn.cleanpath
 
-    cmd = "unzip #{file} -d #{destination}"
-    out, err, status = Open3.capture3(cmd)
-    if status.exitstatus == 0
-      return destination
-    else
+    out, err, status = Open3.capture3('unzip', file.to_s, '-d', destination.to_s)
+    unless status.exitstatus == 0
       @errors << err
       return nil
     end
+    return nil unless validate_containment!(destination)
+    destination
+  end
+
+  # Zip-slip defense: every extracted entry (and every symlink target) must
+  # resolve inside the extraction dir, regardless of unzip version behavior.
+  def validate_containment!(destination)
+    base = File.realpath(destination.to_s)
+    Dir.glob("#{destination}/**/*", File::FNM_DOTMATCH).each do |entry|
+      next if ['.', '..'].include?(File.basename(entry))
+      resolved = File.symlink?(entry) ? File.expand_path(File.readlink(entry), File.dirname(entry))
+                                      : (File.realpath(entry) rescue nil)
+      next if resolved&.start_with?("#{base}/") || resolved == base
+      @errors << "Archive entry '#{File.basename(entry)}' escapes the extraction directory; import aborted"
+      FileUtils.rm_rf(destination)
+      return false
+    end
+    true
   end
 
   def self.import_all_from_dir(base_dir, skip_existing: true)

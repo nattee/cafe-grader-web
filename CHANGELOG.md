@@ -36,6 +36,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   export) no longer crashes on a typo'd default, and the exported statement
   is named `statement.pdf` (was `statment.pdf`).
 
+### Security
+
+- **Problem import/export no longer builds shell strings** — unzip/zip run
+  with argv-style exec (a hostile problem name could previously inject shell
+  syntax), extraction directories are derived via `parameterize`, and a
+  containment check rejects archives whose entries or symlinks escape the
+  extraction directory (zip-slip).
+
 ## [4.4.2] — 2026-07-01
 
 ### Fixed
