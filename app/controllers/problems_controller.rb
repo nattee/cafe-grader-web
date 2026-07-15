@@ -325,6 +325,14 @@ class ProblemsController < ApplicationController
       render :import and return
     end
 
+    # importing over an existing name updates that problem — require edit rights on it
+    existing = Problem.find_by(name: name)
+    if existing && !@current_user.admin? &&
+       !@current_user.problems_for_action(:edit).where(id: existing.id).exists?
+      @errors = ["A problem named '#{name}' already exists and you do not have the right to edit it"]
+      render :import and return
+    end
+
     pi = ProblemImporter.new
 
     # unzip uploaded file to raw folder

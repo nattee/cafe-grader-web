@@ -50,6 +50,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   syntax), extraction directories are derived via `parameterize`, and a
   containment check rejects archives whose entries or symlinks escape the
   extraction directory (zip-slip).
+- **Importing a problem under an existing name now requires edit rights on
+  that problem** — previously any group editor could silently overwrite any
+  problem in the system by importing a zip with the same short name. Admin
+  re-import-to-update behavior is unchanged.
 
 ## [4.4.2] — 2026-07-01
 

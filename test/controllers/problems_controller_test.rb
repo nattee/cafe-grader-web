@@ -35,6 +35,34 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "keep me", @problem.attachment.download
   end
 
+  test "group editor cannot overwrite an existing problem they cannot edit" do
+    # @problem ('pct_fibo') exists and belongs to no group mary can edit
+    group = Group.create!(name: "marys_group", enabled: true)
+    GroupUser.create!(group: group, user: users(:mary), role: :editor)
+    sign_in_as("mary", "mary")
+
+    assert_no_difference -> { @problem.live_dataset.testcases.count } do
+      post do_import_problems_path, params: {
+        problem: { name: @problem.name, full_name: "Takeover",
+                   file: fixture_zip, groups: group.id,
+                   input_pattern: "*.in", sol_pattern: "*.sol",
+                   time_limit: 1, memory_limit: 64 }
+      }
+    end
+    assert_match(/already exists/i, response.body)
+    assert_not_equal "Takeover", @problem.reload.full_name
+  end
+
+  test "admin can still re-import over an existing problem" do
+    post do_import_problems_path, params: {
+      problem: { name: @problem.name, full_name: "Updated by admin",
+                 file: fixture_zip, groups: "",
+                 input_pattern: "*.in", sol_pattern: "*.sol",
+                 time_limit: 1, memory_limit: 64 }
+    }
+    assert_equal "Updated by admin", @problem.reload.full_name
+  end
+
   private
 
   # A zip whose root has 9.in, 9.sol, and attachment/sneaky.txt — the
