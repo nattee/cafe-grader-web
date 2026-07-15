@@ -140,4 +140,19 @@ class ProblemImportTest < ActiveSupport::TestCase
       refute File.exist?(dest), "offending extraction dir must be removed"
     end
   end
+
+  test "validate_containment! allows a legit archive reached through a symlinked ancestor dir" do
+    Dir.mktmpdir do |raw|
+      FileUtils.mkdir_p(File.join(raw, "real_root"))
+      File.symlink("real_root", File.join(raw, "linked_root"))
+      dest = File.join(raw, "linked_root", "pkg")
+      FileUtils.mkdir_p(dest)
+      File.write(File.join(dest, "real.txt"), "hi\n")
+      File.symlink("real.txt", File.join(dest, "inside_link")) # legit same-dir relative symlink
+      pi = ProblemImporter.new
+      assert pi.validate_containment!(dest),
+             "legit archive under a symlinked ancestor must pass; errors: #{pi.errors.inspect}"
+      assert File.directory?(dest), "must not delete a legitimate extraction"
+    end
+  end
 end

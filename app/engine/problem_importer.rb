@@ -488,8 +488,13 @@ class ProblemImporter
     base = File.realpath(destination.to_s)
     Dir.glob("#{destination}/**/*", File::FNM_DOTMATCH).each do |entry|
       next if ['.', '..'].include?(File.basename(entry))
-      resolved = File.symlink?(entry) ? File.expand_path(File.readlink(entry), File.dirname(entry))
-                                      : (File.realpath(entry) rescue nil)
+      resolved =
+        if File.symlink?(entry)
+          entry_dir = (File.realpath(File.dirname(entry)) rescue nil)
+          entry_dir && File.expand_path(File.readlink(entry), entry_dir)
+        else
+          (File.realpath(entry) rescue nil)
+        end
       next if resolved&.start_with?("#{base}/") || resolved == base
       @errors << "Archive entry '#{File.basename(entry)}' escapes the extraction directory; import aborted"
       FileUtils.rm_rf(destination)
