@@ -14,7 +14,7 @@ Sources: `app/engine/scorer.rb`, `app/engine/checker.rb`,
 | Key | Formula | Use when |
 |---|---|---|
 | `sum` | `Σ (testcase_score × weight) / Σ weights × 100` | Default. Weighted sum of testcase scores, normalized to 100. |
-| `group_min` | Per group, take the *minimum* score in that group × its max weight; then `Σ / total weight × 100`. | **IOI/ICPC subtask style.** A group only earns points if *every* testcase in it passes — one failure drags the whole group to its minimum. |
+| `group_min` | Per group, take the *minimum* score in that group × the group's weight (the *minimum* weight found in the group — by convention all testcases in a group share one weight); then `Σ / total weight × 100`. | **IOI/ICPC subtask style.** A group only earns points if *every* testcase in it passes — one failure drags the whole group to its minimum. The importer warns when a package declares mixed weights inside a group. |
 | `raw_sum` | `Σ testcase_score`. No weighting, no normalization. | When a custom checker emits per-testcase point values you want summed literally. **Pair with `custom_cms_raw` evaluation_type.** |
 
 Source: `scorer.rb:14-74` (`sum_of_all_testcases`, `group_min`, `raw_sum`).

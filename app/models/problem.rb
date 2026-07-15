@@ -250,38 +250,6 @@ class Problem < ApplicationRecord
   end
 
 
-  def self.create_from_import_form_params(params, old_problem = nil)
-    org_problem = old_problem || Problem.new
-    import_params, problem = Problem.extract_params_and_check(params,
-                                                              org_problem)
-    if !problem.errors.empty?
-      return problem, 'Error importing'
-    end
-
-    problem.date_added = Time.new
-    problem.test_allowed = true
-    problem.output_only = false
-    problem.available = false
-
-    if not problem.save
-      return problem, 'Error importing'
-    end
-
-    import_to_db = params.has_key? :import_to_db
-
-    importer = TestdataImporter.new(problem)
-
-    if not importer.import_from_file(import_params[:file],
-                                     import_params[:time_limit],
-                                     import_params[:memory_limit],
-                                     import_params[:checker_name],
-                                     import_to_db)
-      problem.errors.add(:base, 'Import error.')
-    end
-
-    return problem, importer.log_msg
-  end
-
   def self.download_file_basedir
     return "#{Rails.root}/data/tasks"
   end
