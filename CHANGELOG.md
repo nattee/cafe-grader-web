@@ -10,6 +10,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+
+- **Problem import warns when a `group_min` group has mixed testcase
+  weights** — group-min scoring uses one weight per group (the minimum);
+  heterogeneous weights inside a group are an authoring error.
+
 ### Fixed
 
 - **Problem import: `code_name_regex` now actually applies** — the custom

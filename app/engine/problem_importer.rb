@@ -148,6 +148,16 @@ class ProblemImporter
     end
   end
 
+  # CMS semantics: a group has ONE weight; scorer.rb's group_min uses the
+  # minimum weight found in the group. Mixed weights are an authoring error.
+  def warn_mixed_group_weights
+    return unless @dataset.st_group_min?
+    @dataset.testcases.group(:group).having('COUNT(DISTINCT weight) > 1')
+            .count.each_key do |g|
+      @log << "WARNING: group #{g} has mixed testcase weights; group_min uses one weight per group (the minimum). Fix the weights in the package."
+    end
+  end
+
   def read_statement
     # pdf
     pdf, fn = get_content_of_first_match('*.pdf')
@@ -440,6 +450,7 @@ class ProblemImporter
     read_initializers if do_initializers
     read_data_files if do_data_files
     read_options # options is put to last, it will override any defaults
+    warn_mixed_group_weights
     read_solutions(user: user) if do_solutions
     @problem.save
     @dataset.save

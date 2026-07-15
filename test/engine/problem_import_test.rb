@@ -97,4 +97,23 @@ class ProblemImportTest < ActiveSupport::TestCase
       assert_equal false, pi.problem.markdown
     end
   end
+
+  test "group_min with mixed weights inside a group logs a warning" do
+    Dir.mktmpdir do |dir|
+      %w[1-1 1-2].each do |cn|
+        File.write(File.join(dir, "#{cn}.in"), "x\n")
+        File.write(File.join(dir, "#{cn}.sol"), "y\n")
+      end
+      File.write(File.join(dir, "config.yml"), <<~YAML)
+        ---
+        score_type: group_min
+        testcases:
+          1-1: { group: 1, group_name: 'g1', weight: 10 }
+          1-2: { group: 1, group_name: 'g1', weight: 20 }
+      YAML
+      pi = import_example(dir, "mixed_w", do_solutions: false)
+      assert pi.log.any? { |l| l =~ /WARNING.*group 1.*mixed/ },
+             "expected mixed-weight warning, log was: #{pi.log.inspect}"
+    end
+  end
 end
