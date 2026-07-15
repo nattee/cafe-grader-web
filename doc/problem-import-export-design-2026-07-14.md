@@ -183,7 +183,7 @@ export:  ProblemExporter → cafe dir → CmsItalianConverter.reverse → Italia
 | OutputOnly task | Italian: `output_only: True` in task.yaml; TPS: type |
 | File-I/O task | Italian: non-empty `infile`/`outfile` (cafe judge is stdio-only) |
 | Prereq scoring | any package expressing prerequisite score structure |
-| (export) `raw_sum` / `custom_cms_raw` | no CMS equivalent |
+| (export) evaluation type not CMS-runnable | see export eligibility matrix below |
 
 ### Italian → cafe mapping
 
@@ -233,6 +233,19 @@ real packages.
 | `sum`, uniform weights | no ST markers (CMS Sum; loader sets param 100/N) |
 | `sum`, non-uniform weights | singleton-group GroupMin, multipliers scaled to total 100 + warn |
 | checker | `check/checker.cpp` **source** + log note: compile to `check/checker` before `cmsImportTask` (no cross-compile at export) |
+
+**Export eligibility by `evaluation_type`** (CMS can only run its own checker
+protocol or white-diff; local usage counts from dev DB 2026-07-15):
+
+| cafe evaluation_type | exportable? | note |
+|---|---|---|
+| `default` (507 probs) | ✓ | CMS white-diff comparator |
+| `exact` (0) | ✓-ish | CMS white-diff is not byte-exact; unused locally — warn |
+| `custom_cms` (4) | ✓ | same protocol; checker source shipped |
+| `custom_cafe` (22) | ✗ reject | protocol mismatch (CORRECT/INCORRECT + score/10) — backlog: adapter shim |
+| `relative` (11) | ✗ reject | implemented in Ruby judge-side — backlog: C++ comparator |
+| `postgres` (2), `custom_cms_raw` (6) | ✗ reject | no CMS equivalent |
+
 | managers | `sol/grader.*` (main manager) + companion headers in `sol/` |
 | model solutions | `sol/solution.<ext>` (first per language; extras logged) |
 | statement | `statement/statement.pdf` |
@@ -254,9 +267,77 @@ real packages.
 - One end-to-end per format through the real importer, asserting the Package 1
   field surface.
 - Golden-file test for Italian export.
-- Real-world gate: import one exported package into a scratch contest on
-  10.44.7.1 via `cmsImportTask` — performed manually / with dae's go-ahead
-  (no unsupervised edits on the CMS box).
+- Behavioral gate: the submission-replay harness (next section) — structural
+  tests run in CI; replay runs as an operator gate.
+
+## Validation harness — submission replay (operator gate, not CI)
+
+Differential testing with real submissions as oracle: replay a submission
+corpus through both graders and diff **per-testcase** outcomes (keyed via the
+converter's codename↔index map, so a mismatch names the testcase and group).
+
+### Modes
+
+- **Mode A — cafe→cafe (Package 1 gate).** Import → export → re-import as a
+  scratch problem; rejudge the source problem's submissions against **both**
+  (rejudge-vs-rejudge, both graded now on the same judge — historical scores
+  are NOT the oracle, so judge drift since submission time can't pollute the
+  diff). Scores must match exactly; only borderline-TLE jitter tolerated.
+- **Mode B — CMS→cafe (Package 2 import gate).** Extract sources + official
+  per-testcase outcomes from the CMS DB (read-only: `SessionGen` queries /
+  `cmsExportSubmissions`), import the task via converter, replay locally, diff
+  against CMS-recorded results. Corpus: 5 importable tasks, **1,348
+  submissions** (choreography 734, watergun 202, potential 147,
+  colonyguards 138, voltage 127).
+- **Mode C — cafe→CMS (Package 2 export gate).** Export → `cmsImportTask` into
+  a **scratch contest** on 10.44.7.1 → replay cafe submissions via
+  `cmsAddSubmission` → diff. Writes to the live CMS box: **runs only with
+  dae's explicit per-run go-ahead**, never touches existing contests, cleanup
+  via `cmsRemoveSubmissions` + `cmsRemoveContest`. Custom checkers are
+  compiled on the CMS box as part of setup.
+
+### Two-pass protocol (kills timing noise)
+
+1. **Correctness pass** — replay against a dataset copy with time limit ×3.
+   Per-testcase outcomes must match **exactly**; any diff is a real bug.
+   This pass gates the release.
+2. **Timing pass** — replay with authored limits; report classified by the
+   established convention: `T→P` / `x→P` benign, `P→T` expected on a slower
+   judge (reported, not failed), everything else → investigate.
+
+Report buckets per task: exact / benign-timing / environment (CE from
+compiler-version differences — real finding, not an import bug) /
+**investigate**. Float outcomes compared with epsilon.
+
+### Curated export set (mode A; spans the feature axes)
+
+| Feature axis | Candidate (submission count) |
+|---|---|
+| default eval + multi-group sum | ex00e2 (7,441) |
+| custom_cafe checker | a58_proj_algo (7,472) |
+| custom_cms checker | a68_q4a_normal_puzzle (1,259) |
+| relative eval | ex07m1_knapsack (5,694) |
+| group_min | a57_m4_gaa (3,731) |
+| group_min + custom_cafe | a67_q4a_strange_house (2,523) |
+| with_managers + attachment | d58_q1_erase_many (7,403) |
+| initializers | db_proc_contest (2,213) |
+| postgres eval | SQL-Quiz-2024-2-Q9 (190) |
+| raw_sum + custom_cms_raw | rubiks_race_2 (1,256) |
+
+`data_files`: zero real usage in dev DB — fixture-only coverage.
+Mode C uses the exportable subset of this list (default/custom_cms eval only),
+final pick when the eligibility check runs.
+
+### Mechanics
+
+- Rake surface: `problems:replay_validate[...]` + a read-only CMS extraction
+  script; report written per run.
+- Replayed submissions belong to a dedicated user (e.g. `replay_bot`) against
+  unavailable scratch problems; deleted after the run — no stat pollution.
+- Workflow: stratified sample (~50/task across the score range) while
+  developing; full corpus overnight as the final gate.
+- Lasting value: the same harness serves any future judge/scorer change
+  (regression grading diffs).
 
 ## Error handling
 
@@ -272,6 +353,8 @@ real packages.
 - OutputOnly grading support → then map.
 - GroupMinPrereq scoring in cafe scorer (`score_param` holds prereq DAG) → then map.
 - File-I/O task support (or permanent rejection decision).
+- Checker protocol adapter so `custom_cafe` checkers can export to CMS.
+- C++ relative comparator (CMS-side equivalent of `lib/checker/relative.rb`).
 - Group-weight uniformity validation in dataset edit UI.
 - Approach-C IR refactor if supported formats multiply beyond Italian+TPS.
 
