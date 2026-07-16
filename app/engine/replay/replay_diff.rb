@@ -5,7 +5,7 @@ module Replay
   module ReplayDiff
     module_function
 
-    BENIGN = [%w[T P], %w[x P]].freeze
+    BENIGN = [%w[T P].freeze, %w[x P].freeze].freeze
 
     def classify(orig_gc, orig_points, new_gc, new_points)
       orig_gc = orig_gc.to_s

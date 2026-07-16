@@ -32,4 +32,12 @@ class Replay::ReplayDiffTest < ActiveSupport::TestCase
     assert_equal :structural, r[:verdict]
     assert_match(/length differs/, r[:note])
   end
+
+  test "a benign and a mismatch transition together roll up to mismatch" do
+    r = D.classify("TP-", 50, "PPx", 50)   # T->P benign, but -->x is a mismatch
+    assert_equal :mismatch, r[:verdict]
+    kinds = r[:positions].map { |p| p[:kind] }
+    assert_includes kinds, :benign
+    assert_includes kinds, :mismatch
+  end
 end
