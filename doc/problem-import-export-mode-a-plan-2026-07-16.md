@@ -369,8 +369,12 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Test: `test/engine/replay/submission_replay_test.rb`
 
 **Interfaces:**
-- Consumes: `ReplayGrader.grade_sync` (T13), `ReplaySampler.sample` (T14), `ReplayDiff.classify` (T15), `ProblemExporter`, `ProblemImporter`.
-- Produces: `Replay::SubmissionReplay.run(problem, limit: 100) → report Hash` (see shape in Step 3). `Replay::SubmissionReplay.purge! → Integer` (destroys all `_rc_` problems + replay_bot submissions; returns count). `Replay::SubmissionReplay::RC_PREFIX = '_rc_'`.
+- Consumes: `ReplayGrader.grade_sync(sub, dataset, deadline: 600)` (T13, confirmed shape `{points:, grader_comment:, status:}`), `ReplaySampler.sample` (T14), `ReplayDiff.classify` (T15), `ProblemExporter`, `ProblemImporter`.
+- Produces: `Replay::SubmissionReplay.run(problem, limit: 100) → report Hash` (see shape in Step 3). `Replay::SubmissionReplay.purge! → Integer` (destroys all `_rc_` problems + replay_bot submissions + the replay grader_process; returns problem count). `Replay::SubmissionReplay::RC_PREFIX = '_rc_'`.
+
+**Spike findings from Task 13 that shape this task:**
+- `grade_sync` needs a **running dev server at localhost:3000** (compiler/evaluator fetch assets + upload compiled files over HTTP). The integration test below is therefore **opt-in** (guarded on `ENV['REPLAY_LIVE']`); the real exercise is Task 17's capstone with a server up.
+- On this box **only C++ grades cleanly** (cgroup-v2 isn't configured, so python/java/go/etc. return `grader_error`). A fresh `grader_error` is an **environment** limitation, not an import/export defect — the orchestrator buckets it as `:errored` (reported, excluded from the mismatch verdict), never as `:mismatch`.
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -386,7 +390,10 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
   # unavailable in this env it will be skipped with a clear message (the
   # unit pieces — sampler/diff — are covered by their own tests).
   test "replay of a losslessly round-tripped problem reports zero mismatches and cleans up" do
-    skip "judge engine unavailable" unless File.executable?(`which isolate`.strip)
+    # Opt-in: needs a running dev server at :3000 + isolate (grade_sync uses HTTP).
+    # The unit pieces (sampler/diff) are covered by their own tests; the real
+    # end-to-end exercise is Task 17's capstone run.
+    skip "set REPLAY_LIVE=1 with a dev server + judge to run this" unless ENV["REPLAY_LIVE"] == "1"
 
     pi = ProblemImporter.new
     pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "fibo").to_s,
@@ -444,7 +451,7 @@ module Replay
       clone = nil
       report = { problem: problem.name, replayed: 0, skipped_stale: sample[:skipped_stale],
                  buckets: sample[:buckets], exact: 0, benign: 0, mismatch: 0,
-                 structural: 0, mismatch_details: [] }
+                 structural: 0, errored: 0, mismatch_details: [], error_details: [] }
       begin
         clone = import_clone(problem)
         bot = replay_bot
@@ -487,6 +494,16 @@ module Replay
     end
 
     def tally(report, diff, orig, res)
+      # A fresh grader_error while the stored grade was a real result is an
+      # ENVIRONMENT limitation (e.g. sandbox/cgroup unavailable for some
+      # languages on this box), not an import/export defect — bucket apart and
+      # exclude from the pass/fail verdict.
+      if res[:status].to_s == 'grader_error'
+        report[:errored] += 1
+        report[:error_details] << { orig_submission_id: orig.id, language: orig.language&.name,
+                                    new_status: res[:status], new_gc: res[:grader_comment] }
+        return
+      end
       report[diff[:verdict]] += 1
       return unless %i[mismatch structural].include?(diff[:verdict])
       report[:mismatch_details] << {
@@ -503,6 +520,9 @@ module Replay
         Job.where(arg: s.id).delete_all   # judge jobs have no FK to the submission
         s.destroy
       end
+      # the dedicated replay grader_process row (created by ReplayGrader)
+      GraderProcess.where(box_id: ReplayGrader::REPLAY_BOX_ID,
+                          worker_id: ReplayGrader::REPLAY_WORKER_ID).delete_all
       scope = Problem.where("name LIKE ?", "#{RC_PREFIX}%")
       count = scope.count
       scope.find_each(&:destroy)
@@ -557,14 +577,18 @@ namespace :problems do
         puts "SKIP #{name}: not found"; next
       end
       report = Replay::SubmissionReplay.run(problem, limit: limit)
-      bad = report[:mismatch] + report[:structural]
+      bad = report[:mismatch] + report[:structural]   # errored is env, NOT a failure
       overall_ok &&= bad.zero?
-      puts format("%-22s replayed=%-4d stale_skipped=%-4d exact=%-4d benign=%-4d MISMATCH=%-3d STRUCTURAL=%-3d  buckets=%s",
+      puts format("%-22s replayed=%-4d stale=%-4d exact=%-4d benign=%-4d MISMATCH=%-3d STRUCT=%-3d errored=%-3d buckets=%s",
                   name, report[:replayed], report[:skipped_stale], report[:exact],
-                  report[:benign], report[:mismatch], report[:structural], report[:buckets].inspect)
+                  report[:benign], report[:mismatch], report[:structural], report[:errored], report[:buckets].inspect)
       report[:mismatch_details].each do |d|
         puts "   ! sub ##{d[:orig_submission_id]} #{d[:verdict]} pts #{d[:orig_points]}->#{d[:new_points]} " \
              "gc #{d[:orig_gc].inspect}->#{d[:new_gc].inspect}"
+      end
+      if report[:errored].positive?
+        langs = report[:error_details].group_by { |e| e[:language] }.transform_values(&:size)
+        puts "   ~ #{report[:errored]} not gradable in this env (cgroup/lang): #{langs.inspect}"
       end
     end
     puts "\n#{overall_ok ? 'PASS — no non-benign differences' : 'FAIL — investigate mismatches above'}"
@@ -585,14 +609,26 @@ Expected: both `problems:replay_validate` and `problems:replay_purge` listed.
 
 - [ ] **Step 3: The capstone real run (dev box)**
 
-Run the validation on the curated set at a small limit first, then the target 100:
+`grade_sync` needs a **running dev server at localhost:3000** (spike finding). Start one if not already up, in the background, and confirm it responds before running:
+
+```bash
+# start dev server if needed (background); the app runs on chula_cp per repo convention,
+# but grading only needs the web app + assets, so master is fine for this diagnostic
+(bin/rails server -d -p 3000 || bin/rails server -p 3000 &) ; sleep 8
+curl -sSf -o /dev/null http://localhost:3000/ && echo "server up" || echo "SERVER NOT UP — grading will fail"
+```
+
+Then run the validation on the curated set at a small limit first, then the target 100:
 
 ```bash
 bin/rails "problems:replay_validate[ex00e2,10]"     # smoke — one problem, tiny sample
 bin/rails "problems:replay_validate[ex00e2+a58_proj_algo+a57_m4_gaa,100]"
 ```
 
-Expected: `PASS — no non-benign differences`. Record the full output in the report. If any problem reports MISMATCH/STRUCTURAL, that is a real finding about the import/export path (or a stale-grade the guard didn't catch) — capture the detail lines and report them; do NOT silence them.
+Expected: `PASS — no non-benign differences`. Record the full output in the report.
+- A `MISMATCH`/`STRUCT` on any problem is a **real finding** about the import/export path (or a stale grade the guard missed) — capture the detail lines and report them; do NOT silence them.
+- An `errored=N (cgroup/lang)` line is the **environment limitation** the spike found (non-C++ languages can't grade here); it does NOT fail the run. Note the languages affected. Broadening this (cgroup-v2 delegation) is an operator/backlog item, not part of this task. If a whole curated problem is dominated by `errored`, the C++ subset still provides the losslessness proof; note the reduced coverage.
+- If you started the dev server in this step, **stop it afterward** (`bin/rails server` PID or `pkill -f "puma.*3000"`) so it doesn't linger.
 
 - [ ] **Step 4: Confirm zero residue**
 
