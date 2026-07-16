@@ -112,6 +112,28 @@ class ProblemsImportExportControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "plain download_archive (no all_datasets) excludes datasets/" do
+    pi = ProblemImporter.new
+    pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "rich").to_s, "dl_plain", user: users(:admin))
+    p = pi.problem
+    Dataset.create!(problem: p, name: "DL Extra2", time_limit: 1, memory_limit: 64, score_type: :sum).tap do |d|
+      tc = Testcase.new(code_name: "1", num: 1, group: 1, weight: 1)
+      tc.inp_file.attach(io: StringIO.new("1\n"), filename: "i", content_type: "text/plain")
+      tc.ans_file.attach(io: StringIO.new("1\n"), filename: "a", content_type: "text/plain")
+      d.testcases << tc; d.save!
+    end
+
+    get download_archive_problem_path(p)   # no all_datasets param
+    assert_response :success
+    Dir.mktmpdir do |dir|
+      zpath = File.join(dir, "out.zip")
+      File.binwrite(zpath, response.body)
+      names = `unzip -l #{zpath}`
+      assert_no_match(%r{datasets/}, names, "plain (live-only) download must NOT contain datasets/")
+      assert_match(%r{testcases/}, names, "plain download still contains the live dataset testcases")
+    end
+  end
+
   private
 
   # A zip whose root has 9.in, 9.sol, and attachment/sneaky.txt — the
