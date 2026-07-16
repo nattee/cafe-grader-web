@@ -34,7 +34,8 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
     assert_equal 0, report[:mismatch], "expected no non-benign mismatches: #{report[:mismatch_details].inspect}"
     assert report[:replayed] >= 1
     assert_equal before, Problem.count, "throwaway _rc_ problem must be destroyed"
-    assert_empty Problem.where("name LIKE ?", "#{Replay::SubmissionReplay::RC_PREFIX}%")
+    assert_empty Problem.where("name LIKE ?",
+                               "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
   end
 
   test "run destroys the clone and cleans up jobs even when grading raises" do
@@ -62,12 +63,13 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
     end
 
     assert_equal before_problems, Problem.count, "throwaway _rc_ clone must be destroyed"
-    assert_empty Problem.where("name LIKE ?", "#{Replay::SubmissionReplay::RC_PREFIX}%")
+    assert_empty Problem.where("name LIKE ?",
+                               "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
     assert_equal 0, Submission.joins(:user).where(users: { login: "replay_bot" }).count,
                  "no replay_bot submissions may remain"
   end
 
-  test "a fresh compile/grader error the original did not have is bucketed errored, not mismatch" do
+  test "a fresh compile/grader error on a gradable language is bucketed suspect and fails the verdict" do
     pi = ProblemImporter.new
     pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "fibo").to_s,
                               "rcsrc_#{SecureRandom.hex(3)}", user: users(:admin))
@@ -76,9 +78,10 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
                           source_filename: "a.cpp", submitted_at: Time.zone.now)
     seed.source = "int main(){}"
     seed.save!(validate: false)
-    # Original graded cleanly (status :done) -- a fresh compilation_error is
-    # therefore an environment gap (cgroup unavailable on this box for some
-    # languages), not a real regression, and must not leak into mismatch/structural.
+    # Original graded cleanly (status :done). C++ is in GRADABLE_LANGS, so a
+    # fresh compilation_error here is SUSPECT (e.g. a lost checker surfacing
+    # as grader_error) -- it must NOT be silently bucketed as environment
+    # noise (errored), and it must fail the verdict (mismatch_details non-empty).
     seed.update_columns(status: Submission.statuses[:done], points: 100, graded_at: 1.minute.from_now)
 
     Replay::ReplayGrader.stub :grade_sync,
@@ -86,10 +89,41 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
       report = Replay::SubmissionReplay.run(problem, limit: 5)
       assert_equal 0, report[:mismatch]
       assert_equal 0, report[:structural]
+      assert_equal 0, report[:errored]
+      assert report[:suspect] >= 1
+      assert_not_empty report[:mismatch_details]
+    end
+
+    assert_empty Problem.where("name LIKE ?",
+                               "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
+  end
+
+  test "a fresh compile/grader error on a non-gradable language is bucketed errored, not suspect" do
+    pi = ProblemImporter.new
+    pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "fibo").to_s,
+                              "rcsrc_#{SecureRandom.hex(3)}", user: users(:admin))
+    problem = pi.problem
+    # Pascal ("pas") is not in GRADABLE_LANGS (cpp,c) -- on this box only
+    # C/C++ grade reliably (cgroup unconfigured for other toolchains), so a
+    # fresh error on Pascal is an environment gap, not a real regression, and
+    # must stay bucketed as errored (excluded from the verdict).
+    seed = Submission.new(user: users(:admin), problem: problem, language: languages(:Language_pas),
+                          source_filename: "a.pas", submitted_at: Time.zone.now)
+    seed.source = "begin end."
+    seed.save!(validate: false)
+    seed.update_columns(status: Submission.statuses[:done], points: 100, graded_at: 1.minute.from_now)
+
+    Replay::ReplayGrader.stub :grade_sync,
+                              ->(*) { { points: 0, grader_comment: "Compilation error", status: "compilation_error" } } do
+      report = Replay::SubmissionReplay.run(problem, limit: 5)
+      assert_equal 0, report[:mismatch]
+      assert_equal 0, report[:structural]
+      assert_equal 0, report[:suspect]
       assert report[:errored] >= 1
     end
 
-    assert_empty Problem.where("name LIKE ?", "#{Replay::SubmissionReplay::RC_PREFIX}%")
+    assert_empty Problem.where("name LIKE ?",
+                               "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
   end
 
   test "run skips (does not crash) when export hits a missing ActiveStorage blob" do
@@ -112,6 +146,7 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
       assert_match(/sync:problem/, report[:skip_reason])
     end
 
-    assert_empty Problem.where("name LIKE ?", "#{Replay::SubmissionReplay::RC_PREFIX}%")
+    assert_empty Problem.where("name LIKE ?",
+                               "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
   end
 end

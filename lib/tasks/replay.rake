@@ -19,11 +19,12 @@ namespace :problems do
         puts format("%-22s SKIP — %s", name, report[:skip_reason])
         next
       end
-      bad = report[:mismatch] + report[:structural]   # errored is env, NOT a failure
+      bad = report[:mismatch] + report[:structural] + report[:suspect]   # errored is env, NOT a failure
       overall_ok &&= bad.zero?
-      puts format("%-22s replayed=%-4d stale=%-4d exact=%-4d benign=%-4d MISMATCH=%-3d STRUCT=%-3d errored=%-3d buckets=%s",
+      puts format("%-22s replayed=%-4d stale=%-4d exact=%-4d benign=%-4d MISMATCH=%-3d STRUCT=%-3d SUSPECT=%-3d errored=%-3d buckets=%s",
                   name, report[:replayed], report[:skipped_stale], report[:exact],
-                  report[:benign], report[:mismatch], report[:structural], report[:errored], report[:buckets].inspect)
+                  report[:benign], report[:mismatch], report[:structural], report[:suspect], report[:errored],
+                  report[:buckets].inspect)
       report[:mismatch_details].each do |d|
         puts "   ! sub ##{d[:orig_submission_id]} #{d[:verdict]} pts #{d[:orig_points]}->#{d[:new_points]} " \
              "gc #{d[:orig_gc].inspect}->#{d[:new_gc].inspect}"
