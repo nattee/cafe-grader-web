@@ -26,15 +26,22 @@ module Replay
         clone = import_clone(problem)
         bot = replay_bot
         sample[:submissions].each do |orig|
-          fresh = build_submission(bot, clone, orig)
-          res = ReplayGrader.grade_sync(fresh, clone.live_dataset)
-          diff = ReplayDiff.classify(orig.grader_comment, orig.points, res[:grader_comment], res[:points])
-          tally(report, diff, orig, res)
-          report[:replayed] += 1
-        ensure
-          # Judge Job rows reference the submission by integer `arg` (no FK), so
-          # they are NOT cascade-destroyed with the problem — delete them here.
-          Job.where(arg: fresh.id).delete_all if fresh
+          fresh = nil
+          begin
+            fresh = build_submission(bot, clone, orig)
+            res = ReplayGrader.grade_sync(fresh, clone.live_dataset)
+            diff = ReplayDiff.classify(orig.grader_comment, orig.points, res[:grader_comment], res[:points])
+            tally(report, diff, orig, res)
+          rescue StandardError => e
+            report[:errored] += 1
+            report[:error_details] << { orig_submission_id: orig.id, language: orig.language&.name,
+                                        new_status: 'exception', new_gc: e.message }
+          ensure
+            # Judge Job rows reference the submission by integer `arg` (no FK), so
+            # they are NOT cascade-destroyed with the problem — delete them here.
+            Job.where(arg: fresh.id).delete_all if fresh
+            report[:replayed] += 1
+          end
         end
       ensure
         clone&.destroy   # cascades datasets/testcases/submissions/evaluations + purges blobs
