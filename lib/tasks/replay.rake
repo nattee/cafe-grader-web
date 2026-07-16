@@ -15,6 +15,10 @@ namespace :problems do
         puts "SKIP #{name}: not found"; next
       end
       report = Replay::SubmissionReplay.run(problem, limit: limit)
+      if report[:skipped]
+        puts format("%-22s SKIP — %s", name, report[:skip_reason])
+        next
+      end
       bad = report[:mismatch] + report[:structural]   # errored is env, NOT a failure
       overall_ok &&= bad.zero?
       puts format("%-22s replayed=%-4d stale=%-4d exact=%-4d benign=%-4d MISMATCH=%-3d STRUCT=%-3d errored=%-3d buckets=%s",

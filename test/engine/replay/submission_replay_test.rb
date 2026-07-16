@@ -66,4 +66,52 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
     assert_equal 0, Submission.joins(:user).where(users: { login: "replay_bot" }).count,
                  "no replay_bot submissions may remain"
   end
+
+  test "a fresh compile/grader error the original did not have is bucketed errored, not mismatch" do
+    pi = ProblemImporter.new
+    pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "fibo").to_s,
+                              "rcsrc_#{SecureRandom.hex(3)}", user: users(:admin))
+    problem = pi.problem
+    seed = Submission.new(user: users(:admin), problem: problem, language: languages(:Language_cpp),
+                          source_filename: "a.cpp", submitted_at: Time.zone.now)
+    seed.source = "int main(){}"
+    seed.save!(validate: false)
+    # Original graded cleanly (status :done) -- a fresh compilation_error is
+    # therefore an environment gap (cgroup unavailable on this box for some
+    # languages), not a real regression, and must not leak into mismatch/structural.
+    seed.update_columns(status: Submission.statuses[:done], points: 100, graded_at: 1.minute.from_now)
+
+    Replay::ReplayGrader.stub :grade_sync,
+                              ->(*) { { points: 0, grader_comment: "Compilation error", status: "compilation_error" } } do
+      report = Replay::SubmissionReplay.run(problem, limit: 5)
+      assert_equal 0, report[:mismatch]
+      assert_equal 0, report[:structural]
+      assert report[:errored] >= 1
+    end
+
+    assert_empty Problem.where("name LIKE ?", "#{Replay::SubmissionReplay::RC_PREFIX}%")
+  end
+
+  test "run skips (does not crash) when export hits a missing ActiveStorage blob" do
+    pi = ProblemImporter.new
+    pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "fibo").to_s,
+                              "rcsrc_#{SecureRandom.hex(3)}", user: users(:admin))
+    problem = pi.problem
+    seed = Submission.new(user: users(:admin), problem: problem, language: languages(:Language_cpp),
+                          source_filename: "a.cpp", submitted_at: Time.zone.now)
+    seed.source = "int main(){}"
+    seed.save!(validate: false)
+    seed.update_columns(status: Submission.statuses[:done], points: 100, graded_at: 1.minute.from_now)
+
+    # No stub_any_instance in stock minitest (no mocha in this Gemfile) --
+    # stub the module method `run` actually calls instead of the exporter
+    # instance method, exercising the same begin/rescue in `run`.
+    Replay::SubmissionReplay.stub :import_clone, ->(*) { raise ActiveStorage::FileNotFoundError, "missing blob" } do
+      report = Replay::SubmissionReplay.run(problem, limit: 5)
+      assert report[:skipped], "must skip, not crash"
+      assert_match(/sync:problem/, report[:skip_reason])
+    end
+
+    assert_empty Problem.where("name LIKE ?", "#{Replay::SubmissionReplay::RC_PREFIX}%")
+  end
 end

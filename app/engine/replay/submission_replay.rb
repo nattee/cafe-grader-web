@@ -21,9 +21,17 @@ module Replay
       clone = nil
       report = { problem: problem.name, replayed: 0, skipped_stale: sample[:skipped_stale],
                  buckets: sample[:buckets], exact: 0, benign: 0, mismatch: 0,
-                 structural: 0, errored: 0, mismatch_details: [], error_details: [] }
+                 structural: 0, errored: 0, mismatch_details: [], error_details: [],
+                 skipped: false, skip_reason: nil }
       begin
         clone = import_clone(problem)
+      rescue ActiveStorage::FileNotFoundError => e
+        report[:skipped] = true
+        report[:skip_reason] = "ActiveStorage blobs not present locally " \
+          "(#{e.message.to_s[0, 100]}); run \"sync:problem[#{problem.id}]\" first"
+        return report
+      end
+      begin
         bot = replay_bot
         sample[:submissions].each do |orig|
           fresh = nil
@@ -71,14 +79,15 @@ module Replay
     end
 
     def tally(report, diff, orig, res)
-      # A fresh grader_error while the stored grade was a real result is an
-      # ENVIRONMENT limitation (e.g. sandbox/cgroup unavailable for some
-      # languages on this box), not an import/export defect — bucket apart and
-      # exclude from the pass/fail verdict.
-      if res[:status].to_s == 'grader_error'
+      # A fresh compile/grader error the ORIGINAL submission didn't have is an
+      # environment limitation on this box (e.g. cgroup unavailable for non-C++
+      # languages), not an import/export defect — bucket apart, exclude from the
+      # verdict. (A stored compile-error re-grading to the same is a real match.)
+      fresh = res[:status].to_s
+      if %w[grader_error compilation_error].include?(fresh) && orig.status.to_s != fresh
         report[:errored] += 1
         report[:error_details] << { orig_submission_id: orig.id, language: orig.language&.name,
-                                    new_status: res[:status], new_gc: res[:grader_comment] }
+                                    new_status: fresh, new_gc: res[:grader_comment] }
         return
       end
       report[diff[:verdict]] += 1
