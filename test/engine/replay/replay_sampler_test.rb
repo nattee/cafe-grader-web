@@ -45,6 +45,33 @@ class Replay::ReplaySamplerTest < ActiveSupport::TestCase
     assert_equal 4, out[:submissions].size
     pts = out[:submissions].map { |s| s.points.to_f }
     # round-robin should pull from both buckets, not 4 from one
-    assert pts.count(0.0).between?(1, 3), "expected a mix of buckets, got #{pts.inspect}"
+    assert_equal [0.0, 100.0, 0.0, 100.0], pts
+    # buckets must describe the RETURNED (post-limit) sample, not the full population
+    assert_equal({ zero: 2, partial: 0, full: 2 }, out[:buckets])
+  end
+
+  test "full bucket is keyed off problem.full_score, not the batch's observed max" do
+    cutoff = Time.zone.parse("2026-01-01 00:00")
+    p = build(dataset_updated_at: cutoff)
+    p.update!(full_score: 100)
+    add_sub(p, points: 0,  graded_at: cutoff + 1.day)
+    add_sub(p, points: 40, graded_at: cutoff + 1.day)
+    add_sub(p, points: 80, graded_at: cutoff + 1.day)
+
+    out = Replay::ReplaySampler.sample(p, limit: 100)
+    # nobody reached full_score (100), so the 80 must be partial, not full
+    assert_equal({ zero: 1, partial: 2, full: 0 }, out[:buckets])
+  end
+
+  test "sample is deterministic across repeated calls on the same data" do
+    cutoff = Time.zone.parse("2026-01-01 00:00")
+    p = build(dataset_updated_at: cutoff)
+    3.times { add_sub(p, points: 0,   graded_at: cutoff + 1.day) }
+    3.times { add_sub(p, points: 50,  graded_at: cutoff + 1.day) }
+    3.times { add_sub(p, points: 100, graded_at: cutoff + 1.day) }
+
+    first = Replay::ReplaySampler.sample(p, limit: 5)[:submissions].map(&:id)
+    second = Replay::ReplaySampler.sample(p, limit: 5)[:submissions].map(&:id)
+    assert_equal first, second
   end
 end
