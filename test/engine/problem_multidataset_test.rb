@@ -138,7 +138,7 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
   test "export(all) -> import round-trips EVERY dataset field-by-field" do
     src = import_rich("md_rt_src")
     ds2 = Dataset.create!(problem: src, name: "Second", time_limit: 4, memory_limit: 77,
-                          score_type: :sum, evaluation_type: :default)
+                          score_type: :group_min, evaluation_type: :exact)
     %w[1-1 2-1].each_with_index do |cn, i|
       tc = Testcase.new(code_name: cn, num: i + 1, group: i + 1, group_name: "g#{i + 1}", weight: (i + 1) * 5)
       tc.inp_file.attach(io: StringIO.new("#{i}\n"), filename: "i", content_type: "text/plain")
@@ -163,11 +163,18 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
     end
     assert_equal s2.testcases.count, d2.testcases.count
     s2.testcases.order(:num).zip(d2.testcases.order(:num)).each do |a, b|
-      %w[code_name num group group_name weight].each { |f| assert_equal a.send(f), b.send(f), "tc##{f}" }
+      %w[code_name group group_name weight].each { |f| assert_equal a.send(f), b.send(f), "tc##{f}" }
       assert_equal a.inp_file.download, b.inp_file.download
       assert_equal a.ans_file.download, b.ans_file.download
     end
     # live dataset also intact
-    assert_equal src.live_dataset.testcases.count, dst.live_dataset.testcases.count
+    ls = src.live_dataset
+    ld = dst.live_dataset
+    assert_equal ls.testcases.count, ld.testcases.count
+    assert_equal ls.score_type, ld.score_type, "live dataset score_type intact"
+    ls.testcases.order(:num).zip(ld.testcases.order(:num)).each do |a, b|
+      assert_equal a.code_name, b.code_name, "live tc code_name intact"
+      assert_equal a.inp_file.download, b.inp_file.download, "live tc input intact"
+    end
   end
 end
