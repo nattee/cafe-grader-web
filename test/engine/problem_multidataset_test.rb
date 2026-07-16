@@ -177,4 +177,19 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
       assert_equal a.inp_file.download, b.inp_file.download, "live tc input intact"
     end
   end
+
+  test "Problem#export forwards all_datasets" do
+    p = import_rich("md_pexport")
+    Dataset.create!(problem: p, name: "X DS", time_limit: 1, memory_limit: 64, score_type: :sum).tap do |d|
+      tc = Testcase.new(code_name: "1", num: 1, group: 1, weight: 1)
+      tc.inp_file.attach(io: StringIO.new("1\n"), filename: "i", content_type: "text/plain")
+      tc.ans_file.attach(io: StringIO.new("1\n"), filename: "a", content_type: "text/plain")
+      d.testcases << tc; d.save!
+    end
+    Dir.mktmpdir do |dump|
+      res = p.export(all_datasets: true, base_dir: dump, zip: false)
+      assert_equal :ok, res[:status]
+      assert File.directory?(File.join(dump, p.name.parameterize, "datasets", "x-ds"))
+    end
+  end
 end

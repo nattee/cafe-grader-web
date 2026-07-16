@@ -392,10 +392,10 @@ class Problem < ApplicationRecord
     end
   end
 
-  # export  the problem into the default dump dir
-  def export
+  # export the problem into the given dir (default: judge dump dir)
+  def export(all_datasets: false, base_dir: Rails.root.join('../judge/dump'), zip: true)
     pe = ProblemExporter.new
-    pe.export_problem_to_dir(self, zip: true)
+    pe.export_problem_to_dir(self, base_dir: base_dir, zip: zip, all_datasets: all_datasets)
   end
 
   def regenerate_pdf_statement!

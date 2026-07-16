@@ -210,10 +210,9 @@ class ProblemExporter
   # dump all problem in *probs* to base_dir
   # Usage
   #   ProblemExporter.dump_problems(Problem.where(id: 123), base_dir = '/home/user/dump')
-  def self.dump_problems(probs = Problem.available, base_dir = Rails.root.join('../judge/dump'))
+  def self.dump_problems(probs = Problem.available, base_dir = Rails.root.join('../judge/dump'), all_datasets: false)
     probs.each do |p|
-      pe = ProblemExporter.new
-      pe.export_problem_to_dir(p, base_dir: base_dir)
+      ProblemExporter.new.export_problem_to_dir(p, base_dir: base_dir, all_datasets: all_datasets)
       puts "dump '#{p.name}' to #{base_dir}"
     end
   end
