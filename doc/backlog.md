@@ -255,3 +255,18 @@ repo — clone, copy the page in, commit, push).
 
 **Note:** the wiki's `Home.md` is intentionally minimal (no page TOC); pages
 surface via GitHub's auto-generated sidebar, so no Home edit was needed.
+
+---
+
+## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
+
+- Communication task support in the judge (manager process + FIFOs) — unblocks CMS Communication import/export.
+- OutputOnly grading support — unblocks CMS OutputOnly import/export.
+- GroupMinPrereq scoring in cafe's scorer (`score_param` to hold the prereq DAG) — unblocks importing dae's CMS camp tasks that use the custom score type.
+- File-I/O task support (or a permanent-rejection decision) for Italian-format tasks with `infile`/`outfile`.
+- Checker protocol adapter so `custom_cafe` checkers can be exported to CMS.
+- C++ relative comparator (CMS-side equivalent of `lib/checker/relative.rb`).
+- Group-weight uniformity validation in the dataset edit UI (import already warns).
+- Approach-C IR refactor of import/export — only if supported formats multiply beyond Italian+TPS.
+- Audit the remaining single-string `Open3.capture3(cmd)` shell invocations for the same injection class fixed in import/export: `app/engine/isolate_runner.rb` (~lines 12, 36), `app/engine/checker.rb` (~line 155), `app/engine/compiler/postgres.rb` (~line 69) — convert to argv form if any build the command from user-controlled strings.
+- Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`).
