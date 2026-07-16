@@ -1,6 +1,8 @@
 class ProblemImporter
   attr_reader :problem, :log, :errors, :got, :dataset
 
+  RESERVED_DATASETS_DIRNAME = 'datasets'
+
   require 'open3'
   def initialize
     @got = []
@@ -12,7 +14,7 @@ class ProblemImporter
   def read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
     # glob testcase filename and build hash of key: testcase codename, value: {input: input_file, output: output_file}
     @tc = Hash.new { |h, k| h[k] = Hash.new }
-    Dir["#{@base_dir}/**/#{input_pattern}"].each do |fn|
+    Dir["#{@base_dir}/**/#{input_pattern}"].select { |fn| outside_reserved_datasets?(fn) }.each do |fn|
       # input_fn = Pathname.new(@base_dir) + fn
       input_fn = Pathname.new(fn)
       regex = Regexp.new input_pattern.gsub('*', '(.+)')
@@ -32,7 +34,7 @@ class ProblemImporter
 
       @tc[codename][:input] = input_fn.cleanpath
     end
-    Dir["#{@base_dir}/**/#{sol_pattern}"].each do |fn|
+    Dir["#{@base_dir}/**/#{sol_pattern}"].select { |fn| outside_reserved_datasets?(fn) }.each do |fn|
       sol_fn = Pathname.new(fn)
       regex = Regexp.new sol_pattern.gsub('*', '(.+)')
 
@@ -155,6 +157,45 @@ class ProblemImporter
     @dataset.testcases.group(:group).having('COUNT(DISTINCT weight) > 1')
             .count.each_key do |g|
       @log << "WARNING: group #{g} has mixed testcase weights; group_min uses one weight per group (the minimum). Fix the weights in the package."
+    end
+  end
+
+  # Import any datasets listed under the root config's additional_datasets key,
+  # each from datasets/<name>/, as NON-live datasets on @problem. Reuses the
+  # existing dataset-scoped read methods by pointing them at the subdir.
+  def import_additional_datasets
+    names = @options[OptionConst::YAML_KEY[:additional_datasets]]
+    return unless names.is_a?(Array)
+
+    outer_base, outer_dataset, outer_options = @base_dir, @dataset, @options
+    problem = outer_dataset.problem
+    begin
+      names.each do |dirname|
+        subdir = Pathname.new(outer_base) + 'datasets' + dirname.to_s
+        unless subdir.exist?
+          @log << "WARNING: additional dataset dir missing: #{subdir}"
+          next
+        end
+
+        cfg = subdir + OptionConst::YAML_FILENAME
+        @options = cfg.exist? ? YAML.safe_load(File.read(cfg), symbolize_names: true) : {}
+        @base_dir = subdir.to_s
+        display_name = @options[OptionConst::YAML_KEY[:ds_name]] || dirname
+        @dataset = problem.datasets.where(name: display_name).first ||
+                   Dataset.new(name: display_name, problem: problem)
+        @dataset.save
+
+        read_testcase('*.in', '*.sol', /(.*)/, /^(\d+)-/)
+        read_checker
+        read_cpp_extras
+        read_initializers
+        read_data_files
+        read_options   # applies this dataset's fields (fragment carries no problem-level keys)
+        @dataset.save
+        @log << "Imported additional dataset '#{display_name}'"
+      end
+    ensure
+      @base_dir, @dataset, @options = outer_base, outer_dataset, outer_options
     end
   end
 
@@ -304,9 +345,17 @@ class ProblemImporter
     @dataset.save
   end
 
+  # Root-level recursive reads must not descend into the reserved datasets/
+  # subtree — it holds additional datasets, imported separately by
+  # import_additional_datasets.
+  def outside_reserved_datasets?(path)
+    reserved = File.join(@base_dir.to_s, RESERVED_DATASETS_DIRNAME) + '/'
+    !path.to_s.start_with?(reserved)
+  end
+
   def get_content_of_first_match(glob_pattern, recursive: true, path: '')
     pattern = build_glob(glob_pattern, recursive: recursive, path: path)
-    files = Dir.glob(pattern).select { |path| File.file?(path) }
+    files = Dir.glob(pattern).select { |p| File.file?(p) && outside_reserved_datasets?(p) }
     if files.count > 0
       if files.count > 1
         @log << "ERROR: Found multiples of #{glob_pattern} while we expected one"
@@ -393,6 +442,7 @@ class ProblemImporter
     do_solutions: true,
     do_initializers: true,
     do_data_files: true,
+    do_additional_datasets: true,
     user: nil             # attributed owner of imported model solutions
   )
     @log = []
@@ -451,6 +501,7 @@ class ProblemImporter
     read_data_files if do_data_files
     read_options # options is put to last, it will override any defaults
     warn_mixed_group_weights
+    import_additional_datasets if do_additional_datasets
     read_solutions(user: user) if do_solutions
     @problem.save
     @dataset.save
