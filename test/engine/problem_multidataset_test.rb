@@ -41,4 +41,31 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
       assert(tree.none? { |f| f.start_with?("datasets/") }, "no datasets/ dir in live-only")
     end
   end
+
+  test "all_datasets export writes each non-live dataset under datasets/ with a fragment" do
+    p = import_rich("md_all")
+    # add a second, non-live dataset with its own testcase
+    ds2 = Dataset.create!(problem: p, name: "Alt DS", time_limit: 3, memory_limit: 128, score_type: :sum)
+    tc = Testcase.new(code_name: "9", num: 1, group: 1, weight: 5)
+    tc.inp_file.attach(io: StringIO.new("9 9\n"), filename: "input.txt", content_type: "text/plain")
+    tc.ans_file.attach(io: StringIO.new("18\n"), filename: "answer.txt", content_type: "text/plain")
+    ds2.testcases << tc
+    ds2.save!
+
+    Dir.mktmpdir do |dump|
+      ProblemExporter.new.export_problem_to_dir(p, base_dir: dump, zip: false, all_datasets: true)
+      dir = File.join(dump, p.name.parameterize)
+      cfg = parsed_config(dir)
+
+      assert_equal ["alt-ds"], cfg[:additional_datasets]
+      sub = File.join(dir, "datasets", "alt-ds")
+      assert File.directory?(sub), "datasets/alt-ds/ exists"
+      frag = YAML.safe_load(File.read(File.join(sub, "config.yml")), symbolize_names: true)
+      assert_equal "Alt DS", frag[:ds_name]
+      assert_equal 3.0, frag[:time_limit]
+      assert frag[:testcases].key?("9".to_sym) || frag[:testcases].key?("9"), "fragment has the testcase weight entry"
+      assert File.exist?(File.join(sub, "testcases", "9.in")), "additional dataset testcase exported"
+      refute frag.key?(:name), "fragment carries no problem-level fields"
+    end
+  end
 end

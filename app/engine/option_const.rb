@@ -32,6 +32,7 @@ module OptionConst
       data_files: :data_files_dir
     },
     ds_name: :ds_name,
+    additional_datasets: :additional_datasets,
     tags: :tags,
     checker: :checker,
     managers_pattern: :managers_pattern,

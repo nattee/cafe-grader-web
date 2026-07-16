@@ -132,10 +132,24 @@ class ProblemExporter
     File.write(@main_dir + OptionConst::YAML_FILENAME, @options.deep_stringify_keys.to_yaml)
   end
 
+  # A filesystem-safe, unique subdir name for a dataset (parameterized name,
+  # de-duplicated against names already used in this export).
+  def unique_ds_dirname(ds, taken)
+    base = ds.name.parameterize
+    base = 'dataset' if base.blank?
+    name = base
+    i = 2
+    while taken.include?(name)
+      name = "#{base}-#{i}"
+      i += 1
+    end
+    name
+  end
+
   # this export the problem and its live dataset to a dir
   # with the name of the problem into *base_dir*
   # when zip is true, "#{problem.name}.zip" is also generated and saved to *base_dir*
-  def export_problem_to_dir(problem, base_dir: Rails.root.join('../judge/dump'), zip: false)
+  def export_problem_to_dir(problem, base_dir: Rails.root.join('../judge/dump'), zip: false, all_datasets: false)
     result = {}
     @problem = problem
     @ds = @problem.live_dataset
@@ -153,6 +167,20 @@ class ProblemExporter
     export_attachment
     export_description
     export_dataset_files(@ds, @main_dir, @options)   # live dataset -> root
+
+    if all_datasets
+      taken = []
+      @problem.datasets.where.not(id: @ds.id).order(:id).each do |ds|
+        dirname = unique_ds_dirname(ds, taken)
+        taken << dirname
+        sub = @main_dir + 'datasets' + dirname
+        frag = {}
+        export_dataset_files(ds, sub, frag)
+        File.write(sub + OptionConst::YAML_FILENAME, frag.deep_stringify_keys.to_yaml)
+      end
+      @options[OptionConst::YAML_KEY[:additional_datasets]] = taken unless taken.empty?
+    end
+
     export_root_options
     export_solutions
     result[:status] = :ok
