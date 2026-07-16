@@ -27,6 +27,7 @@ module Replay
     # terminal result:
     #   { points: Float|nil, grader_comment: String|nil, status: String }
     def grade_sync(submission, dataset, deadline: 600)
+      Job.where(arg: submission.id).delete_all   # clear any stale jobs for this submission before a fresh grade
       submission.add_judge_job(dataset) # enqueues the compile job (resets status)
       grader = Grader.new(REPLAY_WORKER_ID, REPLAY_BOX_ID)
 
