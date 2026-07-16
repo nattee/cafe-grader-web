@@ -34,49 +34,36 @@ class ProblemExporter
     end
   end
 
-  def export_testcases
-    @testcase_dir = @main_dir + OptionConst::DEFAULT[:dir][:testcases]
-    @testcase_dir.mkpath
+  def export_testcases_to(ds, dir, opts)
+    tc_dir = dir + OptionConst::DEFAULT[:dir][:testcases]
+    tc_dir.mkpath
     tc_options = {}
-    @ds.testcases.each do |tc|
+    ds.testcases.each do |tc|
       basename = tc.code_name || tc.num
-      inp_fn = @testcase_dir + "#{basename}.#{@inp_ext}"
-      ans_fn = @testcase_dir + "#{basename}.#{@ans_ext}"
-      tc_options[basename] = {
-        group: tc.group,
-        group_name: tc.group_name,
-        weight: tc.weight
-      }
-
-      File.open(inp_fn, 'w:ASCII-8BIT') do |f|
-        tc.inp_file.download { |chunk| f.write(chunk) }
-      end
-      File.open(ans_fn, 'w:ASCII-8BIT') do |f|
-        tc.ans_file.download { |chunk| f.write(chunk) }
-      end
+      tc_options[basename] = { group: tc.group, group_name: tc.group_name, weight: tc.weight }
+      File.open(tc_dir + "#{basename}.#{@inp_ext}", 'w:ASCII-8BIT') { |f| tc.inp_file.download { |c| f.write(c) } }
+      File.open(tc_dir + "#{basename}.#{@ans_ext}", 'w:ASCII-8BIT') { |f| tc.ans_file.download { |c| f.write(c) } }
     end
-    @options[OptionConst::YAML_KEY[:testcases_pattern]] = '*'
-    @options[OptionConst::YAML_KEY[:dir][:testcases]] = OptionConst::DEFAULT[:dir][:testcases]
-    @options[OptionConst::YAML_KEY[:testcases]] = tc_options
+    opts[OptionConst::YAML_KEY[:testcases_pattern]] = '*'
+    opts[OptionConst::YAML_KEY[:dir][:testcases]] = OptionConst::DEFAULT[:dir][:testcases]
+    opts[OptionConst::YAML_KEY[:testcases]] = tc_options
   end
 
-  def export_managers_checker
-    @manager_dir = @main_dir + OptionConst::DEFAULT[:dir][:managers]
-    @manager_dir.mkpath
-    @ds.managers.each do |mng|
-      filename = @manager_dir + mng.filename.to_s
-      File.open(filename, 'w:ASCII-8BIT') { |f| mng.download { |chunk| f.write chunk } }
-      @options[OptionConst::YAML_KEY[:managers_pattern]] = '*'
+  def export_managers_checker_to(ds, dir, opts)
+    manager_dir = dir + OptionConst::DEFAULT[:dir][:managers]
+    manager_dir.mkpath
+    ds.managers.each do |mng|
+      File.open(manager_dir + mng.filename.to_s, 'w:ASCII-8BIT') { |f| mng.download { |c| f.write c } }
+      opts[OptionConst::YAML_KEY[:managers_pattern]] = '*'
     end
 
-    if @ds.checker.attached?
-      @checker_dir = @main_dir + OptionConst::DEFAULT[:dir][:checker]
-      @checker_dir.mkpath
-      @checker_filename = @checker_dir + OptionConst::DEFAULT[:file][:checker]
-      File.open(@checker_filename, 'w:ASCII-8BIT') { |f| @ds.checker.download { |chunk| f.write chunk } }
-      @options[OptionConst::YAML_KEY[:checker]] = @checker_filename.basename.to_s
-      @options[OptionConst::YAML_KEY[:dir][:checker]] = @checker_filename.dirname.to_s
-    end
+    return unless ds.checker.attached?
+
+    checker_dir = dir + OptionConst::DEFAULT[:dir][:checker]
+    checker_dir.mkpath
+    checker_fn = checker_dir + OptionConst::DEFAULT[:file][:checker]
+    File.open(checker_fn, 'w:ASCII-8BIT') { |f| ds.checker.download { |c| f.write c } }
+    opts[OptionConst::YAML_KEY[:checker]] = checker_fn.basename.to_s
   end
 
   def export_solutions
@@ -90,13 +77,10 @@ class ProblemExporter
     end
   end
 
-  def export_initializers
-    @initializer_dir = @main_dir + OptionConst::DEFAULT[:dir][:initializers]
-    @initializer_dir.mkpath
-    @ds.initializers.each do |mng|
-      filename = @initializer_dir + mng.filename.to_s
-      File.open(filename, 'w:ASCII-8BIT') { |f| mng.download { |chunk| f.write chunk } }
-    end
+  def export_initializers_to(ds, dir)
+    init_dir = dir + OptionConst::DEFAULT[:dir][:initializers]
+    init_dir.mkpath
+    ds.initializers.each { |m| File.open(init_dir + m.filename.to_s, 'w:ASCII-8BIT') { |f| m.download { |c| f.write c } } }
   end
 
   def export_description
@@ -104,49 +88,48 @@ class ProblemExporter
     File.write(@main_dir + OptionConst::DEFAULT[:file][:description], @problem.description)
   end
 
-  def export_data_files
-    @data_files_dir = @main_dir + OptionConst::DEFAULT[:dir][:data_files]
-    @data_files_dir.mkpath
-    @ds.data_files.each do |df|
-      filename = @data_files_dir + df.filename.to_s
-      File.open(filename, 'w:ASCII-8BIT') { |f| df.download { |chunk| f.write chunk } }
-    end
+  def export_data_files_to(ds, dir)
+    df_dir = dir + OptionConst::DEFAULT[:dir][:data_files]
+    df_dir.mkpath
+    ds.data_files.each { |df| File.open(df_dir + df.filename.to_s, 'w:ASCII-8BIT') { |f| df.download { |c| f.write c } } }
   end
 
-  # save the @options hash into a YAML file
-  def export_options
-    # problem fields
+  # Write all of `ds`'s dataset-scoped files under `dir` and populate `opts`
+  # with that dataset's config (testcases, dir keys, dataset fields, ds_name).
+  def export_dataset_files(ds, dir, opts)
+    export_testcases_to(ds, dir, opts)
+    export_managers_checker_to(ds, dir, opts)
+    export_initializers_to(ds, dir)
+    export_data_files_to(ds, dir)
+
+    OptionConst::DATASET_OPTION_FIELDS.each do |opt|
+      value = ds.send(opt)
+      next if value.blank?
+      value = value.to_f if value.is_a?(BigDecimal)
+      opts[opt] = value
+    end
+    opts[OptionConst::YAML_KEY[:ds_name]] = ds.name
+    opts[OptionConst::YAML_KEY[:dir][:managers]] = OptionConst::DEFAULT[:dir][:managers]
+    opts[OptionConst::YAML_KEY[:dir][:checker]] = OptionConst::DEFAULT[:dir][:checker]
+    opts[OptionConst::YAML_KEY[:dir][:initializers]] = OptionConst::DEFAULT[:dir][:initializers]
+    opts[OptionConst::YAML_KEY[:dir][:data_files]] = OptionConst::DEFAULT[:dir][:data_files]
+  end
+
+  # Problem-scoped options + write the root config.yml. Dataset fields/testcases
+  # for the live dataset are already in @options via export_dataset_files.
+  def export_root_options
     p_options = [:name] + OptionConst::PROBLEM_OPTION_FIELDS
     p_options.each do |opt|
-      @options[opt] = @problem.send(opt) unless @problem.send(opt).blank?
-      @options[opt] = @options[opt].to_f if @options[opt].is_a? BigDecimal
+      value = @problem.send(opt)
+      next if value.blank?
+      value = value.to_f if value.is_a?(BigDecimal)
+      @options[opt] = value
     end
-
-    # live dataset fields
-    d_options = OptionConst::DATASET_OPTION_FIELDS
-    d_options.each do |opt|
-      @options[opt] = @ds.send(opt) unless @ds.send(opt).blank?
-      @options[opt] = @options[opt].to_f if @options[opt].is_a? BigDecimal
-    end
-    @options[OptionConst::YAML_KEY[:ds_name]] = @ds.name
-
-    # markdown is boolean; export explicitly whenever a description exists
     @options[:markdown] = !!@problem.markdown if @problem.description.present?
-
-    # managers, checker, initializers
-    @options[OptionConst::YAML_KEY[:dir][:managers]] = OptionConst::DEFAULT[:dir][:managers]
-    @options[OptionConst::YAML_KEY[:dir][:checker]] = OptionConst::DEFAULT[:dir][:checker]
     @options[OptionConst::YAML_KEY[:dir][:model_sols]] = OptionConst::DEFAULT[:dir][:model_sols]
-    @options[OptionConst::YAML_KEY[:dir][:initializers]] = OptionConst::DEFAULT[:dir][:initializers]
-    @options[OptionConst::YAML_KEY[:dir][:data_files]] = OptionConst::DEFAULT[:dir][:data_files]
+    @options[OptionConst::YAML_KEY[:tags]] = @problem.tags.pluck(:name) if @problem.tags.count.positive?
 
-    # tags
-    @options[OptionConst::YAML_KEY[:tags]] = @problem.tags.pluck :name if @problem.tags.count > 0
-
-    # allowed_
-    config_filename = @main_dir + OptionConst::YAML_FILENAME
-    # we need to stringify, else the YAML.safe_load won't work directly
-    File.write(config_filename, @options.deep_stringify_keys.to_yaml)
+    File.write(@main_dir + OptionConst::YAML_FILENAME, @options.deep_stringify_keys.to_yaml)
   end
 
   # this export the problem and its live dataset to a dir
@@ -165,14 +148,12 @@ class ProblemExporter
 
     # export everything
 
+    @options = {}
     export_pdf
     export_attachment
     export_description
-    export_testcases
-    export_managers_checker
-    export_initializers
-    export_data_files
-    export_options
+    export_dataset_files(@ds, @main_dir, @options)   # live dataset -> root
+    export_root_options
     export_solutions
     result[:status] = :ok
 
