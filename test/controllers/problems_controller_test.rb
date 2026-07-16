@@ -1,7 +1,7 @@
 require "test_helper"
 require "tmpdir"
 
-class ProblemsControllerTest < ActionDispatch::IntegrationTest
+class ProblemsImportExportControllerTest < ActionDispatch::IntegrationTest
   EXAMPLES = Rails.root.join("test", "problem_examples")
 
   setup do
