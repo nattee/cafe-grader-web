@@ -135,7 +135,7 @@ class ProblemExporter
   # A filesystem-safe, unique subdir name for a dataset (parameterized name,
   # de-duplicated against names already used in this export).
   def unique_ds_dirname(ds, taken)
-    base = ds.name.parameterize
+    base = ds.name.to_s.parameterize
     base = 'dataset' if base.blank?
     name = base
     i = 2

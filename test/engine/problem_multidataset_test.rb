@@ -68,4 +68,22 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
       refute frag.key?(:name), "fragment carries no problem-level fields"
     end
   end
+
+  test "all_datasets de-duplicates colliding parameterized dataset dir names" do
+    p = import_rich("md_collide")
+    ["Same Name", "same name"].each_with_index do |nm, i|
+      ds = Dataset.create!(problem: p, name: nm, time_limit: 1, memory_limit: 64, score_type: :sum)
+      tc = Testcase.new(code_name: "1", num: 1, group: 1, weight: 1)
+      tc.inp_file.attach(io: StringIO.new("#{i}\n"), filename: "i", content_type: "text/plain")
+      tc.ans_file.attach(io: StringIO.new("#{i}\n"), filename: "a", content_type: "text/plain")
+      ds.testcases << tc; ds.save!
+    end
+    Dir.mktmpdir do |dump|
+      ProblemExporter.new.export_problem_to_dir(p, base_dir: dump, zip: false, all_datasets: true)
+      dir = File.join(dump, p.name.parameterize)
+      subs = Dir.children(File.join(dir, "datasets")).sort
+      assert_equal ["same-name", "same-name-2"], subs, "colliding names get distinct suffixed dirs"
+      assert_equal ["same-name", "same-name-2"], parsed_config(dir)[:additional_datasets].sort
+    end
+  end
 end
