@@ -426,7 +426,46 @@ The existing dataset-scoped `read_*` methods lean on `@base_dir`/`@dataset`/`@op
 
 Run: `bin/rails test test/engine/problem_multidataset_test.rb`
 
-- [ ] **Step 3: Implement**
+- [ ] **Step 3a: Exclude the reserved `datasets/` subtree from the root's recursive globs**
+
+The root import's two whole-tree recursive globs — `read_testcase` (`Dir["#{@base_dir}/**/…"]`, two occurrences) and `get_content_of_first_match` (`Dir.glob(pattern)…`) — otherwise descend into `datasets/<name>/`, causing "Found multiples of config.yml" (→ options lost) and slurping nested testcases into the live dataset. Add a guard so root-level reads skip that subtree. (During an *additional* dataset's import, `@base_dir` is the subdir itself, which has no nested `datasets/`, so the guard is a harmless no-op there.)
+
+Add a constant near the top of `ProblemImporter` (after `attr_reader …`):
+
+```ruby
+  RESERVED_DATASETS_DIRNAME = 'datasets'
+```
+
+Add a helper (near `get_content_of_first_match`):
+
+```ruby
+  # Root-level recursive reads must not descend into the reserved datasets/
+  # subtree — it holds additional datasets, imported separately by
+  # import_additional_datasets.
+  def outside_reserved_datasets?(path)
+    reserved = File.join(@base_dir.to_s, RESERVED_DATASETS_DIRNAME) + '/'
+    !path.to_s.start_with?(reserved)
+  end
+```
+
+In `read_testcase`, filter BOTH globs:
+
+```ruby
+    Dir["#{@base_dir}/**/#{input_pattern}"].select { |fn| outside_reserved_datasets?(fn) }.each do |fn|
+```
+```ruby
+    Dir["#{@base_dir}/**/#{sol_pattern}"].select { |fn| outside_reserved_datasets?(fn) }.each do |fn|
+```
+
+In `get_content_of_first_match`, change the file selection:
+
+```ruby
+    files = Dir.glob(pattern).select { |p| File.file?(p) && outside_reserved_datasets?(p) }
+```
+
+This does not affect live-only imports (no `datasets/` dir → no-op), so the Task 1 characterization / round-trip guardrails stay green.
+
+- [ ] **Step 3b: Implement `import_additional_datasets`**
 
 Add the kwarg `do_additional_datasets: true,` to `import_dataset_from_dir` (next to `do_data_files: true,`), and call it near the end — right after `warn_mixed_group_weights` (which follows `read_options`):
 
