@@ -134,4 +134,40 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
     dst = Problem.find_by(name: "md_idem_dst")
     assert_equal 1, dst.datasets.where(name: "Once DS").count, "additional dataset matched by name, not duplicated"
   end
+
+  test "export(all) -> import round-trips EVERY dataset field-by-field" do
+    src = import_rich("md_rt_src")
+    ds2 = Dataset.create!(problem: src, name: "Second", time_limit: 4, memory_limit: 77,
+                          score_type: :sum, evaluation_type: :default)
+    %w[1-1 2-1].each_with_index do |cn, i|
+      tc = Testcase.new(code_name: cn, num: i + 1, group: i + 1, group_name: "g#{i + 1}", weight: (i + 1) * 5)
+      tc.inp_file.attach(io: StringIO.new("#{i}\n"), filename: "i", content_type: "text/plain")
+      tc.ans_file.attach(io: StringIO.new("#{i}\n"), filename: "a", content_type: "text/plain")
+      ds2.testcases << tc
+    end
+    ds2.save!
+
+    Dir.mktmpdir do |dump|
+      ProblemExporter.new.export_problem_to_dir(src, base_dir: dump, zip: false, all_datasets: true)
+      exported = File.join(dump, src.name.parameterize)
+      ProblemImporter.new.import_dataset_from_dir(exported, "md_rt_dst", user: users(:admin))
+    end
+    dst = Problem.find_by(name: "md_rt_dst").reload
+
+    assert_equal src.datasets.count, dst.datasets.count
+    s2 = src.datasets.find_by(name: "Second")
+    d2 = dst.datasets.find_by(name: "Second")
+    assert d2, "additional dataset present by name"
+    %w[time_limit memory_limit score_type evaluation_type].each do |f|
+      assert_equal s2.send(f), d2.send(f), "Second##{f} round-trips"
+    end
+    assert_equal s2.testcases.count, d2.testcases.count
+    s2.testcases.order(:num).zip(d2.testcases.order(:num)).each do |a, b|
+      %w[code_name num group group_name weight].each { |f| assert_equal a.send(f), b.send(f), "tc##{f}" }
+      assert_equal a.inp_file.download, b.inp_file.download
+      assert_equal a.ans_file.download, b.ans_file.download
+    end
+    # live dataset also intact
+    assert_equal src.live_dataset.testcases.count, dst.live_dataset.testcases.count
+  end
 end
