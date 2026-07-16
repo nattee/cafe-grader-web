@@ -12,6 +12,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **`problems:replay_validate` rake task** — validates the problem import/export
+  path by re-importing a problem and replaying a stratified sample of its
+  submissions through the grader, diffing per-testcase results against the
+  originals' stored grades (only `T→P`/`x→P` treated as benign). Dev diagnostic;
+  self-cleaning, with `problems:replay_purge` as a backstop.
 - **Problem import warns when a `group_min` group has mixed testcase
   weights** — group-min scoring uses one weight per group (the minimum);
   heterogeneous weights inside a group are an authoring error.
