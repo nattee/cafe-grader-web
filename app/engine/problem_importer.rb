@@ -163,7 +163,8 @@ class ProblemImporter
   # Import any datasets listed under the root config's additional_datasets key,
   # each from datasets/<name>/, as NON-live datasets on @problem. Reuses the
   # existing dataset-scoped read methods by pointing them at the subdir.
-  def import_additional_datasets
+  def import_additional_datasets(input_pattern = '*.in', sol_pattern = '*.sol',
+                                 code_name_regex = /(.*)/, group_name_regex = /^(\d+)-/)
     names = @options[OptionConst::YAML_KEY[:additional_datasets]]
     return unless names.is_a?(Array)
 
@@ -171,7 +172,7 @@ class ProblemImporter
     problem = outer_dataset.problem
     begin
       names.each do |dirname|
-        subdir = Pathname.new(outer_base) + 'datasets' + dirname.to_s
+        subdir = Pathname.new(outer_base) + RESERVED_DATASETS_DIRNAME + dirname.to_s
         unless subdir.exist?
           @log << "WARNING: additional dataset dir missing: #{subdir}"
           next
@@ -185,13 +186,14 @@ class ProblemImporter
                    Dataset.new(name: display_name, problem: problem)
         @dataset.save
 
-        read_testcase('*.in', '*.sol', /(.*)/, /^(\d+)-/)
+        read_testcase(input_pattern, sol_pattern, code_name_regex, group_name_regex)
         read_checker
         read_cpp_extras
         read_initializers
         read_data_files
         read_options   # applies this dataset's fields (fragment carries no problem-level keys)
         @dataset.save
+        @log << "WARNING: additional dataset '#{display_name}' imported with 0 testcases" if @dataset.testcases.count.zero?
         @log << "Imported additional dataset '#{display_name}'"
       end
     ensure
@@ -501,7 +503,7 @@ class ProblemImporter
     read_data_files if do_data_files
     read_options # options is put to last, it will override any defaults
     warn_mixed_group_weights
-    import_additional_datasets if do_additional_datasets
+    import_additional_datasets(input_pattern, sol_pattern, code_name_regex, group_name_regex) if do_additional_datasets
     read_solutions(user: user) if do_solutions
     @problem.save
     @dataset.save
