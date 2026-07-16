@@ -98,32 +98,32 @@ class Replay::SubmissionReplayTest < ActiveSupport::TestCase
                                "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
   end
 
-  test "a fresh compile/grader error on a non-gradable language is bucketed errored, not suspect" do
-    pi = ProblemImporter.new
-    pi.import_dataset_from_dir(Rails.root.join("test", "problem_examples", "fibo").to_s,
-                              "rcsrc_#{SecureRandom.hex(3)}", user: users(:admin))
-    problem = pi.problem
+  test "tally buckets a fresh compile/grader error on a non-gradable language as errored, not suspect" do
     # Pascal ("pas") is not in GRADABLE_LANGS (cpp,c) -- on this box only
     # C/C++ grade reliably (cgroup unconfigured for other toolchains), so a
     # fresh error on Pascal is an environment gap, not a real regression, and
     # must stay bucketed as errored (excluded from the verdict).
-    seed = Submission.new(user: users(:admin), problem: problem, language: languages(:Language_pas),
+    #
+    # NOTE: `run` now calls ReplaySampler.sample(..., languages: GRADABLE_LANGS),
+    # so a non-gradable-language submission is never sampled in the first
+    # place -- this scenario can no longer occur end-to-end. Exercise tally()
+    # directly to keep its defensive branch covered.
+    problem = Problem.create!(name: "smp_#{SecureRandom.hex(3)}", full_name: "Sampler")
+    orig = Submission.new(user: users(:admin), problem: problem, language: languages(:Language_pas),
                           source_filename: "a.pas", submitted_at: Time.zone.now)
-    seed.source = "begin end."
-    seed.save!(validate: false)
-    seed.update_columns(status: Submission.statuses[:done], points: 100, graded_at: 1.minute.from_now)
+    orig.source = "begin end."
+    orig.save!(validate: false)
+    orig.update_columns(status: Submission.statuses[:done], points: 100)
 
-    Replay::ReplayGrader.stub :grade_sync,
-                              ->(*) { { points: 0, grader_comment: "Compilation error", status: "compilation_error" } } do
-      report = Replay::SubmissionReplay.run(problem, limit: 5)
-      assert_equal 0, report[:mismatch]
-      assert_equal 0, report[:structural]
-      assert_equal 0, report[:suspect]
-      assert report[:errored] >= 1
-    end
+    report = { errored: 0, suspect: 0, mismatch: 0, structural: 0, mismatch_details: [], error_details: [] }
+    res = { points: 0, grader_comment: "Compilation error", status: "compilation_error" }
 
-    assert_empty Problem.where("name LIKE ?",
-                               "#{Problem.sanitize_sql_like(Replay::SubmissionReplay::RC_PREFIX)}%")
+    Replay::SubmissionReplay.tally(report, {}, orig, res)
+
+    assert_equal 0, report[:mismatch]
+    assert_equal 0, report[:structural]
+    assert_equal 0, report[:suspect]
+    assert report[:errored] >= 1
   end
 
   test "run skips (does not crash) when export hits a missing ActiveStorage blob" do

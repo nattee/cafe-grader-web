@@ -11,8 +11,8 @@ class Replay::ReplaySamplerTest < ActiveSupport::TestCase
     problem
   end
 
-  def add_sub(problem, points:, graded_at:)
-    s = Submission.new(user: users(:admin), problem: problem, language: languages(:Language_cpp),
+  def add_sub(problem, points:, graded_at:, language: languages(:Language_cpp))
+    s = Submission.new(user: users(:admin), problem: problem, language: language,
                        source_filename: "a.cpp", submitted_at: graded_at, points: points)
     s.source = "int main(){}"
     s.save!(validate: false)
@@ -73,5 +73,16 @@ class Replay::ReplaySamplerTest < ActiveSupport::TestCase
     first = Replay::ReplaySampler.sample(p, limit: 5)[:submissions].map(&:id)
     second = Replay::ReplaySampler.sample(p, limit: 5)[:submissions].map(&:id)
     assert_equal first, second
+  end
+
+  test "languages filter excludes non-gradable-language submissions" do
+    cutoff = Time.zone.parse("2026-01-01 00:00")
+    p = build(dataset_updated_at: cutoff)
+    add_sub(p, points: 100, graded_at: cutoff + 1.day, language: languages(:Language_cpp))
+    add_sub(p, points: 100, graded_at: cutoff + 1.day, language: languages(:Language_ruby))
+
+    out = Replay::ReplaySampler.sample(p, limit: 100, languages: %w[cpp c])
+    assert_equal 1, out[:submissions].size
+    assert_equal "cpp", out[:submissions].first.language.name
   end
 end

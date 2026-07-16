@@ -21,7 +21,7 @@ module Replay
     end
 
     def run(problem, limit: 100)
-      sample = ReplaySampler.sample(problem, limit: limit)
+      sample = ReplaySampler.sample(problem, limit: limit, languages: GRADABLE_LANGS)
       clone = nil
       report = { problem: problem.name, replayed: 0, skipped_stale: sample[:skipped_stale],
                  buckets: sample[:buckets], exact: 0, benign: 0, mismatch: 0,

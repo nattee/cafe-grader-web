@@ -5,10 +5,12 @@ module Replay
     # Up to `limit` of the problem's graded submissions, stratified across
     # zero / partial / full score buckets. Skips submissions graded before the
     # live dataset's updated_at (their stored grade predates the dataset we clone).
-    def sample(problem, limit: 100)
+    def sample(problem, limit: 100, languages: nil)
       ds = problem.live_dataset
       cutoff = ds&.updated_at
-      graded = problem.submissions.where.not(points: nil).order(:id).to_a
+      scope = problem.submissions.where.not(points: nil)
+      scope = scope.joins(:language).where(languages: { name: languages }) if languages.present?
+      graded = scope.order(:id).to_a
       fresh, stale = graded.partition do |s|
         cutoff.nil? || s.graded_at.nil? || s.graded_at >= cutoff
       end
