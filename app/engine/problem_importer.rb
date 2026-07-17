@@ -170,6 +170,14 @@ class ProblemImporter
 
     outer_base, outer_dataset, outer_options = @base_dir, @dataset, @options
     problem = outer_dataset.problem
+    # Snapshot from @problem (not the local `problem`/`outer_dataset.problem`):
+    # read_cpp_extras purges+reloads @dataset for manager-file housekeeping, and
+    # a reloaded association returns a *fresh* Problem instance on the next
+    # `.problem` call — divorced from @problem's in-memory state (which may
+    # carry not-yet-saved corrections from the root import's read_options).
+    # @problem is the one consistent reference the whole import saves at the end.
+    saved_compilation_type = @problem.compilation_type
+    saved_submission_filename = @problem.submission_filename
     begin
       names.each do |dirname|
         subdir = Pathname.new(outer_base) + RESERVED_DATASETS_DIRNAME + dirname.to_s
@@ -198,6 +206,10 @@ class ProblemImporter
       end
     ensure
       @base_dir, @dataset, @options = outer_base, outer_dataset, outer_options
+      if @problem.compilation_type != saved_compilation_type || @problem.submission_filename != saved_submission_filename
+        @problem.update_columns(compilation_type: saved_compilation_type,
+                                submission_filename: saved_submission_filename)
+      end
     end
   end
 

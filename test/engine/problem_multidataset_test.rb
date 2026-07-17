@@ -178,6 +178,42 @@ class ProblemMultidatasetTest < ActiveSupport::TestCase
     end
   end
 
+  test "do_additional_datasets:false imports only the live dataset" do
+    src = import_rich("md_noadd_src")
+    Dataset.create!(problem: src, name: "Skip Me", time_limit: 1, memory_limit: 64, score_type: :sum).tap do |d|
+      tc = Testcase.new(code_name: "1", num: 1, group: 1, weight: 1)
+      tc.inp_file.attach(io: StringIO.new("1\n"), filename: "i", content_type: "text/plain")
+      tc.ans_file.attach(io: StringIO.new("1\n"), filename: "a", content_type: "text/plain")
+      d.testcases << tc; d.save!
+    end
+    Dir.mktmpdir do |dump|
+      ProblemExporter.new.export_problem_to_dir(src, base_dir: dump, zip: false, all_datasets: true)
+      exported = File.join(dump, src.name.parameterize)
+      pi = ProblemImporter.new
+      pi.import_dataset_from_dir(exported, "md_noadd_dst", user: users(:admin), do_additional_datasets: false)
+      assert_equal 1, pi.problem.reload.datasets.count, "additional datasets skipped when flag is false"
+    end
+  end
+
+  test "additional dataset with a grader does not corrupt problem submission_filename" do
+    src = import_rich("md_subf_src")
+    src.update!(submission_filename: "custom_sub.h")
+    ds2 = Dataset.create!(problem: src, name: "Grader DS", time_limit: 1, memory_limit: 64, score_type: :sum)
+    ds2.managers.attach(io: StringIO.new("int main(){}\n"), filename: "grader.cpp", content_type: "text/plain")
+    tc = Testcase.new(code_name: "1", num: 1, group: 1, weight: 1)
+    tc.inp_file.attach(io: StringIO.new("1\n"), filename: "i", content_type: "text/plain")
+    tc.ans_file.attach(io: StringIO.new("1\n"), filename: "a", content_type: "text/plain")
+    ds2.testcases << tc; ds2.save!
+
+    Dir.mktmpdir do |dump|
+      ProblemExporter.new.export_problem_to_dir(src, base_dir: dump, zip: false, all_datasets: true)
+      exported = File.join(dump, src.name.parameterize)
+      ProblemImporter.new.import_dataset_from_dir(exported, "md_subf_dst", user: users(:admin))
+    end
+    dst = Problem.find_by(name: "md_subf_dst")
+    assert_equal "custom_sub.h", dst.submission_filename, "additional dataset's grader must not clobber problem submission_filename"
+  end
+
   test "Problem#export forwards all_datasets" do
     p = import_rich("md_pexport")
     Dataset.create!(problem: p, name: "X DS", time_limit: 1, memory_limit: 64, score_type: :sum).tap do |d|

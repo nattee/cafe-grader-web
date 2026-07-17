@@ -420,7 +420,8 @@ class ProblemsController < ApplicationController
                                 do_checker: false,
                                 do_cpp_extras: false,
                                 do_solutions: false,
-                                do_attachment: false
+                                do_attachment: false,
+                                do_additional_datasets: false
                               )
     @updated = 'Testcases has been imported'
     @log = pi.log
