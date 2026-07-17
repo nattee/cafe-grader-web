@@ -42,8 +42,9 @@ module OptionConst
   }
 
   # Problem / live-Dataset attributes carried in config.yml.
-  # Single source of truth for BOTH ProblemImporter#read_options and
-  # ProblemExporter#export_options — do not redefine lists there.
+  # Single source of truth for ProblemImporter#read_options and
+  # ProblemExporter#export_root_options / #export_dataset_files —
+  # do not redefine lists there.
   PROBLEM_OPTION_FIELDS = %i[full_name submission_filename task_type
                              compilation_type permitted_lang markdown]
   DATASET_OPTION_FIELDS = %i[time_limit memory_limit score_type
