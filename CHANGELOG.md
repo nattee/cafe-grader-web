@@ -25,7 +25,8 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   page, `Problem#export(all_datasets: true)`, or `rails "problems:export[name,all]"`),
   and are re-imported as additional (non-live) datasets. The zip format is a
   backward-compatible superset: old archives import unchanged, and the default
-  "live dataset only" export is byte-compatible with previous versions.
+  "live dataset only" export is structurally compatible with previous versions
+  (same files; imports identically).
 
 ### Fixed
 

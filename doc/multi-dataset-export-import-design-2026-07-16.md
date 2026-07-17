@@ -36,7 +36,7 @@ datasets/                                                      # NEW, present on
 ### Backward compatibility (the core requirement)
 
 1. **Old `.zip`** (no `additional_datasets`, no `datasets/`) → new importer imports the live dataset exactly as today. ✓
-2. **New live-only export** (default) → **byte-for-byte identical to today's output** — no `additional_datasets` key, no `datasets/` dir. Old importers and the CMS/Italian path are unaffected. ✓
+2. **New live-only export** (default) → **semantically identical (same files + same parsed config; YAML key order may differ) to today's output** — no `additional_datasets` key, no `datasets/` dir. Old importers and the CMS/Italian path are unaffected. ✓
 3. **New all-datasets export** → an old importer reads the live dataset from root and silently ignores the unknown `additional_datasets` key and the `datasets/` dir (graceful degradation, no crash). ✓
 
 ## Exporter changes (`app/engine/problem_exporter.rb`)
