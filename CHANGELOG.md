@@ -20,6 +20,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 - **Problem import warns when a `group_min` group has mixed testcase
   weights** — group-min scoring uses one weight per group (the minimum);
   heterogeneous weights inside a group are an authoring error.
+- **Multi-dataset problem export/import** — a problem's non-live datasets can now
+  be included in its export archive ("Download (all datasets)" on the problem
+  page, `Problem#export(all_datasets: true)`, or `rails "problems:export[name,all]"`),
+  and are re-imported as additional (non-live) datasets. The zip format is a
+  backward-compatible superset: old archives import unchanged, and the default
+  "live dataset only" export is byte-compatible with previous versions.
 
 ### Fixed
 
