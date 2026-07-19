@@ -65,12 +65,9 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     refute_includes sys, 'first user message contains the scenario'
   end
 
-  test "grounding material is added to first user message when viva_grounding tags exist" do
-    grounding_tag = Tag.find_or_create_by!(name: 'test_viva_grounding') do |t|
-      t.kind = :viva_grounding
-      t.params = 'Reference: trees have nodes and edges.'
-    end
-    @problem.tags << grounding_tag unless @problem.tags.include?(grounding_tag)
+  test "grounding material is added to first user message when grounding materials exist" do
+    grounding = GroundingMaterial.create!(title: 'test_grounding', body: 'Reference: trees have nodes and edges.')
+    @problem.grounding_materials << grounding
 
     msgs = @assist.send(:messages_array)
     user_msg = msgs[1]
