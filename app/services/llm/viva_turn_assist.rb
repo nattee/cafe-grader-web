@@ -101,24 +101,29 @@ module Llm
     end
 
     # The first user message carries the "case at hand": scenario text, any
-    # grounding material from viva_grounding tags, and the problem PDF if
-    # attached. Returns a plain string when there's only the scenario (simpler
-    # wire shape); otherwise a multimodal content array.
+    # grounding material from the problem's GroundingMaterial records, and the
+    # problem PDF if attached. Returns a plain string when there's only the
+    # scenario (simpler wire shape); otherwise a multimodal content array.
     def build_first_user_content
       parts = [{type: 'text', text: scenario_message}]
       grounding = grounding_block
       parts << {type: 'text', text: grounding} if grounding
       pdf = pdf_attachment
       parts << pdf if pdf
+      parts.concat(grounding_file_parts)
       parts.length == 1 ? scenario_message : parts
     end
 
-    # Concatenated viva_grounding tag payloads, with a markdown header so the
-    # model can identify the section. Returns nil when no grounding tags exist.
+    # Concatenated grounding body text, with a markdown header. nil when none.
     def grounding_block
-      grounding = @problem.viva_grounding_tags.map(&:grounding_payload).reject(&:blank?).join("\n\n---\n\n")
-      return nil if grounding.blank?
-      "## Grounding Material\n\n#{grounding}"
+      texts = @problem.grounding_materials.filter_map(&:grounding_text)
+      return nil if texts.empty?
+      texts.join("\n\n---\n\n")
+    end
+
+    # image_url parts for every attached grounding file across all materials.
+    def grounding_file_parts
+      @problem.grounding_materials.flat_map(&:grounding_file_parts)
     end
 
     # Backend-injected protocol directive. The model MUST include this exact

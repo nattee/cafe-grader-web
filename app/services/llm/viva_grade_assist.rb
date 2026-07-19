@@ -48,11 +48,15 @@ module Llm
     end
 
     # Scenario block sent to the grader. Includes the problem PDF (if attached)
-    # alongside the scenario text so the grader can see the actual problem.
+    # and any grounding material files alongside the scenario text so the
+    # grader can see the actual problem. (System messages can't carry images,
+    # so grounding file parts travel here rather than in the system prompt.)
     def build_scenario_content
+      parts = [{type: 'text', text: scenario_message}]
       pdf = pdf_attachment
-      return scenario_message unless pdf
-      [{type: 'text', text: scenario_message}, pdf]
+      parts << pdf if pdf
+      parts.concat(@problem.grounding_materials.flat_map(&:grounding_file_parts))
+      parts.length == 1 ? scenario_message : parts
     end
 
     def grading_system_prompt
@@ -94,7 +98,7 @@ module Llm
       prompt    = @problem.viva_prompt_tags.map(&:params).reject(&:blank?).join("\n\n")
       raise RuntimeError, "There is no llm_prompt tag attached to problem '#{@problem.name}' — viva needs a prompt tag" if prompt.blank?
 
-      grounding = @problem.viva_grounding_tags.map(&:grounding_payload).reject(&:blank?).join("\n\n---\n\n")
+      grounding = @problem.grounding_materials.filter_map(&:grounding_text).join("\n\n---\n\n")
       [prompt, grounding].reject(&:blank?).join("\n\n")
     end
 

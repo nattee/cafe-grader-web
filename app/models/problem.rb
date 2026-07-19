@@ -162,10 +162,6 @@ class Problem < ApplicationRecord
   def set_default_value
   end
 
-  def viva_grounding_tags
-    tags.where(kind: :viva_grounding)
-  end
-
   def viva_prompt_tags
     tags.where(kind: :llm_prompt)
   end
