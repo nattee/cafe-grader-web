@@ -34,12 +34,19 @@ the visible label alone is enough.
   used as a layout: `= render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:} do … end`.
   Both drawers migrated onto it: `problems/_edit_help` and the report scope help
   (`report/_report_help`). New drawers should use it instead of hand-rolling the chrome.
-- **Edit-drawer content density.** `problems/_edit_help.html.haml` content
-  is still text-heavy. The point of the drawer was to relieve a dense
-  page; the help inside shouldn't reproduce that density. Consider tabs
-  inside the drawer (Basics / Datasets / Viva / Tags) or a numbered
-  walkthrough rather than field-by-field reference. Defer until we have
-  a second drawer to compare against.
+- **Edit-drawer content density.** ✅ DONE 2026-07-19. `problems/_edit_help.html.haml`
+  is now a Bootstrap accordion (5 items, one open at a time, "Detail card fields"
+  open by default) so the drawer opens short instead of one long scroll. Chose the
+  accordion over tabs/walkthrough after a rendered side-by-side comparison of all
+  three (accordion won: native to the narrow vertical drawer, keeps direct lookup,
+  shortest initial scroll). Folded in two structural fixes visible in the old
+  version: pulled **Compilation type** out of the Detail `dl` into its own section
+  (it carried 3 sub-bullets and bloated the list), and moved the toolbar list
+  (Statistics / Download / Change history) out from under *Scoring & evaluation*
+  into a new *Toolbar & more* section next to the wiki link. Wording kept verbatim
+  — the collapse solves density, so no prose rewrite. Collapse is data-API driven
+  (no `init-ui-component` wrapper needed; survives Turbo-frame reloads). Optional
+  future follow-up: trim the prose if it still feels heavy once collapsed.
 
 **Out of scope.** `app/views/main/help.html.haml` is a full-page
 student-facing help with i18n — different concern, not covered by the
