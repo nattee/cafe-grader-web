@@ -117,26 +117,29 @@ module Llm
       "#{exception.class.name}: #{exception.message}"
     end
 
-    # Base64-encode the problem statement PDF as an image_url content part
-    # in the OpenAI-compatible multimodal shape. Returns nil when no PDF is
-    # attached or the attached file isn't application/pdf — callers should
-    # treat that as "no PDF for this problem" and fall back to text only.
-    # Used by both CommentAssist and the viva subclasses.
-    def pdf_attachment
-      return nil unless problem&.statement&.attached?
-      return nil unless problem.statement.content_type == 'application/pdf'
+    # Base64-encode a single attachment as an OpenAI-compatible image_url
+    # content part. Returns nil when the attachment is absent or not a PDF —
+    # callers treat that as "no part for this source." Stateless class method
+    # so both the instance statement path and GroundingMaterial can share it.
+    def self.encode_pdf_part(attachment)
+      return nil unless attachment&.attached?
+      return nil unless attachment.content_type == 'application/pdf'
 
-      pdf_binary  = problem.statement.download
-      encoded_pdf = Base64.strict_encode64(pdf_binary)
-
+      encoded = Base64.strict_encode64(attachment.download)
       {
         type:      "image_url",  # API spec uses 'image_url' for this content type
-        image_url: "data:application/pdf;base64,#{encoded_pdf}"
+        image_url: "data:application/pdf;base64,#{encoded}"
       }
     rescue => e
-      msg = "Failed to build PDF attachment for Problem ##{problem.id}: #{e.message}"
+      msg = "Failed to build PDF attachment (#{attachment&.filename}): #{e.message}"
       Rails.logger.error msg
       raise RuntimeError, msg
+    end
+
+    # The problem statement PDF as an image_url part (or nil). Used by
+    # CommentAssist and the viva subclasses.
+    def pdf_attachment
+      self.class.encode_pdf_part(problem&.statement)
     end
 
     # Collapse consecutive messages of the same role into one (contents joined
