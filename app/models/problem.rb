@@ -157,6 +157,8 @@ class Problem < ApplicationRecord
   has_one_attached :generated_statement # statement generated from the description
   has_one_attached :attachment  # this is public files seen by contestant
 
+  has_and_belongs_to_many :grounding_materials
+
   def set_default_value
   end
 
