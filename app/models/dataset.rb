@@ -101,24 +101,44 @@ class Dataset < ApplicationRecord
     end
   end
 
-  # set testcases parameters *field* by array
+  # set testcases parameters *field* by array.
+  #
+  # Each element assigns *field* to a run of testcases:
+  #   scalar          → one testcase (the next in display order)
+  #   [value, count]  → the next `count` testcases, positionally
+  #   [value, "regex"]→ CMS mode only: every testcase whose code_name matches
+  #                     the regexp, anchored at the start like CMS's re.match
+  #                     (e.g. "1-.*" selects code_names 1-1, 1-2, …).
+  #
+  # CMS mode (auto-enabled when the first element is an array and the caller
+  # permits it) also writes an incrementing `group` per element, so one array
+  # declares group_min groups + weights at once. Regexp selectors are honoured
+  # ONLY in CMS mode; the hash-form callers (group / group_name) pass
+  # can_use_cms_mode: false and keep integer counts.
   def set_by_array(field, array, can_use_cms_mode: true)
-    tc_ids = testcases.display_order.ids
+    tcs = testcases.display_order.pluck(:id, :code_name)
     idx = 0
     group = 0
     cms_mode = array[0].is_a?(Array) && can_use_cms_mode
     array.each do |config|
-      count = 1
       group += 1
       if config.is_a? Array
-        value = config[0]
-        count = config[1].to_i
+        value, selector = config[0], config[1]
       else
-        value = config
+        value, selector = config, 1
       end
-      # take next count ids
-      ids = tc_ids[idx...(idx+count)]
-      idx += count
+
+      if cms_mode && selector.is_a?(String)
+        # CMS-style codename match, anchored at the start (Python re.match).
+        # The (?:…) wrap keeps top-level alternation inside the anchor.
+        re = Regexp.new("\\A(?:#{selector})")
+        ids = tcs.select { |_id, cn| re.match?(cn.to_s) }.map(&:first)
+      else
+        count = selector.to_i
+        ids = tcs[idx...(idx + count)].to_a.map(&:first)
+        idx += count
+      end
+
       hash = {}
       hash[field] = value
       hash['group'] = group if cms_mode

@@ -36,14 +36,56 @@
 = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
   %input{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput'}}
   .col-12
-    .form-check.d-inline-flex.align-items-center.gap-1
+    .d-inline-flex.align-items-center.gap-2
       Testcase config
-      %a{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank'} 
-        %span.mi.md-18 help_center
+      %button.btn.btn-sm.bg-white.shadow-sm.border-0.text-secondary.d-inline-flex.align-items-center.gap-1{type: 'button', data: {bs_toggle: 'offcanvas', bs_target: '#testcase-config-help', bs_title: 'Help'}}
+        %span.mi.md-18 help_outline
+        Syntax &amp; CMS notes
   .col-12
-    = text_field_tag :weight_param, nil, class: 'form-control'
+    = text_field_tag :weight_param, nil, class: 'form-control', placeholder: '[[40,"1-.*"],[60,"2-.*"]]'
   .col-12
     = f.submit 'Apply', class: 'btn btn-primary'
+-# Always-visible quick examples — the syntax at a glance. Full grammar + the
+-# CMS-comparison caveat live in the offcanvas drawer below (shared help chrome).
+.form-text.small.mt-1.mb-2
+  e.g.
+  %code.mx-1 [10,20,30]
+  weights ·
+  %code.mx-1 [[10,2],[20,3]]
+  groups by count ·
+  %code.mx-1 [[40,"1-.*"],[60,"2-.*"]]
+  groups by codename regex.
+  %span.text-warning-emphasis Weights are normalized — not CMS points.
+= render layout: 'shared/help_drawer', locals: { id: 'testcase-config-help', title: 'Testcase Config Syntax', subtitle: 'Assign weights and groups in bulk (JSON).' } do
+  %section.mb-4
+    %h6.fw-bold.text-secondary.text-uppercase.small.ls-1.mb-2 Forms
+    %dl.row.small.mb-0
+      %dt.col-12.col-sm-5.fw-semibold
+        %code [10, 20, 30]
+      %dd.col-12.col-sm-7.text-secondary Flat weights, one per testcase in display order. No grouping.
+      %dt.col-12.col-sm-5.fw-semibold
+        %code [[10, 2], [20, 3]]
+      %dd.col-12.col-sm-7.text-secondary CMS mode — <code>[weight, count]</code>. Group 1 = next 2 testcases at weight 10, group 2 = next 3 at 20. Sets <strong>weight and group</strong>.
+      %dt.col-12.col-sm-5.fw-semibold
+        %code [[40, "1-.*"], [60, "2-.*"]]
+      %dd.col-12.col-sm-7.text-secondary CMS mode — <code>[weight, "regex"]</code>. Groups by <code>code_name</code>, start-anchored like CMS <code>re.match</code>: <code>1-.*</code> matches 1-1, 1-2 but not 10-1.
+      %dt.col-12.col-sm-5.fw-semibold
+        %code {"weight":[…], "group":[…]}
+      %dd.col-12.col-sm-7.text-secondary Hash form — set each field independently by run-length array. Counts only; no regex, no auto-grouping.
+
+  %section.mb-4
+    %h6.fw-bold.text-secondary.text-uppercase.small.ls-1.mb-2 Looks like CMS — but isn't
+    %ul.small.text-secondary.mb-0.ps-3
+      %li <strong>First number is a weight, not points.</strong> cafe normalizes (Σ min·weight / Σ weight × 100); CMS points are absolute — same result only when they sum to 100.
+      %li <strong>The regex T matches <code>code_name</code>, start-anchored</strong> — mirrors CMS <code>re.match</code>.
+      %li <strong>The value is stored per testcase</strong> (CMS keeps it once per subtask) — which is why a group can drift into mixed weights, and why the editor and importer warn about it.
+      %li No CMS package import/export yet; only the runtime checker protocol (Custom CMS) is CMS-compatible.
+
+  %section
+    %h6.fw-bold.text-secondary.text-uppercase.small.ls-1.mb-2 More
+    %a.btn.btn-sm.btn-outline-secondary.d-inline-flex.align-items-center.gap-1{href: 'https://github.com/cafe-grader-team/cafe-grader-web/wiki/Configuring-testcases', target: '_blank', rel: 'noopener'}
+      %span.mi.md-18 open_in_new
+      Wiki: Configuring testcases
 -# Table classes follow the admin-table convention from CLAUDE.md
 -# (.table.table-hover.table-condense.align-middle). init-ui-component
 -# on the table so tooltips on the per-row action buttons get initialized

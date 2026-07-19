@@ -165,6 +165,8 @@ class DatasetsController < ApplicationController
       @toast = {body: "Testcases' parameters are updated.", title: 'Testcase updated'}
     rescue JSON::ParserError => e
       @toast = {body: "Weight parameter is malformed.", title: 'Testcase updated', type: 'alert'}
+    rescue RegexpError => e
+      @toast = {body: "A codename pattern is not a valid regexp: #{e.message}", title: 'Testcase updated', type: 'alert'}
     end
     render :update
   end

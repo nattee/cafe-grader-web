@@ -25,6 +25,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   a banner lists each offending group with its weights and effective (minimum)
   weight, and a per-row marker flags the affected testcases. Only shown under
   Group Min scoring.
+- **Testcase config accepts CMS-style codename regexps** — the weight/group tool
+  now takes `[[weight, "1-.*"], [weight, "2-.*"]]`, grouping testcases by a
+  regexp matched against `code_name` (start-anchored, mirroring CMS `re.match`),
+  alongside the existing `[weight, count]` form. The box gains inline examples
+  and a "Syntax & CMS notes" help drawer; the full grammar and how it differs
+  from CMS `GroupMin` parameters (normalized weights vs absolute points) are
+  documented in `doc/dataset-scoring-and-evaluation.md`.
 - **Multi-dataset problem export/import** — a problem's non-live datasets can now
   be included in its export archive ("Download (all datasets)" on the problem
   page, `Problem#export(all_datasets: true)`, or `rails "problems:export[name,all]"`),
