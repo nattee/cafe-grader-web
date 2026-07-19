@@ -152,3 +152,26 @@ class ProblemsImportExportControllerTest < ActionDispatch::IntegrationTest
     end
   end
 end
+
+# Covers the problem-form side of grounding materials: `update`'s permit
+# list allows `grounding_material_ids: []` (see ProblemsController#problem_params)
+# and the HABTM assignment actually saves.
+class ProblemsControllerGroundingMaterialTest < ActionDispatch::IntegrationTest
+  test "admin can attach a grounding material to a problem via the edit form" do
+    sign_in_as("admin", "admin")
+    problem = problems(:prob_viva)
+    gm = grounding_materials(:gm_empty)
+    assert_not_includes problem.grounding_materials, gm
+
+    # permitted_lang is read directly off params (not the strong-params
+    # allowlist) by ProblemsController#update and must be an array, or the
+    # controller raises before reaching the grounding_material_ids permit
+    # path this test exists to cover. as: :turbo_stream matches the real
+    # form_with submission (update.turbo_stream.haml is the only template).
+    patch problem_path(problem),
+          params: { problem: { grounding_material_ids: [gm.id], permitted_lang: [""] } },
+          as: :turbo_stream
+    assert_response :success
+    assert_includes problem.reload.grounding_materials, gm
+  end
+end

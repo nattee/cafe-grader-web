@@ -79,6 +79,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   is named `statement.pdf` (was `statment.pdf`).
 - **Downloading the archive of a problem with no live dataset** shows an
   alert instead of a 500 error page.
+- **Grounding material PDF/image attachments no longer crash the LLM
+  request builder** — `GroundingMaterial#grounding_file_parts` iterates raw
+  `ActiveStorage::Attachment` records (from a `has_many_attached` collection),
+  which don't respond to `#attached?`; `Llm::Request.encode_pdf_part` was
+  unconditionally calling it, so any viva turn/grade request for a problem
+  with an attached grounding file raised `NoMethodError` instead of sending
+  the file.
 
 ### Security
 

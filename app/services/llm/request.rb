@@ -120,9 +120,14 @@ module Llm
     # Base64-encode a single attachment as an OpenAI-compatible image_url
     # content part. Returns nil when the attachment is absent or not a PDF —
     # callers treat that as "no part for this source." Stateless class method
-    # so both the instance statement path and GroundingMaterial can share it.
+    # so both the instance statement path (a has_one_attached proxy, which
+    # responds to #attached?) and GroundingMaterial#grounding_file_parts (a
+    # raw ActiveStorage::Attachment yielded while iterating a has_many_attached
+    # collection, which does not respond to #attached? — its existence in the
+    # collection already means it's attached) can share it.
     def self.encode_pdf_part(attachment)
-      return nil unless attachment&.attached?
+      return nil if attachment.nil?
+      return nil if attachment.respond_to?(:attached?) && !attachment.attached?
       return nil unless attachment.content_type == 'application/pdf'
 
       encoded = Base64.strict_encode64(attachment.download)
