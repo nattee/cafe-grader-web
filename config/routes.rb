@@ -56,6 +56,10 @@ Rails.application.routes.draw do
     post :index_query, on: :collection
   end
 
+  resources :grounding_materials, except: [:show] do
+    delete 'delete_file', on: :member
+  end
+
   get "sources/direct_edit"
 
   root to: 'main#login'
