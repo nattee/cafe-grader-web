@@ -4,9 +4,10 @@ class VivaGroundingAssemblyTest < ActiveSupport::TestCase
   test "encode_pdf_part returns nil for nil input and for an attached non-pdf file" do
     assert_nil Llm::Request.encode_pdf_part(nil)
 
-    # A real, attached, non-PDF ActiveStorage::Attachment (image/png is allowed by
-    # GroundingMaterial but must NOT be sent as a PDF part): exercises the
-    # raw-attachment path (no #attached? method) hitting the application/pdf guard.
+    # A real, attached, non-PDF ActiveStorage::Attachment. GroundingMaterial validation
+    # is PDF-only (image/png is no longer a valid upload), so this attaches directly
+    # to bypass that validation purely to exercise the encoder's own defense-in-depth
+    # content_type guard on the raw-attachment path (no #attached? method).
     gm = GroundingMaterial.create!(title: "t")
     gm.files.attach(io: StringIO.new("fakepng"), filename: "a.png", content_type: "image/png")
     assert_nil Llm::Request.encode_pdf_part(gm.files.first)

@@ -1,9 +1,12 @@
 class GroundingMaterial < ApplicationRecord
-  # PDF/image files delivered to the LLM as base64 image_url parts (see
+  # PDF-only for v1: delivered to the LLM as a base64 image_url part (see
   # Llm::Request.encode_pdf_part). No text extraction — matches the statement PDF.
-  ALLOWED_CONTENT_TYPES = %w[application/pdf image/png image/jpeg image/webp].freeze
+  # Image support (png/jpeg/webp) is a deferred backlog item — see doc/backlog.md —
+  # and requires extending BOTH this list AND Llm::Request.encode_pdf_part together;
+  # adding one without the other means uploads are accepted but silently never sent.
+  ALLOWED_CONTENT_TYPES = %w[application/pdf].freeze
 
-  # Coarse token proxy for a binary PDF/image sent as an image_url part:
+  # Coarse token proxy for a binary PDF sent as an image_url part:
   # ~1 page ≈ 100 KB ≈ 258 tokens on Gemini, so ~1 token per 400 bytes.
   # Deliberately approximate; a pdf-reader page count is a deferred upgrade.
   BYTES_PER_PROXY_TOKEN = 400
@@ -12,7 +15,7 @@ class GroundingMaterial < ApplicationRecord
   has_many_attached :files
 
   validates :title, presence: true
-  validate :files_are_pdf_or_image
+  validate :files_are_pdf
 
   after_commit :recompute_estimated_tokens, on: %i[create update]
 
@@ -23,7 +26,7 @@ class GroundingMaterial < ApplicationRecord
     "## Grounding Material\n\n#{body}"
   end
 
-  # One image_url content-part per attached PDF/image, using the shared encoder.
+  # One image_url content-part per attached PDF, using the shared encoder.
   def grounding_file_parts
     files.filter_map { |f| Llm::Request.encode_pdf_part(f) }
   end
@@ -42,10 +45,10 @@ class GroundingMaterial < ApplicationRecord
     update_column(:estimated_tokens, fresh) if fresh != estimated_tokens
   end
 
-  def files_are_pdf_or_image
+  def files_are_pdf
     files.each do |f|
       next if ALLOWED_CONTENT_TYPES.include?(f.content_type)
-      errors.add(:files, "#{f.filename} must be a PDF or image (got #{f.content_type})")
+      errors.add(:files, "#{f.filename} must be a PDF (got #{f.content_type})")
     end
   end
 end

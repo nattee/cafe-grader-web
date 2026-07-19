@@ -33,15 +33,18 @@ a viva-only attach select on the problem form — see
   (`BYTES_PER_PROXY_TOKEN = 400`, i.e. ~1 token per 400 bytes) for attached
   PDF/image files — deliberately approximate, no PDF library in the codebase.
   A `pdf-reader`-based page count would give a tighter budgeting number.
-- **Grounding image files (png/jpeg) are stored but not yet sent to the
-  model.** `GroundingMaterial::ALLOWED_CONTENT_TYPES` accepts
-  `image/png`/`image/jpeg`/`image/webp` and the upload form takes them, but
+- **Grounding image files (png/jpeg) are rejected at upload — PDF-only for v1.**
+  `GroundingMaterial::ALLOWED_CONTENT_TYPES` was originally
+  `image/png`/`image/jpeg`/`image/webp` plus `application/pdf`, but
   `Llm::Request.encode_pdf_part` (`app/services/llm/request.rb:124`) hard-guards
-  `return nil unless attachment.content_type == 'application/pdf'` — so
-  `grounding_file_parts`' `filter_map` silently drops any attached image and
-  it never reaches the wire. Extend `encode_pdf_part` (or add a sibling
-  encoder) to also emit a proper `image_url` part for image content types —
-  those use a plain `data:image/png;base64,...` URI, no PDF-specific framing.
+  `return nil unless attachment.content_type == 'application/pdf'`, so an
+  uploaded image was accepted, token-counted, then silently never sent to the
+  model — a validation/delivery mismatch fixed by narrowing
+  `ALLOWED_CONTENT_TYPES` to `%w[application/pdf]`. Adding image support back
+  requires extending BOTH `ALLOWED_CONTENT_TYPES` (validation) AND
+  `encode_pdf_part` (or a sibling encoder emitting a plain
+  `data:image/png;base64,...` `image_url` part, no PDF-specific framing)
+  together — extending either alone reintroduces the same silent-drop bug.
 
 ---
 
