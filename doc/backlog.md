@@ -282,5 +282,25 @@ surface via GitHub's auto-generated sidebar, so no Home edit was needed.
   the whole weight/group grammar + the CMS-divergence caveat in
   `doc/dataset-scoring-and-evaluation.md`.
 - Approach-C IR refactor of import/export — only if supported formats multiply beyond Italian+TPS.
-- Audit the remaining single-string `Open3.capture3(cmd)` shell invocations for the same injection class fixed in import/export: `app/engine/isolate_runner.rb` (~lines 12, 36), `app/engine/checker.rb` (~line 155), `app/engine/compiler/postgres.rb` (~line 69) — convert to argv form if any build the command from user-controlled strings.
+- **✅ AUDITED 2026-07-19.** Reviewed every single-string shell invocation on the
+  grading path (`isolate_runner.rb:12,36,45`, `checker.rb:155`,
+  `compiler/postgres.rb:69`, plus the ones the original item missed:
+  `judge_base.rb:320`, `grader.rb:206,268`). **Finding: no untrusted (student)
+  input reaches any command string.** Inputs are deployment config, engine-built
+  ID-based paths, the admin-managed `languages` table (compile/run templates),
+  and problem-author files — and authors already have arbitrary code execution
+  by design (custom checkers run *unsandboxed* at `checker.rb:155`), so an author
+  filename is not an escalation. This is unlike the import/export fix, where zip
+  entry / problem names were attacker-influenced. **Action taken:** converted
+  `judge_base.rb:320` (`run_initializer`) to argv `system(*init_cmd)` — its
+  `String#dump` pseudo-quoting was Ruby escaping, not shell escaping (fragile on
+  a space/`$`/backtick, and left one of four args unquoted). **Left as-is with
+  rationale:** `isolate_runner.run_isolate` deliberately relies on `${UID}` shell
+  expansion (line 32) and takes no untrusted input; `checker.rb:155` and the
+  `grader.rb`/`postgres.rb` sites take only config/ID/author-trusted strings.
+  Optional future hardening (not required): make `check_command` return argv, and
+  replace `${UID}` with `Process.uid` so `run_isolate` can drop the shell.
+  **Separate, larger item worth its own backlog entry:** custom checkers execute
+  unsandboxed on the judge host — a deliberate trust choice today, but if we ever
+  accept checkers from less-trusted authors it should move inside isolate.
 - Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`). **✅ FIXED 2026-07-19** for the known instance: the integration file was renamed to `test/integration/report_controller_access_test.rb` with `class ReportControllerAccessTest`; `test/controllers/report_controller_test.rb` keeps `ReportControllerTest`. The naming rule stands for future test files.
