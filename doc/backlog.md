@@ -13,6 +13,38 @@ Conventions:
 
 ---
 
+## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
+
+**Context.** Viva grounding was extracted off `Tag` into a dedicated
+`GroundingMaterial` model with its own admin library (Manage → Grounding) and
+a viva-only attach select on the problem form — see
+`docs/superpowers/specs/2026-07-19-viva-grounding-materials-design.md` and
+`doc/Viva-Exam.md` §3. Three items were explicitly deferred out of that work:
+
+- **Unify `llm_prompt` into a shared `LlmAsset` model** (deferred alternative
+  C from the spec). `llm_prompt` stays on `Tag` for now — small, always text,
+  and working. Unifying it with `GroundingMaterial` into one LLM-asset model
+  would let `Tag` become a pure label table, but rewrites the working
+  rubric-injection path (`viva_turn_assist.rb`, `viva_grade_assist.rb`) for
+  marginal benefit today; revisit if `llm_prompt` ever grows document-native
+  needs (files, per-item token budgeting) the way grounding did.
+- **Accurate page-count token estimate for grounding files.** `GroundingMaterial#compute_estimated_tokens`
+  (`app/models/grounding_material.rb`) uses a byte-size proxy
+  (`BYTES_PER_PROXY_TOKEN = 400`, i.e. ~1 token per 400 bytes) for attached
+  PDF/image files — deliberately approximate, no PDF library in the codebase.
+  A `pdf-reader`-based page count would give a tighter budgeting number.
+- **Grounding image files (png/jpeg) are stored but not yet sent to the
+  model.** `GroundingMaterial::ALLOWED_CONTENT_TYPES` accepts
+  `image/png`/`image/jpeg`/`image/webp` and the upload form takes them, but
+  `Llm::Request.encode_pdf_part` (`app/services/llm/request.rb:124`) hard-guards
+  `return nil unless attachment.content_type == 'application/pdf'` — so
+  `grounding_file_parts`' `filter_map` silently drops any attached image and
+  it never reaches the wire. Extend `encode_pdf_part` (or add a sibling
+  encoder) to also emit a proper `image_url` part for image content types —
+  those use a plain `data:image/png;base64,...` URI, no PDF-specific framing.
+
+---
+
 ## Help patterns — follow-ups under the context-dependent split
 
 **Decision (2026-05-17).** Two patterns coexist intentionally: inline

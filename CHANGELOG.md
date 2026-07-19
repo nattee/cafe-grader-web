@@ -39,6 +39,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   backward-compatible superset: old archives import unchanged, and the default
   "live dataset only" export is structurally compatible with previous versions
   (same files; imports identically).
+- **Grounding materials: a dedicated model + admin library** (Manage → Grounding)
+  for viva reference material, replacing `viva_grounding` tags. Files are sent
+  to the interviewer/grader as PDF `image_url` parts; the library shows a
+  per-item token estimate and problem-reuse count.
+
+### Changed
+
+- **Viva grounding is now attached to problems via a viva-only "Grounding
+  materials" selector** (with a per-problem token total) instead of the mixed
+  Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags
+  backfilled.
 
 ### Fixed
 

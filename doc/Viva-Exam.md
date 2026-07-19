@@ -16,7 +16,7 @@ An author provides:
 |---|---|---|
 | **Statement PDF** (`problem.statement` ActiveStorage attachment) | First user message — the actual scenario, sent as a base64-encoded `image_url` content part | Strongly recommended; how the LLM actually sees the problem |
 | `llm_prompt` tags | System message — interviewer instructions, persona, rubric. Same content is reused by the grader as the rubric source. | **Yes** — must include a `# Rubric` heading or the system refuses to start |
-| `viva_grounding` tags | First user message — reference material the interviewer should treat as authoritative | Optional |
+| **Grounding materials** (`GroundingMaterial` records, attached via the problem form's viva-only select) | First user message — `body` text as a `## Grounding Material` text part, each attached file as a base64 `image_url` PDF part | Optional |
 | `problem.description` | Supplementary text in the first user message (e.g. a short prose preface). The LLM relies on the PDF for the scenario itself. | Optional |
 
 The system **validates the setup before starting a viva** (`Problem#viva_setup_errors`). Right now it only enforces one structural requirement: the `llm_prompt` content must contain a heading matching `^#+\s*Rubric` (case-insensitive). Failing this displays a clear flash on `/main/list` instead of starting a half-configured session.
@@ -43,11 +43,18 @@ Attach the problem statement as `problem.statement` (a regular ActiveStorage att
 
 For problems without a PDF, the `problem.description` text (if any) carries the scenario; if both are empty, the first user message becomes the placeholder string `(begin the interview)`, which works but gives the LLM nothing concrete to interview about.
 
-## 3. `viva_grounding` tags — optional reference material
+## 3. Grounding materials — optional reference material
 
-Tags whose `kind` is `viva_grounding` carry reference material the interviewer should treat as authoritative — lecture notes, model solutions, the rubric in detail, supplementary readings. The `grounding_payload` text of each tag is joined and inserted as an additional **text content part in the first user message** (under a `## Grounding Material` heading), *not* in the system message — so the interviewer reads it as "the case at hand" along with the scenario and PDF.
+Grounding material is reference content the interviewer and grader should treat as authoritative — lecture notes, model solutions, the rubric in detail, supplementary readings. It lives on its own `GroundingMaterial` model, with a small admin library at **Manage → Grounding** (not on `Tag` — that mechanism was retired 2026-07-19). Each item has a typed `body` (markdown) and/or attached PDF/image files, a cached per-item token estimate, and shows how many problems reuse it (reuse-analysis).
 
-Grounding is optional. A problem with a clear PDF + clear `llm_prompt` instructions does not need grounding tags at all.
+Attach grounding to a problem via the **Grounding materials** `select2` on the problem form — visible only when `compilation_type` is `viva_exam`. The form shows a server-computed per-problem total ("Attached grounding ≈ N tokens — re-sent every turn") and a `view` link to each attached item's edit page.
+
+Each attached material contributes to the LLM call two independent ways:
+
+- **`body` text** — wrapped under a `## Grounding Material` heading and inserted as an additional **text content part in the first user message**, *not* the system message — so the interviewer reads it as "the case at hand" along with the scenario and PDF. (The grader is the one exception: it folds grounding text into its *system* prompt instead — see the grading wire shape below.)
+- **Attached files** (PDF or image) — encoded as base64 `image_url` content parts via the same `encode_pdf_part` helper the statement PDF uses, appended after the statement PDF part in the first user message. **Files are not text-extracted** — that machinery never existed in this codebase (a leftover assumption from an earlier draft of this design); the PDF/image is handed to the model exactly as attached, re-sent on every turn just like the statement.
+
+Grounding is optional. A problem with a clear PDF + clear `llm_prompt` instructions does not need grounding material at all.
 
 ## 4. `problem.description` — optional supplement
 
@@ -81,8 +88,9 @@ The wire shape:
   { role: "user",
     content: [
       { type: "text", text: "<problem.description or '(begin the interview)'>" },
-      { type: "text", text: "## Grounding Material\n\n<grounding tag content>" },  # if grounding exists
-      { type: "image_url", image_url: "data:application/pdf;base64,..." }            # if PDF attached
+      { type: "text", text: "## Grounding Material\n\n<grounding material body text>" },  # if any grounding material has body text
+      { type: "image_url", image_url: "data:application/pdf;base64,..." },                # statement PDF, if attached
+      { type: "image_url", image_url: "data:application/pdf;base64,..." }                 # one per attached grounding file (PDF/image), 0..N
     ]
   },
   { role: "assistant", content: "<prior turn 1>" },
@@ -95,7 +103,7 @@ A few properties of this design:
 
 - **Two pieces of English text are backend-injected into the system prompt:** the `SECURITY_DIRECTIVE` (anti-jailbreak policy) and the `DONE_SENTINEL` directive. Everything else comes from the `llm_prompt` tag. Both are code contracts — `handle_response` parses for `[[VIVA_DONE]]` (transitions to grading) and `[[VIVA_ALERT]]` (jailbreak detected: sets `submissions.viva_terminated_at` and still transitions to grading on the partial transcript). Centralizing the security policy here (rather than asking each problem author to bake it into `llm_prompt`) keeps the sentinel string in lockstep with the parser and lets new attack patterns roll out platform-wide via a single edit.
 
-- **Scenario, grounding, and PDF all live in the first user message** (as a multimodal content array). This keeps the system prompt purely about "how to interview" and the user message about "the case at hand." The arrangement mirrors how `Llm::CommentAssist` (the comment-on-submission flow) lays out PDF + managers + source code in its user message.
+- **Scenario text, grounding text, the statement PDF, and grounding files all live in the first user message** (as a multimodal content array). This keeps the system prompt purely about "how to interview" and the user message about "the case at hand." The arrangement mirrors how `Llm::CommentAssist` (the comment-on-submission flow) lays out PDF + managers + source code in its user message.
 
 - **When the first user message has only the scenario text** (no PDF, no grounding), it degrades to a plain string for a simpler wire shape.
 
@@ -119,23 +127,24 @@ The grader has a different system prompt (strict-JSON rubric grader) but reuses 
               { total_points: 0–100, narrative: '...', rubric: { criterion: score, ... } }
               Use the rubric and grounding context below as authoritative:
               <llm_prompt tag content>
-              <viva_grounding tag content>"
+              <grounding material body text>"
   },
   { role: "user",
     content: [
       { type: "text", text: "<problem.description or '(no scenario provided)'>" },
-      { type: "image_url", image_url: "data:application/pdf;base64,..." },  # if PDF attached
+      { type: "image_url", image_url: "data:application/pdf;base64,..." },  # statement PDF, if attached
+      { type: "image_url", image_url: "data:application/pdf;base64,..." },  # one per attached grounding file, 0..N
       "Transcript:\n\nASSISTANT: <turn 1>\n\nUSER: <turn 2>\n\n..."
     ]
   }
 ]
 ```
 
-(`consolidate_role_runs` merges the scenario + transcript into one user message when both are strings; when the PDF is attached the user content is an array.)
+(`consolidate_role_runs` merges the scenario + grounding-file parts + transcript into one user message when the scenario is a plain string; when the statement PDF or grounding files are attached, the user content is an array instead.)
 
 Key differences from the turn call:
 
-- **The rubric/grounding lives in the system prompt** (not the user message). For the grader's role, rubric IS the rules — system-level material.
+- **The rubric and grounding *text* live in the system prompt** (not the user message) — for the grader's role, rubric IS the rules — system-level material. Grounding **files** (PDF/image `image_url` parts) travel in the *user* message instead, alongside the statement PDF, because system messages can't carry image content parts.
 - **No `[[VIVA_DONE]]` directive** — the grader doesn't have an end condition; it produces JSON and exits.
 - **Strict-JSON contract** — the grader must respond with parseable JSON matching the schema, no markdown fences, no prose. `Llm::Request::ResponseError` is raised when this is violated, and `viva_grade.llm_response_raw` is preserved for admin inspection.
 
@@ -205,7 +214,7 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
   - [ ] **A `# Rubric` section** (validated; required) — the same rubric drives the grader.
   - [ ] Rules of engagement (one question per response, no direct answers, anti-jailbreak, etc.).
   - [ ] No `{{...}}` template literals — write the actual values.
-- [ ] *(Optional)* Attach `viva_grounding` tags for additional reference material.
+- [ ] *(Optional)* Attach grounding materials (create/edit under **Manage → Grounding**, attach via the problem form's **Grounding materials** select) for additional reference material — typed `body` text and/or PDF/image files.
 - [ ] *(Optional)* Add `problem.description` markdown if you want supplementary text (sub-scenarios, hints) outside the PDF.
 - [ ] Confirm a `Language` named `viva` is seeded — the system requires it to create viva submissions.
 - [ ] Confirm `viva_turn_service` and `viva_grade_service` are configured in `config/llm.yml` for the deployment (on chula_cp they're `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist`; on master they're blank, intentionally — the abstract bases raise `NotImplementedError` to signal "no provider configured for this deployment").
@@ -216,5 +225,6 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 - **Scenario in PDF, not description.** Originally we considered the description-as-scenario approach, but real problem statements are usually written as PDFs (with diagrams, code blocks, formatting). Forcing instructors to re-type or markdown-ify the PDF would be redundant. The Genie-relayed Gemini API accepts PDFs as `image_url` content parts, and they're attended-to properly.
 - **One `llm_prompt`, two consumers.** The interviewer and grader use the same `llm_prompt` tag content — the interviewer reads it as "how to behave," the grader reads it as "what rubric to score against." Splitting into separate `interviewer_prompt` / `grader_rubric` tag kinds was considered but adds complexity for marginal benefit; instructors think of "how to interview and what to score" as one thing.
 - **Backend doesn't template `{{...}}`.** Considered, rejected — adds substitution complexity for fields (max-turns, target-difficulty, topic) that the backend doesn't enforce anyway. If you want hard caps on turn count, that's a separate feature.
-- **Grounding in user message, not system.** Switched from system to user on 2026-05-08 to match the interviewer's mental model: rubric is "rules" (system), scenario + PDF + grounding is "the case" (user). The grader keeps grounding in system because the grader's grounding IS its rubric source.
+- **Grounding in user message, not system.** Switched from system to user on 2026-05-08 to match the interviewer's mental model: rubric is "rules" (system), scenario + PDF + grounding is "the case" (user). The grader keeps grounding in system because the grader's grounding IS its rubric source. *(2026-07-19 addendum: this applies to grounding **body text**. Grounding **files** (`image_url` parts) always ride in the user message for both the turn and grade calls, since system messages can't carry images — see the "Grounding moved off Tag" entry below.)*
+- **Grounding moved off `Tag` to a dedicated model (2026-07-19).** The old `viva_grounding` `Tag` kind had no working authoring UI (no content field, no file-upload param) and was overloading a label table with a content asset that needed token-budgeting and reuse-analysis. Extracted into `GroundingMaterial` with its own admin library (Manage → Grounding) and a viva-only attach select on the problem form; existing `viva_grounding` tags were backfilled and the `Tag` kind retired. Full rationale (including the rejected "finish the UI on `Tag`" and "unify into one `LlmAsset`" alternatives) is in `docs/superpowers/specs/2026-07-19-viva-grounding-materials-design.md`. Same session also corrected a latent design bug: grounding files were assumed to be text-extracted into the prompt, but no such extraction ever existed in this codebase — files are delivered as base64 `image_url` PDF parts instead (reusing the statement-PDF mechanism), not text-extracted.
 - **Soft archive instead of delete.** Discussed at length on 2026-05-09. Destroying a submission cascades to viva_turns, viva_grade, comments, evaluations — irreversible and lossy. Soft archive (`viva_archived_at` timestamp) preserves the audit trail and admin can un-archive via Rails console.
