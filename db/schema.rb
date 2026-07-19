@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_19_110001) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_19_120427) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -220,7 +220,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_19_110001) do
 
   create_table "grounding_materials_problems", id: false, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "grounding_material_id", null: false
-    t.bigint "problem_id", null: false
+    t.integer "problem_id", null: false
     t.index ["grounding_material_id", "problem_id"], name: "idx_gm_problems_unique", unique: true
     t.index ["problem_id"], name: "index_grounding_materials_problems_on_problem_id"
   end
@@ -562,6 +562,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_19_110001) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "audit_logs", "users", on_delete: :nullify
+  add_foreign_key "grounding_materials_problems", "grounding_materials"
+  add_foreign_key "grounding_materials_problems", "problems"
   add_foreign_key "problem_stats", "problems"
   add_foreign_key "problems_tags", "problems"
   add_foreign_key "problems_tags", "tags"
