@@ -157,7 +157,7 @@ Five distinct drifts, all resolved:
 3. ~~Cluster 6~~ done 2026-06-15.
 4. ~~Clusters 3 + 4~~ done 2026-06-15 — verified NOT regressions (controller tests pass); the system tests just raced the async turbo_stream submit.
 
-**`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
+**`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerAccessTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
 
 ---
 
@@ -283,4 +283,4 @@ surface via GitHub's auto-generated sidebar, so no Home edit was needed.
   `doc/dataset-scoring-and-evaluation.md`.
 - Approach-C IR refactor of import/export — only if supported formats multiply beyond Italian+TPS.
 - Audit the remaining single-string `Open3.capture3(cmd)` shell invocations for the same injection class fixed in import/export: `app/engine/isolate_runner.rb` (~lines 12, 36), `app/engine/checker.rb` (~line 155), `app/engine/compiler/postgres.rb` (~line 69) — convert to argv form if any build the command from user-controlled strings.
-- Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`). **Known pre-existing instance to fix:** `test/controllers/report_controller_test.rb` and `test/integration/report_controller_test.rb` both declare `class ReportControllerTest` — currently harmless (suite green) but the same latent collision.
+- Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`). **✅ FIXED 2026-07-19** for the known instance: the integration file was renamed to `test/integration/report_controller_access_test.rb` with `class ReportControllerAccessTest`; `test/controllers/report_controller_test.rb` keeps `ReportControllerTest`. The naming rule stands for future test files.
