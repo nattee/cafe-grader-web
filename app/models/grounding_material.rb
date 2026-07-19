@@ -14,7 +14,7 @@ class GroundingMaterial < ApplicationRecord
   validates :title, presence: true
   validate :files_are_pdf_or_image
 
-  after_commit :recompute_estimated_tokens
+  after_commit :recompute_estimated_tokens, on: %i[create update]
 
   # Text contribution to the LLM message: the typed body under a heading the
   # model can recognize. nil when there is no typed text.
