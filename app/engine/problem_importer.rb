@@ -152,11 +152,11 @@ class ProblemImporter
 
   # CMS semantics: a group has ONE weight; scorer.rb's group_min uses the
   # minimum weight found in the group. Mixed weights are an authoring error.
+  # Shares Dataset#mixed_weight_groups with the dataset edit UI warning so the
+  # two can never disagree on what counts as "mixed".
   def warn_mixed_group_weights
-    return unless @dataset.st_group_min?
-    @dataset.testcases.group(:group).having('COUNT(DISTINCT weight) > 1')
-            .count.each_key do |g|
-      @log << "WARNING: group #{g} has mixed testcase weights; group_min uses one weight per group (the minimum). Fix the weights in the package."
+    @dataset.mixed_weight_groups.each do |g, weights|
+      @log << "WARNING: group #{g} has mixed testcase weights (#{weights.join(', ')}); group_min uses one weight per group (the minimum, #{weights.first}). Fix the weights in the package."
     end
   end
 

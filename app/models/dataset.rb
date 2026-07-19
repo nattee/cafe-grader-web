@@ -132,6 +132,23 @@ class Dataset < ApplicationRecord
     set_by_array(:group_name, options[:group_name], can_use_cms_mode: false) if options.has_key? :group_name
   end
 
+  # Groups whose testcases don't all share a single weight. Only meaningful
+  # under group_min scoring: scorer.rb#group_min collapses each group to its
+  # MINIMUM weight (CMS/IOI semantics — a group has ONE weight by convention),
+  # so mixed weights inside a group silently mis-score and are an authoring
+  # error. Returns { group => [sorted distinct weights] } for the offending
+  # groups, or {} when weights are uniform or the score type isn't group_min.
+  # A nil weight counts as 0 to match the scorer (weight = ev[:weight] || 0).
+  # Single source of truth for both the import warning
+  # (ProblemImporter#warn_mixed_group_weights) and the dataset edit UI.
+  def mixed_weight_groups
+    return {} unless st_group_min?
+    testcases.pluck(:group, :weight).group_by(&:first).each_with_object({}) do |(g, pairs), acc|
+      weights = pairs.map { |_, w| w || 0 }.uniq.sort
+      acc[g] = weights if weights.size > 1
+    end
+  end
+
   # Drop workers' cached copy of this dataset so they re-download testcases
   # and managers. (Was `dataset_id: @dataset` — a nil ivar inside the model —
   # which matched nothing, so callers silently invalidated nothing.)

@@ -13,7 +13,26 @@
   = form_with url: '#', html: {id: 'tc-delete-form', data: {turbo: true, 'turbo-confirm': 'Delete this testcase? This cannot be undone.'}} do
     -# CSRF token auto-added; body intentionally empty.
 
+- mixed = ds.mixed_weight_groups
 %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Testcases
+-# group_min scoring collapses each group to its MINIMUM weight, so mixed
+-# weights inside a group silently mis-score. Mirror the import-time warning
+-# (Dataset#mixed_weight_groups is the shared source of truth). Not dismissible:
+-# it reflects live dataset state and re-renders on every weight change.
+- if mixed.any?
+  .alert.alert-warning.d-flex.gap-2.align-items-start
+    %span.mi.flex-shrink-0 warning
+    %div
+      %strong.d-block Mixed weights under Group Min scoring.
+      %span.small
+        Each group should have a single weight; scoring uses the group's
+        %strong minimum
+        (weakest) weight. Make these uniform:
+      %ul.small.mb-0.mt-1
+        - mixed.each do |g, weights|
+          %li
+            - gname = g.nil? ? 'Ungrouped testcases' : "Group #{g}"
+            = "#{gname} — weights #{weights.join(', ')} (scored as #{weights.first})"
 = form_with url: set_weight_dataset_path(ds), class: 'row row-cols-lg-auto g-3 align-items-center' do |f|
   %input{type: 'hidden', name: 'active_dataset_tab', value: @active_dataset_tab, data: {'bs-tab-target': 'activeTabInput'}}
   .col-12
@@ -51,7 +70,10 @@
         %td= tc.code_name
         %td= tc.group
         %td= tc.group_name
-        %td= tc.weight
+        %td
+          = tc.weight
+          - if mixed.key?(tc.group)
+            %span.mi.md-18.text-warning.align-text-bottom.ms-1{data: {bs_toggle: 'tooltip', bs_title: "Mixed weights in this group — scored as #{mixed[tc.group].first}"}} warning
         %td.text-end.py-1
           .d-inline-flex.gap-1.justify-content-end
             %button.btn.btn-outline-secondary.border-0.py-1.px-2{type: 'submit', form: 'tc-input-form', formaction: testcase_input_dataset_path(ds, tc), data: {bs_toggle: 'tooltip', bs_title: 'View testcase input'}}
