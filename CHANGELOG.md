@@ -47,6 +47,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Changed
 
+- Viva: the examiner prompt now lives on the problem (`viva_prompt`, audited/redacted) layered with optional shared `viva_conduct` tags in a fixed order; `llm_prompt` tags are again exclusively the AI-helper's namespace.
 - **Viva grounding is now attached to problems via a viva-only "Grounding
   materials" selector** (with a per-problem token total) instead of the mixed
   Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags

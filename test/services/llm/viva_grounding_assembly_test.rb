@@ -30,11 +30,9 @@ class VivaGroundingAssemblyTest < ActiveSupport::TestCase
 
     problem = submission.problem
     problem.update_columns(description: "Scenario A")
-    prompt_tag = Tag.find_or_create_by!(name: "test_llm_prompt_grounding") do |t|
-      t.kind = :llm_prompt
-      t.params = "Grade the student strictly."
-    end
-    problem.tags << prompt_tag unless problem.tags.include?(prompt_tag)
+    # Viva grading requires a non-blank viva_prompt (examiner briefing) on the
+    # problem; assemble_context raises without it.
+    problem.update!(viva_prompt: "Grade the student strictly.")
 
     gm = grounding_materials(:gm_dijkstra)
     problem.grounding_materials << gm unless problem.grounding_materials.include?(gm)

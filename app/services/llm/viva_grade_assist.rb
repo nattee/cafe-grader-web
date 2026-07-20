@@ -95,11 +95,12 @@ module Llm
     end
 
     def assemble_context
-      prompt    = @problem.viva_prompt_tags.map(&:params).reject(&:blank?).join("\n\n")
-      raise RuntimeError, "There is no llm_prompt tag attached to problem '#{@problem.name}' — viva needs a prompt tag" if prompt.blank?
+      conduct = @problem.viva_conduct_tags.map(&:params).reject(&:blank?).join("\n\n")
+      briefing = @problem.viva_prompt.to_s.strip
+      raise RuntimeError, "Problem '#{@problem.name}' has a blank viva_prompt — viva needs the examiner briefing" if briefing.blank?
 
       grounding = @problem.grounding_materials.filter_map(&:grounding_text).join("\n\n---\n\n")
-      [prompt, grounding].reject(&:blank?).join("\n\n")
+      [conduct, briefing, grounding].reject(&:blank?).join("\n\n")
     end
 
     # Student turns are remapped from the DB role enum to the OpenAI wire role,

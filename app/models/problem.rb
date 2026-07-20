@@ -167,17 +167,16 @@ class Problem < ApplicationRecord
   def set_default_value
   end
 
-  def viva_prompt_tags
-    tags.where(kind: :llm_prompt)
+  # Shared examiner persona layer (design D6). Ordered by name so multi-tag
+  # concatenation is deterministic.
+  def viva_conduct_tags
+    tags.where(kind: :viva_conduct).order(:name)
   end
 
-  # Required-section markers a viva problem's llm_prompt content must
-  # contain. Keeping this as a constant so it's easy to relax / extend
-  # without rewriting the validation method. The scenario itself is
-  # delivered to the model via the attached statement PDF, not via
-  # problem.description, so we don't validate the description text.
+  # Required-section markers the per-problem examiner briefing
+  # (problems.viva_prompt) must contain.
   VIVA_PROMPT_REQUIRED_SECTIONS = {
-    /^#+\s*Rubric\b/im => "an llm_prompt section starting with '# Rubric' (or ##/###)"
+    /^#+\s*Rubric\b/im => "a section starting with '# Rubric' (or ##/###)"
   }.freeze
 
   # Whether the problem's statement PDF (or external description URL) is
@@ -199,12 +198,12 @@ class Problem < ApplicationRecord
     return [] unless viva_exam?
     errors = []
 
-    prompt = viva_prompt_tags.map(&:params).reject(&:blank?).join("\n\n")
-    if prompt.blank?
-      errors << "Problem has no llm_prompt tag attached"
+    prompt = viva_prompt.to_s
+    if prompt.strip.blank?
+      errors << "Problem has a blank examiner briefing (viva_prompt)"
     else
       VIVA_PROMPT_REQUIRED_SECTIONS.each do |pattern, label|
-        errors << "llm_prompt is missing #{label}" unless prompt =~ pattern
+        errors << "examiner briefing is missing #{label}" unless prompt =~ pattern
       end
     end
 

@@ -10,13 +10,9 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     @problem = @submission.problem
     # update_columns bypasses the after_save PDF-generation callback that we don't want firing in unit tests
     @problem.update_columns(description: "Scenario A\nScenario B")
-    # Viva requires at least one llm_prompt tag on the problem; assemble_system_prompt
-    # raises without it. Content doesn't matter for these tests.
-    prompt_tag = Tag.find_or_create_by!(name: 'test_llm_prompt') do |t|
-      t.kind = :llm_prompt
-      t.params = 'You are a viva interviewer.'
-    end
-    @problem.tags << prompt_tag unless @problem.tags.include?(prompt_tag)
+    # Viva requires a non-blank viva_prompt (examiner briefing) on the problem;
+    # assemble_system_prompt raises without it. Content doesn't matter for these tests.
+    @problem.update!(viva_prompt: 'You are a viva interviewer.')
     @assist = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
   end
 
@@ -56,13 +52,25 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_equal 2, msgs.length
   end
 
-  test "system prompt is just llm_prompt tag content + [[VIVA_DONE]] directive" do
+  test "system prompt is just viva_prompt content + [[VIVA_DONE]] directive" do
     sys = @assist.send(:assemble_system_prompt)
-    # the test setup attaches a tag with params 'You are a viva interviewer.'
+    # the test setup sets viva_prompt to 'You are a viva interviewer.'
     assert_includes sys, 'You are a viva interviewer.'
     assert_includes sys, '[[VIVA_DONE]]'
     # backend no longer injects scenario-handling guidance — that's the prompt's job
     refute_includes sys, 'first user message contains the scenario'
+  end
+
+  test 'system prompt layers in fixed order: conduct, briefing, security, done' do
+    @problem.update!(viva_prompt: "# Rubric\ncorrectness: 100")
+    @problem.tags << Tag.create!(name: 'b-conduct', kind: :viva_conduct, params: 'CONDUCT-B')
+    @problem.tags << Tag.create!(name: 'a-conduct', kind: :viva_conduct, params: 'CONDUCT-A')
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    prompt = svc.send(:assemble_system_prompt)
+    order = [prompt.index('CONDUCT-A'), prompt.index('CONDUCT-B'),
+             prompt.index('# Rubric'), prompt.index('SECURITY'), prompt.index('[[VIVA_DONE]]')]
+    assert_equal order.sort, order, "layers out of order: #{order.inspect}"
+    assert order.all?, "a layer is missing: #{order.inspect}"
   end
 
   test "grounding material is added to first user message when grounding materials exist" do
