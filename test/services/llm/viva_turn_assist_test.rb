@@ -107,4 +107,43 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
       @assist.send(:handle_response, response)
     end
   end
+
+  def alert_response_body(text)
+    {choices: [{message: {content: text}}], model: 'stub', usage: {prompt_tokens: 1, completion_tokens: 1}}.to_json
+  end
+
+  test 'practice mode: alert logs a flag, injects notice, never terminates' do
+    @problem.update!(viva_mode: :practice)
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("deflection [[VIVA_ALERT]]")))
+    refute result[:done]
+    assert @placeholder.reload.alerted
+    assert_nil @submission.reload.viva_terminated_at
+    assert_equal 'submitted', @submission.status
+    assert @submission.viva_turns.where(role: :system).last.content.include?('practice mode')
+  end
+
+  test 'exam mode: first strike warns, second terminates and grades' do
+    @problem.update!(viva_mode: :exam)
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    r1 = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect [[VIVA_ALERT]]")))
+    refute r1[:done]
+    assert_nil @submission.reload.viva_terminated_at
+    assert @submission.viva_turns.where(role: :system).last.content.include?('WARNING')
+
+    turn2 = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    svc2 = Llm::VivaTurnAssist.new(submission: @submission, turn: turn2)
+    r2 = svc2.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect again [[VIVA_ALERT]]")))
+    assert r2[:done]
+    assert @submission.reload.viva_terminated_at.present?
+    assert_equal 'evaluating', @submission.status
+  end
+
+  test 'clean DONE still finishes without alert' do
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("bye [[VIVA_DONE]]")))
+    assert result[:done]
+    refute @placeholder.reload.alerted
+    assert_nil @submission.reload.viva_terminated_at
+  end
 end

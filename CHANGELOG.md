@@ -53,6 +53,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   materials" selector** (with a per-problem token total) instead of the mixed
   Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags
   backfilled.
+- Viva jailbreak handling: the examiner now only *detects* (staying in character); the backend applies policy — practice mode logs flags without terminating, exam mode warns on the first strike and terminates on the second (was: immediate termination on any detection).
 
 ### Fixed
 
