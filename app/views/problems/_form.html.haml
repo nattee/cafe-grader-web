@@ -64,6 +64,15 @@
                       %span.text-secondary= "· ≈ #{number_with_delimiter(gm.estimated_tokens)} tokens ·"
                       = link_to 'view', edit_grounding_material_path(gm)
 
+            - if @problem.persisted? && @problem.viva_mode_practice? && @problem.contests.exists?
+              .alert.alert-warning.d-flex.align-items-center.gap-2.mt-3
+                %span.mi warning
+                %div
+                  This viva is in <strong>practice</strong> mode and is attached to a contest.
+                  Students can restart it freely — switch to <strong>exam</strong> mode before any graded use.
+            - viva_mode_options = [['<strong>Exam</strong> <span class="text-secondary">— single attempt; a second flagged jailbreak attempt terminates the interview.</span>'.html_safe, 'exam'], ['<strong>Practice</strong> <span class="text-secondary">— students may restart themselves (rate-limited); jailbreak flags are logged, never fatal.</span>'.html_safe, 'practice']]
+            = form.input :viva_mode, as: :radio_buttons, collection: viva_mode_options, wrapper: :horizontal_collection, label: 'Viva mode', tooltip: 'Flippable anytime. Exam is the fail-safe default.'
+
           = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
           = form.input :difficulty, tooltip: 'Integer between 0 and 10.'
 

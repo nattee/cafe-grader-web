@@ -154,6 +154,20 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated Name", p.reload.full_name
   end
 
+  test "admin can flip viva_mode through update" do
+    sign_in_as("admin", "admin")
+    p = problems(:prob_viva)
+    patch problem_path(p), params: {
+      problem: { viva_mode: "practice", permitted_lang: [] }
+    }, as: :turbo_stream
+    assert_equal "practice", p.reload.viva_mode
+
+    patch problem_path(p), params: {
+      problem: { viva_mode: "exam", permitted_lang: [] }
+    }, as: :turbo_stream
+    assert_equal "exam", p.reload.viva_mode
+  end
+
   test "admin can destroy problem" do
     sign_in_as("admin", "admin")
     prob = problems(:prob_sub)
