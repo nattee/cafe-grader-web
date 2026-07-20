@@ -2,7 +2,9 @@ class Problem < ApplicationRecord
   include Auditable
   audited only: %i[name full_name full_score available live_dataset_id
                    view_testcase view_submission allow_hint
-                   permitted_lang submission_filename task_type compilation_type]
+                   permitted_lang submission_filename task_type compilation_type
+                   viva_mode viva_prompt viva_soft_cap viva_hard_cap],
+          redact: %i[viva_prompt]
 
   # -- fields --
   # how the submission should be compiled
@@ -10,6 +12,9 @@ class Problem < ApplicationRecord
                             with_managers:  1,
                             viva_exam:      2 }
   enum :task_type, { batch: 0 }
+  # Prefixed to avoid clashing with compilation_type's viva_exam?
+  # (design D1: exam is the fail-safe default).
+  enum :viva_mode, { exam: 0, practice: 1 }, prefix: true
 
   # belongs_to :description
 

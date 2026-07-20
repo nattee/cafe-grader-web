@@ -123,4 +123,12 @@ class ProblemTest < ActiveSupport::TestCase
     assert_equal langs.map(&:id).sort, prob.get_permitted_lang_as_ids,
                  "permitted ids must come back ascending regardless of the order they were typed in"
   end
+
+  test 'viva_mode defaults to exam (fail-safe) with prefixed predicates' do
+    p = Problem.new
+    assert p.viva_mode_exam?
+    refute p.viva_mode_practice?
+    assert_equal 10, p.viva_soft_cap
+    assert_equal 15, p.viva_hard_cap
+  end
 end
