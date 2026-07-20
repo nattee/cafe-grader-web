@@ -13,6 +13,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ### Added
 
 - Viva: per-problem practice/exam mode, examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
+- Viva: `viva:migrate_prompt_tags` rake task (report-first, `APPLY=1` to execute) migrating legacy per-problem `llm_prompt` tags into `viva_prompt` and shared ones to `viva_conduct`.
 - **`problems:replay_validate` rake task** — validates the problem import/export
   path by re-importing a problem and replaying a stratified sample of its
   submissions through the grader, diffing per-testcase results against the
