@@ -100,6 +100,18 @@ class VivaSessionsController < ApplicationController
       return
     end
 
+    # Hard turn cap (design D8): at the limit we force-finish instead of
+    # accepting another answer — the soft cap should normally end the
+    # interview well before this fires.
+    if @submission.viva_turns.where(role: :student).count >= @submission.problem.viva_hard_cap
+      @submission.viva_turns.create!(role: :system, status: :ok,
+        content: '(turn limit reached — the interview ends here and grading begins)')
+      @submission.update!(status: :evaluating)
+      Llm::VivaGradeAssistJob.perform_later(@submission)
+      redirect_to viva_submission_path(@submission), notice: 'Turn limit reached — grading has started.'
+      return
+    end
+
     placeholder = nil
     Submission.transaction do
       @submission.viva_turns.create!(role: :student, status: :ok, content: student_content)

@@ -139,6 +139,12 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_equal 'evaluating', @submission.status
   end
 
+  test 'system prompt carries the soft-cap pacing directive' do
+    @problem.update!(viva_soft_cap: 7)
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    assert_includes svc.send(:assemble_system_prompt), 'within about 7 questions'
+  end
+
   test 'clean DONE still finishes without alert' do
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("bye [[VIVA_DONE]]")))

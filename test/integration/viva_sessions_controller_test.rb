@@ -81,6 +81,19 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :redirect # redirect to viva path with alert
   end
 
+  test "answer at hard cap force-finishes and enqueues grading" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(viva_hard_cap: 2)
+    2.times { |i| @owner_sub.viva_turns.create!(role: :student, status: :ok, content: "a#{i}") }
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+      post viva_answer_submission_path(@owner_sub), params: { content: "one more" }
+    end
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_equal "evaluating", @owner_sub.reload.status
+    assert_equal 2, @owner_sub.viva_turns.where(role: :student).count,
+      "the over-cap answer must not be recorded"
+  end
+
   # --- start failure paths ---
 
   test "start redirects when problem is not a viva exam" do

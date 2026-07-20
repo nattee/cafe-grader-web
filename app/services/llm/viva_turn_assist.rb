@@ -139,6 +139,13 @@ module Llm
         "append exactly `#{DONE_SENTINEL}` at the very end of your final message to end the interview."
     end
 
+    # Design D8: pacing instruction. Soft only — the hard stop is enforced
+    # by VivaSessionsController#answer, not by trusting the model to count.
+    def soft_cap_directive
+      "Pacing: aim to complete the interview within about #{@problem.viva_soft_cap} questions. " \
+        "As you approach that count, stop opening new topics, wrap up, and end the interview."
+    end
+
     # Layered system prompt (design D6), fixed order: shared conduct tags →
     # per-problem examiner briefing → platform security policy → protocol
     # directives. Conduct is optional; the briefing is mandatory.
@@ -147,7 +154,7 @@ module Llm
       briefing = @problem.viva_prompt.to_s.strip
       raise RuntimeError, "Problem '#{@problem.name}' has a blank viva_prompt — viva needs the examiner briefing" if briefing.blank?
 
-      [conduct, briefing, SECURITY_DIRECTIVE, done_sentinel_directive].reject(&:blank?).join("\n\n")
+      [conduct, briefing, SECURITY_DIRECTIVE, soft_cap_directive, done_sentinel_directive].reject(&:blank?).join("\n\n")
     end
 
     # OpenAI chat-completions only accepts system/user/assistant/tool roles, so we
