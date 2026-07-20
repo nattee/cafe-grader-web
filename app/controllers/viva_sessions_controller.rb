@@ -160,7 +160,8 @@ class VivaSessionsController < ApplicationController
       cost:             nil,
       token_count_in:   nil,
       token_count_out:  nil,
-      llm_model:        nil
+      llm_model:        nil,
+      alerted:          false
     )
 
     Llm::VivaTurnAssistJob.perform_later(@submission, turn: turn)

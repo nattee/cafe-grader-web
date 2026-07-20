@@ -32,6 +32,16 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "student owner sees system turns (jailbreak warnings, practice notices)" do
+    # System turns carry content students MUST see (e.g. jailbreak-attempt
+    # warnings, practice-mode notices) — they must not be admin-gated.
+    sign_in_as("john", "hello")
+    @owner_sub.viva_turns.create!(role: :system, status: :ok, content: "VISIBILITY-PROBE-WARNING")
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_includes @response.body, "VISIBILITY-PROBE-WARNING"
+  end
+
   # --- answer enforces ownership ---
 
   test "non-owner cannot answer in another user's viva session" do
