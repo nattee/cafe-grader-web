@@ -30,8 +30,12 @@
             %dd.col-8.text-secondary Per-test-case caps. Time in seconds, memory in MB.
             %dt.col-4.fw-semibold Tags
             %dd.col-8.text-secondary
-              Free-form labels (topic/category only — LLM-kind tags are
-              hidden from this picker). For viva exams, the rubric and model
+              Free-form labels — topic/category plus AI-helper tags (kind
+              %code llm_prompt
+              ); only
+              %code viva_conduct
+              tags are excluded here (they have their own Conduct profile
+              select, below). For viva exams, the rubric and model
               answers go in the
               %strong Examiner briefing
               field (Description tab area of the form); an optional shared

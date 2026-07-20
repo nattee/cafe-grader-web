@@ -9,6 +9,7 @@ module Llm
     DONE_SENTINEL  = '[[VIVA_DONE]]'.freeze
     ALERT_SENTINEL = '[[VIVA_ALERT]]'.freeze
     ALERT_BANNER   = '⚠️ Jailbreaking attempt detected. This viva has been terminated and flagged for instructor review.'.freeze
+    EXAM_WARNING_NOTICE = '⚠️ WARNING: a possible attempt to subvert the exam was detected and recorded. A second detection will terminate this viva.'.freeze
     MAX_TOKENS     = 2048
     DEFAULT_MODEL  = nil
 
@@ -186,7 +187,7 @@ module Llm
       text    = content.to_s
       alerted = text.include?(ALERT_SENTINEL)
       done    = text.include?(DONE_SENTINEL)
-      clean   = text.sub(ALERT_SENTINEL, '').sub(DONE_SENTINEL, '').strip
+      clean   = text.gsub(ALERT_SENTINEL, '').gsub(DONE_SENTINEL, '').strip
       usage   = parsed['usage'] || {}
 
       @turn.update!(
@@ -220,19 +221,26 @@ module Llm
     # system turns are student-visible in the transcript but are filtered
     # out of the wire messages (prior_turn_messages skips system rows), so
     # the model's context is unaffected.
+    #
+    # Strikes are NOT counted via a raw `alerted: true` tally across the
+    # submission's whole history — a problem can flip practice -> exam
+    # mid-session (D1), and practice-era alerts must never count toward
+    # exam termination (that would terminate on the very first exam-era
+    # alert with no warning ever shown, defeating the warn-first policy).
+    # Instead: terminate only when a prior EXAM_WARNING_NOTICE system turn
+    # already exists on this submission — i.e. the student was already
+    # formally warned under exam rules.
     def apply_alert_policy
-      strikes = @submission.viva_turns.where(alerted: true).count
       if @problem.viva_mode_practice?
         @submission.viva_turns.create!(role: :system, status: :ok,
           content: '⚠️ A possible attempt to go outside the exam rules was flagged on this turn. In practice mode the interview continues; flags are logged for instructor review.')
         :logged
-      elsif strikes <= 1
-        @submission.viva_turns.create!(role: :system, status: :ok,
-          content: '⚠️ WARNING: a possible attempt to subvert the exam was detected and recorded. A second detection will terminate this viva.')
-        :warned
-      else
+      elsif @submission.viva_turns.where(role: :system, content: EXAM_WARNING_NOTICE).exists?
         @submission.viva_turns.create!(role: :system, status: :ok, content: ALERT_BANNER)
         :terminated
+      else
+        @submission.viva_turns.create!(role: :system, status: :ok, content: EXAM_WARNING_NOTICE)
+        :warned
       end
     end
 

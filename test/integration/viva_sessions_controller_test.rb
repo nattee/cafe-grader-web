@@ -200,7 +200,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "owner can restart a practice viva; exam mode refuses" do
     sign_in_as("john", "hello")
-    @owner_sub.problem.update!(viva_mode: :practice)
+    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
     post viva_restart_submission_path(@owner_sub)
     assert @owner_sub.reload.viva_archived_at.present?
 
@@ -214,9 +214,36 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "non-owner cannot restart another user's viva" do
     sign_in_as("admin", "admin")
-    @owner_sub.problem.update!(viva_mode: :practice)
+    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
     post viva_restart_submission_path(@owner_sub)
     assert_nil @owner_sub.reload.viva_archived_at
+  end
+
+  test "restart refuses when the submission's problem is not a viva exam" do
+    # @owner_sub's problem (prob_add) defaults to compilation_type:
+    # self_contained. viva_mode is a permitted param on every problem, so a
+    # misconfigured non-viva problem set to practice mode must still refuse
+    # to archive — restart must never be usable as a grade-manipulation
+    # vector on an ordinary coding submission.
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(viva_mode: :practice)
+    refute @owner_sub.problem.viva_exam?, "sanity: fixture problem must not be a viva exam"
+    post viva_restart_submission_path(@owner_sub)
+    assert_nil @owner_sub.reload.viva_archived_at
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_match(/viva exam/i, flash[:alert])
+  end
+
+  test "restart refuses when the session is already archived" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    archived_at = 1.hour.ago
+    @owner_sub.update!(viva_archived_at: archived_at)
+    post viva_restart_submission_path(@owner_sub)
+    assert_in_delta archived_at, @owner_sub.reload.viva_archived_at, 1,
+      "already-archived timestamp must not be re-stamped"
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_match(/already been archived/i, flash[:alert])
   end
 
   test "practice start is rate-limited per day" do

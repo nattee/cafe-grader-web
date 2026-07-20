@@ -132,6 +132,27 @@ class ProblemTest < ActiveSupport::TestCase
     assert_equal 15, p.viva_hard_cap
   end
 
+  test 'viva_soft_cap and viva_hard_cap reject blank and zero' do
+    prob = problems(:prob_add)
+    assert prob.valid?, "fixture should start valid: #{prob.errors.full_messages}"
+
+    prob.viva_soft_cap = nil
+    prob.viva_hard_cap = nil
+    assert_not prob.valid?
+    assert prob.errors[:viva_soft_cap].any?
+    assert prob.errors[:viva_hard_cap].any?
+
+    prob.viva_soft_cap = 0
+    prob.viva_hard_cap = 0
+    assert_not prob.valid?
+    assert prob.errors[:viva_soft_cap].any?
+    assert prob.errors[:viva_hard_cap].any?
+
+    prob.viva_soft_cap = 10
+    prob.viva_hard_cap = 15
+    assert prob.valid?, "defaults should be valid: #{prob.errors.full_messages}"
+  end
+
   test 'viva problems skip generated-statement PDF regeneration' do
     p = Problem.create!(name: 'viva-t8', full_name: 'viva-t8', full_score: 100,
                         compilation_type: :viva_exam, description: '# case')

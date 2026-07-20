@@ -57,6 +57,12 @@ class Problem < ApplicationRecord
 
   validates_presence_of :full_name
 
+  # viva_soft_cap / viva_hard_cap are NOT NULL columns with defaults (10/15);
+  # unconditional so a blanked form field surfaces as a form error instead of
+  # an ActiveRecord::NotNullViolation 500, and 0 can't force-finish a viva on
+  # its very first answer (VivaSessionsController#answer hard-caps on this).
+  validates :viva_soft_cap, :viva_hard_cap, numericality: {only_integer: true, greater_than: 0}
+
 
   # -- callback --
   after_save :generate_and_attach_pdf_statement_later, if: :should_generate_pdf?

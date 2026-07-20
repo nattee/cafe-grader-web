@@ -139,6 +139,42 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_equal 'evaluating', @submission.status
   end
 
+  test 'practice-era alerts do not carry over as strikes after a flip to exam mode' do
+    # Two alerted turns recorded while the problem was in practice mode.
+    @problem.update!(viva_mode: :practice)
+    svc_a = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    svc_a.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect [[VIVA_ALERT]]")))
+
+    turn_b = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    svc_b = Llm::VivaTurnAssist.new(submission: @submission, turn: turn_b)
+    svc_b.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect again [[VIVA_ALERT]]")))
+
+    # Sanity: the reasons the next assertions matter actually hold — two
+    # alerted turns are genuinely on record, and no exam warning has ever
+    # been issued. A test that skipped this would pass vacuously even if
+    # apply_alert_policy still counted raw alerts across mode eras.
+    assert_equal 2, @submission.viva_turns.where(alerted: true).count
+    refute @submission.viva_turns.where(role: :system)
+                       .exists?(content: Llm::VivaTurnAssist::EXAM_WARNING_NOTICE)
+
+    @problem.update!(viva_mode: :exam)
+
+    turn_c = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    svc_c = Llm::VivaTurnAssist.new(submission: @submission, turn: turn_c)
+    r_c = svc_c.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect once more [[VIVA_ALERT]]")))
+    refute r_c[:done], "first exam-era alert must warn (not terminate) even though 2 prior alerts exist from practice era"
+    assert_nil @submission.reload.viva_terminated_at
+    assert_equal 'submitted', @submission.status
+    assert @submission.viva_turns.where(role: :system).last.content.include?('WARNING')
+
+    turn_d = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    svc_d = Llm::VivaTurnAssist.new(submission: @submission, turn: turn_d)
+    r_d = svc_d.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect yet again [[VIVA_ALERT]]")))
+    assert r_d[:done], "second exam-era alert, after the exam-era warning was issued, must terminate"
+    assert @submission.reload.viva_terminated_at.present?
+    assert_equal 'evaluating', @submission.status
+  end
+
   test 'system prompt carries the soft-cap pacing directive' do
     @problem.update!(viva_soft_cap: 7)
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
@@ -151,5 +187,16 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert result[:done]
     refute @placeholder.reload.alerted
     assert_nil @submission.reload.viva_terminated_at
+  end
+
+  test 'handle_response strips every occurrence of a doubled sentinel, not just the first' do
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    text = "deflect [[VIVA_ALERT]] more deflecting [[VIVA_ALERT]] bye [[VIVA_DONE]] [[VIVA_DONE]]"
+    result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body(text)))
+    assert result[:done]
+    assert result[:alerted]
+    clean = @placeholder.reload.content
+    refute_includes clean, Llm::VivaTurnAssist::ALERT_SENTINEL, 'no ALERT sentinel should leak into student-visible content'
+    refute_includes clean, Llm::VivaTurnAssist::DONE_SENTINEL, 'no DONE sentinel should leak into student-visible content'
   end
 end

@@ -203,8 +203,18 @@ class VivaSessionsController < ApplicationController
     unless @current_user == @submission.user
       redirect_to viva_submission_path(@submission), alert: 'Only the owner can restart their viva.' and return
     end
+    # Non-viva submissions must never be archivable this way: viva_mode is a
+    # permitted param on every problem, and archiving hides a submission from
+    # main_controller's canonical max(id) pick — a grade-manipulation vector
+    # if it could be triggered on an ordinary coding submission.
+    unless @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission), alert: 'Restart is only available for viva exam problems.' and return
+    end
     unless @submission.problem.viva_mode_practice?
       redirect_to viva_submission_path(@submission), alert: 'Restart is only available for practice-mode vivas.' and return
+    end
+    if @submission.viva_archived_at.present?
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.' and return
     end
     if @submission.viva_turns.where(status: :processing).exists?
       redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.' and return
