@@ -45,6 +45,25 @@
         %section.mb-4
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Categorization
           = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
+
+          -# Viva grounding — shown only when compilation_type is viva_exam
+          .mb-4.d-none{ data: { viva_mode_toggle_target: 'showForViva' } }
+            = form.input :grounding_material_ids, label: 'Grounding materials',
+                collection: GroundingMaterial.order(:title), value_method: :id, label_method: :title,
+                input_html: { class: 'select2', multiple: true, id: 'problem_grounding_material_ids' },
+                wrapper: :horizontal_form,
+                hint: 'Reference material the interviewer/grader treat as authoritative. Re-sent every turn.'
+            - attached = @problem.grounding_materials.to_a
+            - if attached.any?
+              .form-text.text-secondary
+                Attached grounding ≈ #{number_with_delimiter(attached.sum(&:estimated_tokens))} tokens — re-sent every turn.
+                %ul.mb-0
+                  - attached.each do |gm|
+                    %li
+                      = gm.title
+                      %span.text-secondary= "· ≈ #{number_with_delimiter(gm.estimated_tokens)} tokens ·"
+                      = link_to 'view', edit_grounding_material_path(gm)
+
           = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
           = form.input :difficulty, tooltip: 'Integer between 0 and 10.'
 
@@ -58,7 +77,7 @@
         %section.mb-4
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Grading & Compilation
           = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
-          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; attach llm_prompt + viva_grounding tags instead.</span>'.html_safe, 'viva_exam']]
+          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; attach an llm_prompt tag + grounding materials instead.</span>'.html_safe, 'viva_exam']]
           = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-mode-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
           = form.input :submission_filename, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}
 

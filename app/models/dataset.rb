@@ -101,24 +101,44 @@ class Dataset < ApplicationRecord
     end
   end
 
-  # set testcases parameters *field* by array
+  # set testcases parameters *field* by array.
+  #
+  # Each element assigns *field* to a run of testcases:
+  #   scalar          → one testcase (the next in display order)
+  #   [value, count]  → the next `count` testcases, positionally
+  #   [value, "regex"]→ CMS mode only: every testcase whose code_name matches
+  #                     the regexp, anchored at the start like CMS's re.match
+  #                     (e.g. "1-.*" selects code_names 1-1, 1-2, …).
+  #
+  # CMS mode (auto-enabled when the first element is an array and the caller
+  # permits it) also writes an incrementing `group` per element, so one array
+  # declares group_min groups + weights at once. Regexp selectors are honoured
+  # ONLY in CMS mode; the hash-form callers (group / group_name) pass
+  # can_use_cms_mode: false and keep integer counts.
   def set_by_array(field, array, can_use_cms_mode: true)
-    tc_ids = testcases.display_order.ids
+    tcs = testcases.display_order.pluck(:id, :code_name)
     idx = 0
     group = 0
     cms_mode = array[0].is_a?(Array) && can_use_cms_mode
     array.each do |config|
-      count = 1
       group += 1
       if config.is_a? Array
-        value = config[0]
-        count = config[1].to_i
+        value, selector = config[0], config[1]
       else
-        value = config
+        value, selector = config, 1
       end
-      # take next count ids
-      ids = tc_ids[idx...(idx+count)]
-      idx += count
+
+      if cms_mode && selector.is_a?(String)
+        # CMS-style codename match, anchored at the start (Python re.match).
+        # The (?:…) wrap keeps top-level alternation inside the anchor.
+        re = Regexp.new("\\A(?:#{selector})")
+        ids = tcs.select { |_id, cn| re.match?(cn.to_s) }.map(&:first)
+      else
+        count = selector.to_i
+        ids = tcs[idx...(idx + count)].to_a.map(&:first)
+        idx += count
+      end
+
       hash = {}
       hash[field] = value
       hash['group'] = group if cms_mode
@@ -130,6 +150,23 @@ class Dataset < ApplicationRecord
     set_by_array(:weight, options[:weight], can_use_cms_mode: false) if options.has_key? :weight
     set_by_array(:group, options[:group], can_use_cms_mode: false) if options.has_key? :group
     set_by_array(:group_name, options[:group_name], can_use_cms_mode: false) if options.has_key? :group_name
+  end
+
+  # Groups whose testcases don't all share a single weight. Only meaningful
+  # under group_min scoring: scorer.rb#group_min collapses each group to its
+  # MINIMUM weight (CMS/IOI semantics — a group has ONE weight by convention),
+  # so mixed weights inside a group silently mis-score and are an authoring
+  # error. Returns { group => [sorted distinct weights] } for the offending
+  # groups, or {} when weights are uniform or the score type isn't group_min.
+  # A nil weight counts as 0 to match the scorer (weight = ev[:weight] || 0).
+  # Single source of truth for both the import warning
+  # (ProblemImporter#warn_mixed_group_weights) and the dataset edit UI.
+  def mixed_weight_groups
+    return {} unless st_group_min?
+    testcases.pluck(:group, :weight).group_by(&:first).each_with_object({}) do |(g, pairs), acc|
+      weights = pairs.map { |_, w| w || 0 }.uniq.sort
+      acc[g] = weights if weights.size > 1
+    end
   end
 
   # Drop workers' cached copy of this dataset so they re-download testcases

@@ -239,7 +239,8 @@ class Api::V1::ProblemsController < Api::V1::BaseController
         do_statement: false,
         do_checker: false,
         do_cpp_extras: false,
-        do_solutions: false
+        do_solutions: false,
+        do_additional_datasets: false
       )
     end
     result_dataset = importer.dataset

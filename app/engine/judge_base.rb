@@ -310,14 +310,20 @@ module JudgeBase
       tc_hash[:testcases][tc.id][:ans_file] = @ans_file
     end
 
+    # argv form: system(*argv) bypasses the shell, so no quoting/escaping is
+    # needed. The previous single-string `system(init_cmd.join ' ')` used
+    # String#dump — Ruby-source escaping, NOT shell escaping — to "quote" three
+    # of the four args (and left @prob_init_file unquoted), which breaks on any
+    # space / $ / backtick in a path. Nothing here is student-controlled, but
+    # argv is the robust form regardless.
     init_cmd = [@prob_init_file.to_s,
-                tc_hash.to_json.dump,              # dump is to escape the quote
-                @prob_config_file.to_s.dump,
-                @prob_init_work_path.to_s.dump,
+                tc_hash.to_json,
+                @prob_config_file.to_s,
+                @prob_init_work_path.to_s,
                ]
     judge_log "init file = #{@prob_init_file}"
     judge_log "init command = #{init_cmd.join ' '}"
-    system(init_cmd.join ' ')
+    system(*init_cmd)
   end
 
   # set up directory and path/filename of the testcase directory

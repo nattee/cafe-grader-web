@@ -157,11 +157,9 @@ class Problem < ApplicationRecord
   has_one_attached :generated_statement # statement generated from the description
   has_one_attached :attachment  # this is public files seen by contestant
 
-  def set_default_value
-  end
+  has_and_belongs_to_many :grounding_materials
 
-  def viva_grounding_tags
-    tags.where(kind: :viva_grounding)
+  def set_default_value
   end
 
   def viva_prompt_tags
@@ -249,38 +247,6 @@ class Problem < ApplicationRecord
     return name
   end
 
-
-  def self.create_from_import_form_params(params, old_problem = nil)
-    org_problem = old_problem || Problem.new
-    import_params, problem = Problem.extract_params_and_check(params,
-                                                              org_problem)
-    if !problem.errors.empty?
-      return problem, 'Error importing'
-    end
-
-    problem.date_added = Time.new
-    problem.test_allowed = true
-    problem.output_only = false
-    problem.available = false
-
-    if not problem.save
-      return problem, 'Error importing'
-    end
-
-    import_to_db = params.has_key? :import_to_db
-
-    importer = TestdataImporter.new(problem)
-
-    if not importer.import_from_file(import_params[:file],
-                                     import_params[:time_limit],
-                                     import_params[:memory_limit],
-                                     import_params[:checker_name],
-                                     import_to_db)
-      problem.errors.add(:base, 'Import error.')
-    end
-
-    return problem, importer.log_msg
-  end
 
   def self.download_file_basedir
     return "#{Rails.root}/data/tasks"
@@ -424,10 +390,10 @@ class Problem < ApplicationRecord
     end
   end
 
-  # export  the problem into the default dump dir
-  def export
+  # export the problem into the given dir (default: judge dump dir)
+  def export(all_datasets: false, base_dir: Rails.root.join('../judge/dump'), zip: true)
     pe = ProblemExporter.new
-    pe.export_problem_to_dir(self, zip: true)
+    pe.export_problem_to_dir(self, base_dir: base_dir, zip: zip, all_datasets: all_datasets)
   end
 
   def regenerate_pdf_statement!

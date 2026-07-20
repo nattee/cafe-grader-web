@@ -14,10 +14,47 @@ Sources: `app/engine/scorer.rb`, `app/engine/checker.rb`,
 | Key | Formula | Use when |
 |---|---|---|
 | `sum` | `Σ (testcase_score × weight) / Σ weights × 100` | Default. Weighted sum of testcase scores, normalized to 100. |
-| `group_min` | Per group, take the *minimum* score in that group × its max weight; then `Σ / total weight × 100`. | **IOI/ICPC subtask style.** A group only earns points if *every* testcase in it passes — one failure drags the whole group to its minimum. |
+| `group_min` | Per group, take the *minimum* score in that group × the group's weight (the *minimum* weight found in the group — by convention all testcases in a group share one weight); then `Σ / total weight × 100`. | **IOI/ICPC subtask style.** A group only earns points if *every* testcase in it passes — one failure drags the whole group to its minimum. The importer warns when a package declares mixed weights inside a group. |
 | `raw_sum` | `Σ testcase_score`. No weighting, no normalization. | When a custom checker emits per-testcase point values you want summed literally. **Pair with `custom_cms_raw` evaluation_type.** |
 
 Source: `scorer.rb:14-74` (`sum_of_all_testcases`, `group_min`, `raw_sum`).
+
+## Testcase config — the weight & group tool
+
+The **Testcase config** box on the dataset's Testcases tab (`weight_param` →
+`DatasetsController#set_weight` → `Dataset#set_by_array` / `set_by_hash`)
+assigns per-testcase `weight` (and, in CMS mode, `group`) in bulk. Input is
+**JSON**, in one of these forms:
+
+| Input | Effect |
+|---|---|
+| `[10, 20, 30]` | Flat: weight 10 → 1st testcase, 20 → 2nd, 30 → 3rd (positional, in display order). No grouping. |
+| `[[10, 2], [20, 3]]` | **CMS mode** (triggered when the *first* element is an array). `[weight, count]`: group 1 = the next **2** testcases at weight 10; group 2 = the next **3** at weight 20. Writes both `weight` **and** an incrementing `group`. |
+| `[[40, "1-.*"], [60, "2-.*"]]` | **CMS mode with a codename regexp.** `[weight, "regex"]`: group 1 = every testcase whose `code_name` matches `1-.*`, group 2 = those matching `2-.*`. The regexp is **anchored at the start** (like CMS's `re.match`), so `1-.*` matches `1-1`/`1-2` but **not** `10-1`. You can mix `[w, count]` and `[w, "regex"]` entries in one array, but don't overlap them. |
+| `{"weight":[…], "group":[…], "group_name":[…]}` | Hash form: set each field independently by run-length array (`[value, count]` pairs allowed). **No** auto-grouping; counts only, no regexp. |
+
+> ### ⚠ This looks like CMS but is **not** the same
+> The `[[value, count]]` shape is deliberately CMS-compatible — you can paste a
+> CMS `GroupMin` `score_type_parameters` list and it will often work — but the
+> semantics diverge:
+>
+> - **The first number is a *weight*, not points.** cafe **normalizes**:
+>   `Σ(min_score · weight) / Σ weight × 100`. CMS's number is *absolute
+>   points*. They match only when the CMS values already sum to 100; otherwise
+>   cafe rescales (e.g. CMS `[[30,5],[30,8]]` for a 60-point task stays 60 in
+>   CMS but becomes 100 here).
+> - **`T` (the second field) is a count *or* a codename regexp** — same as CMS.
+>   The regexp matches `code_name`, start-anchored, mirroring CMS `re.match`.
+> - **cafe stores the value per testcase**, CMS stores it once per subtask.
+>   That's why cafe can drift into "mixed weights inside a group" (the editor
+>   and importer both warn — see `group_min` above); CMS can't by construction.
+>
+> There is **no CMS package import/export** today (Italian/TPS ⇄ cafe is
+> designed in `doc/problem-import-export-design-2026-07-14.md` Package 2 but not
+> built). What is CMS-compatible at *runtime* is the checker protocol
+> (`custom_cms` / `custom_cms_raw` below).
+
+Source: `Dataset#set_by_array` / `set_by_hash`, `DatasetsController#set_weight`.
 
 ## Evaluation Type — how submission output is judged against the expected answer
 

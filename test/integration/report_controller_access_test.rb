@@ -1,6 +1,11 @@
 require "test_helper"
 
-class ReportControllerTest < ActionDispatch::IntegrationTest
+# Cross-report access smoke tests: every report type is reachable by an admin
+# and blocked for non-admins, plus the JSON query endpoints. Named distinctly
+# from test/controllers/report_controller_test.rb (which covers the activity
+# report) so Ruby doesn't merge the two same-named classes and cross-
+# contaminate their constants/helpers/setup.
+class ReportControllerAccessTest < ActionDispatch::IntegrationTest
   test "unauthenticated user is redirected" do
     get "/report/max_score"
     assert_redirected_to login_main_path

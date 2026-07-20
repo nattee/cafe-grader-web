@@ -13,6 +13,41 @@ Conventions:
 
 ---
 
+## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
+
+**Context.** Viva grounding was extracted off `Tag` into a dedicated
+`GroundingMaterial` model with its own admin library (Manage → Grounding) and
+a viva-only attach select on the problem form — see
+`docs/superpowers/specs/2026-07-19-viva-grounding-materials-design.md` and
+`doc/Viva-Exam.md` §3. Three items were explicitly deferred out of that work:
+
+- **Unify `llm_prompt` into a shared `LlmAsset` model** (deferred alternative
+  C from the spec). `llm_prompt` stays on `Tag` for now — small, always text,
+  and working. Unifying it with `GroundingMaterial` into one LLM-asset model
+  would let `Tag` become a pure label table, but rewrites the working
+  rubric-injection path (`viva_turn_assist.rb`, `viva_grade_assist.rb`) for
+  marginal benefit today; revisit if `llm_prompt` ever grows document-native
+  needs (files, per-item token budgeting) the way grounding did.
+- **Accurate page-count token estimate for grounding files.** `GroundingMaterial#compute_estimated_tokens`
+  (`app/models/grounding_material.rb`) uses a byte-size proxy
+  (`BYTES_PER_PROXY_TOKEN = 400`, i.e. ~1 token per 400 bytes) for attached
+  PDF/image files — deliberately approximate, no PDF library in the codebase.
+  A `pdf-reader`-based page count would give a tighter budgeting number.
+- **Grounding image files (png/jpeg) are rejected at upload — PDF-only for v1.**
+  `GroundingMaterial::ALLOWED_CONTENT_TYPES` was originally
+  `image/png`/`image/jpeg`/`image/webp` plus `application/pdf`, but
+  `Llm::Request.encode_pdf_part` (`app/services/llm/request.rb:124`) hard-guards
+  `return nil unless attachment.content_type == 'application/pdf'`, so an
+  uploaded image was accepted, token-counted, then silently never sent to the
+  model — a validation/delivery mismatch fixed by narrowing
+  `ALLOWED_CONTENT_TYPES` to `%w[application/pdf]`. Adding image support back
+  requires extending BOTH `ALLOWED_CONTENT_TYPES` (validation) AND
+  `encode_pdf_part` (or a sibling encoder emitting a plain
+  `data:image/png;base64,...` `image_url` part, no PDF-specific framing)
+  together — extending either alone reintroduces the same silent-drop bug.
+
+---
+
 ## Help patterns — follow-ups under the context-dependent split
 
 **Decision (2026-05-17).** Two patterns coexist intentionally: inline
@@ -34,12 +69,19 @@ the visible label alone is enough.
   used as a layout: `= render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:} do … end`.
   Both drawers migrated onto it: `problems/_edit_help` and the report scope help
   (`report/_report_help`). New drawers should use it instead of hand-rolling the chrome.
-- **Edit-drawer content density.** `problems/_edit_help.html.haml` content
-  is still text-heavy. The point of the drawer was to relieve a dense
-  page; the help inside shouldn't reproduce that density. Consider tabs
-  inside the drawer (Basics / Datasets / Viva / Tags) or a numbered
-  walkthrough rather than field-by-field reference. Defer until we have
-  a second drawer to compare against.
+- **Edit-drawer content density.** ✅ DONE 2026-07-19. `problems/_edit_help.html.haml`
+  is now a Bootstrap accordion (5 items, one open at a time, "Detail card fields"
+  open by default) so the drawer opens short instead of one long scroll. Chose the
+  accordion over tabs/walkthrough after a rendered side-by-side comparison of all
+  three (accordion won: native to the narrow vertical drawer, keeps direct lookup,
+  shortest initial scroll). Folded in two structural fixes visible in the old
+  version: pulled **Compilation type** out of the Detail `dl` into its own section
+  (it carried 3 sub-bullets and bloated the list), and moved the toolbar list
+  (Statistics / Download / Change history) out from under *Scoring & evaluation*
+  into a new *Toolbar & more* section next to the wiki link. Wording kept verbatim
+  — the collapse solves density, so no prose rewrite. Collapse is data-API driven
+  (no `init-ui-component` wrapper needed; survives Turbo-frame reloads). Optional
+  future follow-up: trim the prose if it still feels heavy once collapsed.
 
 **Out of scope.** `app/views/main/help.html.haml` is a full-page
 student-facing help with i18n — different concern, not covered by the
@@ -150,7 +192,7 @@ Five distinct drifts, all resolved:
 3. ~~Cluster 6~~ done 2026-06-15.
 4. ~~Clusters 3 + 4~~ done 2026-06-15 — verified NOT regressions (controller tests pass); the system tests just raced the async turbo_stream submit.
 
-**`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
+**`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerAccessTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
 
 ---
 
@@ -255,3 +297,45 @@ repo — clone, copy the page in, commit, push).
 
 **Note:** the wiki's `Home.md` is intentionally minimal (no page TOC); pages
 surface via GitHub's auto-generated sidebar, so no Home edit was needed.
+
+---
+
+## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
+
+- Communication task support in the judge (manager process + FIFOs) — unblocks CMS Communication import/export.
+- OutputOnly grading support — unblocks CMS OutputOnly import/export.
+- GroupMinPrereq scoring in cafe's scorer (`score_param` to hold the prereq DAG) — unblocks importing dae's CMS camp tasks that use the custom score type.
+- File-I/O task support (or a permanent-rejection decision) for Italian-format tasks with `infile`/`outfile`.
+- Checker protocol adapter so `custom_cafe` checkers can be exported to CMS.
+- C++ relative comparator (CMS-side equivalent of `lib/checker/relative.rb`).
+- ✅ DONE 2026-07-19. Group-weight uniformity validation in the dataset edit UI
+  (import already warns). Shared `Dataset#mixed_weight_groups` now backs both the
+  import warning and a live warning on the Testcases tab (banner + per-row marker,
+  group_min only). Same session also added CMS-style **codename-regex** grouping to
+  the Testcase config tool (`[[weight, "1-.*"], …]`, start-anchored like CMS
+  `re.match`) with inline examples + a "Syntax & CMS notes" drawer, and documented
+  the whole weight/group grammar + the CMS-divergence caveat in
+  `doc/dataset-scoring-and-evaluation.md`.
+- Approach-C IR refactor of import/export — only if supported formats multiply beyond Italian+TPS.
+- **✅ AUDITED 2026-07-19.** Reviewed every single-string shell invocation on the
+  grading path (`isolate_runner.rb:12,36,45`, `checker.rb:155`,
+  `compiler/postgres.rb:69`, plus the ones the original item missed:
+  `judge_base.rb:320`, `grader.rb:206,268`). **Finding: no untrusted (student)
+  input reaches any command string.** Inputs are deployment config, engine-built
+  ID-based paths, the admin-managed `languages` table (compile/run templates),
+  and problem-author files — and authors already have arbitrary code execution
+  by design (custom checkers run *unsandboxed* at `checker.rb:155`), so an author
+  filename is not an escalation. This is unlike the import/export fix, where zip
+  entry / problem names were attacker-influenced. **Action taken:** converted
+  `judge_base.rb:320` (`run_initializer`) to argv `system(*init_cmd)` — its
+  `String#dump` pseudo-quoting was Ruby escaping, not shell escaping (fragile on
+  a space/`$`/backtick, and left one of four args unquoted). **Left as-is with
+  rationale:** `isolate_runner.run_isolate` deliberately relies on `${UID}` shell
+  expansion (line 32) and takes no untrusted input; `checker.rb:155` and the
+  `grader.rb`/`postgres.rb` sites take only config/ID/author-trusted strings.
+  Optional future hardening (not required): make `check_command` return argv, and
+  replace `${UID}` with `Process.uid` so `run_isolate` can drop the shell.
+  **Separate, larger item worth its own backlog entry:** custom checkers execute
+  unsandboxed on the judge host — a deliberate trust choice today, but if we ever
+  accept checkers from less-trusted authors it should move inside isolate.
+- Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`). **✅ FIXED 2026-07-19** for the known instance: the integration file was renamed to `test/integration/report_controller_access_test.rb` with `class ReportControllerAccessTest`; `test/controllers/report_controller_test.rb` keeps `ReportControllerTest`. The naming rule stands for future test files.

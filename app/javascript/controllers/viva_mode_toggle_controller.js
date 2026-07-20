@@ -18,7 +18,7 @@ import { Controller } from "@hotwired/stimulus"
 // than disabling inputs because the concept doesn't apply at all
 // for viva — see commit history for the design discussion.
 export default class extends Controller {
-  static targets = ["hideForViva"]
+  static targets = ["hideForViva", "showForViva"]
 
   connect() {
     this.toggle()
@@ -28,6 +28,7 @@ export default class extends Controller {
     const checked = this.element.querySelector('input[name$="[compilation_type]"]:checked')
     const value   = checked?.value
     this.hideForVivaTargets.forEach(el => el.classList.toggle("d-none", value === "viva_exam"))
+    this.showForVivaTargets.forEach(el => el.classList.toggle("d-none", value !== "viva_exam"))
 
     // Broadcast the new compilation_type so listeners outside this
     // controller's scope (notably the dataset-mode-toggle controller

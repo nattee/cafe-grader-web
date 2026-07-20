@@ -10,6 +10,95 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+
+- **`problems:replay_validate` rake task** — validates the problem import/export
+  path by re-importing a problem and replaying a stratified sample of its
+  submissions through the grader, diffing per-testcase results against the
+  originals' stored grades (only `T→P`/`x→P` treated as benign). Dev diagnostic;
+  self-cleaning, with `problems:replay_purge` as a backstop.
+- **Problem import warns when a `group_min` group has mixed testcase
+  weights** — group-min scoring uses one weight per group (the minimum);
+  heterogeneous weights inside a group are an authoring error.
+- **Dataset editor also warns about mixed `group_min` weights** — the same
+  check now runs live on the Testcases tab (shared `Dataset#mixed_weight_groups`):
+  a banner lists each offending group with its weights and effective (minimum)
+  weight, and a per-row marker flags the affected testcases. Only shown under
+  Group Min scoring.
+- **Testcase config accepts CMS-style codename regexps** — the weight/group tool
+  now takes `[[weight, "1-.*"], [weight, "2-.*"]]`, grouping testcases by a
+  regexp matched against `code_name` (start-anchored, mirroring CMS `re.match`),
+  alongside the existing `[weight, count]` form. The box gains inline examples
+  and a "Syntax & CMS notes" help drawer; the full grammar and how it differs
+  from CMS `GroupMin` parameters (normalized weights vs absolute points) are
+  documented in `doc/dataset-scoring-and-evaluation.md`.
+- **Multi-dataset problem export/import** — a problem's non-live datasets can now
+  be included in its export archive ("Download (all datasets)" on the problem
+  page, `Problem#export(all_datasets: true)`, or `rails "problems:export[name,all]"`),
+  and are re-imported as additional (non-live) datasets. The zip format is a
+  backward-compatible superset: old archives import unchanged, and the default
+  "live dataset only" export is structurally compatible with previous versions
+  (same files; imports identically).
+- **Grounding materials: a dedicated model + admin library** (Manage → Grounding)
+  for viva reference material, replacing `viva_grounding` tags. Files are sent
+  to the interviewer/grader as PDF `image_url` parts; the library shows a
+  per-item token estimate and problem-reuse count.
+
+### Changed
+
+- **Viva grounding is now attached to problems via a viva-only "Grounding
+  materials" selector** (with a per-problem token total) instead of the mixed
+  Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags
+  backfilled.
+
+### Fixed
+
+- **"Import testcases" is stricter and no longer crashes on errors** — replacing
+  into a dataset that no longer exists now shows an error toast instead of
+  silently creating a new dataset; the testcases-only flow no longer overwrites
+  the problem's public attachment when the uploaded zip contains an
+  `attachment/` directory; and all import-testcases error paths surface as a
+  toast (they previously raised a template error by re-rendering the standalone
+  import page).
+- **Problem import: `code_name_regex` now actually applies** — the custom
+  code-name extraction regex accepted by `ProblemImporter` was parsed but its
+  result discarded; testcase code names always fell back to the raw wildcard
+  match.
+- **Problem import: model solutions survive round-trips** — imported model
+  solutions had garbled source filenames (`cpp_fibo.cpp` → `p_fibo.cpp`), were
+  not tagged as model solutions (so the *next* export silently dropped them),
+  and were attributed to an arbitrary user; they are now split on the first
+  `_`, tagged `:model`, and owned by the importing user.
+- **Problem import: empty "Full name" no longer blanks the title** — it now
+  falls back to the short name (a `config.yml` `full_name` still wins).
+- **Problem export now round-trips everything the author created** — the
+  markdown description, `markdown` flag, `score_param`, and dataset data
+  files were silently dropped by export (or never imported); an exported zip
+  re-imports field-identical. `ProblemExporter.dump_problems` (console bulk
+  export) no longer crashes on a typo'd default, and the exported statement
+  is named `statement.pdf` (was `statment.pdf`).
+- **Downloading the archive of a problem with no live dataset** shows an
+  alert instead of a 500 error page.
+- **Grounding material PDF/image attachments no longer crash the LLM
+  request builder** — `GroundingMaterial#grounding_file_parts` iterates raw
+  `ActiveStorage::Attachment` records (from a `has_many_attached` collection),
+  which don't respond to `#attached?`; `Llm::Request.encode_pdf_part` was
+  unconditionally calling it, so any viva turn/grade request for a problem
+  with an attached grounding file raised `NoMethodError` instead of sending
+  the file.
+
+### Security
+
+- **Problem import/export no longer builds shell strings** — unzip/zip run
+  with argv-style exec (a hostile problem name could previously inject shell
+  syntax), extraction directories are derived via `parameterize`, and a
+  containment check rejects archives whose entries or symlinks escape the
+  extraction directory (zip-slip).
+- **Importing a problem under an existing name now requires edit rights on
+  that problem** — previously any group editor could silently overwrite any
+  problem in the system by importing a zip with the same short name. Admin
+  re-import-to-update behavior is unchanged.
+
 ## [4.4.2] — 2026-07-01
 
 ### Fixed
