@@ -131,4 +131,10 @@ class ProblemTest < ActiveSupport::TestCase
     assert_equal 10, p.viva_soft_cap
     assert_equal 15, p.viva_hard_cap
   end
+
+  test 'viva problems skip generated-statement PDF regeneration' do
+    p = Problem.create!(name: 'viva-t8', full_name: 'viva-t8', full_score: 100,
+                        compilation_type: :viva_exam, description: '# case')
+    refute p.send(:should_generate_pdf?)
+  end
 end

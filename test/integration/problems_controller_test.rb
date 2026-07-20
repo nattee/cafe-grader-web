@@ -168,6 +168,18 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "exam", p.reload.viva_mode
   end
 
+  test "generic and conduct tag selects merge into tag_ids" do
+    sign_in_as("admin", "admin")
+    problem = Problem.create!(name: "viva-t8b", full_name: "viva-t8b", full_score: 100,
+                              compilation_type: :viva_exam, viva_prompt: "# Rubric\nok")
+    topic = Tag.create!(name: "topic-t8", kind: :topic)
+    conduct = Tag.create!(name: "conduct-t8", kind: :viva_conduct, params: "persona")
+    patch problem_path(problem), params: {
+      problem: { tag_ids: [topic.id.to_s, conduct.id.to_s], permitted_lang: [] }
+    }, as: :turbo_stream
+    assert_equal [conduct.id, topic.id].sort, problem.reload.tag_ids.sort
+  end
+
   test "admin can destroy problem" do
     sign_in_as("admin", "admin")
     prob = problems(:prob_sub)

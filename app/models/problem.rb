@@ -408,6 +408,8 @@ class Problem < ApplicationRecord
   private
 
   def should_generate_pdf?
+    return false if viva_exam?   # D5: the description IS the scenario; no side-PDF for vivas
+
     (new_record? || saved_change_to_attribute?(:description)) && description.present?
   end
 

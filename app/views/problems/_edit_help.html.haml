@@ -30,9 +30,16 @@
             %dd.col-8.text-secondary Per-test-case caps. Time in seconds, memory in MB.
             %dt.col-4.fw-semibold Tags
             %dd.col-8.text-secondary
-              Free-form labels. For viva exams, attach an
-              %code llm_prompt
-              tag here (interviewer persona + rubric). Reference material for
+              Free-form labels (topic/category only — LLM-kind tags are
+              hidden from this picker). For viva exams, the rubric and model
+              answers go in the
+              %strong Examiner briefing
+              field (Description tab area of the form); an optional shared
+              examiner persona can be layered on via the
+              %strong Conduct profile
+              select, which picks a
+              %code viva_conduct
+              tag. Reference material for
               the interviewer/grader lives separately under
               %strong Manage &rarr; Grounding
               and is attached to the problem via the
@@ -70,8 +77,10 @@
               files attached to the dataset. Use this when students implement a function called by a fixed harness, or when there's a shared header/grader stub.
             %li
               %strong Viva Exam
-              — special mode: no compilation and no test cases. The submission is an answer to an LLM-driven oral interview, graded against a rubric supplied via the
-              %code llm_prompt
+              — special mode: no compilation and no test cases. The submission is an answer to an LLM-driven oral interview, graded against a rubric supplied via the problem's
+              %strong Examiner briefing
+              field, optionally layered with a shared
+              %code viva_conduct
               tag.
 
     -# ---- 3. Datasets & live set ----

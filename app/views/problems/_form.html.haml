@@ -44,7 +44,7 @@
 
         %section.mb-4
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Categorization
-          = form.input :tag_ids, label: 'Tags', collection: Tag.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
+          = form.input :tag_ids, label: 'Tags', collection: Tag.where(kind: %i[normal topic]), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
 
           -# Viva grounding — shown only when compilation_type is viva_exam
           .mb-4.d-none{ data: { viva_mode_toggle_target: 'showForViva' } }
@@ -70,6 +70,17 @@
                 %div
                   This viva is in <strong>practice</strong> mode and is attached to a contest.
                   Students can restart it freely — switch to <strong>exam</strong> mode before any graded use.
+
+            = form.input :viva_prompt, as: :text, label: 'Examiner briefing', wrapper: :horizontal_form,
+                input_html: {rows: 14, class: 'font-monospace'},
+                hint: 'Rubric, model answers, and problem-specific examiner guidance. NEVER shown to students. Must contain a "# Rubric" section. This is the marking scheme; the Scenario tab is the exam paper.'
+            = form.input :tag_ids, label: 'Conduct profile', collection: Tag.viva_conduct.order(:name),
+                input_html: {class: 'select2', multiple: true, id: 'problem_conduct_tag_ids'},
+                wrapper: :horizontal_form,
+                hint: 'Optional shared examiner persona/conduct layer (viva_conduct tags), prepended before the briefing. Usually one per course.'
+            = form.input :viva_soft_cap, wrapper: :horizontal_form, label: 'Soft turn cap', hint: 'The examiner is instructed to wrap up within about this many questions.'
+            = form.input :viva_hard_cap, wrapper: :horizontal_form, label: 'Hard turn cap', hint: 'The interview is force-ended and graded at this many student answers.'
+
             - viva_mode_options = [['<strong>Exam</strong> <span class="text-secondary">— single attempt; a second flagged jailbreak attempt terminates the interview.</span>'.html_safe, 'exam'], ['<strong>Practice</strong> <span class="text-secondary">— students may restart themselves (rate-limited); jailbreak flags are logged, never fatal.</span>'.html_safe, 'practice']]
             = form.input :viva_mode, as: :radio_buttons, collection: viva_mode_options, wrapper: :horizontal_collection, label: 'Viva mode', tooltip: 'Flippable anytime. Exam is the fail-safe default.'
 
@@ -86,38 +97,43 @@
         %section.mb-4
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Grading & Compilation
           = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
-          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; attach an llm_prompt tag + grounding materials instead.</span>'.html_safe, 'viva_exam']]
+          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; fill in the Examiner briefing + optional Conduct profile and grounding materials instead.</span>'.html_safe, 'viva_exam']]
           = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-mode-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
           = form.input :submission_filename, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}
 
         = form.button :submit, class: 'btn btn-primary me-2'
       %div#description.my-3.tab-pane.fade{class: (' show active ' if @active_problem_tab == '#description')}
         %section.mb-4
-          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Markdown Statement
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom
+            = @problem.viva_exam? ? 'Scenario (markdown)' : 'Markdown Statement'
           = form.input :description, as: :text, wrapper: :vertical_form, label: false, input_html: { rows: 20, class: 'font-monospace' }
           %p.small.text-secondary.mt-1.mb-0
-            Internal markdown source — not shown to students directly. The PDF below is auto-regenerated whenever you save changes to the description.
-
-        %section.mb-4
-          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom PDF Export
-          .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
-            -# Current PDF state
-            - if @problem.generated_statement.attached?
-              .d-inline-flex.align-items-center.gap-1
-                %span.mi.md-18.text-secondary description
-                = link_to @problem.generated_statement.filename.to_s, download_by_type_problem_path(@problem, 'generated_statement'), target: '_blank', data: {turbo: false}, class: 'text-decoration-none'
+            - if @problem.viva_exam?
+              Sent <strong>verbatim to the examiner</strong> as the interview opener — this is the exam paper (the case being discussed). Rubric and model answers belong in the Examiner briefing, never here. The statement PDF (General tab) is only needed when the scenario requires figures or original exam layout.
             - else
-              %span.text-secondary.fst-italic No PDF generated yet.
+              Internal markdown source — not shown to students directly. The PDF below is auto-regenerated whenever you save changes to the description.
 
-            -# Delete button references the hidden form below via HTML5
-            -# `form=` attr, so the button can live inside this
-            -# simple_form_for without producing illegal nested <form> tags.
-            -# To force a fresh PDF without changing description, edit and
-            -# resave (any description change re-fires the auto-generation).
-            - if @problem.generated_statement.attached?
-              %button.btn.btn-sm.btn-outline-danger.d-inline-flex.align-items-center.gap-1{type: 'submit', form: 'pdf-delete-form'}
-                %span.mi.md-18 delete
-                Delete
+        - unless @problem.viva_exam?
+          %section.mb-4
+            %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom PDF Export
+            .d-flex.align-items-center.justify-content-between.flex-wrap.gap-2
+              -# Current PDF state
+              - if @problem.generated_statement.attached?
+                .d-inline-flex.align-items-center.gap-1
+                  %span.mi.md-18.text-secondary description
+                  = link_to @problem.generated_statement.filename.to_s, download_by_type_problem_path(@problem, 'generated_statement'), target: '_blank', data: {turbo: false}, class: 'text-decoration-none'
+              - else
+                %span.text-secondary.fst-italic No PDF generated yet.
+
+              -# Delete button references the hidden form below via HTML5
+              -# `form=` attr, so the button can live inside this
+              -# simple_form_for without producing illegal nested <form> tags.
+              -# To force a fresh PDF without changing description, edit and
+              -# resave (any description change re-fires the auto-generation).
+              - if @problem.generated_statement.attached?
+                %button.btn.btn-sm.btn-outline-danger.d-inline-flex.align-items-center.gap-1{type: 'submit', form: 'pdf-delete-form'}
+                  %span.mi.md-18 delete
+                  Delete
 
         = form.button :submit, class: 'btn btn-primary me-2'
 

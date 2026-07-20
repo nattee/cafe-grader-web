@@ -42,10 +42,13 @@
         - if @problem.viva_exam?
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Viva Exam
           %p.text-secondary
-            This problem is a Viva Exam. Interview flow is driven by
-            %code llm_prompt
-            tags (interviewer persona + rubric, attached in the tags picker on
-            the left) plus any
+            This problem is a Viva Exam. Interview flow is driven by the
+            %strong Examiner briefing
+            (Description tab area of the form) — the rubric and model
+            answers — optionally layered with a shared
+            %code viva_conduct
+            tag (examiner persona, picked via the Conduct profile select)
+            plus any
             %strong Grounding materials
             attached above (course materials, managed under Manage &rarr; Grounding). Test-case datasets do not apply.
         - else
