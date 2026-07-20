@@ -12,8 +12,8 @@ module Llm
     MAX_TOKENS     = 2048
     DEFAULT_MODEL  = nil
 
-    # Backend-injected security policy. Centralized here (not in author-supplied
-    # llm_prompt tags) because the ALERT_SENTINEL is a code contract parsed by
+    # Backend-injected security policy. Centralized here (not in the author-supplied
+    # viva_prompt / conduct tags) because the ALERT_SENTINEL is a code contract parsed by
     # handle_response — if an author forgets it, omits it, or translates it,
     # detection silently breaks. Authors own pedagogy (persona, scaffolding,
     # rubric); the platform owns jailbreak resistance.
@@ -132,7 +132,7 @@ module Llm
     # Backend-injected protocol directive. The model MUST include this exact
     # sentinel in its final message to trigger Llm::VivaGradeAssistJob via
     # the parsing in handle_response. Kept centralized here (rather than
-    # baked into every llm_prompt tag) because it's a code contract, not
+    # baked into every problem's viva_prompt) because it's a code contract, not
     # prompt-author guidance.
     def done_sentinel_directive
       "When you are satisfied you have enough signal to grade the student, " \
