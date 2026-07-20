@@ -24,7 +24,7 @@ module Viva
     def candidate_tags
       Tag.where(kind: :llm_prompt)
          .joins(:problems).where(problems: {compilation_type: Problem.compilation_types[:viva_exam]})
-         .distinct.to_a
+         .distinct.order(:id).to_a
     end
 
     def process(tag)
@@ -35,10 +35,16 @@ module Viva
         @io.puts "DUAL-USE  tag ##{tag.id} '#{tag.name}': viva=#{viva.map(&:name).join(',')} non-viva=#{non_viva.map(&:name).join(',')} — MANUAL SPLIT REQUIRED, skipped"
       elsif viva.size == 1
         problem = viva.first
-        @io.puts "MOVE      tag ##{tag.id} '#{tag.name}' → problem '#{problem.name}'.viva_prompt (#{tag.params.to_s.length} chars), tag deleted"
-        problem.update!(viva_prompt: tag.params)
-        problem.tags.delete(tag)
-        tag.destroy!
+        existing = problem.viva_prompt.to_s
+        incoming = tag.params.to_s
+        if existing.present? && existing != incoming
+          @io.puts "CONFLICT  tag ##{tag.id} '#{tag.name}' → problem '#{problem.name}' already has viva_prompt (existing #{existing.length} chars vs tag #{incoming.length} chars) — MANUAL REVIEW REQUIRED, skipped"
+        else
+          @io.puts "MOVE      tag ##{tag.id} '#{tag.name}' → problem '#{problem.name}'.viva_prompt (#{incoming.length} chars), tag deleted"
+          problem.update!(viva_prompt: tag.params)
+          problem.tags.delete(tag)
+          tag.destroy!
+        end
       else
         rubric_note = tag.params.to_s.match?(/^#+\s*Rubric\b/im) ? ' [CONTAINS # Rubric — decide: generic rubric stays shared or moves per-problem]' : ''
         @io.puts "RE-KIND   tag ##{tag.id} '#{tag.name}' → viva_conduct (shared by #{viva.size} vivas)#{rubric_note}"

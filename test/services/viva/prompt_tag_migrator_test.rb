@@ -40,4 +40,19 @@ class Viva::PromptTagMigratorTest < ActiveSupport::TestCase
     assert @dual.reload.llm_prompt?, 'dual-use tag must be left alone'
     assert_includes @dual.problems.reload, @coding
   end
+
+  test 'apply skips move when problem already has a different viva_prompt' do
+    v3 = make_viva('viva-c')
+    v3.update!(viva_prompt: "# Rubric\nexisting")
+    conflicting = Tag.create!(name: 'p3-prompt', kind: :llm_prompt, params: "# Rubric\ndifferent")
+    v3.tags << conflicting
+
+    Viva::PromptTagMigrator.new(apply: true, io: @out).run
+
+    assert_equal "# Rubric\nexisting", v3.reload.viva_prompt
+    assert Tag.exists?(conflicting.id)
+    assert conflicting.reload.llm_prompt?
+    assert_includes conflicting.problems.reload, v3
+    assert_match(/CONFLICT\s+tag ##{conflicting.id}/, @out.string)
+  end
 end
