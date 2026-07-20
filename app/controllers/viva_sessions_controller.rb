@@ -1,9 +1,13 @@
 class VivaSessionsController < ApplicationController
   before_action :check_valid_login
   before_action :set_problem, only: %i[start]
-  before_action :set_submission, only: %i[show answer refresh retry_turn]
+  before_action :set_submission, only: %i[show answer refresh retry_turn restart]
 
   VIVA_LANGUAGE_NAME = 'viva'.freeze
+
+  # Design D2: practice-mode students may start at most this many sessions
+  # per problem per day (archived ones count — that's the point).
+  DAILY_START_LIMIT = 3
 
   # POST /problems/:problem_id/viva/start
   def start
@@ -34,6 +38,14 @@ class VivaSessionsController < ApplicationController
     if @problem.submissions.where(user: @current_user, viva_archived_at: nil).exists?
       redirect_to list_main_path,
                   alert: "You already have an active viva session for '#{@problem.name}'. An admin can archive it from the viva page if you need to retake."
+      return
+    end
+
+    if @problem.viva_mode_practice? && !@current_user.admin? &&
+       @problem.submissions.where(user: @current_user)
+                .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= DAILY_START_LIMIT
+      redirect_to list_main_path,
+                  alert: "Daily practice limit reached for '#{@problem.name}' (#{DAILY_START_LIMIT}/day). Try again tomorrow."
       return
     end
 
@@ -180,6 +192,27 @@ class VivaSessionsController < ApplicationController
 
     redirect_to viva_submission_path(@submission),
                 notice: 'Retrying the interviewer response...'
+  end
+
+  # POST /submissions/:submission_id/viva/restart
+  #
+  # Practice-mode self-service retake (design D2): archives the student's
+  # own session so the Start Viva button reappears. Exam mode keeps the
+  # admin-only archive path (SubmissionsController#archive_viva).
+  def restart
+    unless @current_user == @submission.user
+      redirect_to viva_submission_path(@submission), alert: 'Only the owner can restart their viva.' and return
+    end
+    unless @submission.problem.viva_mode_practice?
+      redirect_to viva_submission_path(@submission), alert: 'Restart is only available for practice-mode vivas.' and return
+    end
+    if @submission.viva_turns.where(status: :processing).exists?
+      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.' and return
+    end
+
+    @submission.update!(viva_archived_at: Time.zone.now)
+    redirect_to list_main_path,
+                notice: "Practice viva archived — start a fresh one from the problem list (limit #{DAILY_START_LIMIT} per day)."
   end
 
   # GET /submissions/:submission_id/viva/refresh
