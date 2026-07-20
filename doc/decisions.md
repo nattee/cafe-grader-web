@@ -3,6 +3,39 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-07-20 — Viva prompt storage: ownership follows cardinality (no unified "LLM asset" entity)
+
+**Decision.** Content attached to problems is stored by its *natural cardinality*,
+not by a shared mechanism. Per-problem content lives in columns on `problems`
+(`viva_prompt` — the secret examiner briefing with rubric/model answers, audited
+with redaction; `description` — the viva scenario). Cross-problem content lives
+in shared entities: `GroundingMaterial` (files + token accounting + extraction
+behavior) and `Tag` (labels, plus two staff-only text kinds). The 2026-07-19
+rejection of a unified "LLM asset" model is reaffirmed: the candidates share
+almost no *behavior*, and one table wearing three concepts serves authors worse
+than three named concepts. What IS worth unifying is the UI grammar (library
+page + select2 attach + token badge + used-by count), not the schema.
+
+**Tag taxonomy (final).** `normal`/`topic` — labels, `public` at author's
+choice; `llm_prompt` — AI-helper ("Codey") prompt, read ONLY by
+`Llm::CommentAssist`; `viva_conduct` — shared examiner persona, read ONLY by
+viva assembly, `order(:name)`. Both LLM kinds force `public = false`
+(model-level coercion). Viva's system prompt assembles in fixed order:
+conduct tags → `viva_prompt` → platform `SECURITY_DIRECTIVE` → protocol
+directives. The `# Rubric` requirement validates against the column
+(`Problem#viva_setup_errors`), where a per-problem contract belongs — a shared
+instance can't carry per-problem guarantees.
+
+**Deviation from the 2026-07-20 spec text (deliberate).** The spec said the
+generic tag picker "stops offering LLM-kind tags." Implemented as written this
+silently stripped `llm_prompt` tags on every ordinary problem save (`tag_ids=`
+is whole-collection replacement, and the picker was the only attach UI for
+helper tags). The picker therefore excludes only `viva_conduct` (which has its
+dedicated Conduct-profile select); `llm_prompt` remains offered. The spec's
+intent — no cross-feature prompt contamination — is enforced at the *consumer*
+layer instead: each feature reads only its own kind, so misattachment is
+structurally harmless.
+
 ## 2026-06-10 — Canonical MySQL collation: `utf8mb4_0900_ai_ci` (MySQL-only; MariaDB unsupported)
 
 **Decision.** Every table and string column in the primary database uses
