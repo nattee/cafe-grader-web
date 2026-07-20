@@ -57,7 +57,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags
   backfilled.
 - Viva jailbreak handling: the examiner now only *detects* (staying in character); the backend applies policy — practice mode logs flags without terminating, exam mode warns on the first strike and terminates on the second (was: immediate termination on any detection).
-- Viva authoring: the Description tab is now the "Scenario (markdown)" for viva problems (sent verbatim to the examiner; side-PDF generation disabled), with the examiner briefing, conduct profile, and turn caps edited together in the problem form; LLM-kind tags are hidden from the generic tag picker and can never be public.
+- Viva authoring: the Description tab is now the "Scenario (markdown)" for viva problems (sent verbatim to the examiner; side-PDF generation disabled), with the examiner briefing, conduct profile, and turn caps edited together in the problem form; only `viva_conduct` tags are hidden from the generic tag picker (they have their own dedicated Conduct-profile select) — `llm_prompt` tags remain in the generic picker since it's the only UI that attaches them (to the AI-helper) and can never be public.
 
 ### Fixed
 

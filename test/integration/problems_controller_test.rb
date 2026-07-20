@@ -168,6 +168,41 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "exam", p.reload.viva_mode
   end
 
+  test "edit form offers llm_prompt tags in the generic picker, not viva_conduct" do
+    # Regression test for the T8 review fix: Problem#tag_ids= is a
+    # whole-collection replacement, and the generic picker used to be
+    # scoped to Tag.where(kind: %i[normal topic]) — filtering llm_prompt
+    # out entirely. That silently detached a problem's AI-helper prompt
+    # tag on every ordinary save, since no other on-screen control offers
+    # llm_prompt tags. Against the old scope this assertion on 'codey-x'
+    # fails (option absent from the generic select).
+    #
+    # Use a NON-viva fixture problem: the Conduct-profile select
+    # (id=problem_conduct_tag_ids) is rendered unconditionally in the DOM
+    # (only CSS-hidden via viva-mode-toggle for non-viva problems), so a
+    # viva_conduct tag legitimately appears there. To discriminate
+    # precisely we scope assertions to each select's own id rather than
+    # just grepping the whole response body.
+    codey = Tag.create!(name: "codey-x", kind: :llm_prompt, params: "helper prompt")
+    conduct = Tag.create!(name: "conduct-x", kind: :viva_conduct, params: "persona")
+
+    sign_in_as("admin", "admin")
+    get edit_problem_path(problems(:prob_add))
+    assert_response :success
+
+    # llm_prompt tag must be offered in the generic picker.
+    assert_select "select#problem_tag_ids option", text: "codey-x"
+    # viva_conduct tag must NOT be offered in the generic picker, even
+    # though it's a valid option in the (separately-scoped) conduct
+    # select elsewhere in the same form.
+    assert_select "select#problem_tag_ids option", text: "conduct-x", count: 0
+    # Sanity check that our scoping actually discriminates: the conduct
+    # tag genuinely renders somewhere on the page (in the conduct
+    # select), so the count: 0 above isn't vacuously true because the
+    # option is simply never rendered at all.
+    assert_select "select#problem_conduct_tag_ids option", text: "conduct-x"
+  end
+
   test "generic and conduct tag selects merge into tag_ids" do
     sign_in_as("admin", "admin")
     problem = Problem.create!(name: "viva-t8b", full_name: "viva-t8b", full_score: 100,

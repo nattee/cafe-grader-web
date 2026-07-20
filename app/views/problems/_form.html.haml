@@ -44,7 +44,12 @@
 
         %section.mb-4
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Categorization
-          = form.input :tag_ids, label: 'Tags', collection: Tag.where(kind: %i[normal topic]), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
+          -# Exclude only viva_conduct (it has its own dedicated select below, id
+          -# problem_conduct_tag_ids). llm_prompt tags MUST stay offered here — this
+          -# is the only UI that attaches them, and tag_ids= is whole-collection
+          -# replacement, so filtering llm_prompt out would silently detach a
+          -# problem's AI-helper prompt tag on every ordinary save.
+          = form.input :tag_ids, label: 'Tags', collection: Tag.where.not(kind: :viva_conduct), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
 
           -# Viva grounding — shown only when compilation_type is viva_exam
           .mb-4.d-none{ data: { viva_mode_toggle_target: 'showForViva' } }
