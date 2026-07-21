@@ -3,11 +3,22 @@ class VivaSessionsController < ApplicationController
   before_action :set_problem, only: %i[start]
   before_action :set_submission, only: %i[show answer refresh retry_turn restart]
 
+  # #show's "Viva Info" card reads this to render "N of L starts left today"
+  # for practice-mode problems.
+  helper_method :practice_daily_start_limit
+
   VIVA_LANGUAGE_NAME = 'viva'.freeze
 
   # Design D2: practice-mode students may start at most this many sessions
   # per problem per day (archived ones count — that's the point).
-  DAILY_START_LIMIT = 3
+  #
+  # Runtime-configurable via GraderConfiguration['viva.practice_daily_start_limit']
+  # (see db/seeds.rb for the seeded default/description). DAILY_START_LIMIT_FALLBACK
+  # is used only when that key is missing, blank, or non-positive — a
+  # misconfigured/blank config must fall back to a safe limit, not open
+  # unlimited starts. Read through #practice_daily_start_limit below.
+  PRACTICE_DAILY_START_LIMIT_CONF_KEY = 'viva.practice_daily_start_limit'.freeze
+  DAILY_START_LIMIT_FALLBACK = 3
 
   # POST /problems/:problem_id/viva/start
   def start
@@ -43,9 +54,9 @@ class VivaSessionsController < ApplicationController
 
     if @problem.viva_mode_practice? && !@current_user.admin? &&
        @problem.submissions.where(user: @current_user)
-                .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= DAILY_START_LIMIT
+                .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= practice_daily_start_limit
       redirect_to list_main_path,
-                  alert: "Daily practice limit reached for '#{@problem.name}' (#{DAILY_START_LIMIT}/day). Try again tomorrow."
+                  alert: "Daily practice limit reached for '#{@problem.name}' (#{practice_daily_start_limit}/day). Try again tomorrow."
       return
     end
 
@@ -222,7 +233,7 @@ class VivaSessionsController < ApplicationController
 
     @submission.update!(viva_archived_at: Time.zone.now)
     redirect_to list_main_path,
-                notice: "Practice viva archived — start a fresh one from the problem list (limit #{DAILY_START_LIMIT} per day)."
+                notice: "Practice viva archived — start a fresh one from the problem list (limit #{practice_daily_start_limit} per day)."
   end
 
   # GET /submissions/:submission_id/viva/refresh
@@ -238,6 +249,19 @@ class VivaSessionsController < ApplicationController
   end
 
   private
+
+  # Resolved daily start cap for practice-mode vivas (design D2). Reused by
+  # #start's rate-limit guard and #restart's notice text.
+  #
+  # A follow-up UI task will show "N of L starts left" on the problem
+  # list/detail view; that code should read the SAME config the same way —
+  # GraderConfiguration[PRACTICE_DAILY_START_LIMIT_CONF_KEY] — and apply
+  # this identical positive-or-fallback guard, not just read the raw key,
+  # so a blank/zero config can't be read as "unlimited" there either.
+  def practice_daily_start_limit
+    limit = GraderConfiguration[PRACTICE_DAILY_START_LIMIT_CONF_KEY].to_i
+    limit.positive? ? limit : DAILY_START_LIMIT_FALLBACK
+  end
 
   # Shared by #show and #refresh. The "pending" flag drives both polling
   # (keep refreshing while the backend is still doing work) and the
@@ -255,6 +279,18 @@ class VivaSessionsController < ApplicationController
     @pending_turn = @submission.viva_turns.where(status: :processing).exists? ||
                     @submission.status == 'evaluating'
     @finished     = %w[done grader_error evaluating].include?(@submission.status.to_s)
+
+    # Retake-policy visibility (D2 follow-up): practice-mode students should
+    # see how many of today's starts they have left, using the SAME count
+    # #start's rate-limit guard uses (today's submissions for this
+    # user+problem — the current session counts against its own budget).
+    if @submission.problem.viva_mode_practice?
+      used = @submission.problem.submissions
+               .where(user: @submission.user)
+               .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
+               .count
+      @practice_starts_left = [practice_daily_start_limit - used, 0].max
+    end
   end
 
   def set_problem

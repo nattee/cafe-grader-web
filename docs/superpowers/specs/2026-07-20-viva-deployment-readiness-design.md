@@ -189,7 +189,14 @@ enum :kind, { normal: 0, topic: 1, llm_prompt: 2, viva_conduct: 3 }
   - cross-channel conduct contradictions (including author text contradicting
     the security directive),
   - missing `# Rubric`, banned `{{…}}` template literals,
-  - more than one conduct tag attached (smell, not error).
+  - more than one conduct tag attached (smell, not error),
+  - **embedded operational instructions in briefing/conduct text** — alert
+    rules, output-format demands, termination rules written for the LLM
+    (platform owns all of these). *Not hypothetical: on 2026-07-21 a migrated
+    legacy briefing carried its own `----- ALERT -----` rule; the grader
+    obeyed it over the JSON contract and the submission failed with
+    grader_error. The grading prompt now inoculates against this, but lint
+    must flag the content itself.*
   Lint predicts text conflicts, never model behavior — it makes test-drives
   less wasteful, it does not replace them.
 - **Shared-tag blast radius:** editing a `viva_conduct` tag warns "used by N

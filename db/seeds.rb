@@ -210,6 +210,13 @@ CONFIGURATIONS =
      description: "When true, a user can request LLM assist on each submission"
    },
 
+   {
+     key: 'viva.practice_daily_start_limit',
+     value_type: 'integer',
+     default_value: '3',
+     description: 'Max viva practice-mode session starts per student per problem per day (practice mode only; admins exempt).'
+   },
+
   ]
 
 
