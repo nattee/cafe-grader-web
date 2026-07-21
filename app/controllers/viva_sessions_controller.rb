@@ -2,6 +2,12 @@ class VivaSessionsController < ApplicationController
   before_action :check_valid_login
   before_action :set_problem, only: %i[start]
   before_action :set_submission, only: %i[show answer refresh retry_turn restart]
+  # #answer/#retry_turn/#restart already enforce their own (stricter, owner-
+  # or-admin) checks below — this gate is only for the read paths, which
+  # previously had no authorization beyond being logged in at all. Reuses
+  # the platform's existing submission-view predicate rather than
+  # duplicating its admin/reporter/owner/config logic here.
+  before_action :authorize_viva_view, only: %i[show refresh]
 
   # #show's "Viva Info" card reads this to render "N of L starts left today"
   # for practice-mode problems.
@@ -299,5 +305,17 @@ class VivaSessionsController < ApplicationController
 
   def set_submission
     @submission = Submission.find(params[:submission_id] || params[:id])
+  end
+
+  # Gates #show/#refresh: reuses the platform's existing submission-view
+  # predicate (admin -> reporter -> problem-submittable gate -> owner ->
+  # global `right.user_view_submission` -> per-problem `view_submission`)
+  # rather than duplicating that logic here. Without this, any logged-in
+  # student could read any other student's viva transcript/grade by
+  # guessing sequential submission ids.
+  def authorize_viva_view
+    return if @current_user.can_view_submission?(@submission)
+
+    redirect_to list_main_path, alert: 'Authorization error: you are not allowed to view this viva session.'
   end
 end

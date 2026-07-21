@@ -21,14 +21,43 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
   test "owner can view their viva session" do
     sign_in_as("john", "hello")
     get viva_submission_path(@owner_sub)
-    # show has no explicit owner check — the view just renders viva_turns.
-    # That's questionable, but it's the current behavior; we document it.
     assert_response :success
   end
 
   test "admin can view any viva session" do
     sign_in_as("admin", "admin")
     get viva_submission_path(@other_sub)
+    assert_response :success
+  end
+
+  # --- Authorization on show / refresh (view-authorization gate) ---
+  #
+  # Before this gate existed, #show/#refresh had no authorization beyond
+  # check_valid_login — any logged-in student could read any other
+  # student's viva transcript/grade by guessing sequential submission ids.
+  # These lock in the fix via the platform's existing
+  # User#can_view_submission? predicate.
+
+  test "non-owner student cannot view another user's viva session when view_submission is false" do
+    sign_in_as("james", "morning")
+    @owner_sub.problem.update!(view_submission: false)
+    get viva_submission_path(@owner_sub)
+    assert_redirected_to list_main_path
+    assert_match(/not allowed to view this viva session/i, flash[:alert])
+  end
+
+  test "non-owner student cannot refresh another user's viva session when view_submission is false" do
+    sign_in_as("james", "morning")
+    @owner_sub.problem.update!(view_submission: false)
+    get viva_refresh_submission_path(@owner_sub)
+    assert_redirected_to list_main_path
+    assert_match(/not allowed to view this viva session/i, flash[:alert])
+  end
+
+  test "admin can still view a viva session owned by another user when view_submission is false" do
+    sign_in_as("admin", "admin")
+    @owner_sub.problem.update!(view_submission: false)
+    get viva_submission_path(@owner_sub)
     assert_response :success
   end
 
