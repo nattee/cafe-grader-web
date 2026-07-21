@@ -71,6 +71,14 @@ bin/rails swagger:verify         # fail if swagger.yaml is stale (also part of `
 
 The system operates in either **contest mode** or **group mode** (configured via `GraderConfiguration`). This affects how problems are scoped and presented to users.
 
+- **Server-global and exclusive.** `GraderConfiguration.contest_mode?` / `.indv_contest_mode?` / `.analysis_mode?` all read the same single site-wide config key (`SYSTEM_MODE_CONF_KEY`) — the *entire* site is in one mode at a time, never per-contest, per-group, or per-user. Contests are enforced as the source of problem visibility only while contest mode (or indv-contest mode) is on; outside it, contest start/stop windows are inert and access falls back to normal/group rules.
+- **The instructor's operational model** (authoritative — this is the intended day-to-day usage, not just a technical description): the server lives in normal/group mode almost all the time; scores there are feedback, not authoritative — academic integrity in normal mode is handled socially, outside the grader. Contest mode is a short-lived "strict exam preset"; it is kept short both pedagogically (it blocks normal learning) and technically (several features assume small in-contest submission volumes, e.g. the O(N²) submission comparison and dataset rejudge).
+- **Consequences, one line each** (see `User#problems_for_action`, `Problem.contests_problems_for_user`, `User#active_contests_range`, `MainController#prepare_list_information`):
+  - In contest mode, students see ONLY the problems belonging to their currently-active, enrolled contests — the normal/group problem list is replaced wholesale, not merged in.
+  - The main list scopes each student's displayed submissions/scores to `active_contests_range` — the union of their active contests' start/stop windows (adjusted for per-user offset/extra time) — so out-of-window submissions don't count toward the shown max score or count.
+  - A user can lose the ability to view their OWN out-of-contest submissions while contest mode is on: `User#can_view_submission?` gates on the submission's problem being in `problems_for_action(:submit)` *before* the owner check, so a problem that falls outside the active-contest set becomes invisible even to its own submitter. This is intended, and symmetric across both code submissions and viva sessions.
+- Viva-specific policy semantics (daily start limits, retakes, archived-session visibility, alert handling) build on top of this mode system but are documented separately — see `docs/superpowers/specs/2026-07-21-viva-context-policy-design.md` and `doc/Viva-Exam.md`.
+
 ### Key Domain Models
 
 - **User** — has roles (admin, group_editor, reporter) via HABTM; scoped access to problems/contests
