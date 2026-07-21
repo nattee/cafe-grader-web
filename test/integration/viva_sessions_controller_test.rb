@@ -279,6 +279,29 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 3, problem.submissions.where(user: user).count
   end
 
+  # --- retake-policy visibility (smoke-test UX fix #4) ---
+
+  test "show displays practice starts-left line in practice mode" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    # The fixture's submitted_at is 2019 (outside "today"'s count) — restamp
+    # it so it counts as one of today's starts, exercising the real
+    # used/left arithmetic (fixture default limit is 3/day; see
+    # grader_configurations.yml).
+    @owner_sub.update!(submitted_at: Time.zone.now)
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_match(/Practice mode\s*—\s*2 of 3 starts left today/, @response.body)
+  end
+
+  test "show displays exam-mode retake line in exam mode" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :exam)
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_match(/Exam mode\s*—\s*one attempt only; retakes require an instructor\./, @response.body)
+  end
+
   test "practice start rate limit honors the GraderConfiguration override" do
     # Same setup as above, but with viva.practice_daily_start_limit lowered
     # to 1 via config — proves the controller reads the runtime setting

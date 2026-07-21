@@ -77,7 +77,12 @@ class SubmissionsController < ApplicationController
   # on-site new submission on specific problem
   def direct_edit_problem
     if @problem.viva_exam?
-      redirect_to viva_start_problem_path(@problem), method: :post and return
+      # There's no submission yet, so there's nothing to view — and
+      # viva/start is POST-only (redirect_to can't replay it as a POST;
+      # a plain redirect here would 404), so send the student back to the
+      # problem list where the real "Start Viva" button lives.
+      redirect_to list_main_path,
+                  alert: "'#{@problem.name}' is a viva exam — use \"Start Viva\" from the problem list to begin." and return
     end
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = [] # won't allow llm models on the first submission
@@ -87,6 +92,9 @@ class SubmissionsController < ApplicationController
 
   # GET /submissions/1/edit
   def edit
+    if @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission) and return
+    end
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = Rails.configuration.llm[:provider].keys
     @submission_source = @submission&.source unless @as_binary
@@ -163,9 +171,8 @@ class SubmissionsController < ApplicationController
                   alert: "Cannot archive a viva that's still in progress (status: #{@submission.status}). Wait for grading to finish or fail." and return
     end
     @submission.update!(viva_archived_at: Time.current)
-    @toast = {title: 'Viva archived',
-              body:  "Submission ##{@submission.id} has been archived. The student can now start a new viva on '#{@submission.problem.name}'."}
-    render 'turbo_toast'
+    redirect_to viva_submission_path(@submission),
+                notice: "Viva session ##{@submission.id} has been archived. The student can now start a fresh viva on '#{@submission.problem.name}'."
   end
 
   def set_tag

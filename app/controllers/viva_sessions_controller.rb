@@ -3,6 +3,10 @@ class VivaSessionsController < ApplicationController
   before_action :set_problem, only: %i[start]
   before_action :set_submission, only: %i[show answer refresh retry_turn restart]
 
+  # #show's "Viva Info" card reads this to render "N of L starts left today"
+  # for practice-mode problems.
+  helper_method :practice_daily_start_limit
+
   VIVA_LANGUAGE_NAME = 'viva'.freeze
 
   # Design D2: practice-mode students may start at most this many sessions
@@ -275,6 +279,18 @@ class VivaSessionsController < ApplicationController
     @pending_turn = @submission.viva_turns.where(status: :processing).exists? ||
                     @submission.status == 'evaluating'
     @finished     = %w[done grader_error evaluating].include?(@submission.status.to_s)
+
+    # Retake-policy visibility (D2 follow-up): practice-mode students should
+    # see how many of today's starts they have left, using the SAME count
+    # #start's rate-limit guard uses (today's submissions for this
+    # user+problem — the current session counts against its own budget).
+    if @submission.problem.viva_mode_practice?
+      used = @submission.problem.submissions
+               .where(user: @submission.user)
+               .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
+               .count
+      @practice_starts_left = [practice_daily_start_limit - used, 0].max
+    end
   end
 
   def set_problem
