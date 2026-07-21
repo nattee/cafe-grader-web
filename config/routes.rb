@@ -385,6 +385,7 @@ Rails.application.routes.draw do
       post 'retry_all_error_jobs'
       post 'clear_all_error_jobs'
       get 'stuck_viva_turns'
+      get 'viva_alerts'
     end
   end
 

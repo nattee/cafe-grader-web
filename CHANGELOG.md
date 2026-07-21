@@ -12,6 +12,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- Viva: alert-review admin page (Graders → Viva alerts) listing flagged sessions with the triggering student utterance — the jailbreak-calibration instrument for the practice month.
 - Viva: examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
 - Viva retakes: students restart their own viva session themselves (archives the old one, subject to the daily start limit); admin archive-and-retake remains available for any viva.
 - Viva: `viva:migrate_prompt_tags` rake task (report-first, `APPLY=1` to execute) migrating legacy per-problem `llm_prompt` tags into `viva_prompt` and shared ones to `viva_conduct`.
