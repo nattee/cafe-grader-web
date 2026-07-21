@@ -50,6 +50,23 @@
           -# replacement, so filtering llm_prompt out would silently detach a
           -# problem's AI-helper prompt tag on every ordinary save.
           = form.input :tag_ids, label: 'Tags', collection: Tag.where.not(kind: :viva_conduct), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, tooltip: "Tags marked public are shown to contestants on the main page."
+          = form.input :difficulty, tooltip: 'Integer between 0 and 10.'
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Visibility & Listing
+          = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%b/%Y"), class: 'tempus-dominus'}, wrapper: :horizontal_form, as: :string, tooltip: 'Used as the main sort order for problems on the main page.'
+          = form.input :available, wrapper: :horizontal_boolean, label: 'Globally Available', tooltip: 'If "Globally available" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.' , disabled: @current_user.admin? == false
+          = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, hint: 'Groups control which students can see and submit this problem.'
+          .form-text.text-secondary
+            = link_to 'Manage groups', groups_path
+          = form.input :view_testcase, wrapper: :horizontal_boolean, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, disabled: @current_user.admin? == false
+          = form.input :view_submission, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false, hint: 'For viva problems: controls whether other students can see this viva transcript.'
+
+        %section.mb-4
+          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Grading & Compilation
+          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
+          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; fill in the Examiner briefing + optional Conduct profile and grounding materials instead.</span>'.html_safe, 'viva_exam']]
+          = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-mode-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
 
           -# Viva grounding — shown only when compilation_type is viva_exam
           .mb-4.d-none{ data: { viva_mode_toggle_target: 'showForViva' } }
@@ -89,21 +106,6 @@
             - viva_mode_options = [['<strong>Exam</strong> <span class="text-secondary">— single attempt; a second flagged jailbreak attempt terminates the interview.</span>'.html_safe, 'exam'], ['<strong>Practice</strong> <span class="text-secondary">— students may restart themselves (rate-limited); jailbreak flags are logged, never fatal.</span>'.html_safe, 'practice']]
             = form.input :viva_mode, as: :radio_buttons, collection: viva_mode_options, wrapper: :horizontal_collection, label: 'Viva mode', tooltip: 'Flippable anytime. Exam is the fail-safe default.'
 
-          = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form
-          = form.input :difficulty, tooltip: 'Integer between 0 and 10.'
-
-        %section.mb-4
-          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Visibility & Listing
-          = form.input :date_added, input_html: {value: @problem.date_added&.strftime("%d/%b/%Y"), class: 'tempus-dominus'}, wrapper: :horizontal_form, as: :string, tooltip: 'Used as the main sort order for problems on the main page.'
-          = form.input :available, wrapper: :horizontal_boolean, label: 'Globally Available', tooltip: 'If "Globally available" is not set, the problem will remain hidden from all contestants, even if enabled in groups or contests.' , disabled: @current_user.admin? == false
-          = form.input :view_testcase, wrapper: :horizontal_boolean, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, disabled: @current_user.admin? == false
-          = form.input :view_submission, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false, hint: 'For viva problems: controls whether other students can see this viva transcript.'
-
-        %section.mb-4
-          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Grading & Compilation
-          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
-          - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; fill in the Examiner briefing + optional Conduct profile and grounding materials instead.</span>'.html_safe, 'viva_exam']]
-          = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-mode-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
           = form.input :submission_filename, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}
 
         = form.button :submit, class: 'btn btn-primary me-2'
