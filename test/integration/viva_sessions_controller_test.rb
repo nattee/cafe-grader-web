@@ -294,6 +294,18 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Practice mode\s*—\s*2 of 3 starts left today/, @response.body)
   end
 
+  test "show tells an admin viewing their own practice viva they're unlimited, not a countdown" do
+    # Admins are exempt from the daily-start limiter in #start (see the
+    # `&& !@current_user.admin?` guard there) — the card must not show them
+    # a countdown that doesn't actually apply to them.
+    sign_in_as("admin", "admin")
+    @other_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    get viva_submission_path(@other_sub)
+    assert_response :success
+    assert_match(/Practice mode\s*—\s*unlimited starts \(admin\)/, @response.body)
+    assert_no_match(/starts left today/, @response.body)
+  end
+
   test "show displays exam-mode retake line in exam mode" do
     sign_in_as("john", "hello")
     @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :exam)

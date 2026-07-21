@@ -117,12 +117,18 @@ class SubmissionsController < ApplicationController
   end
   # Turbo render evaluations as modal popup
   def evaluations
+    if @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission) and return
+    end
     @testcases = @submission.problem.live_dataset.testcases.order(:group, :num)
     @evaluations_by_tcid = Evaluation.where(submission: @submission, testcase: @testcases.ids).index_by(&:testcase_id)
     render partial: 'msg_modal_show', locals: { do_popup: true, header_msg: 'Evaluation Details', body_msg: render_to_string(partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}) }
   end
 
   def download
+    if @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission) and return
+    end
     if @submission.language.binary? && @submission.binary
       send_data @submission.binary, filename: @submission.download_filename, type: @submission.content_type || 'application/octet-stream', disposition: 'attachment'
       return
@@ -133,6 +139,9 @@ class SubmissionsController < ApplicationController
   end
 
   def compiler_msg
+    if @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission) and return
+    end
     render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
   end
 

@@ -47,7 +47,10 @@
           .col-5.text-end.text-secondary Retakes
           .col
             - if @submission.problem.viva_mode_practice?
-              = "Practice mode — #{@practice_starts_left} of #{practice_daily_start_limit} starts left today"
+              - if @current_user == @submission.user && @current_user.admin?
+                | Practice mode — unlimited starts (admin)
+              - else
+                = "Practice mode — #{@practice_starts_left} of #{practice_daily_start_limit} starts left today"
             - else
               | Exam mode — one attempt only; retakes require an instructor.
 

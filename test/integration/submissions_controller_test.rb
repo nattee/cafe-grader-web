@@ -118,4 +118,21 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert sub.reload.viva_archived_at.present?
     assert_match(/archived/i, flash[:notice])
   end
+
+  # Reachable via the ballot link in _submission_short.html.haml on any
+  # graded viva. Pre-fix this 500'd with NoMethodError, since a viva
+  # submission's problem has no live_dataset to call #testcases on.
+  test "evaluations on a viva submission redirects to the viva page, not a 500" do
+    sign_in_as("john", "hello")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    post evaluations_submission_path(sub), as: :turbo_stream
+    assert_redirected_to viva_submission_path(sub)
+  end
+
+  test "download on a viva submission redirects to the viva page, not a nil-source send" do
+    sign_in_as("john", "hello")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    get download_submission_path(sub)
+    assert_redirected_to viva_submission_path(sub)
+  end
 end

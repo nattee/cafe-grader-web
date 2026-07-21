@@ -61,7 +61,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Fixed
 
-- Viva: archive now refreshes the page, viva submissions no longer open the code editor, students see retake policy and remaining practice starts.
+- Viva: archive now refreshes the page, viva submissions no longer open the code editor (evaluations/download/compiler_msg included), students see retake policy and remaining practice starts.
 - **"Import testcases" is stricter and no longer crashes on errors** — replacing
   into a dataset that no longer exists now shows an error toast instead of
   silently creating a new dataset; the testcases-only flow no longer overwrites
