@@ -18,6 +18,28 @@ class GroundingMaterialTest < ActiveSupport::TestCase
     assert_equal 10, gm.reload.estimated_tokens # 40 chars / 4
   end
 
+  # D4 send-time rule: file bytes are only ever sent when body is blank, so
+  # the estimate must count file bytes ONLY in that case. (files.attach
+  # bypasses the after_commit recompute — see GroundingMaterialsController's
+  # refresh_estimated_tokens comment — so this asserts compute_estimated_tokens
+  # directly, same as the controller does to refresh the persisted column.)
+  test "estimated_tokens counts file bytes when body is blank" do
+    gm = GroundingMaterial.create!(title: "t")
+    gm.files.attach(io: StringIO.new("x" * 4000), filename: "a.pdf", content_type: "application/pdf")
+    gm.reload
+    assert_equal (4000.0 / GroundingMaterial::BYTES_PER_PROXY_TOKEN).round, gm.compute_estimated_tokens
+  end
+
+  # D4 send-time rule: once body is present, the PDF is never re-sent, so its
+  # bytes must NOT inflate the estimate — body-only tokens, even with a large
+  # file attached.
+  test "estimated_tokens counts body only once body is present, ignoring attached file size" do
+    gm = GroundingMaterial.create!(title: "t", body: "a" * 40)
+    gm.files.attach(io: StringIO.new("x" * 40_000), filename: "a.pdf", content_type: "application/pdf")
+    gm.reload
+    assert_equal 10, gm.compute_estimated_tokens # 40 chars / 4, file bytes excluded
+  end
+
   test "rejects non-pdf/image files" do
     gm = GroundingMaterial.new(title: "t")
     gm.files.attach(io: StringIO.new("x"), filename: "a.txt", content_type: "text/plain")

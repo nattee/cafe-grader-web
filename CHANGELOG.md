@@ -12,6 +12,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- Viva grounding: one-click PDF→markdown extraction producing a review-first draft (author must copy/edit into the body; body text replaces per-turn PDF re-sending once saved).
 - Viva: alert-review admin page (Graders → Viva alerts) listing flagged sessions with the triggering student utterance — the jailbreak-calibration instrument for the practice month.
 - Viva: examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
 - Viva retakes: students restart their own viva session themselves (archives the old one, subject to the daily start limit); admin archive-and-retake remains available for any viva.

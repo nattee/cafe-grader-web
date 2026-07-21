@@ -27,14 +27,33 @@ class GroundingMaterial < ApplicationRecord
   end
 
   # One image_url content-part per attached PDF, using the shared encoder.
+  #
+  # Send-time rule (design D4): once a material's body has been reviewed and
+  # saved, the typed text supersedes the PDF bytes at send time — sending
+  # both would double-pay tokens for the same content every single turn.
+  # `body.blank?` is today's behavior (send the file); `body.present?` skips
+  # the file parts here, in favor of grounding_text carrying the content.
+  # This method's only callers are LLM-payload assembly (Llm::VivaTurnAssist,
+  # Llm::VivaGradeAssist) — Llm::GroundingExtractAssist encodes attached files
+  # itself, independently, since extraction is what produces the body in the
+  # first place and must always see the PDF. No admin preview/debug path
+  # calls this method, so gating it here (rather than at each assembly site)
+  # covers every LLM caller without touching file-listing UI.
   def grounding_file_parts
+    return [] if body.present?
     files.filter_map { |f| Llm::Request.encode_pdf_part(f) }
   end
 
+  # Coarse token estimate matching the send-time rule above: a material with
+  # a saved body sends body text ONLY (file bytes are never sent), so only
+  # text tokens count; a material with no body still sends the file(s), so
+  # only file tokens count. Never both — that would overstate the payload.
   def compute_estimated_tokens
-    text_tokens = (body.to_s.length / 4.0).ceil
-    file_tokens = files.sum { |f| (f.byte_size.to_f / BYTES_PER_PROXY_TOKEN).round }
-    text_tokens + file_tokens
+    if body.present?
+      (body.to_s.length / 4.0).ceil
+    else
+      files.sum { |f| (f.byte_size.to_f / BYTES_PER_PROXY_TOKEN).round }
+    end
   end
 
   private

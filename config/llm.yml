@@ -16,6 +16,11 @@
 #    that the matching job will instantiate. On master both are unset, so the
 #    abstract bases raise NotImplementedError at call time (intentional). On
 #    chula_cp they point at Llm::VivaTurnGenieAssist / Llm::VivaGradeGenieAssist.
+#
+#    `grounding_extract_service` follows the same pattern (design D4): it
+#    names a concrete subclass of Llm::GroundingExtractAssist that
+#    Llm::GroundingExtractJob instantiates. Blank on master; a deployment
+#    branch wires e.g. Llm::GroundingExtractGenieAssist.
 
 llm_services: &services
   # Per-model service registrations
@@ -29,6 +34,7 @@ llm_services: &services
   # Direct viva service overrides
   viva_turn_service:  Llm::VivaTurnGenieAssist
   viva_grade_service: Llm::VivaGradeGenieAssist
+  grounding_extract_service:
 
 development:
   <<: *services

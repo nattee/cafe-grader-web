@@ -2,7 +2,7 @@
   = render 'application/error_for_model', model: @grounding_material
   = f.input :title
   = f.input :description, input_html: { rows: 2 }, hint: 'Internal note: what this is / when to use it.'
-  = f.input :body, label: 'Grounding text (markdown)', input_html: { rows: 12 },
+  = f.input :body, label: 'Grounding text (markdown)', input_html: { rows: 12, data: { grounding_draft_target: 'body' } },
       hint: 'Typed reference material. Files below are sent to the model as PDFs.'
 
   .mb-3
