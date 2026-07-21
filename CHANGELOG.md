@@ -107,6 +107,9 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   that problem** — previously any group editor could silently overwrite any
   problem in the system by importing a zip with the same short name. Admin
   re-import-to-update behavior is unchanged.
+- **Viva: transcript/grade pages now enforce submission-view authorization**
+  (were open to any logged-in user) — archived viva attempts are visible
+  only to their owner and staff.
 
 ## [4.4.2] — 2026-07-01
 

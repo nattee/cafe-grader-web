@@ -458,6 +458,14 @@ class User < ApplicationRecord
     # a user can view their own submissions
     return true if submission.user == self
 
+    # Archived viva sessions are superseded attempts (retaken/re-archived by
+    # the student or an instructor) — peers may only ever see the canonical
+    # (non-archived) session, even when the problem's view_submission flag
+    # allows transcript sharing. Admins/reporters already returned true
+    # above; the owner already returned true above too, so this only bites
+    # the "other student" paths below.
+    return false if submission.viva_archived_at.present?
+
     # check global disable
     return false unless GraderConfiguration["right.user_view_submission"]
 
