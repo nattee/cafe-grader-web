@@ -62,9 +62,10 @@ amend it (or overrule the deviation) when you review.**
    flagged as missing a briefing (pre-existing gap, needs authoring).
 2. **Batch-merge `master` → `chula_cp`** and run a live viva smoke test
    (Genie classes live there). Then run the migration on that DB too.
-3. **Decide finding #3 of the final review:** the spec's D1 mentions a
-   problems-index viva_mode switch; the plan dropped it (form radio + guards
-   exist and suffice IMO). Small follow-up or spec amendment — your call.
+3. ~~Decide finding #3 of the final review~~ **RESOLVED 2026-07-21 (dae):**
+   spec deviation confirmed (llm_prompt stays in the picker) and the index
+   switch became a read-only "practice viva" badge — spec amended (rev 1892),
+   badge shipped with tests (rev 1893).
 4. Deferred minors (all triaged DEFER by the final reviewer): quote-style in
    two tests, theoretical concurrent at-cap double-enqueue (pre-existing
    pattern), DataTables unescaped `${data}` (pre-existing, admin-only —
