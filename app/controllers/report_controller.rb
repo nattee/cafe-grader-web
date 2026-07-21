@@ -329,6 +329,15 @@ class ReportController < ApplicationController
       next unless lang
       next unless sub.points >= 100
 
+      # Viva submissions are LLM-graded and never run on the judge — source,
+      # max_runtime, and peak_memory all stay nil forever. None of the
+      # competitive code stats below (runtime/memory/shortest-code) apply to
+      # them; without this guard a 100-point viva submission still creates a
+      # @by_lang bucket whose runtime/memory sub-hashes are left at their
+      # "unavailable" defaults (no user_id set), which later crashes the view
+      # when it links to the record holder.
+      next if sub.source.nil?
+
       # initialize
       unless @by_lang.has_key?(lang.pretty_name)
         @by_lang[lang.pretty_name] = {
@@ -352,8 +361,12 @@ class ReportController < ApplicationController
         @by_lang[lang.pretty_name][:first] = { avail: true, user_id: sub.user_id, value: sub.submitted_at, sub_id: sub.id }
       end
 
-      if @by_lang[lang.pretty_name][:length][:value] > (sub.source.length || 2**30-1)
-        @by_lang[lang.pretty_name][:length] = { avail: true, user_id: sub.user_id, value: (sub.source.length || 2**30-1), sub_id: sub.id }
+      # sub.source is guaranteed non-nil here (viva submissions, the only
+      # nil-source case, are skipped above). The old
+      # `sub.source.length || 2**30-1` fallback was dead code — `.length`
+      # raises NoMethodError on nil before `||` can substitute a default.
+      if @by_lang[lang.pretty_name][:length][:value] > sub.source.length
+        @by_lang[lang.pretty_name][:length] = { avail: true, user_id: sub.user_id, value: sub.source.length, sub_id: sub.id }
       end
     end
 

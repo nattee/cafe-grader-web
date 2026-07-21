@@ -207,4 +207,16 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Admin/, response.body)
     assert_match(/no role limits apply/, response.body)
   end
+
+  # --- hall of fame ---
+
+  test "problem_hof_view does not crash on a viva submission (nil source)" do
+    sign_in_as("admin", "admin")
+    viva_lang = Language.find_or_create_by!(name: "viva") { |l| l.pretty_name = "Viva Exam" }
+    Submission.create!(user: users(:john), problem: problems(:prob_viva), language: viva_lang,
+                        status: :done, points: 100, submitted_at: Time.zone.now)
+
+    get problem_hof_view_report_path(problems(:prob_viva))
+    assert_response :success
+  end
 end

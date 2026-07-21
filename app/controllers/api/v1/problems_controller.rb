@@ -48,6 +48,11 @@ class Api::V1::ProblemsController < Api::V1::BaseController
 
   # GET /api/v1/problems/:id/description
   def description
+    # For viva problems, description IS the hidden interview scenario —
+    # gate it exactly like the PDF branch of the file action below.
+    unless current_user.can_view_problem_pdf?(@problem)
+      render json: {error: "Description not available for this problem"}, status: :forbidden and return
+    end
     render json: {
       markdown: @problem.markdown?,
       description: @problem.description
@@ -267,6 +272,8 @@ class Api::V1::ProblemsController < Api::V1::BaseController
     end
 
     dataset = @problem.live_dataset
+    render json: [] and return unless dataset
+
     tcs = dataset.testcases.display_order
 
     render json: tcs.map { |tc|

@@ -720,6 +720,16 @@ paths:
                   description:
                     type: string
                     nullable: true
+        '403':
+          description: viva scenario blocked for students
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  error:
+                    type: string
   "/api/v1/problems/{id}/files/{type}":
     get:
       summary: Get problem file by type
