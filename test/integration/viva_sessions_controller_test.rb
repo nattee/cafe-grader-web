@@ -278,4 +278,21 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Daily practice limit/, flash[:alert])
     assert_equal 3, problem.submissions.where(user: user).count
   end
+
+  test "practice start rate limit honors the GraderConfiguration override" do
+    # Same setup as above, but with viva.practice_daily_start_limit lowered
+    # to 1 via config — proves the controller reads the runtime setting
+    # rather than a hardcoded constant.
+    set_grader_config("viva.practice_daily_start_limit", 1)
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_mode: :practice, viva_prompt: "# Rubric\nBe fair.")
+    user = users(:john)
+    Submission.create!(user: user, problem: problem, language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+    post viva_start_problem_path(problem)   # 2nd today -> refused under the lowered limit
+    assert_redirected_to list_main_path
+    assert_match(/Daily practice limit reached.*\(1\/day\)/, flash[:alert])
+    assert_equal 1, problem.submissions.where(user: user).count
+  end
 end
