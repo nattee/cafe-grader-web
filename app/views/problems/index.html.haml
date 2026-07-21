@@ -48,7 +48,10 @@
         - for problem in @problems
           %tr{:class => "#{(problem.available) ? "table-success" : ""}", :id => "prob-#{problem.id}", :name => "prob-#{problem.id}"}
             - @problem=problem
-            %td.font-monospace= problem.name
+            %td.font-monospace
+              = problem.name
+              - if problem.viva_exam? && problem.viva_mode_practice?
+                %span.badge.text-bg-warning{data: {bs_toggle: 'tooltip', bs_title: 'Practice-mode viva — students can restart their own attempts. Switch to exam mode before graded use.'}} practice viva
             %td
               .d-inline-flex.align-items-center
                 = problem.full_name

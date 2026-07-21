@@ -26,6 +26,33 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # D1 as amended: read-only "practice viva" badge on the problems index,
+  # mirroring the contest-problems-table badge in
+  # ContestsController#show_problems_query / configs.js. Unlike the contest
+  # table, /problems is server-rendered (non-AJAX DataTables — see
+  # ProblemsController#quick_create comment), so the badge lives directly in
+  # the HAML row rather than a DataTables column config. This asserts on the
+  # rendered badge markup itself, so it fails if the HAML condition
+  # (problem.viva_exam? && problem.viva_mode_practice?) were reverted or
+  # dropped.
+  test "problems index shows practice-viva badge for viva problems in practice mode" do
+    sign_in_as("admin", "admin")
+    problems(:prob_viva).update!(viva_mode: :practice)
+
+    get problems_path
+    assert_response :success
+    assert_select "tr#prob-#{problems(:prob_viva).id} span.badge.text-bg-warning", text: "practice viva"
+  end
+
+  test "problems index omits practice-viva badge for viva problems in exam mode" do
+    sign_in_as("admin", "admin")
+    problems(:prob_viva).update!(viva_mode: :exam)
+
+    get problems_path
+    assert_response :success
+    assert_select "tr#prob-#{problems(:prob_viva).id} span.badge.text-bg-warning", false
+  end
+
   # --- Read actions ---
 
   test "admin can edit problem" do
