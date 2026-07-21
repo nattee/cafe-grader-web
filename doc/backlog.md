@@ -386,3 +386,24 @@ wrap every user-controlled interpolation (`data`, `row.full_name`, and any
 other free-text row field) with it. Bounded, mechanical change once the
 helper exists — the main work is grepping the file for every interpolation
 site so none are missed.
+
+---
+
+## Viva grade display — narrative doesn't belong in `grader_comment` / main list
+
+**Context (dae, 2026-07-21 smoke test).** The viva grading pass stores its
+output on the submission like a normal grading run, and the long narrative
+text ends up rendered inline on the student's main/list page through the same
+path that shows per-testcase verdict strings (`P-Tx-s…`). A paragraph of
+LLM feedback visually clutters the list and abuses a field designed for
+compact per-testcase codes.
+
+**Direction (needs a real design pass, not a quick patch).** Viva grades
+already have a first-class home (`viva_grades` + the grade card on the viva
+page). The main/list view should show only a compact chip for viva
+submissions — score (and maybe a terminated/flagged marker) linking to the
+viva page — and whatever currently copies narrative into `grader_comment`
+should stop, with a data cleanup for existing rows. Touches: grading
+completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
+reports that read `grader_comment`. Backlogged per dae: "requires full design
+change".
