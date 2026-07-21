@@ -34,7 +34,7 @@ llm_services: &services
   # Direct viva service overrides
   viva_turn_service:  Llm::VivaTurnGenieAssist
   viva_grade_service: Llm::VivaGradeGenieAssist
-  grounding_extract_service:
+  grounding_extract_service: Llm::GroundingExtractGenieAssist
 
 development:
   <<: *services
