@@ -18,7 +18,15 @@ class GradersController < ApplicationController
 
     @submission_limit = [20, 100, 500].include?(params[:limit].to_i) ? params[:limit].to_i : 20
     @submission = Submission.order("id desc").limit(@submission_limit).includes(:user, :problem)
-    @backlog_submission = Submission.where('graded_at is null').includes(:user, :problem)
+
+    # Viva submissions are LLM-graded (async, off the judge-worker queue) —
+    # a not-yet-graded one sitting with graded_at nil is normal mid-interview
+    # state, not a stuck job. Excluded via the durable 'viva' sentinel
+    # language (see DatasetsController#rejudge for the same filter).
+    backlog = Submission.where('graded_at is null')
+    viva_language = Language.find_by(name: "viva")
+    backlog = backlog.where.not(language: viva_language) if viva_language
+    @backlog_submission = backlog.includes(:user, :problem)
 
     @wait_compile_job_count = Job.where(job_type: :compile, status: :wait).count
     @wait_eval_job_count = Job.where(job_type: :evaluate, status: :wait).count

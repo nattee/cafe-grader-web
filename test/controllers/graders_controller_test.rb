@@ -75,4 +75,22 @@ class GradersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal 0, Job.where(status: :error).count
   end
+
+  # --- Backlog excludes viva submissions ---
+
+  test "ungraded viva submissions are excluded from the backlog card" do
+    sign_in_as("admin", "admin")
+    before_count = Submission.where("graded_at is null").count
+
+    viva_lang = Language.find_or_create_by!(name: "viva") { |l| l.pretty_name = "Viva Exam" }
+    Submission.create!(user: users(:john), problem: problems(:prob_viva), language: viva_lang,
+                        status: :submitted, submitted_at: Time.zone.now)
+
+    get grader_processes_path
+    assert_response :success
+    # backlog count in the "Ungraded Submissions" card must be unaffected by
+    # the new (ungraded) viva submission — it belongs on the viva/LLM side,
+    # never the code-grader backlog.
+    assert_match(/#{before_count} submissions?\s*pending/, response.body)
+  end
 end

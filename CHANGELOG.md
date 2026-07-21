@@ -95,6 +95,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   unconditionally calling it, so any viva turn/grade request for a problem
   with an attached grounding file raised `NoMethodError` instead of sending
   the file.
+- Viva: API description endpoint no longer exposes the interview scenario to students; bulk dataset rejudge, hall-of-fame, admin testcases API, and grader backlog now handle viva submissions correctly.
 
 ### Security
 
@@ -110,6 +111,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 - **Viva: transcript/grade pages now enforce submission-view authorization**
   (were open to any logged-in user) — archived viva attempts are visible
   only to their owner and staff.
+- **API `GET /api/v1/problems/:id/description` no longer leaks the viva
+  interview scenario to students** — the description IS the hidden scenario
+  for viva problems; the endpoint was missing the same `can_view_problem_pdf?`
+  gate the sibling PDF endpoint already enforced.
 
 ## [4.4.2] — 2026-07-01
 
