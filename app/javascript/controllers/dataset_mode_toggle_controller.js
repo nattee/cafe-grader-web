@@ -19,7 +19,7 @@ import { Controller } from "@hotwired/stimulus"
 //
 // compilation_type lives in the left-column problem form (different
 // Turbo Frame), so we receive it via a window event dispatched by the
-// viva-mode-toggle controller. Initial value is server-rendered via
+// viva-exam-toggle controller. Initial value is server-rendered via
 // data-dataset-mode-toggle-compilation-type-value=... so first paint
 // is correct without waiting for the first click.
 //
@@ -36,7 +36,7 @@ export default class extends Controller {
     this.refresh()
   }
 
-  // Called from data-action when viva-mode-toggle dispatches its
+  // Called from data-action when viva-exam-toggle dispatches its
   // mode:compilation-type-changed event on window.
   syncCompilationType(event) {
     this.compilationTypeValue = event.detail?.value ?? ""

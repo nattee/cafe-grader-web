@@ -3,7 +3,7 @@ class Problem < ApplicationRecord
   audited only: %i[name full_name full_score available live_dataset_id
                    view_testcase view_submission allow_hint
                    permitted_lang submission_filename task_type compilation_type
-                   viva_mode viva_prompt viva_soft_cap viva_hard_cap],
+                   viva_daily_limit viva_prompt viva_soft_cap viva_hard_cap],
           redact: %i[viva_prompt]
 
   # -- fields --
@@ -12,9 +12,6 @@ class Problem < ApplicationRecord
                             with_managers:  1,
                             viva_exam:      2 }
   enum :task_type, { batch: 0 }
-  # Prefixed to avoid clashing with compilation_type's viva_exam?
-  # (design D1: exam is the fail-safe default).
-  enum :viva_mode, { exam: 0, practice: 1 }, prefix: true
 
   # belongs_to :description
 
@@ -62,6 +59,12 @@ class Problem < ApplicationRecord
   # an ActiveRecord::NotNullViolation 500, and 0 can't force-finish a viva on
   # its very first answer (VivaSessionsController#answer hard-caps on this).
   validates :viva_soft_cap, :viva_hard_cap, numericality: {only_integer: true, greater_than: 0}
+
+  # Context-based viva policy (2026-07-21 design, Phase A): nil falls back to
+  # GraderConfiguration['viva.practice_daily_start_limit']; 0 is meaningful
+  # (contest-only) and must remain a valid, distinct value from nil/blank —
+  # never coerce it away with a presence-style validation.
+  validates :viva_daily_limit, numericality: {only_integer: true, greater_than_or_equal_to: 0, allow_nil: true}
 
 
   # -- callback --

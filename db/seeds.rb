@@ -214,7 +214,7 @@ CONFIGURATIONS =
      key: 'viva.practice_daily_start_limit',
      value_type: 'integer',
      default_value: '3',
-     description: 'Max viva practice-mode session starts per student per problem per day (practice mode only; admins exempt).'
+     description: 'Site-wide default for max viva session starts per student per problem per day, outside contests. Applies whenever a problem leaves its own Daily start limit blank (0 on the problem means contest-only instead). Admins exempt.'
    },
 
   ]

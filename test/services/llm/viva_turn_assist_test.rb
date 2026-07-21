@@ -1,5 +1,18 @@
 require "test_helper"
 
+# Phase A (2026-07-21 context-policy design) makes Llm::VivaTurnAssist's
+# private #exam_policy? always return false — every session now runs the
+# practice branch of #apply_alert_policy, and the practice/exam toggle that
+# used to pick the branch is gone. The warn-then-terminate exam branch is still real
+# code, kept for Phase B (which will key #exam_policy? off the session's
+# governing-contest snapshot instead), so it stays regression-tested here by
+# forcing the selector on via this subclass rather than a mode flag.
+class ExamPolicyStubVivaTurnAssist < Llm::VivaTurnAssist
+  def exam_policy?
+    true
+  end
+end
+
 class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
   setup do
     @submission = submissions(:add1_by_admin)
@@ -112,8 +125,7 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     {choices: [{message: {content: text}}], model: 'stub', usage: {prompt_tokens: 1, completion_tokens: 1}}.to_json
   end
 
-  test "practice mode: alert logs a flag, injects notice, never terminates" do
-    @problem.update!(viva_mode: :practice)
+  test "default (practice) policy: alert logs a flag, injects notice, never terminates" do
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("deflection [[VIVA_ALERT]]")))
     refute result[:done]
@@ -123,25 +135,23 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert @submission.viva_turns.where(role: :system).last.content.include?('practice mode')
   end
 
-  test "exam mode: first strike warns, second terminates and grades" do
-    @problem.update!(viva_mode: :exam)
-    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+  test "exam_policy? branch: first strike warns, second terminates and grades" do
+    svc = ExamPolicyStubVivaTurnAssist.new(submission: @submission, turn: @placeholder)
     r1 = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect [[VIVA_ALERT]]")))
     refute r1[:done]
     assert_nil @submission.reload.viva_terminated_at
     assert @submission.viva_turns.where(role: :system).last.content.include?('WARNING')
 
     turn2 = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
-    svc2 = Llm::VivaTurnAssist.new(submission: @submission, turn: turn2)
+    svc2 = ExamPolicyStubVivaTurnAssist.new(submission: @submission, turn: turn2)
     r2 = svc2.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect again [[VIVA_ALERT]]")))
     assert r2[:done]
     assert @submission.reload.viva_terminated_at.present?
     assert_equal 'evaluating', @submission.status
   end
 
-  test "practice-era alerts do not carry over as strikes after a flip to exam mode" do
-    # Two alerted turns recorded while the problem was in practice mode.
-    @problem.update!(viva_mode: :practice)
+  test "alerts recorded under the practice branch do not carry over as strikes once exam_policy? flips true" do
+    # Two alerted turns recorded via the real (Phase A: always-practice) class.
     svc_a = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     svc_a.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect [[VIVA_ALERT]]")))
 
@@ -152,25 +162,25 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     # Sanity: the reasons the next assertions matter actually hold — two
     # alerted turns are genuinely on record, and no exam warning has ever
     # been issued. A test that skipped this would pass vacuously even if
-    # apply_alert_policy still counted raw alerts across mode eras.
+    # apply_alert_policy still counted raw alerts across the policy flip.
     assert_equal 2, @submission.viva_turns.where(alerted: true).count
     refute @submission.viva_turns.where(role: :system)
                        .exists?(content: Llm::VivaTurnAssist::EXAM_WARNING_NOTICE)
 
-    @problem.update!(viva_mode: :exam)
-
+    # Simulate a flip to the exam branch (Phase B: keyed on the session's
+    # governing-contest snapshot) by switching to the stub subclass.
     turn_c = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
-    svc_c = Llm::VivaTurnAssist.new(submission: @submission, turn: turn_c)
+    svc_c = ExamPolicyStubVivaTurnAssist.new(submission: @submission, turn: turn_c)
     r_c = svc_c.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect once more [[VIVA_ALERT]]")))
-    refute r_c[:done], "first exam-era alert must warn (not terminate) even though 2 prior alerts exist from practice era"
+    refute r_c[:done], "first exam-branch alert must warn (not terminate) even though 2 prior alerts exist from the practice branch"
     assert_nil @submission.reload.viva_terminated_at
     assert_equal 'submitted', @submission.status
     assert @submission.viva_turns.where(role: :system).last.content.include?('WARNING')
 
     turn_d = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
-    svc_d = Llm::VivaTurnAssist.new(submission: @submission, turn: turn_d)
+    svc_d = ExamPolicyStubVivaTurnAssist.new(submission: @submission, turn: turn_d)
     r_d = svc_d.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect yet again [[VIVA_ALERT]]")))
-    assert r_d[:done], "second exam-era alert, after the exam-era warning was issued, must terminate"
+    assert r_d[:done], "second exam-branch alert, after the exam-branch warning was issued, must terminate"
     assert @submission.reload.viva_terminated_at.present?
     assert_equal 'evaluating', @submission.status
   end

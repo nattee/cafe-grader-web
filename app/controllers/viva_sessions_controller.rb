@@ -9,20 +9,23 @@ class VivaSessionsController < ApplicationController
   # duplicating its admin/reporter/owner/config logic here.
   before_action :authorize_viva_view, only: %i[show refresh]
 
-  # #show's "Viva Info" card reads this to render "N of L starts left today"
-  # for practice-mode problems.
-  helper_method :practice_daily_start_limit
+  # #show's "Viva Info" card reads this to render "N of L starts left today".
+  helper_method :daily_start_limit_for
 
   VIVA_LANGUAGE_NAME = 'viva'.freeze
 
-  # Design D2: practice-mode students may start at most this many sessions
-  # per problem per day (archived ones count — that's the point).
+  # Context-based viva policy (2026-07-21 design, Phase A): every viva is
+  # practice; the out-of-contest limiter is a per-problem daily start count
+  # (archived sessions count — that's the point).
   #
-  # Runtime-configurable via GraderConfiguration['viva.practice_daily_start_limit']
-  # (see db/seeds.rb for the seeded default/description). DAILY_START_LIMIT_FALLBACK
-  # is used only when that key is missing, blank, or non-positive — a
-  # misconfigured/blank config must fall back to a safe limit, not open
-  # unlimited starts. Read through #practice_daily_start_limit below.
+  # Runtime-configurable fallback via
+  # GraderConfiguration['viva.practice_daily_start_limit'] (see db/seeds.rb
+  # for the seeded default/description), used only when a problem's
+  # viva_daily_limit is nil. DAILY_START_LIMIT_FALLBACK is used only when
+  # THAT config key is missing, blank, or non-positive — a misconfigured/
+  # blank global config must fall back to a safe limit, not open unlimited
+  # starts. A per-problem viva_daily_limit of 0 is a distinct, meaningful
+  # value (contest-only) and never falls back — see #daily_start_limit_for.
   PRACTICE_DAILY_START_LIMIT_CONF_KEY = 'viva.practice_daily_start_limit'.freeze
   DAILY_START_LIMIT_FALLBACK = 3
 
@@ -58,12 +61,26 @@ class VivaSessionsController < ApplicationController
       return
     end
 
-    if @problem.viva_mode_practice? && !@current_user.admin? &&
-       @problem.submissions.where(user: @current_user)
-                .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= practice_daily_start_limit
-      redirect_to list_main_path,
-                  alert: "Daily practice limit reached for '#{@problem.name}' (#{practice_daily_start_limit}/day). Try again tomorrow."
-      return
+    unless @current_user.admin?
+      if @problem.viva_daily_limit == 0
+        # 0 = contest-only (design 2026-07-21, Phase A). We don't yet have a
+        # per-contest retake budget (that's Phase B) — but in contest mode,
+        # the @current_user.problems_for_action(:submit) check above already
+        # proved this problem is visible only because it's included in an
+        # active contest the student is enrolled in right now, so gating on
+        # contest_mode? here is sufficient for Phase A.
+        unless GraderConfiguration.contest_mode?
+          redirect_to list_main_path, alert: 'This viva can only be taken during a contest.' and return
+        end
+      else
+        limit = daily_start_limit_for(@problem)
+        if @problem.submissions.where(user: @current_user)
+                    .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= limit
+          redirect_to list_main_path,
+                      alert: "Daily practice limit reached for '#{@problem.name}' (#{limit}/day). Try again tomorrow."
+          return
+        end
+      end
     end
 
     submission = nil
@@ -213,22 +230,21 @@ class VivaSessionsController < ApplicationController
 
   # POST /submissions/:submission_id/viva/restart
   #
-  # Practice-mode self-service retake (design D2): archives the student's
-  # own session so the Start Viva button reappears. Exam mode keeps the
-  # admin-only archive path (SubmissionsController#archive_viva).
+  # Self-service retake (design 2026-07-21, Phase A): every viva is
+  # practice, so the owner can always archive their own session so the
+  # Start Viva button reappears — subject to the daily start guard in
+  # #start on the *next* attempt. Admin archive-and-retake remains
+  # available too (SubmissionsController#archive_viva).
   def restart
     unless @current_user == @submission.user
       redirect_to viva_submission_path(@submission), alert: 'Only the owner can restart their viva.' and return
     end
-    # Non-viva submissions must never be archivable this way: viva_mode is a
-    # permitted param on every problem, and archiving hides a submission from
-    # main_controller's canonical max(id) pick — a grade-manipulation vector
-    # if it could be triggered on an ordinary coding submission.
+    # Non-viva submissions must never be archivable this way: archiving
+    # hides a submission from main_controller's canonical max(id) pick — a
+    # grade-manipulation vector if it could be triggered on an ordinary
+    # coding submission.
     unless @submission.problem.viva_exam?
       redirect_to viva_submission_path(@submission), alert: 'Restart is only available for viva exam problems.' and return
-    end
-    unless @submission.problem.viva_mode_practice?
-      redirect_to viva_submission_path(@submission), alert: 'Restart is only available for practice-mode vivas.' and return
     end
     if @submission.viva_archived_at.present?
       redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.' and return
@@ -238,8 +254,13 @@ class VivaSessionsController < ApplicationController
     end
 
     @submission.update!(viva_archived_at: Time.zone.now)
-    redirect_to list_main_path,
-                notice: "Practice viva archived — start a fresh one from the problem list (limit #{practice_daily_start_limit} per day)."
+    problem = @submission.problem
+    if problem.viva_daily_limit == 0
+      notice = 'Viva archived — start a fresh one from the problem list (only available during a contest).'
+    else
+      notice = "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
+    end
+    redirect_to list_main_path, notice: notice
   end
 
   # GET /submissions/:submission_id/viva/refresh
@@ -256,15 +277,19 @@ class VivaSessionsController < ApplicationController
 
   private
 
-  # Resolved daily start cap for practice-mode vivas (design D2). Reused by
-  # #start's rate-limit guard and #restart's notice text.
-  #
-  # A follow-up UI task will show "N of L starts left" on the problem
-  # list/detail view; that code should read the SAME config the same way —
-  # GraderConfiguration[PRACTICE_DAILY_START_LIMIT_CONF_KEY] — and apply
-  # this identical positive-or-fallback guard, not just read the raw key,
-  # so a blank/zero config can't be read as "unlimited" there either.
-  def practice_daily_start_limit
+  # Resolved daily start cap for a viva (design 2026-07-21, Phase A).
+  # Reused by #start's rate-limit guard, #restart's notice text, and the
+  # "N of L starts left today" display. nil on the problem falls back to
+  # the site-wide GraderConfiguration default; a per-problem 0 is handled
+  # separately by callers (contest-only — never routed through here).
+  def daily_start_limit_for(problem)
+    problem.viva_daily_limit.nil? ? global_daily_start_limit : problem.viva_daily_limit
+  end
+
+  # The site-wide fallback used when a problem doesn't set its own
+  # viva_daily_limit. Misconfigured/blank config falls back to
+  # DAILY_START_LIMIT_FALLBACK rather than being read as "unlimited".
+  def global_daily_start_limit
     limit = GraderConfiguration[PRACTICE_DAILY_START_LIMIT_CONF_KEY].to_i
     limit.positive? ? limit : DAILY_START_LIMIT_FALLBACK
   end
@@ -286,17 +311,16 @@ class VivaSessionsController < ApplicationController
                     @submission.status == 'evaluating'
     @finished     = %w[done grader_error evaluating].include?(@submission.status.to_s)
 
-    # Retake-policy visibility (D2 follow-up): practice-mode students should
-    # see how many of today's starts they have left, using the SAME count
-    # #start's rate-limit guard uses (today's submissions for this
-    # user+problem — the current session counts against its own budget).
-    if @submission.problem.viva_mode_practice?
-      used = @submission.problem.submissions
-               .where(user: @submission.user)
-               .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
-               .count
-      @practice_starts_left = [practice_daily_start_limit - used, 0].max
-    end
+    # Retake-policy visibility: every viva session shows how many of
+    # today's starts are left, using the SAME count #start's rate-limit
+    # guard uses (today's submissions for this user+problem — the current
+    # session counts against its own budget).
+    used = @submission.problem.submissions
+             .where(user: @submission.user)
+             .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
+             .count
+    @daily_start_limit = daily_start_limit_for(@submission.problem)
+    @starts_left = [@daily_start_limit - used, 0].max
   end
 
   def set_problem

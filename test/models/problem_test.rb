@@ -124,12 +124,28 @@ class ProblemTest < ActiveSupport::TestCase
                  "permitted ids must come back ascending regardless of the order they were typed in"
   end
 
-  test "viva_mode defaults to exam (fail-safe) with prefixed predicates" do
+  test "viva_daily_limit defaults to nil (site default applies) with caps at their defaults" do
     p = Problem.new
-    assert p.viva_mode_exam?
-    refute p.viva_mode_practice?
+    assert_nil p.viva_daily_limit
     assert_equal 10, p.viva_soft_cap
     assert_equal 15, p.viva_hard_cap
+  end
+
+  test "viva_daily_limit accepts nil, zero, and positive integers but rejects negatives" do
+    prob = problems(:prob_add)
+
+    prob.viva_daily_limit = nil
+    assert prob.valid?, "nil (site default) should be valid: #{prob.errors.full_messages}"
+
+    prob.viva_daily_limit = 0
+    assert prob.valid?, "0 (contest-only) should be valid: #{prob.errors.full_messages}"
+
+    prob.viva_daily_limit = 5
+    assert prob.valid?, "a positive limit should be valid: #{prob.errors.full_messages}"
+
+    prob.viva_daily_limit = -1
+    assert_not prob.valid?
+    assert prob.errors[:viva_daily_limit].any?
   end
 
   test "viva_soft_cap and viva_hard_cap reject blank and zero" do

@@ -172,20 +172,7 @@ export const configs = {
     },
     columns: [
       { data: 'number' },
-      {
-        data: 'name',
-        render: (data, type, row, meta) => {
-          if (type !== 'display') return data
-          // D1 forgotten-toggle guard: flag a viva problem (compilation_type
-          // 2 == Problem#viva_exam?) left in practice mode (viva_mode 1 ==
-          // Problem#viva_mode_practice?) while it's attached to this contest —
-          // practice allows self-service restarts, which is wrong for graded use.
-          if (row.compilation_type === 2 && row.viva_mode === 1) {
-            return `${data} <span class="badge text-bg-warning" data-bs-toggle="tooltip" data-bs-title="Practice-mode viva inside a contest — students can restart freely. Switch to exam mode before graded use.">practice viva</span>`
-          }
-          return data
-        }
-      },
+      { data: 'name' },
       {
         data: 'full_name',
         render: (data, type, row, meta) => {
@@ -222,17 +209,6 @@ export const configs = {
     drawCallback: function (settings) {
       var api = this.api();
       api.columns.adjust()
-      // The practice-viva badge above uses a Bootstrap tooltip, but this
-      // table's cells are (re)rendered as raw HTML strings by DataTables on
-      // every draw — Bootstrap's data-API only auto-wires elements present
-      // at page load (via init_ui_component_controller's connect()), so
-      // freshly drawn nodes are never picked up. Initialize them here,
-      // mirroring initializeTooltips() in init_ui_component_controller.js.
-      $(api.table().node()).find('[data-bs-toggle="tooltip"]').each(function () {
-        if (!bootstrap.Tooltip.getInstance(this)) {
-          new bootstrap.Tooltip(this)
-        }
-      })
     },
   },
   // this scoreTable is used in contest/:id/view and report/max_score

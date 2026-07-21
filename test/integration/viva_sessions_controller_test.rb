@@ -218,7 +218,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_predicate placeholder, :processing?
   end
 
-  # --- restart (D2 practice self-service retake) ---
+  # --- restart (self-service retake; every viva is practice, 2026-07-21 design) ---
 
   # `viva` Language isn't in fixtures (see the file-level comment above) —
   # find_or_create_by! so this works whether or not another test already
@@ -227,35 +227,28 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     Language.find_or_create_by!(name: 'viva') { |l| l.pretty_name = 'Viva Exam' }
   end
 
-  test "owner can restart a practice viva; exam mode refuses" do
+  test "owner can restart their own viva" do
     sign_in_as("john", "hello")
-    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    @owner_sub.problem.update!(compilation_type: :viva_exam)
     post viva_restart_submission_path(@owner_sub)
     assert @owner_sub.reload.viva_archived_at.present?
-
-    @owner_sub.problem.update!(viva_mode: :exam)
-    sub2 = Submission.create!(user: @owner_sub.user, problem: @owner_sub.problem,
-                              language: viva_language, status: :submitted,
-                              submitted_at: Time.zone.now)
-    post viva_restart_submission_path(sub2)
-    assert_nil sub2.reload.viva_archived_at
   end
 
   test "non-owner cannot restart another user's viva" do
     sign_in_as("admin", "admin")
-    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    @owner_sub.problem.update!(compilation_type: :viva_exam)
     post viva_restart_submission_path(@owner_sub)
     assert_nil @owner_sub.reload.viva_archived_at
   end
 
   test "restart refuses when the submission's problem is not a viva exam" do
     # @owner_sub's problem (prob_add) defaults to compilation_type:
-    # self_contained. viva_mode is a permitted param on every problem, so a
-    # misconfigured non-viva problem set to practice mode must still refuse
-    # to archive — restart must never be usable as a grade-manipulation
-    # vector on an ordinary coding submission.
+    # self_contained. viva_daily_limit is a permitted param on every
+    # problem, so a misconfigured non-viva problem with a daily limit set
+    # must still refuse to archive — restart must never be usable as a
+    # grade-manipulation vector on an ordinary coding submission.
     sign_in_as("john", "hello")
-    @owner_sub.problem.update!(viva_mode: :practice)
+    @owner_sub.problem.update!(viva_daily_limit: 3)
     refute @owner_sub.problem.viva_exam?, "sanity: fixture problem must not be a viva exam"
     post viva_restart_submission_path(@owner_sub)
     assert_nil @owner_sub.reload.viva_archived_at
@@ -265,7 +258,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "restart refuses when the session is already archived" do
     sign_in_as("john", "hello")
-    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    @owner_sub.problem.update!(compilation_type: :viva_exam)
     archived_at = 1.hour.ago
     @owner_sub.update!(viva_archived_at: archived_at)
     post viva_restart_submission_path(@owner_sub)
@@ -277,7 +270,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "restart refuses while an assistant turn is still processing" do
     sign_in_as("john", "hello")
-    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    @owner_sub.problem.update!(compilation_type: :viva_exam)
     @owner_sub.viva_turns.create!(role: :assistant, status: :processing, content: nil)
     post viva_restart_submission_path(@owner_sub)
     assert_nil @owner_sub.reload.viva_archived_at,
@@ -286,7 +279,9 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/current response/i, flash[:alert])
   end
 
-  test "practice start is rate-limited per day" do
+  # --- daily start limit (2026-07-21 context-policy design, Phase A) ---
+
+  test "daily start limit refuses the 4th start of the day (nil viva_daily_limit falls back to global config)" do
     # Exercised through the real #start endpoint, so the fixture problem
     # must actually pass every guard ahead of the rate limit: viva_exam
     # compilation_type, submit authorization, a seeded 'viva' Language,
@@ -294,9 +289,12 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     # prob_add (used elsewhere in this file) is a plain problem and would
     # be refused before ever reaching the rate-limit check, so we use
     # prob_viva (already compilation_type: viva_exam, available: true).
+    # Its viva_daily_limit is nil (fixture default), so the global
+    # GraderConfiguration key (3/day; see grader_configurations.yml) applies.
     sign_in_as("john", "hello")
     problem = problems(:prob_viva)
-    problem.update!(viva_mode: :practice, viva_prompt: "# Rubric\nBe fair.")
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
+    assert_nil problem.viva_daily_limit, "sanity: fixture default must be nil (falls back to global config)"
     user = users(:john)
     3.times do
       Submission.create!(user: user, problem: problem, language: viva_language,
@@ -308,49 +306,14 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 3, problem.submissions.where(user: user).count
   end
 
-  # --- retake-policy visibility (smoke-test UX fix #4) ---
-
-  test "show displays practice starts-left line in practice mode" do
-    sign_in_as("john", "hello")
-    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
-    # The fixture's submitted_at is 2019 (outside "today"'s count) — restamp
-    # it so it counts as one of today's starts, exercising the real
-    # used/left arithmetic (fixture default limit is 3/day; see
-    # grader_configurations.yml).
-    @owner_sub.update!(submitted_at: Time.zone.now)
-    get viva_submission_path(@owner_sub)
-    assert_response :success
-    assert_match(/Practice mode\s*—\s*2 of 3 starts left today/, @response.body)
-  end
-
-  test "show tells an admin viewing their own practice viva they're unlimited, not a countdown" do
-    # Admins are exempt from the daily-start limiter in #start (see the
-    # `&& !@current_user.admin?` guard there) — the card must not show them
-    # a countdown that doesn't actually apply to them.
-    sign_in_as("admin", "admin")
-    @other_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
-    get viva_submission_path(@other_sub)
-    assert_response :success
-    assert_match(/Practice mode\s*—\s*unlimited starts \(admin\)/, @response.body)
-    assert_no_match(/starts left today/, @response.body)
-  end
-
-  test "show displays exam-mode retake line in exam mode" do
-    sign_in_as("john", "hello")
-    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :exam)
-    get viva_submission_path(@owner_sub)
-    assert_response :success
-    assert_match(/Exam mode\s*—\s*one attempt only; retakes require an instructor\./, @response.body)
-  end
-
-  test "practice start rate limit honors the GraderConfiguration override" do
+  test "start rate limit honors the GraderConfiguration override when viva_daily_limit is nil" do
     # Same setup as above, but with viva.practice_daily_start_limit lowered
     # to 1 via config — proves the controller reads the runtime setting
     # rather than a hardcoded constant.
     set_grader_config("viva.practice_daily_start_limit", 1)
     sign_in_as("john", "hello")
     problem = problems(:prob_viva)
-    problem.update!(viva_mode: :practice, viva_prompt: "# Rubric\nBe fair.")
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
     user = users(:john)
     Submission.create!(user: user, problem: problem, language: viva_language,
                        status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
@@ -358,5 +321,78 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to list_main_path
     assert_match(/Daily practice limit reached.*\(1\/day\)/, flash[:alert])
     assert_equal 1, problem.submissions.where(user: user).count
+  end
+
+  test "per-problem viva_daily_limit of 1 refuses the 2nd start of the day, overriding the global config" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 1, viva_prompt: "# Rubric\nBe fair.")
+    user = users(:john)
+    Submission.create!(user: user, problem: problem, language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+    post viva_start_problem_path(problem)   # 2nd today -> refused under the per-problem limit
+    assert_redirected_to list_main_path
+    assert_match(/Daily practice limit reached.*\(1\/day\)/, flash[:alert])
+    assert_equal 1, problem.submissions.where(user: user).count
+  end
+
+  test "viva_daily_limit of 0 refuses starts outside a contest" do
+    viva_language # seed the 'viva' Language so the earlier guard doesn't shadow this one
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 0, viva_prompt: "# Rubric\nBe fair.")
+    assert_no_difference "Submission.count" do
+      post viva_start_problem_path(problem)
+    end
+    assert_redirected_to list_main_path
+    assert_match(/can only be taken during a contest/i, flash[:alert])
+  end
+
+  test "viva_daily_limit of 0 allows a start inside an active contest (contest_mode? on)" do
+    # In contest mode, @current_user.problems_for_action(:submit) (checked
+    # earlier in #start) already proves the problem is visible only because
+    # it's included in an active contest the student is enrolled in right
+    # now — see the comment on the guard in VivaSessionsController#start.
+    viva_language # seed the 'viva' Language
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 0, viva_prompt: "# Rubric\nBe fair.")
+    contest = contests(:contest_a)
+    ContestProblem.create!(contest: contest, problem: problem, number: 99, enabled: true)
+    ContestUser.create!(contest: contest, user: users(:john), role: 0, enabled: true,
+                         start_offset_second: 0, extra_time_second: 0)
+    set_grader_config("system.mode", "contest")
+
+    assert_enqueued_with(job: Llm::VivaTurnAssistJob) do
+      post viva_start_problem_path(problem)
+    end
+    assert_redirected_to viva_submission_path(Submission.last)
+  end
+
+  # --- retake-policy visibility ---
+
+  test "show displays the starts-left line for every viva" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(compilation_type: :viva_exam)
+    # The fixture's submitted_at is 2019 (outside "today"'s count) — restamp
+    # it so it counts as one of today's starts, exercising the real
+    # used/left arithmetic (fixture default limit is 3/day; see
+    # grader_configurations.yml).
+    @owner_sub.update!(submitted_at: Time.zone.now)
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_match(/2 of 3 starts left today/, @response.body)
+  end
+
+  test "show tells an admin viewing their own viva they're unlimited, not a countdown" do
+    # Admins are exempt from the daily-start limiter in #start (see the
+    # `unless @current_user.admin?` guard there) — the card must not show
+    # them a countdown that doesn't actually apply to them.
+    sign_in_as("admin", "admin")
+    @other_sub.problem.update!(compilation_type: :viva_exam)
+    get viva_submission_path(@other_sub)
+    assert_response :success
+    assert_match(/Unlimited starts \(admin\)/, @response.body)
+    assert_no_match(/starts left today/, @response.body)
   end
 end

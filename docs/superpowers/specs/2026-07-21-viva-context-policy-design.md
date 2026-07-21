@@ -108,6 +108,18 @@ about the active-session guard is unchanged.
   logic, in-window strike policy, auto-archive-on-window-entry, the
   visibility-matrix tests (design item A) rewritten against these axes, and
   the D/E documentation set.
+- **Phase B MANDATORY — window-end enforcement** *(added 2026-07-21, dae:
+  "they must not")*: a contest-governed session accepts NO student answers
+  after its governing contest's window ends — `#answer` force-finishes
+  exactly like the hard cap (system turn "(contest ended — the interview
+  ends here and grading begins)", `:evaluating`, grade job on the transcript
+  as it stands). Rationale: late *code* submissions self-correct (late
+  `submitted_at` falls outside the report window), but a viva's
+  `submitted_at` is its start — post-bell answers would improve a grade that
+  counts. An assistant reply in flight at the bell completes and counts (it
+  answers pre-bell input). Individual-contest mode uses the student's OWN
+  window. Grading may legitimately land after the bell (ops note: pull final
+  contest tables once the graders page shows no in-flight viva jobs).
 
 ## Interactions with parked items
 

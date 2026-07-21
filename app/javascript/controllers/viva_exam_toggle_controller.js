@@ -8,9 +8,9 @@ import { Controller } from "@hotwired/stimulus"
 // Wiring:
 //   * The controller scope is the <turbo-frame> wrapping the form.
 //   * Each conditional field's simple_form wrapper carries
-//     data-viva-mode-toggle-target="hideForViva".
+//     data-viva-exam-toggle-target="hideForViva".
 //   * Each compilation_type radio input carries
-//     data-action="change->viva-mode-toggle#toggle".
+//     data-action="change->viva-exam-toggle#toggle".
 //   * connect() runs toggle() once on initial render so the
 //     persisted state is reflected without waiting for a click.
 //

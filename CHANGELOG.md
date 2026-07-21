@@ -12,9 +12,8 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
-- Viva: per-problem practice/exam mode, examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
-- Viva practice/exam mode: per-problem toggle (exam = fail-safe default) with a warning banner when a practice-mode viva sits in a contest, and a read-only "practice viva" badge next to the problem name on the admin problems index for at-a-glance visibility (D1 as amended).
-- Viva practice retakes: students restart practice-mode vivas themselves (archives the old session; 3 starts per problem per day; exam mode unchanged — admin archive only).
+- Viva: examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
+- Viva retakes: students restart their own viva session themselves (archives the old one, subject to the daily start limit); admin archive-and-retake remains available for any viva.
 - Viva: `viva:migrate_prompt_tags` rake task (report-first, `APPLY=1` to execute) migrating legacy per-problem `llm_prompt` tags into `viva_prompt` and shared ones to `viva_conduct`.
 - Viva turn caps: per-problem soft cap (examiner pacing instruction, default 10) and hard cap (force-finish + grade, default 15).
 - **`problems:replay_validate` rake task** — validates the problem import/export
@@ -56,12 +55,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   materials" selector** (with a per-problem token total) instead of the mixed
   Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags
   backfilled.
-- Viva jailbreak handling: the examiner now only *detects* (staying in character); the backend applies policy — practice mode logs flags without terminating, exam mode warns on the first strike and terminates on the second (was: immediate termination on any detection).
+- Viva jailbreak handling: the examiner now only *detects* (staying in character); the backend applies policy — flags are logged and a notice is shown to the student, never terminating the interview (was: immediate termination on any detection). The warn-then-terminate machinery from the original design stays in the codebase, dormant, for the Phase B per-contest policy below.
 - Viva authoring: the Description tab is now the "Scenario (markdown)" for viva problems (sent verbatim to the examiner; side-PDF generation disabled), with the examiner briefing, conduct profile, and turn caps edited together in the problem form; only `viva_conduct` tags are hidden from the generic tag picker (they have their own dedicated Conduct-profile select) — `llm_prompt` tags remain in the generic picker since it's the only UI that attaches them (to the AI-helper) and can never be public.
+- **Viva: practice/exam mode replaced by context-based policy** — every viva is practice outside contests, limited by a per-problem daily start limit (blank = site default, 0 = contest-only); exam strictness returns as per-contest retake budgets in Phase B.
 
 ### Fixed
 
-- Viva: archive now refreshes the page, viva submissions no longer open the code editor (evaluations/download/compiler_msg included), students see retake policy and remaining practice starts.
+- Viva: archive now refreshes the page, viva submissions no longer open the code editor (evaluations/download/compiler_msg included), students see retake policy and remaining daily starts.
 - **"Import testcases" is stricter and no longer crashes on errors** — replacing
   into a dataset that no longer exists now shows an error toast instead of
   silently creating a new dataset; the testcases-only flow no longer overwrites
