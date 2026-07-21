@@ -48,6 +48,8 @@
           .col
             - if @current_user == @submission.user && @current_user.admin?
               | Unlimited starts (admin)
+            - elsif @submission.problem.viva_daily_limit == 0
+              | Contest-only viva — starts are governed by the contest
             - else
               = "#{@starts_left} of #{@daily_start_limit} starts left today"
 
