@@ -40,8 +40,12 @@ flippable anytime (never an exclusive classification).
 
 - **Default: `exam`** — the fail-safe direction; a forgotten `practice` toggle
   inside a real exam would permit restarts.
-- UI: problem form (viva section) + a switch on the problems index (existing
-  hidden-form + Stimulus pattern, per Frontend Conventions Flavor B).
+- UI: problem form (viva section) + a **read-only "practice" badge** on the
+  problems index for viva rows in practice mode. *(Amended 2026-07-21, dae's
+  call: originally a per-row switch, but with `exam` as the birth default and
+  exam vivas authored fresh, the mass-flip workflow never materializes — the
+  index need is at-a-glance visibility, and a badge has no misclick risk on an
+  exam-integrity setting. Flipping stays on the form, next to the guard.)*
 - **Forgotten-toggle guard:** prominent warning on the problem form and the
   contest page when a `practice`-mode viva is attached to an active contest.
 - Recorded caveat (instructor's content decision, not platform-enforced):
@@ -141,8 +145,14 @@ enum :kind, { normal: 0, topic: 1, llm_prompt: 2, viva_conduct: 3 }
 - **Tag model:** validation forcing `public = false` for both LLM kinds (form
   hides the checkbox for them); "used by N problems" count on the edit form.
 - **Problem form:** viva section gains a **Conduct profile** select2 (like the
-  grounding select); the generic tag widget stops offering LLM-kind tags —
-  one path per kind.
+  grounding select); the generic tag widget stops offering **`viva_conduct`**
+  tags (one dedicated path for conduct) but **keeps offering `llm_prompt`**.
+  *(Amended 2026-07-21, dae's call: hiding `llm_prompt` silently stripped
+  helper tags on every save — `tag_ids=` is whole-collection replacement and
+  the picker is the helper's only attach UI. Contamination is instead
+  prevented at the consumer layer: viva reads only `viva_conduct` +
+  `viva_prompt`; CommentAssist reads only `llm_prompt`. Rationale in
+  `doc/decisions.md` 2026-07-20 entry.)*
 - **Migration (one script + printed report):**
   1. Add enum value + column (additive, safe).
   2. Classify each viva problem's `llm_prompt` tags:
