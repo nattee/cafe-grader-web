@@ -76,6 +76,42 @@ class GradersControllerTest < ActionDispatch::IntegrationTest
     assert_equal 0, Job.where(status: :error).count
   end
 
+  # --- Stuck viva monitoring (turns + stale-evaluating submissions) ---
+
+  def viva_language
+    Language.find_or_create_by!(name: "viva") { |l| l.pretty_name = "Viva Exam" }
+  end
+
+  def make_stale_evaluating_viva_submission
+    sub = Submission.create!(user: users(:john), problem: problems(:prob_viva), language: viva_language,
+                              status: :evaluating, submitted_at: Time.zone.now)
+    sub.update_columns(updated_at: 21.minutes.ago)
+    sub
+  end
+
+  test "admin can access stuck viva turns page" do
+    sign_in_as("admin", "admin")
+    get stuck_viva_turns_grader_processes_path
+    assert_response :success
+  end
+
+  test "stuck viva turns page lists stale-evaluating submissions alongside stuck turns" do
+    sign_in_as("admin", "admin")
+    sub = make_stale_evaluating_viva_submission
+
+    get stuck_viva_turns_grader_processes_path
+    assert_response :success
+    assert_match(/##{sub.id}/, response.body)
+  end
+
+  test "graders index tile count includes stale-evaluating submissions" do
+    sign_in_as("admin", "admin")
+    make_stale_evaluating_viva_submission
+
+    get grader_processes_path
+    assert_response :success
+  end
+
   # --- Backlog excludes viva submissions ---
 
   test "ungraded viva submissions are excluded from the backlog card" do

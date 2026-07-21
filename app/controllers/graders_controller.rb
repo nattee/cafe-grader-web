@@ -13,8 +13,15 @@ class GradersController < ApplicationController
     # "External signals" — surfaced here so admins have a single
     # landing page for "anything broken right now?" The deep-links
     # point at the existing specialized pages.
-    @sq_failed_count  = SolidQueue::Job.failed.count
-    @stuck_viva_count = VivaTurn.stuck.count
+    @sq_failed_count = SolidQueue::Job.failed.count
+
+    # Combined tile count: stuck mid-interview turns (VivaTurn.stuck) +
+    # stuck mid-grading submissions (Submission.stale_evaluating) — two
+    # stages of the same "viva LLM job never resolved" failure mode.
+    # Both render as sections on stuck_viva_turns.
+    @stuck_viva_turn_count  = VivaTurn.stuck.count
+    @stale_evaluating_count = Submission.stale_evaluating.count
+    @stuck_viva_count       = @stuck_viva_turn_count + @stale_evaluating_count
 
     @submission_limit = [20, 100, 500].include?(params[:limit].to_i) ? params[:limit].to_i : 20
     @submission = Submission.order("id desc").limit(@submission_limit).includes(:user, :problem)
@@ -36,6 +43,9 @@ class GradersController < ApplicationController
     @turns = VivaTurn.stuck
                      .includes(submission: %i[user problem])
                      .order("viva_turns.updated_at desc")
+    @stale_evaluating = Submission.stale_evaluating
+                           .includes(:user, :problem)
+                           .order(updated_at: :desc)
   end
 
   def edit_job_type

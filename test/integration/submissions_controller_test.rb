@@ -135,4 +135,21 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     get download_submission_path(sub)
     assert_redirected_to viva_submission_path(sub)
   end
+
+  # A submission that Submission.fail_stale_viva_evaluating! swept to
+  # :grader_error (worker crashed mid-grade-call) must be regradable through
+  # the ordinary admin rejudge path — see rejudge above, which special-cases
+  # problem.viva_exam? regardless of the submission's current status.
+  test "a submission swept to grader_error by the stale-evaluating sweeper can be regraded via rejudge" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :evaluating)
+    sub.update_columns(updated_at: 21.minutes.ago)
+
+    assert_equal 1, Submission.fail_stale_viva_evaluating!
+    assert_predicate sub.reload, :grader_error?
+
+    post rejudge_submission_path(sub), as: :turbo_stream
+    assert_response :success
+    assert_predicate sub.reload, :evaluating?
+  end
 end

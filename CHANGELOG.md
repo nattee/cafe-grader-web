@@ -96,6 +96,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   with an attached grounding file raised `NoMethodError` instead of sending
   the file.
 - Viva: API description endpoint no longer exposes the interview scenario to students; bulk dataset rejudge, hall-of-fame, admin testcases API, and grader backlog now handle viva submissions correctly.
+- Viva: submissions stuck in "evaluating" after a worker crash are now swept to grader_error (regradable) and surfaced on the graders monitoring page.
 
 ### Security
 

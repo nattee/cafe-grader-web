@@ -13,6 +13,27 @@ class Submission < ApplicationRecord
   has_many :viva_turns, -> { order(:sequence) }, dependent: :destroy
   has_one :viva_grade, dependent: :destroy
 
+  # How long a viva submission may sit in :evaluating (grading in flight)
+  # before fail_stale_viva_evaluating! treats it as abandoned — the worker
+  # process was killed mid-call (deploy, crash, OOM) so neither the graceful
+  # success path (handle_response) nor the graceful failure path
+  # (Llm::VivaGradeAssistJob#on_retries_exhausted) ever ran to move the
+  # submission out of :evaluating.
+  #
+  # Must sit safely ABOVE the worst-case span Llm::VivaGradeAssistJob's own
+  # retry_on chain (Llm::RequestJob) can legitimately spend before it gives
+  # up and flips the submission to :grader_error itself — otherwise this
+  # sweeper would yank a submission out from under a job that's still
+  # retrying normally. The longest of RequestJob's four retry_on handlers is
+  # Faraday::TimeoutError (wait: :polynomially_longer, attempts: 3): each of
+  # the 3 attempts can run up to Llm::Request.connection's 300s request
+  # timeout before raising, and ActiveJob's polynomially_longer backoff
+  # between attempts is (1**4)+2=3s then (2**4)+2=18s. Worst case:
+  #   3 attempts * 300s  +  3s + 18s backoff  =  921s (~15.35 min)
+  # 20 minutes leaves a ~4.5 minute margin above that, and doubles
+  # VivaTurn::STALE_AFTER (10 min) as a round-number floor.
+  STALE_EVALUATING_AFTER = 20.minutes
+
   # comments
   has_many :comments, as: :commentable, dependent: :destroy
   # Allows you to get all comment reveals for comments belonging to this submission
@@ -42,6 +63,24 @@ class Submission < ApplicationRecord
     query = query.where('submissions.submitted_at >= ?', from) if from.present?
     query = query.where('submissions.submitted_at <= ?', to) if to.present?
     query
+  }
+
+  # Viva submissions parked in :evaluating with no viva_grade row yet,
+  # older than STALE_EVALUATING_AFTER — i.e. what
+  # fail_stale_viva_evaluating! would sweep right now. A viva_grade row
+  # already existing on an :evaluating submission means grading is
+  # mid-write (handle_response persists the grade row before flipping
+  # status to :done, see Llm::VivaGradeAssist#handle_response) — a
+  # different bug if it lingers, and NOT something this scope or the
+  # sweeper should touch.
+  #
+  # Used by GradersController to surface count + rows on the graders
+  # "stuck" monitoring page, mirroring VivaTurn.stuck.
+  scope :stale_evaluating, -> {
+    evaluating
+      .joins(:problem).merge(Problem.viva_exam)
+      .where.missing(:viva_grade)
+      .where("submissions.updated_at < ?", STALE_EVALUATING_AFTER.ago)
   }
 
   scope :with_llm_stat_by_problem, ->  {
@@ -119,6 +158,32 @@ class Submission < ApplicationRecord
 
   def set_grading_error(error_text)
     update(points: 0, status: :grader_error, graded_at: Time.zone.now, grader_comment: error_text)
+  end
+
+  # Marks any viva submission stuck in :evaluating (grading in flight, no
+  # viva_grade row) for longer than `threshold` as :grader_error, so the
+  # existing admin "Rejudge"/re-grade path (SubmissionsController#rejudge)
+  # applies. Runs from the same Solid Queue recurring task as
+  # VivaTurn.fail_stale! (see config/recurring.yml). Without this, a worker
+  # process killed mid-grade-call (deploy, crash, OOM) — as opposed to a
+  # graceful failure, which Llm::VivaGradeAssistJob#on_retries_exhausted
+  # already handles — leaves the submission in :evaluating forever, and the
+  # student sees "Grading in progress..." forever.
+  def self.fail_stale_viva_evaluating!(threshold: STALE_EVALUATING_AFTER, now: Time.zone.now)
+    stale = evaluating
+              .joins(:problem).merge(Problem.viva_exam)
+              .where.missing(:viva_grade)
+              .where("submissions.updated_at < ?", now - threshold)
+    count = 0
+    stale.find_each do |sub|
+      sub.update(
+        status:         :grader_error,
+        grader_comment: "Grading timed out (worker process likely crashed mid-call, no response after #{threshold.inspect}). Use Rejudge to try again."
+      )
+      count += 1
+    end
+    Rails.logger.info "Submission.fail_stale_viva_evaluating!: marked #{count} stuck viva submission(s) as :grader_error" if count.positive?
+    count
   end
 
 
