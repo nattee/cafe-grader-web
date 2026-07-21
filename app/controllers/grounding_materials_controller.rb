@@ -1,6 +1,6 @@
 class GroundingMaterialsController < ApplicationController
   before_action :admin_authorization
-  before_action :set_grounding_material, only: %i[edit update destroy delete_file]
+  before_action :set_grounding_material, only: %i[edit update destroy delete_file extract]
 
   def index
     @grounding_materials = GroundingMaterial.order(:title)
@@ -44,6 +44,23 @@ class GroundingMaterialsController < ApplicationController
     blob&.purge
     refresh_estimated_tokens
     redirect_to edit_grounding_material_path(@grounding_material), notice: 'File removed.'
+  end
+
+  # POST /grounding_materials/:id/extract — kicks off the one-shot PDF -> markdown
+  # draft extraction (design D4). Never touches body: the draft lands in
+  # extraction_draft for the author to review and copy in manually.
+  def extract
+    if @grounding_material.files.blank?
+      redirect_to edit_grounding_material_path(@grounding_material), alert: 'Attach at least one PDF before extracting.'
+      return
+    end
+
+    # Clear any prior draft so the edit view's "in progress" state is accurate
+    # for a re-extraction, not stale success/failure text from a previous run.
+    @grounding_material.update!(extraction_requested_at: Time.current, extraction_draft: nil)
+    Llm::GroundingExtractJob.perform_later(@grounding_material)
+    redirect_to edit_grounding_material_path(@grounding_material),
+      notice: 'Extraction started — refresh this page in a minute or two.'
   end
 
   private

@@ -58,6 +58,7 @@ Rails.application.routes.draw do
 
   resources :grounding_materials, except: [:show] do
     delete 'delete_file', on: :member
+    post 'extract', on: :member
   end
 
   get "sources/direct_edit"
