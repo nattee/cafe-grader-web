@@ -44,17 +44,14 @@
                 This viva no longer counts for grading. You may start a fresh viva on this problem.
 
         .row.mb-2
-          .col-5.text-end.text-secondary Retakes
+          .col-5.text-end.text-secondary Starts
           .col
-            - if @submission.problem.viva_mode_practice?
-              - if @current_user == @submission.user && @current_user.admin?
-                | Practice mode — unlimited starts (admin)
-              - else
-                = "Practice mode — #{@practice_starts_left} of #{practice_daily_start_limit} starts left today"
+            - if @current_user == @submission.user && @current_user.admin?
+              | Unlimited starts (admin)
             - else
-              | Exam mode — one attempt only; retakes require an instructor.
+              = "#{@starts_left} of #{@daily_start_limit} starts left today"
 
-        - if @current_user == @submission.user && @submission.problem.viva_mode_practice? && @submission.viva_archived_at.nil?
+        - if @current_user == @submission.user && @submission.viva_archived_at.nil?
           = button_to 'Restart practice viva', viva_restart_submission_path(@submission),
               class: 'btn btn-sm btn-warning mt-2',
               form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this session and start over? The transcript is kept for instructors.'}}

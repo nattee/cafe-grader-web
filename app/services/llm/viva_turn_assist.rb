@@ -215,33 +215,45 @@ module Llm
       {done: finish, alerted: alerted}
     end
 
-    # Alert consequence policy (design D3): the model only detects; the
-    # backend decides. Practice mode logs and never terminates. Exam mode
-    # warns on the first strike and terminates on the second. The injected
-    # system turns are student-visible in the transcript but are filtered
-    # out of the wire messages (prior_turn_messages skips system rows), so
-    # the model's context is unaffected.
+    # Alert consequence policy (design D3, selector superseded by the
+    # 2026-07-21 context-policy design): the model only detects; the
+    # backend decides. Practice branch logs and never terminates. Exam
+    # branch warns on the first strike and terminates on the second. The
+    # injected system turns are student-visible in the transcript but are
+    # filtered out of the wire messages (prior_turn_messages skips system
+    # rows), so the model's context is unaffected.
     #
     # Strikes are NOT counted via a raw `alerted: true` tally across the
-    # submission's whole history — a problem can flip practice -> exam
-    # mid-session (D1), and practice-era alerts must never count toward
-    # exam termination (that would terminate on the very first exam-era
-    # alert with no warning ever shown, defeating the warn-first policy).
+    # submission's whole history — the exam/practice policy can change
+    # mid-session, and practice-era alerts must never count toward exam
+    # termination (that would terminate on the very first exam-era alert
+    # with no warning ever shown, defeating the warn-first policy).
     # Instead: terminate only when a prior EXAM_WARNING_NOTICE system turn
     # already exists on this submission — i.e. the student was already
     # formally warned under exam rules.
     def apply_alert_policy
-      if @problem.viva_mode_practice?
+      if exam_policy?
+        if @submission.viva_turns.where(role: :system, content: EXAM_WARNING_NOTICE).exists?
+          @submission.viva_turns.create!(role: :system, status: :ok, content: ALERT_BANNER)
+          :terminated
+        else
+          @submission.viva_turns.create!(role: :system, status: :ok, content: EXAM_WARNING_NOTICE)
+          :warned
+        end
+      else
         @submission.viva_turns.create!(role: :system, status: :ok,
           content: '⚠️ A possible attempt to go outside the exam rules was flagged on this turn. In practice mode the interview continues; flags are logged for instructor review.')
         :logged
-      elsif @submission.viva_turns.where(role: :system, content: EXAM_WARNING_NOTICE).exists?
-        @submission.viva_turns.create!(role: :system, status: :ok, content: ALERT_BANNER)
-        :terminated
-      else
-        @submission.viva_turns.create!(role: :system, status: :ok, content: EXAM_WARNING_NOTICE)
-        :warned
       end
+    end
+
+    # Selector for the warn-then-terminate exam branch above. Phase A
+    # (2026-07-21 design): every session uses the practice branch — no
+    # terminate-capable policy exists yet, so this is always false. Phase B:
+    # keyed on the session's governing-contest snapshot (see 2026-07-21
+    # spec) instead of the retired practice/exam toggle.
+    def exam_policy?
+      false
     end
 
     def handle_error

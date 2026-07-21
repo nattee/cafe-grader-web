@@ -1,5 +1,5 @@
 - @active_problem_tab = '#general' unless %w[#general #description #hint].include? @active_problem_tab
-=turbo_frame_tag :problem, data: {controller: 'init-ui-component bs-tab viva-mode-toggle', turbo: true} do
+=turbo_frame_tag :problem, data: {controller: 'init-ui-component bs-tab viva-exam-toggle', turbo: true} do
   %ul.nav.nav-tabs
     %li.nav-item
       %button.nav-link{data: {bs: {toggle: :tab, target: "#general"}},class: ('active' if @active_problem_tab == '#general') } General
@@ -59,17 +59,17 @@
           = form.input :group_ids, label: 'Groups', collection: Group.all, input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, hint: 'Groups control which students can see and submit this problem.'
           .form-text.text-secondary
             = link_to 'Manage groups', groups_path
-          = form.input :view_testcase, wrapper: :horizontal_boolean, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, disabled: @current_user.admin? == false
+          = form.input :view_testcase, wrapper: :horizontal_boolean, wrapper_html: {data: {'viva-exam-toggle-target': 'hideForViva'}}, disabled: @current_user.admin? == false
           = form.input :view_submission, wrapper: :horizontal_boolean, disabled: @current_user.admin? == false, hint: 'For viva problems: controls whether other students can see this viva transcript.'
 
         %section.mb-4
           %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Grading & Compilation
-          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
+          = form.input :permitted_lang, label: 'Allowed Language', collection: Language.all, selected: @problem.get_permitted_lang_as_ids(when_blank: nil), input_html: {class: 'select2', multiple: true}, wrapper: :horizontal_form, wrapper_html: {data: {'viva-exam-toggle-target': 'hideForViva'}}, tooltip: 'Leave blank to allow any language.'
           - compilation_options = [['<strong>Self contained</strong> <span class="text-secondary">— the submission compiles by itself (most problems).</span>'.html_safe, 'self_contained'], ['<strong>With managers</strong> <span class="text-secondary">— the submission is compiled together with manager files attached to the dataset.</span>'.html_safe, 'with_managers'], ['<strong>Viva Exam</strong> <span class="text-secondary">— LLM-driven Socratic interview + rubric grading. No test-case dataset; fill in the Examiner briefing + optional Conduct profile and grounding materials instead.</span>'.html_safe, 'viva_exam']]
-          = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-mode-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
+          = form.input :compilation_type, as: :radio_buttons, collection: compilation_options, wrapper: :horizontal_collection, input_html: {data: {action: 'change->viva-exam-toggle#toggle'}}, tooltip: 'See Help drawer (top-right) for details on each mode.'
 
           -# Viva grounding — shown only when compilation_type is viva_exam
-          .mb-4.d-none{ data: { viva_mode_toggle_target: 'showForViva' } }
+          .mb-4.d-none{ data: { viva_exam_toggle_target: 'showForViva' } }
             = form.input :grounding_material_ids, label: 'Grounding materials',
                 collection: GroundingMaterial.order(:title), value_method: :id, label_method: :title,
                 input_html: { class: 'select2', multiple: true, id: 'problem_grounding_material_ids' },
@@ -86,13 +86,6 @@
                       %span.text-secondary= "· ≈ #{number_with_delimiter(gm.estimated_tokens)} tokens ·"
                       = link_to 'view', edit_grounding_material_path(gm)
 
-            - if @problem.persisted? && @problem.viva_mode_practice? && @problem.contests.exists?
-              .alert.alert-warning.d-flex.align-items-center.gap-2.mt-3
-                %span.mi warning
-                %div
-                  This viva is in <strong>practice</strong> mode and is attached to a contest.
-                  Students can restart it freely — switch to <strong>exam</strong> mode before any graded use.
-
             = form.input :viva_prompt, as: :text, label: 'Examiner briefing', wrapper: :horizontal_form,
                 input_html: {rows: 14, class: 'font-monospace'},
                 hint: 'Rubric, model answers, and problem-specific examiner guidance. NEVER shown to students. Must contain a "# Rubric" section. This is the marking scheme; the Scenario tab is the exam paper.'
@@ -103,10 +96,9 @@
             = form.input :viva_soft_cap, wrapper: :horizontal_form, label: 'Soft turn cap', hint: 'The examiner is instructed to wrap up within about this many questions.'
             = form.input :viva_hard_cap, wrapper: :horizontal_form, label: 'Hard turn cap', hint: 'The interview is force-ended and graded at this many student answers.'
 
-            - viva_mode_options = [['<strong>Exam</strong> <span class="text-secondary">— single attempt; a second flagged jailbreak attempt terminates the interview.</span>'.html_safe, 'exam'], ['<strong>Practice</strong> <span class="text-secondary">— students may restart themselves (rate-limited); jailbreak flags are logged, never fatal.</span>'.html_safe, 'practice']]
-            = form.input :viva_mode, as: :radio_buttons, collection: viva_mode_options, wrapper: :horizontal_collection, label: 'Viva mode', tooltip: 'Flippable anytime. Exam is the fail-safe default.'
+            = form.input :viva_daily_limit, wrapper: :horizontal_form, label: 'Daily start limit', hint: 'Starts per student per day outside contests. Blank = site default; 0 = can only be taken during a contest.'
 
-          = form.input :submission_filename, wrapper_html: {data: {'viva-mode-toggle-target': 'hideForViva'}}
+          = form.input :submission_filename, wrapper_html: {data: {'viva-exam-toggle-target': 'hideForViva'}}
 
         = form.button :submit, class: 'btn btn-primary me-2'
       %div#description.my-3.tab-pane.fade{class: (' show active ' if @active_problem_tab == '#description')}

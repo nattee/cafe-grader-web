@@ -26,33 +26,6 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
-  # D1 as amended: read-only "practice viva" badge on the problems index,
-  # mirroring the contest-problems-table badge in
-  # ContestsController#show_problems_query / configs.js. Unlike the contest
-  # table, /problems is server-rendered (non-AJAX DataTables — see
-  # ProblemsController#quick_create comment), so the badge lives directly in
-  # the HAML row rather than a DataTables column config. This asserts on the
-  # rendered badge markup itself, so it fails if the HAML condition
-  # (problem.viva_exam? && problem.viva_mode_practice?) were reverted or
-  # dropped.
-  test "problems index shows practice-viva badge for viva problems in practice mode" do
-    sign_in_as("admin", "admin")
-    problems(:prob_viva).update!(viva_mode: :practice)
-
-    get problems_path
-    assert_response :success
-    assert_select "tr#prob-#{problems(:prob_viva).id} span.badge.text-bg-warning", text: "practice viva"
-  end
-
-  test "problems index omits practice-viva badge for viva problems in exam mode" do
-    sign_in_as("admin", "admin")
-    problems(:prob_viva).update!(viva_mode: :exam)
-
-    get problems_path
-    assert_response :success
-    assert_select "tr#prob-#{problems(:prob_viva).id} span.badge.text-bg-warning", false
-  end
-
   # --- Read actions ---
 
   test "admin can edit problem" do
@@ -181,18 +154,23 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Updated Name", p.reload.full_name
   end
 
-  test "admin can flip viva_mode through update" do
+  test "admin can set viva_daily_limit through update, including 0 (contest-only)" do
     sign_in_as("admin", "admin")
     p = problems(:prob_viva)
     patch problem_path(p), params: {
-      problem: { viva_mode: "practice", permitted_lang: [] }
+      problem: { viva_daily_limit: "5", permitted_lang: [] }
     }, as: :turbo_stream
-    assert_equal "practice", p.reload.viva_mode
+    assert_equal 5, p.reload.viva_daily_limit
 
     patch problem_path(p), params: {
-      problem: { viva_mode: "exam", permitted_lang: [] }
+      problem: { viva_daily_limit: "0", permitted_lang: [] }
     }, as: :turbo_stream
-    assert_equal "exam", p.reload.viva_mode
+    assert_equal 0, p.reload.viva_daily_limit
+
+    patch problem_path(p), params: {
+      problem: { viva_daily_limit: "", permitted_lang: [] }
+    }, as: :turbo_stream
+    assert_nil p.reload.viva_daily_limit
   end
 
   test "edit form offers llm_prompt tags in the generic picker, not viva_conduct" do
@@ -206,7 +184,7 @@ class ProblemsControllerTest < ActionDispatch::IntegrationTest
     #
     # Use a NON-viva fixture problem: the Conduct-profile select
     # (id=problem_conduct_tag_ids) is rendered unconditionally in the DOM
-    # (only CSS-hidden via viva-mode-toggle for non-viva problems), so a
+    # (only CSS-hidden via viva-exam-toggle for non-viva problems), so a
     # viva_conduct tag legitimately appears there. To discriminate
     # precisely we scope assertions to each select's own id rather than
     # just grepping the whole response body.

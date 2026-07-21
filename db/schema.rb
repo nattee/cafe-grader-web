@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_21_074755) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_21_090000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -332,10 +332,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_21_074755) do
     t.text "log", size: :medium
     t.boolean "allow_hint", default: true
     t.boolean "view_submission", default: true
-    t.integer "viva_mode", limit: 1, default: 0, null: false
     t.text "viva_prompt", size: :medium
     t.integer "viva_soft_cap", default: 10, null: false
     t.integer "viva_hard_cap", default: 15, null: false
+    t.integer "viva_daily_limit"
     t.index ["live_dataset_id"], name: "index_problems_on_live_dataset_id"
   end
 

@@ -42,7 +42,7 @@ class ProblemEditDatasetFormTest < ApplicationSystemTestCase
     assert_selector "[data-dataset-mode-toggle-target='hideForSelfContained'].d-none",
                     count: 2, visible: :all, wait: 5
     # Flip the radio in the LEFT-COLUMN problem form. The
-    # viva-mode-toggle controller dispatches a window event;
+    # viva-exam-toggle controller dispatches a window event;
     # dataset-mode-toggle picks it up and refreshes.
     choose "With managers", allow_label_click: true
     assert_no_selector "[data-dataset-mode-toggle-target='hideForSelfContained'].d-none",
