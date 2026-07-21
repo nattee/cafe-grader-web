@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_07_20_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_07_21_074755) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -418,6 +418,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_07_20_200000) do
     t.string "content_type"
     t.datetime "viva_archived_at"
     t.datetime "viva_terminated_at"
+    t.datetime "updated_at", precision: nil
     t.index ["graded_at"], name: "index_submissions_on_graded_at"
     t.index ["problem_id"], name: "index_submissions_on_problem_id"
     t.index ["submitted_at"], name: "index_submissions_on_submitted_at"
