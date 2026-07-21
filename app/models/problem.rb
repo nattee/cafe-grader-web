@@ -2,7 +2,9 @@ class Problem < ApplicationRecord
   include Auditable
   audited only: %i[name full_name full_score available live_dataset_id
                    view_testcase view_submission allow_hint
-                   permitted_lang submission_filename task_type compilation_type]
+                   permitted_lang submission_filename task_type compilation_type
+                   viva_mode viva_prompt viva_soft_cap viva_hard_cap],
+          redact: %i[viva_prompt]
 
   # -- fields --
   # how the submission should be compiled
@@ -10,6 +12,9 @@ class Problem < ApplicationRecord
                             with_managers:  1,
                             viva_exam:      2 }
   enum :task_type, { batch: 0 }
+  # Prefixed to avoid clashing with compilation_type's viva_exam?
+  # (design D1: exam is the fail-safe default).
+  enum :viva_mode, { exam: 0, practice: 1 }, prefix: true
 
   # belongs_to :description
 
@@ -52,8 +57,20 @@ class Problem < ApplicationRecord
 
   validates_presence_of :full_name
 
+  # viva_soft_cap / viva_hard_cap are NOT NULL columns with defaults (10/15);
+  # unconditional so a blanked form field surfaces as a form error instead of
+  # an ActiveRecord::NotNullViolation 500, and 0 can't force-finish a viva on
+  # its very first answer (VivaSessionsController#answer hard-caps on this).
+  validates :viva_soft_cap, :viva_hard_cap, numericality: {only_integer: true, greater_than: 0}
+
 
   # -- callback --
+  # Blank and nil must collapse to one canonical value (nil) — otherwise every
+  # form save of a non-viva problem (which still submits the hidden viva_prompt
+  # field as "") churns viva_prompt nil -> "" and writes a redundant [redacted]
+  # audit row on every save.
+  before_validation { self.viva_prompt = viva_prompt.presence }
+
   after_save :generate_and_attach_pdf_statement_later, if: :should_generate_pdf?
 
   # -- scope --
@@ -162,17 +179,16 @@ class Problem < ApplicationRecord
   def set_default_value
   end
 
-  def viva_prompt_tags
-    tags.where(kind: :llm_prompt)
+  # Shared examiner persona layer (design D6). Ordered by name so multi-tag
+  # concatenation is deterministic.
+  def viva_conduct_tags
+    tags.where(kind: :viva_conduct).order(:name)
   end
 
-  # Required-section markers a viva problem's llm_prompt content must
-  # contain. Keeping this as a constant so it's easy to relax / extend
-  # without rewriting the validation method. The scenario itself is
-  # delivered to the model via the attached statement PDF, not via
-  # problem.description, so we don't validate the description text.
+  # Required-section markers the per-problem examiner briefing
+  # (problems.viva_prompt) must contain.
   VIVA_PROMPT_REQUIRED_SECTIONS = {
-    /^#+\s*Rubric\b/im => "an llm_prompt section starting with '# Rubric' (or ##/###)"
+    /^#+\s*Rubric\b/im => "a section starting with '# Rubric' (or ##/###)"
   }.freeze
 
   # Whether the problem's statement PDF (or external description URL) is
@@ -194,12 +210,12 @@ class Problem < ApplicationRecord
     return [] unless viva_exam?
     errors = []
 
-    prompt = viva_prompt_tags.map(&:params).reject(&:blank?).join("\n\n")
-    if prompt.blank?
-      errors << "Problem has no llm_prompt tag attached"
+    prompt = viva_prompt.to_s
+    if prompt.strip.blank?
+      errors << "Problem has a blank examiner briefing (viva_prompt)"
     else
       VIVA_PROMPT_REQUIRED_SECTIONS.each do |pattern, label|
-        errors << "llm_prompt is missing #{label}" unless prompt =~ pattern
+        errors << "examiner briefing is missing #{label}" unless prompt =~ pattern
       end
     end
 
@@ -404,6 +420,8 @@ class Problem < ApplicationRecord
   private
 
   def should_generate_pdf?
+    return false if viva_exam?   # D5: the description IS the scenario; no side-PDF for vivas
+
     (new_record? || saved_change_to_attribute?(:description)) && description.present?
   end
 

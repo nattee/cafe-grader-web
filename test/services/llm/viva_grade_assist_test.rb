@@ -9,13 +9,9 @@ class Llm::VivaGradeAssistTest < ActiveSupport::TestCase
     @submission.viva_turns.create!(role: :assistant, status: :ok, content: 'follow-up')
     @problem = @submission.problem
     @problem.update_columns(description: "Scenario A\nScenario B")
-    # Viva grading requires at least one llm_prompt tag on the problem;
-    # assemble_context raises without it.
-    prompt_tag = Tag.find_or_create_by!(name: 'test_llm_prompt') do |t|
-      t.kind = :llm_prompt
-      t.params = 'Grade the student strictly.'
-    end
-    @problem.tags << prompt_tag unless @problem.tags.include?(prompt_tag)
+    # Viva grading requires a non-blank viva_prompt (examiner briefing) on the
+    # problem; assemble_context raises without it.
+    @problem.update!(viva_prompt: 'Grade the student strictly.')
     @assist = Llm::VivaGradeAssist.new(submission: @submission)
   end
 

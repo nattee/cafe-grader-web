@@ -339,3 +339,50 @@ surface via GitHub's auto-generated sidebar, so no Home edit was needed.
   unsandboxed on the judge host — a deliberate trust choice today, but if we ever
   accept checkers from less-trusted authors it should move inside isolate.
 - Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`). **✅ FIXED 2026-07-19** for the known instance: the integration file was renamed to `test/integration/report_controller_access_test.rb` with `class ReportControllerAccessTest`; `test/controllers/report_controller_test.rb` keeps `ReportControllerTest`. The naming rule stands for future test files.
+
+---
+
+## Viva `answer` action — concurrent at-cap POSTs can double-enqueue the grade job
+
+**Context (noted 2026-07-21 during viva Phase 1 review).** `VivaSessionsController#answer`
+(`app/controllers/viva_sessions_controller.rb`) hard-caps the interview: when
+`@submission.viva_turns.where(role: :student).count >= @submission.problem.viva_hard_cap`
+it writes a closing system turn, sets `status: :evaluating`, and enqueues
+`Llm::VivaGradeAssistJob.perform_later(@submission)` — all without a row lock.
+Two truly concurrent POSTs at the cap (double-click, two tabs, a retried
+request) can both read the same pre-cap count and both take the force-finish
+branch, enqueuing the grade job twice for one submission. This is a
+pre-existing pattern across the whole controller (no action here takes a row
+lock), not something specific to this branch.
+
+**Impact.** Regrading is idempotent (the grader recomputes from the
+transcript), so a double-enqueue costs an extra LLM grading call — noise/cost,
+not a correctness or grade-manipulation bug.
+
+**Fix direction.** Either `@submission.lock!` around the check-and-transition,
+or a unique-job guard on `Llm::VivaGradeAssistJob` keyed by submission id.
+Small; low priority given the impact is cost only.
+
+---
+
+## `datatables/configs.js` render functions interpolate unescaped HTML
+
+**Context (noted 2026-07-21 during viva Phase 1 review).**
+`app/javascript/controllers/datatables/configs.js` builds several DataTables
+column `render` functions with raw template-literal interpolation of
+server-supplied fields — `${data}` (lines 102, 184, 197) and
+`${row.full_name}` (lines 108, 203) — dropped straight into HTML strings with
+no escaping. `data`/`row.full_name` here are problem names / user full names,
+which admins and group editors can set via ordinary edit forms.
+
+**Impact.** These are all admin/editor-only management tables, so this isn't
+a privilege-escalation vector (an admin who can already do arbitrary damage
+would be attacking themselves or other admins). But it's a live class of bug:
+a problem or user name containing HTML/script content would render
+unescaped for the next admin who views that table, which is worth closing.
+
+**Fix direction.** Add a small `escapeHtml` helper in the configs module and
+wrap every user-controlled interpolation (`data`, `row.full_name`, and any
+other free-text row field) with it. Bounded, mechanical change once the
+helper exists — the main work is grepping the file for every interpolation
+site so none are missed.

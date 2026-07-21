@@ -168,8 +168,13 @@ class ContestsController < ApplicationController
   end
 
   def show_problems_query
+    # compilation_type/viva_mode ride along as raw integers (this relation is
+    # rooted at ContestProblem, so Problem's enum casting doesn't apply) —
+    # the DataTables column render in contestManageProblem compares against
+    # the raw values (2 == viva_exam, 1 == viva_mode_practice) to flag a
+    # practice-mode viva sitting in a contest (D1 forgotten-toggle guard).
     render json: {data: @contest.contests_problems.joins(:problem)
-      .select('contests_problems.id', :problem_id, :contest_id, :available, :enabled, :allow_llm, :name, :full_name, :number)}
+      .select('contests_problems.id', :problem_id, :contest_id, :available, :enabled, :allow_llm, :name, :full_name, :number, :compilation_type, :viva_mode)}
   end
 
   def do_all_users
