@@ -23,6 +23,11 @@ class GradersController < ApplicationController
     @stale_evaluating_count = Submission.stale_evaluating.count
     @stuck_viva_count       = @stuck_viva_turn_count + @stale_evaluating_count
 
+    # Sessions where the examiner flagged a suspected jailbreak attempt
+    # (design D3). Log-only for now — surfaced here so admins have a
+    # single landing page, deep-linking to the calibration instrument.
+    @viva_alert_count = VivaTurn.where(role: :assistant, alerted: true).distinct.count(:submission_id)
+
     @submission_limit = [20, 100, 500].include?(params[:limit].to_i) ? params[:limit].to_i : 20
     @submission = Submission.order("id desc").limit(@submission_limit).includes(:user, :problem)
 
@@ -46,6 +51,41 @@ class GradersController < ApplicationController
     @stale_evaluating = Submission.stale_evaluating
                            .includes(:user, :problem)
                            .order(updated_at: :desc)
+  end
+
+  # One row per submission (viva session) that has at least one
+  # examiner-flagged assistant turn (VivaTurn#alerted — design D3). The
+  # calibration instrument for the practice month: instructors skim
+  # these to judge whether the detection prompt is too sensitive or too
+  # lenient. `alerted` sits on the ASSISTANT turn that detected the
+  # attempt; the student text that triggered it is the immediately
+  # preceding student-role turn, so each row surfaces that utterance
+  # alongside the timestamp of the session's most recent alert.
+  #
+  # N+1 avoidance: one query for the flagged submission ids, one
+  # preload of (user, problem, viva_turns) for just those submissions,
+  # then the per-session "walk the preloaded turns" lookup happens in
+  # Ruby. Fine at practice-month scale.
+  VivaAlertRow = Struct.new(:submission, :alert_count, :latest_alert_at, :utterance, keyword_init: true)
+
+  def viva_alerts
+    flagged_ids = VivaTurn.where(role: :assistant, alerted: true).distinct.pluck(:submission_id)
+
+    @alerts = Submission.where(id: flagged_ids)
+                         .includes(:user, :problem, :viva_turns)
+                         .map do |sub|
+      turns         = sub.viva_turns.to_a # preloaded, already ordered by sequence
+      alerted_turns = turns.select { |t| t.assistant? && t.alerted? }
+      latest_alert  = alerted_turns.max_by(&:sequence)
+      trigger       = turns.select { |t| t.student? && t.sequence < latest_alert.sequence }.max_by(&:sequence)
+
+      VivaAlertRow.new(
+        submission:      sub,
+        alert_count:     alerted_turns.size,
+        latest_alert_at: latest_alert.updated_at,
+        utterance:       trigger&.content
+      )
+    end.sort_by { |row| -row.latest_alert_at.to_i }
   end
 
   def edit_job_type
