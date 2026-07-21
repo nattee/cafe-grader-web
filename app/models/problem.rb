@@ -65,6 +65,12 @@ class Problem < ApplicationRecord
 
 
   # -- callback --
+  # Blank and nil must collapse to one canonical value (nil) — otherwise every
+  # form save of a non-viva problem (which still submits the hidden viva_prompt
+  # field as "") churns viva_prompt nil -> "" and writes a redundant [redacted]
+  # audit row on every save.
+  before_validation { self.viva_prompt = viva_prompt.presence }
+
   after_save :generate_and_attach_pdf_statement_later, if: :should_generate_pdf?
 
   # -- scope --

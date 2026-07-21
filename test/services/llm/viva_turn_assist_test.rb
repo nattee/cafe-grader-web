@@ -61,7 +61,7 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     refute_includes sys, 'first user message contains the scenario'
   end
 
-  test 'system prompt layers in fixed order: conduct, briefing, security, done' do
+  test "system prompt layers in fixed order: conduct, briefing, security, done" do
     @problem.update!(viva_prompt: "# Rubric\ncorrectness: 100")
     @problem.tags << Tag.create!(name: 'b-conduct', kind: :viva_conduct, params: 'CONDUCT-B')
     @problem.tags << Tag.create!(name: 'a-conduct', kind: :viva_conduct, params: 'CONDUCT-A')
@@ -112,7 +112,7 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     {choices: [{message: {content: text}}], model: 'stub', usage: {prompt_tokens: 1, completion_tokens: 1}}.to_json
   end
 
-  test 'practice mode: alert logs a flag, injects notice, never terminates' do
+  test "practice mode: alert logs a flag, injects notice, never terminates" do
     @problem.update!(viva_mode: :practice)
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("deflection [[VIVA_ALERT]]")))
@@ -123,7 +123,7 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert @submission.viva_turns.where(role: :system).last.content.include?('practice mode')
   end
 
-  test 'exam mode: first strike warns, second terminates and grades' do
+  test "exam mode: first strike warns, second terminates and grades" do
     @problem.update!(viva_mode: :exam)
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     r1 = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("deflect [[VIVA_ALERT]]")))
@@ -139,7 +139,7 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_equal 'evaluating', @submission.status
   end
 
-  test 'practice-era alerts do not carry over as strikes after a flip to exam mode' do
+  test "practice-era alerts do not carry over as strikes after a flip to exam mode" do
     # Two alerted turns recorded while the problem was in practice mode.
     @problem.update!(viva_mode: :practice)
     svc_a = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
@@ -175,13 +175,13 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_equal 'evaluating', @submission.status
   end
 
-  test 'system prompt carries the soft-cap pacing directive' do
+  test "system prompt carries the soft-cap pacing directive" do
     @problem.update!(viva_soft_cap: 7)
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     assert_includes svc.send(:assemble_system_prompt), 'within about 7 questions'
   end
 
-  test 'clean DONE still finishes without alert' do
+  test "clean DONE still finishes without alert" do
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body("bye [[VIVA_DONE]]")))
     assert result[:done]
@@ -189,7 +189,7 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_nil @submission.reload.viva_terminated_at
   end
 
-  test 'handle_response strips every occurrence of a doubled sentinel, not just the first' do
+  test "handle_response strips every occurrence of a doubled sentinel, not just the first" do
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     text = "deflect [[VIVA_ALERT]] more deflecting [[VIVA_ALERT]] bye [[VIVA_DONE]] [[VIVA_DONE]]"
     result = svc.send(:handle_response, Struct.new(:body).new(alert_response_body(text)))

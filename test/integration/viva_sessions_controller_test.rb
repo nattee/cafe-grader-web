@@ -246,6 +246,17 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/already been archived/i, flash[:alert])
   end
 
+  test "restart refuses while an assistant turn is still processing" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(compilation_type: :viva_exam, viva_mode: :practice)
+    @owner_sub.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    post viva_restart_submission_path(@owner_sub)
+    assert_nil @owner_sub.reload.viva_archived_at,
+      "must not archive while a response is still in flight"
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_match(/current response/i, flash[:alert])
+  end
+
   test "practice start is rate-limited per day" do
     # Exercised through the real #start endpoint, so the fixture problem
     # must actually pass every guard ahead of the rate limit: viva_exam
