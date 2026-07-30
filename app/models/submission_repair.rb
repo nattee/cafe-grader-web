@@ -46,4 +46,26 @@ class SubmissionRepair < ApplicationRecord
     below_full = below_full.where('submissions.points <= ?', max_score) if max_score.present?
     below_full.pluck(:id)
   end
+
+  # Creates pending attempt rows and enqueues one repair job per target.
+  # Idempotent per (original_submission, run_label): re-running the same
+  # RUN label skips submissions that already have an attempt row, so a
+  # crashed batch can be resumed by re-running the same command.
+  def self.enqueue_batch!(submission_ids:, budget_lines:, budget_chars:, rounds:, run_label:, model_key: nil)
+    enqueued = 0
+    skipped  = 0
+    submission_ids.each do |sid|
+      if exists?(original_submission_id: sid, run_label: run_label)
+        skipped += 1
+        next
+      end
+      repair = create!(original_submission_id: sid, status: :pending,
+                       budget_lines: budget_lines, budget_chars: budget_chars,
+                       run_label: run_label)
+      Llm::SubmissionRepairJob.perform_later(Submission.find(sid), repair: repair,
+                                             rounds: rounds, model_key: model_key)
+      enqueued += 1
+    end
+    {enqueued: enqueued, skipped: skipped}
+  end
 end
