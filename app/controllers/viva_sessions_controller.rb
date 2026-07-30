@@ -55,7 +55,7 @@ class VivaSessionsController < ApplicationController
     # submission for this problem, the Start Viva button shouldn't be
     # visible — but a stale browser tab or a direct curl POST could land
     # here anyway. Refuse with a clear flash.
-    if @problem.submissions.where(user: @current_user, viva_archived_at: nil).exists?
+    if @problem.submissions.regular.where(user: @current_user, viva_archived_at: nil).exists?
       redirect_to list_main_path,
                   alert: "You already have an active viva session for '#{@problem.name}'. An admin can archive it from the viva page if you need to retake."
       return
@@ -74,7 +74,7 @@ class VivaSessionsController < ApplicationController
         end
       else
         limit = daily_start_limit_for(@problem)
-        if @problem.submissions.where(user: @current_user)
+        if @problem.submissions.regular.where(user: @current_user)
                     .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= limit
           redirect_to list_main_path,
                       alert: "Daily practice limit reached for '#{@problem.name}' (#{limit}/day). Try again tomorrow."
@@ -315,7 +315,7 @@ class VivaSessionsController < ApplicationController
     # today's starts are left, using the SAME count #start's rate-limit
     # guard uses (today's submissions for this user+problem — the current
     # session counts against its own budget).
-    used = @submission.problem.submissions
+    used = @submission.problem.submissions.regular
              .where(user: @submission.user)
              .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
              .count

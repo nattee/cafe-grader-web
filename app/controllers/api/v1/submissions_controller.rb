@@ -3,7 +3,7 @@ class Api::V1::SubmissionsController < Api::V1::BaseController
 
   # GET /api/v1/problems/:problem_id/submissions
   def index
-    submissions = Submission.where(user: current_user, problem: @problem)
+    submissions = Submission.regular.where(user: current_user, problem: @problem)
       .order(submitted_at: :desc)
 
     render json: submissions.map { |s| submission_brief_json(s) }

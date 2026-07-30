@@ -117,7 +117,7 @@ class MainController < ApplicationController
 
   def source
     submission = Submission.find(params[:id])
-    if (submission.user_id == session[:user_id]) and
+    if (submission.user_id == session[:user_id]) and (submission.repaired_from_id.nil?) and
         (submission.problem != nil) and
         (submission.problem.available)
       send_data(submission.source,
@@ -135,7 +135,7 @@ class MainController < ApplicationController
     end
     @user = User.find(session[:user_id])
     @submission = Submission.find(params[:id])
-    if @submission.user!=@user
+    if @submission.user!=@user || @submission.repaired_from_id.present?
       flash[:notice] = 'You are not allowed to view result of other users.'
       redirect_to action: 'list' and return
     end
@@ -182,7 +182,7 @@ class MainController < ApplicationController
     @problems = @current_user.problems_for_action(:submit, respect_admin: false).with_attached_statement.with_attached_attachment.includes(:public_tags).default_order
 
     # calculate range of time (in contest mode)
-    submissions = Submission.where(user: @current_user, problem: @problems)
+    submissions = Submission.regular.where(user: @current_user, problem: @problems)
     submissions = submissions.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
 
     # calculate latest submission & submission count
@@ -192,8 +192,9 @@ class MainController < ApplicationController
     # a no-op for them.
     @prob_submissions = Hash.new { |h, k| h[k] = {count: 0, submission: nil} }
     last_sub_ids = submissions.where(viva_archived_at: nil).group(:problem_id).pluck('max(id)')
+    sub_counts = submissions.group(:problem_id).count
     Submission.where(id: last_sub_ids).each do |sub|
-      @prob_submissions[sub.problem_id] = { count: sub.number, submission: sub }
+      @prob_submissions[sub.problem_id] = { count: sub_counts[sub.problem_id] || 0, submission: sub }
     end
 
     # calculate max score

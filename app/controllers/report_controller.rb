@@ -309,7 +309,7 @@ class ReportController < ApplicationController
     @user = User.find(session[:user_id])
 
     # model submission
-    @model_subs = Submission.where(problem: @problem, tag: Submission.tags[:model])
+    @model_subs = Submission.regular.where(problem: @problem, tag: Submission.tags[:model])
 
 
     # calculate best submission
@@ -317,7 +317,7 @@ class ReportController < ApplicationController
 
     @summary = {count: 0, solve: 0, attempt: 0}
     user = Hash.new(0)
-    Submission.where(problem_id: @problem.id).includes(:language).each do |sub|
+    Submission.regular.where(problem_id: @problem.id).includes(:language).each do |sub|
       # histogram
 
       next unless sub.points
@@ -415,7 +415,7 @@ class ReportController < ApplicationController
     tries = 0
     @struggle = Array.new
     record = {}
-    Submission.includes(:problem, :user).order(:problem_id, :user_id).find_each do |sub|
+    Submission.regular.includes(:problem, :user).order(:problem_id, :user_id).find_each do |sub|
       next unless sub.problem and sub.user
       if user != sub.user_id or problem != sub.problem_id
         @struggle << { user: record[:user], problem: record[:problem], tries: tries } unless solve
@@ -437,7 +437,7 @@ class ReportController < ApplicationController
 
   def multiple_login
     # user with multiple IP
-    raw = Submission.joins(:user).joins(:problem).where("problems.available != 0").group("login,ip_address").order(:login)
+    raw = Submission.regular.joins(:user).joins(:problem).where("problems.available != 0").group("login,ip_address").order(:login)
     last, count = 0, 0
     first = 0
     @users = []
@@ -454,7 +454,7 @@ class ReportController < ApplicationController
     end
 
     # IP with multiple user
-    raw = Submission.joins(:user).joins(:problem).where("problems.available != 0").group("login,ip_address").order(:ip_address)
+    raw = Submission.regular.joins(:user).joins(:problem).where("problems.available != 0").group("login,ip_address").order(:ip_address)
     last, count = 0, 0
     first = 0
     @ip = []
@@ -526,7 +526,7 @@ ORDER BY ip_address,created_at
       GROUP BY u.id
       HAVING count > 1
     ) ml ON s.user_id = ml.id
-    WHERE s.submitted_at >= ? and s.submitted_at <= ?
+    WHERE s.submitted_at >= ? and s.submitted_at <= ? AND s.repaired_from_id IS NULL
 UNION
   SELECT s.id,s.user_id,s.ip_address,s.submitted_at,s.problem_id
     FROM submissions s INNER JOIN
@@ -537,7 +537,7 @@ UNION
       GROUP BY l.ip_address
       HAVING count > 1
     ) ml on ml.ip_address = s.ip_address
-    WHERE s.submitted_at >= ? and s.submitted_at <= ?
+    WHERE s.submitted_at >= ? and s.submitted_at <= ? AND s.repaired_from_id IS NULL
 ORDER BY ip_address,submitted_at
             SQL
     @subs = Submission.joins(:problem).find_by_sql([st, @since_time, @until_time,
@@ -579,7 +579,7 @@ ORDER BY ip_address,submitted_at
 UNION
   SELECT s.submitted_at,s.id,u.login,u.full_name,s.ip_address,s.problem_id,s.points,s.user_id
   FROM submissions s INNER JOIN users u ON s.user_id = u.id
-  WHERE s.submitted_at >= ? AND s.submitted_at <= ? AND #{condition}
+  WHERE s.submitted_at >= ? AND s.submitted_at <= ? AND #{condition} AND s.repaired_from_id IS NULL
 ORDER BY submitted_at
   SQL
 
@@ -628,12 +628,12 @@ ORDER BY submitted_at
     def submission_in_range(range_params)
       range_params ||= {}
       if range_params[:use] ==  'sub_id'
-        Submission.by_id_range(range_params[:from_id], range_params[:to_id])
+        Submission.regular.by_id_range(range_params[:from_id], range_params[:to_id])
       else
         # use sub time
         since_time = Time.zone.parse(range_params[:from_time]) || Time.zone.now.beginning_of_day rescue Time.zone.now.beginning_of_day
         until_time = Time.zone.parse(range_params[:to_time]) || Time.zone.now.end_of_day rescue Time.zone.now.end_of_day
-        Submission.by_submitted_at(since_time, until_time)
+        Submission.regular.by_submitted_at(since_time, until_time)
       end
     end
 

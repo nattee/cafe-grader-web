@@ -3,6 +3,34 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-07-30 — LLM provider placement: generality decides the branch, config activates
+
+**Decision.** Where an LLM provider's *code* lives is governed by one test:
+*could a third-party deployment of upstream cafe-grader plausibly use this
+provider with their own hardware or account?* Yes → classes live on **master**,
+dormant until configuration activates them. No → classes live on **chula_cp**.
+Configuration — `*_service` keys and endpoint registries in `config/llm.yml`,
+secrets in Rails credentials — is always per-deployment and never a reason to
+move code between branches.
+
+Placement under this rule: abstract bases + registration hooks (per-model
+provider map, `viva_turn_service`-style keys) — master, as today.
+`Llm::SelfHostChat` / `Llm::SelfHostAssist` / `Llm::SubmissionRepairSelfHostAssist`
+(generic OpenAI-compatible endpoints; any self-hosted vLLM/llama.cpp/TGI works)
+— master. Future hosted-aggregator providers (e.g. OpenRouter) — master, API
+keys in Rails credentials. ChulaGenie concrete classes (`Llm::GenieAssist`,
+`Llm::TokenManager`, the viva/grounding Genie subclasses) — chula_cp, because
+the Genie gateway is unreachable outside the university.
+
+**Why.** The original working rule ("master carries only abstract LLM classes;
+concrete implementations live on chula_cp") was an artifact of the first
+provider being ChulaGenie, which genuinely cannot work off-campus. Read as a
+general rule it would wrongly exile generic providers: a university running its
+own vLLM box should deploy straight from master/upstream without ever learning
+that chula_cp exists. Master is also the upstream-facing line (pushed to
+cafe-grader-team), so generic providers there are a feature of the public
+project, while Chula-only integrations would be dead code and internal detail.
+
 ## 2026-07-20 — Viva prompt storage: ownership follows cardinality (no unified "LLM asset" entity)
 
 **Decision.** Content attached to problems is stored by its *natural cardinality*,

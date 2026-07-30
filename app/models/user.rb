@@ -424,7 +424,7 @@ class User < ApplicationRecord
   end
 
   def last_submission_by_problem(problem)
-    submissions.where(problem: problem).order(:submitted_at).last
+    submissions.regular.where(problem: problem).order(:submitted_at).last
   end
 
   #
@@ -484,6 +484,12 @@ class User < ApplicationRecord
     # For group mode, reporters can always view the submission of the problem
     return true if problems_for_action(:report).include? submission.problem
 
+    # Near-miss shadow submissions are an instructor-side research artifact.
+    # Students must never see them — not even their own (the owner
+    # short-circuit below would otherwise expose them). Admins and
+    # reporters already returned true above.
+    return false if submission.repaired_from_id.present?
+
     # At this step, we knows that the user does not have special privileges to the problem
 
     # problem available is required
@@ -537,7 +543,7 @@ class User < ApplicationRecord
   def get_jschart_user_sub_history
     start = 4.month.ago.beginning_of_day
     start_date = start.to_date
-    count = Submission.where(user: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
+    count = Submission.regular.where(user: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
     i = 0
     label = []
     value = []

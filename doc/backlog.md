@@ -407,3 +407,80 @@ should stop, with a data cleanup for existing rows. Touches: grading
 completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
 reports that read `grader_comment`. Backlogged per dae: "requires full design
 change".
+
+## OpenRouter LLM provider — design sketch (no implementation scheduled)
+
+Per the 2026-07-30 placement decision (`doc/decisions.md`), OpenRouter is a
+**master-side** provider: any deployment with its own API key can use it, so it
+must never require the chula_cp branch.
+
+**Shape when it lands:**
+- `Llm::OpenRouterChat` — sibling of `Llm::SelfHostChat`. Extract the shared
+  OpenAI-compatible payload build + `choices`/`usage` parsing into a mixin
+  (e.g. `Llm::OpenAiCompatPayload`) at that point, not before. Differences
+  from self-host: `Authorization: Bearer` header (key from
+  `Rails.application.credentials.llm.openrouter.api_key` — NEVER in llm.yml,
+  which is checked in), real `compute_cost` (OpenRouter returns usage/cost;
+  per-1K fallback rates in config), slash-namespaced model ids
+  (`anthropic/claude-…`), no `/v1/models` identity guard (the hosted API
+  validates model names itself).
+- Config: a separate `openrouter:` section in `llm.yml` (model list + default),
+  NOT extra fields on `self_hosted_models:` — keeping the self-host invariants
+  (no auth, cost 0, swap-slot identity guard) explicit rather than optional.
+- Registration reuses both existing mechanisms unchanged: per-model map entry
+  (`OpenRouterAssist: anthropic/claude-…,google/gemini-…`) for the assist
+  picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
+  as an alternative repair provider.
+
+## Near-Miss: Genie repair provider (chula_cp-side follow-up)
+
+`Llm::SubmissionRepairGenieAssist` can only live on chula_cp
+(`Llm::GenieAssist`/`Llm::TokenManager` exist only there). Small class:
+subclass `Llm::SubmissionRepairAssist`, implement `execute_chat` via the Genie
+connection/token plumbing, set per-1K rates in `compute_cost`, wire via
+`submission_repair_service:` if Genie repair is ever preferred over self-host.
+
+## Near-Miss: student-facing phase (deliberately deferred)
+
+Interaction model (staged ladder vs one-click AI repair vs mode-split),
+lifeline economy via the existing `comments.cost` machinery,
+GraderConfiguration budget keys, web report page. Deferred until batch-run
+data exists; see spec section 13
+(`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
+
+## Near-Miss: first-pilot verification — EXECUTED 2026-07-30 (local dev, live qwen)
+
+**Pilot ran end-to-end on the dev copy** (submission 919133, a real
+`compilation_error`/0-point C++ sub): qwen3.5 proposed `+#include <cstdint>`
+(1 line / 18 chars, within the 2/20 budget, category `syntax`), the gate
+accepted, shadow 922764 was graded by the real judge (via
+`Replay::ReplayGrader.grade_sync` + a temporary `rails server` on :3000 for
+worker artifact transfer) — **0 → 100, all 20 testcases P, mechanical gap
+100**. `near_miss:report` stdout + CSV verified against the run.
+
+Findings fixed during the pilot (both committed):
+- **PDF parts fail on sglang in BOTH wire shapes** (bare-string `image_url`
+  → pydantic 400; object-form `{url:}` → image-loader error, a PDF is not an
+  image). Fix: self-host repair prompts are text-only via the
+  `include_statement_pdf?` provider hook (rev 1940). ChulaGenie-class
+  providers keep the PDF by default. NOTE: `Llm::SelfHostAssist` (the
+  comment-assist provider) still sends the PDF via `CommentAssist`'s prompt
+  — it will hit the same 400 if ever registered in the picker against
+  sglang; needs its own design pass (statement text? skip?) before enabling.
+- **`max_tokens: 4096` is NOT enough for repair on reasoning models**: qwen
+  spent the whole budget thinking (`finish_reason: length`, empty content,
+  3 unparseable rounds). At 16384 it succeeded in one 8.6s round (1337
+  output tokens). **Use `max_tokens: 16384` in the chula_cp
+  `self_hosted_models` entries for repair use.**
+- **Ruby 3.4 removed `csv` from default gems** — `near_miss:report`'s
+  `require 'csv'` raised LoadError; `gem "csv"` added (rev 1941).
+
+Still-relevant caveats:
+- Run-label resume keys on row existence, not status — a wholesale-failed
+  batch consumes its `RUN=` label; pick a fresh label after config fixes.
+- The A100 gemma box (10.0.5.25:8000) refused connections during the pilot
+  — re-verify it (and its multimodal validation behavior) when it's back.
+- Statement blobs: the dev copy has partial ActiveStorage sync (13 of ~500
+  problems' statements on disk); `encode_pdf_part` raises RuntimeError on a
+  registered-but-missing blob, which lands the repair row in `failed` —
+  correct behavior, but don't mistake it for an LLM failure in dev runs.
