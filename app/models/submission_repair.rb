@@ -68,4 +68,49 @@ class SubmissionRepair < ApplicationRecord
     end
     {enqueued: enqueued, skipped: skipped}
   end
+
+  # Aggregated per-run, per-problem study report.
+  # {run_label => {problem_name => {targets:, statuses: {..}, rescued:,
+  #   rescue_rate:, mean_gap:, median_gap:, categories: {..},
+  #   sizes: [changed_chars,...], compliance: {round => {within:, total:}},
+  #   tokens_in:, tokens_out:, cost:}}}
+  def self.report_for(run_labels)
+    attempts = where(run_label: run_labels)
+               .includes(original_submission: :problem)
+               .includes(:repaired_submission)
+    result = {}
+    attempts.group_by(&:run_label).each do |label, rows|
+      per_problem = {}
+      rows.group_by { |r| r.original_submission.problem.name }.each do |pname, prows|
+        gaps = prows.select { |r| r.accepted? && r.repaired_submission&.points }
+                    .map { |r| r.repaired_submission.points.to_f - r.original_submission.points.to_f }
+        rescued = gaps.count(&:positive?)
+        compliance = Hash.new { |h, k| h[k] = {within: 0, total: 0} }
+        prows.each do |r|
+          Array(r.rounds_log).each do |entry|
+            next unless entry['changed_lines']
+            c = compliance[entry['round']]
+            c[:total] += 1
+            c[:within] += 1 if entry['gate'] == 'accepted'
+          end
+        end
+        per_problem[pname] = {
+          targets:    prows.size,
+          statuses:   prows.group_by(&:status).transform_values(&:size),
+          rescued:    rescued,
+          rescue_rate: prows.size.zero? ? 0.0 : (rescued.to_f / prows.size).round(3),
+          mean_gap:   gaps.empty? ? nil : (gaps.sum / gaps.size).round(2),
+          median_gap: gaps.empty? ? nil : gaps.sort[gaps.size / 2].round(2),
+          categories: prows.filter_map(&:fix_category).tally,
+          sizes:      prows.filter_map(&:changed_chars),
+          compliance: compliance,
+          tokens_in:  prows.sum { |r| r.token_count_in.to_i },
+          tokens_out: prows.sum { |r| r.token_count_out.to_i },
+          cost:       prows.sum { |r| r.cost.to_f }.round(4)
+        }
+      end
+      result[label] = per_problem
+    end
+    result
+  end
 end

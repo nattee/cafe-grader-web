@@ -69,4 +69,48 @@ namespace :near_miss do
     puts "enqueued #{result[:enqueued]}, skipped #{result[:skipped]} (already attempted in this run label)"
     puts "watch progress: SubmissionRepair.where(run_label: '#{run_label}').group(:status).count"
   end
+
+  desc 'Report on repair runs. Usage: rake near_miss:report RUN=<label>[,<label>...]  (or CONTEST=<id>)'
+  task report: :environment do
+    labels = ENV['RUN'].to_s.split(',').map(&:strip).reject(&:empty?)
+    if labels.empty? && ENV['CONTEST'].present?
+      prefix = "contest#{ENV['CONTEST']}-"
+      labels = SubmissionRepair.where('run_label LIKE ?', "#{prefix}%").distinct.pluck(:run_label)
+    end
+    abort 'RUN=<label>[,<label>...] or CONTEST=<id> is required' if labels.empty?
+
+    report = SubmissionRepair.report_for(labels)
+    abort "no attempts found for #{labels.join(', ')}" if report.empty?
+
+    require 'csv'
+    csv_path = Rails.root.join('tmp', "near_miss_report_#{Time.zone.now.strftime('%Y%m%d_%H%M%S')}.csv")
+    CSV.open(csv_path, 'w') do |csv|
+      csv << %w[run_label problem targets accepted over_budget no_change failed rescued
+                rescue_rate mean_gap median_gap categories median_size tokens_in tokens_out cost]
+      report.each do |label, per_problem|
+        puts "\n=== run: #{label} ==="
+        per_problem.each do |pname, s|
+          sizes = s[:sizes].sort
+          median_size = sizes.empty? ? nil : sizes[sizes.size / 2]
+          st = s[:statuses]
+          puts format('  %-24s targets=%-4d accepted=%-4d over_budget=%-4d no_change=%-4d failed=%-4d',
+                      pname, s[:targets], st['accepted'].to_i, st['over_budget'].to_i,
+                      st['no_change'].to_i, st['failed'].to_i)
+          puts format('  %-24s rescued=%d (rate %.1f%%)  gap mean=%s median=%s  median_size=%s chars',
+                      '', s[:rescued], s[:rescue_rate] * 100,
+                      s[:mean_gap] || '-', s[:median_gap] || '-', median_size || '-')
+          puts "  #{' ' * 24} categories: #{s[:categories].map { |k, v| "#{k}=#{v}" }.join(' ')}" if s[:categories].any?
+          s[:compliance].sort.each do |round, c|
+            puts format('  %-24s round %d budget compliance: %d/%d', '', round, c[:within], c[:total])
+          end
+          puts format('  %-24s tokens in/out: %d/%d  cost: $%.4f', '', s[:tokens_in], s[:tokens_out], s[:cost])
+          csv << [label, pname, s[:targets], st['accepted'].to_i, st['over_budget'].to_i,
+                  st['no_change'].to_i, st['failed'].to_i, s[:rescued], s[:rescue_rate],
+                  s[:mean_gap], s[:median_gap], s[:categories].to_json, median_size,
+                  s[:tokens_in], s[:tokens_out], s[:cost]]
+        end
+      end
+    end
+    puts "\nCSV: #{csv_path}"
+  end
 end
