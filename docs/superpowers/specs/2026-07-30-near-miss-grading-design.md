@@ -1,4 +1,4 @@
-# Near-Miss Grading (v1: batch instrument) + Qwen LLM provider — Design
+# Near-Miss Grading (v1: batch instrument) + self-hosted LLM providers — Design
 
 - **Date:** 2026-07-30
 - **Status:** approved design, pre-implementation
@@ -34,9 +34,10 @@ be chosen from evidence later. No UI, no score changes, no student visibility.
    accepted patches graded by the normal judge as linked shadow submissions.
 2. Batch CLI: `rake near_miss:repair` over a contest (or narrower target) +
    `rake near_miss:report` producing the analysis tables.
-3. **Qwen provider (second feature):** a shared OpenAI-compatible transport for
-   the department's self-hosted DGX models, wired into *both* Near-Miss repair
-   and the existing submission assist (`Llm::CommentAssist` family).
+3. **Self-hosted providers (second feature):** a shared OpenAI-compatible
+   transport for the department's models — `qwen3.5` (DGX swap slot) and
+   `gemma-4-31b` (always-on A100 box) — wired into *both* Near-Miss repair and
+   the existing submission assist (`Llm::CommentAssist` family).
 4. Full accounting per attempt: tokens, dollar cost, rounds, fix category, raw
    response — viva-style, so `/report/ai`-grade cost visibility exists from
    day one.
@@ -59,10 +60,11 @@ be chosen from evidence later. No UI, no score changes, no student visibility.
 | D1 | Fixed budget, stated to the LLM, **enforced by a deterministic gate** computable without any LLM | Owner decision. The score is never an LLM opinion; the gate is auditable and immune to prompt injection via source code |
 | D2 | Evaluation channel = **shadow submissions** through the normal judge pipeline, with explicit linkage to the original | Real scores with identical semantics (sandbox, dataset, partial credit); zero judge-worker changes. Alternatives rejected: separate channel (requires external-worker changes), in-task evaluation (non-comparable scores) |
 | D3 | LLM returns the **complete corrected file**, never a diff | Models mangle diff syntax; the gate diffs original-vs-returned deterministically anyway |
-| D4 | Rounds hard-capped at **1 + 1** (one attempt, one retry with the rejection reason) | Per-submission cost ceiling |
-| D5 | Batch target selection defaults to **latest submission per (user, problem) scoring below full marks** | 10–20× volume cut with no loss for the research question |
-| D6 | **Qwen is the default provider** for repair; ChulaGenie secondary | Self-hosted DGX ⇒ marginal API cost ≈ 0; this *is* the cost strategy |
-| D7 | Interaction model (staged ladder vs one-click vs mode-split) **deferred** until batch data exists | Owner decision |
+| D4 | Rounds configurable (`ROUNDS`, default **3** total LLM calls); every retry is fed the measured patch size vs the budget | Self-hosted calls are free, and a stingy cap under-reports the rescue rate (records "unfixable" when the model was merely sloppy). The cap remains the cost ceiling for paid providers |
+| D5 | Batch target selection: `SCOPE=latest` (default — latest submission per (user, problem) scoring below full marks) or `SCOPE=all`; `MIN_SCORE`/`MAX_SCORE` for score-stratified runs | Default cuts volume 10–20×; full-contest and stratified studies stay possible. Caveat: `SCOPE=all` multiplies *sandbox grading* load — LLM calls are free, judge time is not |
+| D6 | **Self-hosted models are the default providers** — `qwen3.5` (DGX swap slot) and `gemma-4-31b` (always-on A100 box); ChulaGenie secondary | Marginal API cost ≈ 0 — this *is* the cost strategy; two free models also enable qwen-vs-gemma comparison studies |
+| D7 | Interaction model of the eventual student-facing feature (staged ladder vs one-click AI repair vs mode-split) **deferred** until batch data exists | Owner decision ("decide this later; I want to learn which pedagogy is good first") — the batch instrument must not silently pre-decide it |
+| D8 | **Viva submissions are excluded** from target selection (as dataset rejudge already does) | The budget is only a valid mechanical/conceptual proxy for *code*: in natural language a tiny edit ("O(n)" → "O(lg n)") is a conceptual change, and transcript re-grading has no deterministic ground truth |
 
 ## 5. Data model
 
@@ -76,7 +78,8 @@ be chosen from evidence later. No UI, no score changes, no student visibility.
 | `patch` | text | normalized unified diff **we** computed (display/analysis) |
 | `changed_lines`, `changed_chars` | int, nullable | measured by the gate (null when no parseable file returned) |
 | `budget_lines`, `budget_chars` | int | budget in force at generation |
-| `rounds_used` | int | 1 or 2 |
+| `rounds_used` | int | ≤ the run's `ROUNDS` cap |
+| `rounds_log` | text (JSON) | per-round `{changed_lines, changed_chars, gate}` — powers budget-compliance analysis per model per round |
 | `fix_category` | string, nullable | LLM self-report, validated against `io_format \| parsing \| syntax \| boundary \| logic \| other`; invalid ⇒ `other` |
 | `llm_model` | string | |
 | `token_count_in`, `token_count_out` | int | from `usage`; reasoning tokens count in `completion_tokens` |
@@ -162,28 +165,32 @@ Pure service `SubmissionRepair::Gate` — heavily unit-tested; no I/O, no LLM.
     reason. If no within-budget fix exists, say so explicitly (⇒ `no_change`).
 - `handle_response`: extract file → `Gate` → on accept, one transaction
   creates the shadow submission + marks the row `accepted`; on gate rejection
-  (or unparseable output, per §10), **one** retry with the rejection reason
-  appended; a second gate rejection ⇒ `over_budget`.
+  (or unparseable output, per §10), retry with the measured size vs the budget
+  appended ("your patch changed 34 chars; the budget is 20"), up to the run's
+  `ROUNDS` cap (default 3 total calls); exhaustion ⇒ `over_budget`. Every
+  round's measurement lands in `rounds_log`.
 - `compute_cost(usage)` — viva-style token/cost extraction.
 - Abstract hooks per the existing pattern: subclasses supply `provider_name`,
   `execute_call(data)`, cost rates, `DEFAULT_MODEL`.
 
 ### 7.2 Concrete providers & registration
 
-- `Llm::SubmissionRepairQwenAssist` (default) and
-  `Llm::SubmissionRepairGenieAssist`.
+- `Llm::SubmissionRepairSelfHostAssist` (default) — one class serving all
+  self-hosted models; the model key (`qwen` | `gemma`) comes from the rake
+  `SERVICE=` parameter, falling back to the `self_hosted_models:` default —
+  and `Llm::SubmissionRepairGenieAssist`.
 - Registered via a new `submission_repair_service:` key in `config/llm.yml`
   (same pattern as `viva_turn_service:`), overridable per-run by the rake
-  `SERVICE=` parameter.
+  `SERVICE=` parameter (`qwen`/`gemma` → SelfHost, `genie` → Genie).
 
 ### 7.3 `Llm::SubmissionRepairJob < Llm::RequestJob`
 
 Standard retry taxonomy inherited; `on_retries_exhausted` marks the
 `SubmissionRepair` row `error` so nothing freezes in `processing`.
 
-## 8. Qwen transport & submission-assist provider (second feature)
+## 8. Self-hosted transport & submission-assist provider (second feature)
 
-### 8.1 `Llm::QwenChat` — shared transport
+### 8.1 `Llm::SelfHostChat` — shared transport
 
 OpenAI-compatible `POST {base_url}{completion_path}` (`/v1/chat/completions`),
 JSON, **no auth** (intranet-only DGX), via the existing Faraday factory
@@ -199,23 +206,29 @@ reasoning models need). Ported lessons from cp-api
 - extract `usage.prompt_tokens` / `usage.completion_tokens`;
 - connection refused / host unreachable is **normal operation** for a
   swapped-out DGX slot (ports 8000–8002 share GPUs; exactly one is alive) —
-  classify as retryable connection error, never as a code bug.
+  classify as retryable connection error, never as a code bug;
+- the A100 box (`gemma-4-31b`) is always-on and **validates** model names,
+  while the DGX merely echoes them — a wrong model string fails only on gemma,
+  so test against it.
 
-Config: `qwen:` section in `llm.yml` (`base_url`, `completion_path`, `model`,
-`max_tokens`). Real values on `chula_cp`; blank/commented on `master` — same
-convention as the viva service keys. No credentials involved.
+Config: `self_hosted_models:` map in `llm.yml`, keyed by short name (`qwen`,
+`gemma`), each entry `{base_url, completion_path, model, max_tokens}`, plus a
+default-model key. Real values on `chula_cp`; blank/commented on `master` —
+same convention as the viva service keys. No credentials involved.
 
-### 8.2 `Llm::QwenAssist < Llm::CommentAssist`
+### 8.2 `Llm::SelfHostAssist < Llm::CommentAssist`
 
 Submission-assist provider using the shared transport. Registered in the
-per-model provider map: `QwenAssist: qwen3.5` in `llm_services`, which makes it
+per-model provider map: `SelfHostAssist: qwen3.5,gemma-4-31b` in
+`llm_services` — one class serving both models, exactly the existing
+`GenieAssist: gemini-2.5-pro,Claude-Sonnet` precedent — which makes them
 appear in the existing assist model picker. **Known quirk to respect:** the
 `llm_assist` route addresses models by *index* into
 `Rails.configuration.llm[:provider].keys`, and
-`_add_assist.html.haml` hardcodes `cost: 10` — the plan must verify adding a
-model does not silently shift existing indices in views/links. Dollar cost for
-Qwen is 0.0; token counts are still recorded (`compute_cost` returns 0 with
-usage logged).
+`_add_assist.html.haml` hardcodes `cost: 10` — the plan must verify adding
+models does not silently shift existing indices in views/links. Dollar cost
+for self-hosted models is 0.0; token counts are still recorded
+(`compute_cost` returns 0 with usage logged).
 
 ## 9. Batch runner & report
 
@@ -223,13 +236,18 @@ usage logged).
 
 ```
 rake near_miss:repair CONTEST=<id> [PROBLEM=<id>] [SUBMISSION=<id>]
-     [BUDGET_LINES=2] [BUDGET_CHARS=20] [SERVICE=qwen|genie]
-     [RUN=<label>] [LIMIT=<n>] [DRY=1]
+     [SCOPE=latest|all] [MIN_SCORE=<n>] [MAX_SCORE=<n>]
+     [BUDGET_LINES=2] [BUDGET_CHARS=20] [ROUNDS=3]
+     [SERVICE=qwen|gemma|genie] [RUN=<label>] [LIMIT=<n>] [DRY=1]
 ```
 
-- Target selection (default): latest submission per (user, problem) within the
-  contest with score below full marks — including compile errors. `Submission.regular`
-  only (never repair a shadow).
+- Target selection: `SCOPE=latest` (default) takes the latest submission per
+  (user, problem) within the contest scoring below full marks — including
+  compile errors; `SCOPE=all` takes every below-full submission.
+  `MIN_SCORE`/`MAX_SCORE` bound the original score for stratified runs (e.g.
+  a zeros-only run vs a 1–99 run under different `RUN` labels). Always
+  `Submission.regular` only (never repair a shadow), and viva-language
+  submissions are always excluded (D8).
 - `DRY=1` prints target count + breakdown and exits. `LIMIT` caps targets for
   pilot runs. `RUN` defaults to a generated label (`contest<id>-<date>`).
 - Enqueues one `Llm::SubmissionRepairJob` per target; Solid Queue's queue
@@ -237,21 +255,29 @@ rake near_miss:repair CONTEST=<id> [PROBLEM=<id>] [SUBMISSION=<id>]
   up front so a crashed run is enumerable and resumable (re-run skips
   submissions that already have a row with the same `run_label`).
 
-### 9.2 `rake near_miss:report RUN=<label>` (or `CONTEST=<id>`)
+### 9.2 `rake near_miss:report RUN=<label>[,<label>…]` (or `CONTEST=<id>`)
 
 Per-problem table: targets, attempts by status, repaired-and-improved count,
 **rescue rate** (fraction of below-full targets whose shadow scored higher),
 mean/median mechanical gap, fix-category histogram, distribution of measured
-repair sizes (which shows how much of the budget real fixes actually used).
+repair sizes (which shows how much of the budget real fixes actually used),
+and **budget compliance** — per model, per round, from `rounds_log`: how often
+the returned patch was actually within budget (the gate verifies every patch
+deterministically; this reports how often each model needed correcting).
 Plus a run-level cost line: total tokens in/out, dollar cost, LLM rounds.
-Console table + CSV export (path printed).
+
+Passing multiple `RUN` labels renders the runs **side-by-side** — the
+comparison view for budget experiments, qwen-vs-gemma-vs-genie, and score
+bands. Console table + CSV export (path printed).
 
 ## 10. Error handling
 
 - Transport/HTTP errors follow the existing `RequestJob` retryable taxonomy;
   exhaustion ⇒ row `error` with the exception in `remark`.
 - Unparseable LLM output (no fenced file found) consumes a round like a gate
-  rejection (the retry says so); two failures ⇒ `error` with raw body stored.
+  rejection (the retry says so); exhausting all rounds without ever getting a
+  parseable file ⇒ `error` with raw body stored (`over_budget` is reserved for
+  parseable-but-too-large outcomes).
 - The gate itself cannot fail soft: any exception there is a bug and should
   raise loudly (no rescue).
 - Shadow-submission grading failures are ordinary judge errors, visible on the
@@ -267,7 +293,7 @@ Written after the feature (owner's stated preference), all minitest:
   (model/controller level).
 - **Service:** `handle_response` paths (accept/over-budget/retry/no-change/
   garbage) with a stubbed transport; transaction atomicity of shadow+row.
-- **QwenChat:** request-shape (omitted `repetition_penalty`, `max_tokens`
+- **SelfHostChat:** request-shape (omitted `repetition_penalty`, `max_tokens`
   floor) and response parsing incl. `reasoning_content`, via stubbed Faraday.
 - **Rake:** target-selection query + DRY mode smoke test.
 
@@ -275,8 +301,8 @@ Written after the feature (owner's stated preference), all minitest:
 
 - All commits on **`master`** (bookmark-gated per standing convention);
   `chula_cp` receives via the usual batch merge. `llm.yml` service keys and
-  Qwen endpoints get real values on `chula_cp` during the merge, mirroring the
-  viva-keys convention.
+  self-hosted endpoints get real values on `chula_cp` during the merge,
+  mirroring the viva-keys convention.
 - CHANGELOG: one `### Added` bullet (instructor-facing capability) in the
   same commit series.
 - The Genie concrete classes for viva exist only on `chula_cp`;
