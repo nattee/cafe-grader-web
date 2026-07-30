@@ -447,3 +447,26 @@ lifeline economy via the existing `comments.cost` machinery,
 GraderConfiguration budget keys, web report page. Deferred until batch-run
 data exists; see spec section 13
 (`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
+
+## Near-Miss: first-pilot verification (PDF payload shape + report smoke)
+
+`Llm::Request.encode_pdf_part` (`app/services/llm/request.rb`) emits
+`image_url:` as a bare-string data URI — a shape ChulaGenie accepts. Strict
+OpenAI-compatible servers (vLLM's pydantic schema) require the object form
+`image_url: {url: ...}`, and text-only self-hosted models reject image parts
+outright — so the first real self-host repair batch could 400 wholesale on
+any problem with a statement PDF attached. Before the first full
+`near_miss:repair` run against a self-hosted `SERVICE=`, pilot with
+`LIMIT=1 SERVICE=gemma` (the endpoint known to validate the multimodal
+payload) and be ready to add either a no-PDF fallback or switch to the
+object-form `image_url`.
+
+The same pilot run should also eyeball `near_miss:report`'s stdout/CSV
+happy path — it has never executed against real repaired rows.
+
+Run-label resume caveat: `enqueue_batch!` skips targets "already attempted
+in this run label" by checking for an existing `SubmissionRepair` row, not
+its status — so a batch that fails wholesale (e.g. from the PDF-shape issue
+above) still consumes its `RUN=` label; re-running with the same label after
+fixing config will skip everything as "already attempted" instead of
+retrying. Pick a fresh `RUN=` label for the retry.
