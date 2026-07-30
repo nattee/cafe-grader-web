@@ -439,3 +439,11 @@ must never require the chula_cp branch.
 subclass `Llm::SubmissionRepairAssist`, implement `execute_chat` via the Genie
 connection/token plumbing, set per-1K rates in `compute_cost`, wire via
 `submission_repair_service:` if Genie repair is ever preferred over self-host.
+
+## Near-Miss: student-facing phase (deliberately deferred)
+
+Interaction model (staged ladder vs one-click AI repair vs mode-split),
+lifeline economy via the existing `comments.cost` machinery,
+GraderConfiguration budget keys, web report page. Deferred until batch-run
+data exists; see spec section 13
+(`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).

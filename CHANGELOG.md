@@ -49,6 +49,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   for viva reference material, replacing `viva_grounding` tags. Files are sent
   to the interviewer/grader as PDF `image_url` parts; the library shows a
   per-item token estimate and problem-reuse count.
+- **Near-Miss Grading (batch instrument)**: `rake near_miss:repair` runs bounded
+  LLM repair over a contest's failing submissions (deterministic budget gate;
+  accepted fixes graded by the normal judge as student-invisible shadow
+  submissions linked via `submissions.repaired_from_id`), and
+  `rake near_miss:report` produces rescue-rate / mechanical-gap / budget-compliance
+  analysis. Spec: `docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`. (revs 1928–1937)
+- **Self-hosted LLM provider**: generic OpenAI-compatible transport
+  (`Llm::SelfHostChat`, configured via `self_hosted_models:` in `config/llm.yml`)
+  with a submission-assist provider (`Llm::SelfHostAssist`) and the Near-Miss
+  repair provider. Model identity is config data; no credentials (intranet). (revs 1928–1937)
 
 ### Changed
 
