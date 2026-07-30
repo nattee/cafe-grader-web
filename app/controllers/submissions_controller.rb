@@ -32,9 +32,9 @@ class SubmissionsController < ApplicationController
 
       if GraderConfiguration.contest_mode?
         # when in contest mode, show only submission during this contest
-        @submissions = Submission.where(user: @current_user, problem: @problem).where(submitted_at: @current_user.active_contests_range).order(id: :desc)
+        @submissions = Submission.regular.where(user: @current_user, problem: @problem).where(submitted_at: @current_user.active_contests_range).order(id: :desc)
       else
-        @submissions = Submission.where(user: @current_user, problem: @problem).order(id: :desc)
+        @submissions = Submission.regular.where(user: @current_user, problem: @problem).order(id: :desc)
       end
 
 
