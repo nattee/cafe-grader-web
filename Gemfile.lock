@@ -469,6 +469,7 @@ DEPENDENCIES
   concurrent-ruby (= 1.3.4)
   dartsass-rails
   debug
+  diff-lcs
   faraday
   haml
   haml-rails

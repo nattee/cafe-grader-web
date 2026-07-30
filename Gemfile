@@ -42,6 +42,10 @@ gem "thruster", require: false
 # faraday for API call
 gem "faraday"
 
+# line-diff for the Near-Miss budget gate (was previously only a transitive
+# test dependency via rspec; the gate needs it at runtime)
+gem "diff-lcs"
+
 # JWT for API authentication
 gem "jwt"
 
