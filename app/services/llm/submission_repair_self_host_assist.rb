@@ -8,6 +8,13 @@ module Llm
 
     def provider_name = 'self-host'
 
+    # Verified against live sglang (2026-07-30 pilot): PDF content parts fail
+    # in BOTH wire shapes — bare-string image_url is rejected by request
+    # validation, and object-form {url:} passes validation but errors in the
+    # image loader (a PDF is not an image). Self-host repair prompts are
+    # therefore text-only: verdict + source.
+    def include_statement_pdf? = false
+
     def chat_client
       @chat_client ||= SelfHostChat.new(model_key: @other_args[:model_key])
     end

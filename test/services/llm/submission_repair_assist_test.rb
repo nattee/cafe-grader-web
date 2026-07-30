@@ -119,4 +119,20 @@ class Llm::SubmissionRepairAssistTest < ActiveSupport::TestCase
   ensure
     Rails.configuration.llm[:submission_repair_service] = prev
   end
+
+  test "self-host prompts are text-only; abstract default keeps the statement PDF" do
+    selfhost = Llm::SubmissionRepairSelfHostAssist.new(submission: @submission, repair: @repair)
+    refute selfhost.send(:include_statement_pdf?)
+    scripted = ScriptedRepair.new(submission: @submission, repair: @repair)
+    assert scripted.send(:include_statement_pdf?), 'abstract default must include the PDF (Genie-class providers)'
+
+    # sglang rejects PDF content parts in both wire shapes (2026-07-30 pilot),
+    # so the self-host user content must contain no image_url part even when
+    # the abstract path would have one.
+    fake_pdf = {type: 'image_url', image_url: 'data:application/pdf;base64,AAAA'}
+    selfhost.define_singleton_method(:pdf_attachment) { fake_pdf }
+    scripted.define_singleton_method(:pdf_attachment) { fake_pdf }
+    refute selfhost.send(:user_content).any? { |p| p[:type] == 'image_url' }
+    assert scripted.send(:user_content).any? { |p| p[:type] == 'image_url' }
+  end
 end
