@@ -9,6 +9,9 @@ class Submission < ApplicationRecord
 
   has_many :evaluations, dependent: :destroy
 
+  belongs_to :repaired_from, class_name: 'Submission', optional: true
+  has_many :repair_attempts, class_name: 'SubmissionRepair', foreign_key: :original_submission_id
+
   # viva exam
   has_many :viva_turns, -> { order(:sequence) }, dependent: :destroy
   has_one :viva_grade, dependent: :destroy
@@ -64,6 +67,14 @@ class Submission < ApplicationRecord
     query = query.where('submissions.submitted_at <= ?', to) if to.present?
     query
   }
+
+  # Near-Miss Grading: shadow submissions are machine-generated repaired
+  # copies (repaired_from_id points at the original). Every student-visible
+  # query and every quota count must read .regular; the judge worker, admin
+  # monitoring, and number-assignment must NOT filter. See the exclusion
+  # audit in docs/superpowers/plans/2026-07-30-near-miss-grading.md.
+  scope :regular, -> { where(repaired_from_id: nil) }
+  scope :shadow,  -> { where.not(repaired_from_id: nil) }
 
   # Viva submissions parked in :evaluating with no viva_grade row yet,
   # older than STALE_EVALUATING_AFTER — i.e. what
@@ -135,6 +146,8 @@ class Submission < ApplicationRecord
       .select('HINT_REVEAL.hint_cost, HINT_REVEAL.hint_count')
   }
 
+
+  def shadow? = repaired_from_id.present?
 
   def add_judge_job(dataset = problem.live_dataset, priority = 0)
     evaluations.delete_all
