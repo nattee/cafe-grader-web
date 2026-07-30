@@ -448,25 +448,39 @@ GraderConfiguration budget keys, web report page. Deferred until batch-run
 data exists; see spec section 13
 (`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
 
-## Near-Miss: first-pilot verification (PDF payload shape + report smoke)
+## Near-Miss: first-pilot verification — EXECUTED 2026-07-30 (local dev, live qwen)
 
-`Llm::Request.encode_pdf_part` (`app/services/llm/request.rb`) emits
-`image_url:` as a bare-string data URI — a shape ChulaGenie accepts. Strict
-OpenAI-compatible servers (vLLM's pydantic schema) require the object form
-`image_url: {url: ...}`, and text-only self-hosted models reject image parts
-outright — so the first real self-host repair batch could 400 wholesale on
-any problem with a statement PDF attached. Before the first full
-`near_miss:repair` run against a self-hosted `SERVICE=`, pilot with
-`LIMIT=1 SERVICE=gemma` (the endpoint known to validate the multimodal
-payload) and be ready to add either a no-PDF fallback or switch to the
-object-form `image_url`.
+**Pilot ran end-to-end on the dev copy** (submission 919133, a real
+`compilation_error`/0-point C++ sub): qwen3.5 proposed `+#include <cstdint>`
+(1 line / 18 chars, within the 2/20 budget, category `syntax`), the gate
+accepted, shadow 922764 was graded by the real judge (via
+`Replay::ReplayGrader.grade_sync` + a temporary `rails server` on :3000 for
+worker artifact transfer) — **0 → 100, all 20 testcases P, mechanical gap
+100**. `near_miss:report` stdout + CSV verified against the run.
 
-The same pilot run should also eyeball `near_miss:report`'s stdout/CSV
-happy path — it has never executed against real repaired rows.
+Findings fixed during the pilot (both committed):
+- **PDF parts fail on sglang in BOTH wire shapes** (bare-string `image_url`
+  → pydantic 400; object-form `{url:}` → image-loader error, a PDF is not an
+  image). Fix: self-host repair prompts are text-only via the
+  `include_statement_pdf?` provider hook (rev 1940). ChulaGenie-class
+  providers keep the PDF by default. NOTE: `Llm::SelfHostAssist` (the
+  comment-assist provider) still sends the PDF via `CommentAssist`'s prompt
+  — it will hit the same 400 if ever registered in the picker against
+  sglang; needs its own design pass (statement text? skip?) before enabling.
+- **`max_tokens: 4096` is NOT enough for repair on reasoning models**: qwen
+  spent the whole budget thinking (`finish_reason: length`, empty content,
+  3 unparseable rounds). At 16384 it succeeded in one 8.6s round (1337
+  output tokens). **Use `max_tokens: 16384` in the chula_cp
+  `self_hosted_models` entries for repair use.**
+- **Ruby 3.4 removed `csv` from default gems** — `near_miss:report`'s
+  `require 'csv'` raised LoadError; `gem "csv"` added (rev 1941).
 
-Run-label resume caveat: `enqueue_batch!` skips targets "already attempted
-in this run label" by checking for an existing `SubmissionRepair` row, not
-its status — so a batch that fails wholesale (e.g. from the PDF-shape issue
-above) still consumes its `RUN=` label; re-running with the same label after
-fixing config will skip everything as "already attempted" instead of
-retrying. Pick a fresh `RUN=` label for the retry.
+Still-relevant caveats:
+- Run-label resume keys on row existence, not status — a wholesale-failed
+  batch consumes its `RUN=` label; pick a fresh label after config fixes.
+- The A100 gemma box (10.0.5.25:8000) refused connections during the pilot
+  — re-verify it (and its multimodal validation behavior) when it's back.
+- Statement blobs: the dev copy has partial ActiveStorage sync (13 of ~500
+  problems' statements on disk); `encode_pdf_part` raises RuntimeError on a
+  registered-but-missing blob, which lands the repair row in `failed` —
+  correct behavior, but don't mistake it for an LLM failure in dev runs.
