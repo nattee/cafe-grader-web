@@ -91,7 +91,7 @@ namespace :near_miss do
         puts "\n=== run: #{label} ==="
         per_problem.each do |pname, s|
           sizes = s[:sizes].sort
-          median_size = sizes.empty? ? nil : sizes[sizes.size / 2]
+          median_size = SubmissionRepair.median(sizes)
           st = s[:statuses]
           puts format('  %-24s targets=%-4d accepted=%-4d over_budget=%-4d no_change=%-4d failed=%-4d',
                       pname, s[:targets], st['accepted'].to_i, st['over_budget'].to_i,

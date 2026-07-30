@@ -100,7 +100,7 @@ class SubmissionRepair < ApplicationRecord
           rescued:    rescued,
           rescue_rate: prows.size.zero? ? 0.0 : (rescued.to_f / prows.size).round(3),
           mean_gap:   gaps.empty? ? nil : (gaps.sum / gaps.size).round(2),
-          median_gap: gaps.empty? ? nil : gaps.sort[gaps.size / 2].round(2),
+          median_gap: gaps.empty? ? nil : median(gaps.sort).round(2),
           categories: prows.filter_map(&:fix_category).tally,
           sizes:      prows.filter_map(&:changed_chars),
           compliance: compliance,
@@ -112,5 +112,19 @@ class SubmissionRepair < ApplicationRecord
       result[label] = per_problem
     end
     result
+  end
+
+  # True median of a pre-sorted array: middle element for odd N, mean of
+  # the two middle elements for even N (not the upper-middle element).
+  # Used for median_gap here and for median_size in the near_miss:report
+  # rake task, so both agree on the same definition.
+  def self.median(sorted_array)
+    return nil if sorted_array.empty?
+    mid = sorted_array.size / 2
+    if sorted_array.size.odd?
+      sorted_array[mid]
+    else
+      (sorted_array[mid - 1] + sorted_array[mid]) / 2.0
+    end
   end
 end
