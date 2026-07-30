@@ -1982,17 +1982,19 @@ hg add test/models/submission_repair_report_test.rb
   repair provider. Model identity is config data; no credentials (intranet). (revs NNNN–NNNN)
 ```
 
-- [ ] **Step 2: `doc/backlog.md`** — add under an appropriate section:
+- [ ] **Step 2: `doc/backlog.md`** — the "Near-Miss: Genie repair provider
+  (chula_cp-side follow-up)" and "OpenRouter LLM provider" sections ALREADY
+  EXIST (added rev ~1927 with the provider-placement decision) — do not
+  duplicate them. Add only this new section at the end:
 
 ```markdown
-- **Near-Miss: Genie repair provider (chula_cp)** — `Llm::SubmissionRepairGenieAssist`
-  can only live on chula_cp (Llm::GenieAssist/TokenManager exist only there). Small
-  class: subclass `Llm::SubmissionRepairAssist`, implement `execute_chat` via the
-  Genie connection/token plumbing, set per-1K cost rates in `compute_cost`. Wire via
-  `submission_repair_service:` if Genie repair is ever preferred over self-host.
-- **Near-Miss: student-facing phase** — interaction model (staged ladder vs one-click
-  vs mode-split), lifeline economy, GraderConfiguration budget keys, web report page.
-  Deliberately deferred until batch-run data exists; see spec section 13.
+## Near-Miss: student-facing phase (deliberately deferred)
+
+Interaction model (staged ladder vs one-click AI repair vs mode-split),
+lifeline economy via the existing `comments.cost` machinery,
+GraderConfiguration budget keys, web report page. Deferred until batch-run
+data exists; see spec section 13
+(`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
 ```
 
 - [ ] **Step 3: chula_cp wiring note** — no commit on chula_cp now; at the next batch merge, `config/llm.yml` on chula_cp gets: `submission_repair_service: Llm::SubmissionRepairSelfHostAssist`, `self_hosted_default: qwen`, the four `self_hosted_models` entries with real endpoints (DGX `161.200.93.200:8000/8001/8002`, A100 `10.0.5.25:8000`), and optionally `SelfHostAssist: qwen3.5,gemma-4-31b` to enable the assist picker. Record this in the merge commit message.

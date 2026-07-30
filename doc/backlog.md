@@ -407,3 +407,35 @@ should stop, with a data cleanup for existing rows. Touches: grading
 completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
 reports that read `grader_comment`. Backlogged per dae: "requires full design
 change".
+
+## OpenRouter LLM provider — design sketch (no implementation scheduled)
+
+Per the 2026-07-30 placement decision (`doc/decisions.md`), OpenRouter is a
+**master-side** provider: any deployment with its own API key can use it, so it
+must never require the chula_cp branch.
+
+**Shape when it lands:**
+- `Llm::OpenRouterChat` — sibling of `Llm::SelfHostChat`. Extract the shared
+  OpenAI-compatible payload build + `choices`/`usage` parsing into a mixin
+  (e.g. `Llm::OpenAiCompatPayload`) at that point, not before. Differences
+  from self-host: `Authorization: Bearer` header (key from
+  `Rails.application.credentials.llm.openrouter.api_key` — NEVER in llm.yml,
+  which is checked in), real `compute_cost` (OpenRouter returns usage/cost;
+  per-1K fallback rates in config), slash-namespaced model ids
+  (`anthropic/claude-…`), no `/v1/models` identity guard (the hosted API
+  validates model names itself).
+- Config: a separate `openrouter:` section in `llm.yml` (model list + default),
+  NOT extra fields on `self_hosted_models:` — keeping the self-host invariants
+  (no auth, cost 0, swap-slot identity guard) explicit rather than optional.
+- Registration reuses both existing mechanisms unchanged: per-model map entry
+  (`OpenRouterAssist: anthropic/claude-…,google/gemini-…`) for the assist
+  picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
+  as an alternative repair provider.
+
+## Near-Miss: Genie repair provider (chula_cp-side follow-up)
+
+`Llm::SubmissionRepairGenieAssist` can only live on chula_cp
+(`Llm::GenieAssist`/`Llm::TokenManager` exist only there). Small class:
+subclass `Llm::SubmissionRepairAssist`, implement `execute_chat` via the Genie
+connection/token plumbing, set per-1K rates in `compute_cost`, wire via
+`submission_repair_service:` if Genie repair is ever preferred over self-host.

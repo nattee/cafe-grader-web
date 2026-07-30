@@ -335,9 +335,13 @@ Written after the feature (owner's stated preference), all minitest:
   mirroring the viva-keys convention.
 - CHANGELOG: one `### Added` bullet (instructor-facing capability) in the
   same commit series.
-- The Genie concrete classes for viva exist only on `chula_cp`;
-  `Llm::SubmissionRepairGenieAssist` must depend only on what `master` has
-  (`Llm::GenieAssist`-level plumbing, `TokenManager`), which it does.
+- **Provider placement** (`doc/decisions.md` 2026-07-30): generality decides
+  the branch — the SelfHost classes are generic (any OpenAI-compatible
+  endpoint) and live on **master**; `Llm::GenieAssist`/`Llm::TokenManager`
+  exist only on `chula_cp` (verified during planning — the earlier assumption
+  that they were on master was wrong), so
+  `Llm::SubmissionRepairGenieAssist` is a small **chula_cp-side follow-up**
+  (backlogged), not part of this master-side build.
 
 ## 13. Future work (explicitly out of scope, recorded so it isn't relitigated)
 
@@ -351,3 +355,9 @@ Written after the feature (owner's stated preference), all minitest:
 - Web report page under `/report`; budget-curve experiments via multiple
   `run_label`s.
 - Practice-mode feedback surface ("your code is 12 chars from passing").
+- **OpenRouter provider** (design sketch in `doc/backlog.md`): a master-side
+  sibling transport sharing the OpenAI-compatible payload/parse with
+  `SelfHostChat`, adding Bearer auth (key in Rails credentials) and real
+  `compute_cost`. Deliberately a separate transport + separate `llm.yml`
+  section rather than extra fields on `self_hosted_models:`, so the
+  self-host invariants (no auth, cost 0, identity guard) stay explicit.
