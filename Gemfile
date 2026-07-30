@@ -46,6 +46,9 @@ gem "faraday"
 # test dependency via rspec; the gate needs it at runtime)
 gem "diff-lcs"
 
+# csv left Ruby's default gems in 3.4; the near_miss:report CSV export needs it
+gem "csv"
+
 # JWT for API authentication
 gem "jwt"
 
