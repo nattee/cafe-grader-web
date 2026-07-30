@@ -236,7 +236,7 @@ class Problem < ApplicationRecord
   def get_jschart_history
     start = 4.month.ago.beginning_of_day
     start_date = start.to_date
-    count = Submission.where(problem: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
+    count = Submission.regular.where(problem: self).where('submitted_at >= ?', start).group('DATE(submitted_at)').count
     i = 0
     label = []
     value = []
@@ -274,9 +274,9 @@ class Problem < ApplicationRecord
   def get_submission_stat
     result = Hash.new
     # total number of submission
-    result[:total_sub] = Submission.where(problem_id: self.id).count
-    result[:attempted_user] = Submission.where(problem_id: self.id).group(:user_id)
-    result[:pass] = Submission.where(problem_id: self.id).where("points >= ?", 100).count
+    result[:total_sub] = Submission.regular.where(problem_id: self.id).count
+    result[:attempted_user] = Submission.regular.where(problem_id: self.id).group(:user_id)
+    result[:pass] = Submission.regular.where(problem_id: self.id).where("points >= ?", 100).count
     return result
   end
 

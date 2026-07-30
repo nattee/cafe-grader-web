@@ -201,7 +201,7 @@ class Submission < ApplicationRecord
 
 
   def self.find_last_by_user_and_problem(user_id, problem_id)
-    where("user_id = ? AND problem_id = ?", user_id, problem_id).last
+    regular.where("user_id = ? AND problem_id = ?", user_id, problem_id).last
   end
 
   def self.find_all_last_by_problem(problem_id)
@@ -211,6 +211,7 @@ class Submission < ApplicationRecord
         "(SELECT MAX(id) FROM submissions AS subs " +
       "WHERE subs.user_id = submissions.user_id AND " +
         "problem_id = " + problem_id.to_s + " " +
+        "AND repaired_from_id IS NULL " +
       "GROUP BY user_id) " +
       "ORDER BY user_id")
   end
@@ -305,7 +306,7 @@ class Submission < ApplicationRecord
 
   # deprecated
   def self.find_by_user_problem_number(user_id, problem_id, number)
-    where("user_id = ? AND problem_id = ? AND number = ?", user_id, problem_id, number).first
+    regular.where("user_id = ? AND problem_id = ? AND number = ?", user_id, problem_id, number).first
   end
 
 
@@ -404,7 +405,10 @@ class Submission < ApplicationRecord
   # callbacks
   def assign_latest_number_if_new_recond
     return if !self.new_record?
-    latest = Submission.find_last_by_user_and_problem(self.user_id, self.problem_id)
+    # Unfiltered on purpose: shadows occupy numbers in the same unique
+    # sequence (index on user_id, problem_id, number), so the next number
+    # must be computed across ALL rows including shadows.
+    latest = Submission.where(user_id: self.user_id, problem_id: self.problem_id).last
     self.number = (latest==nil) ? 1 : latest.number + 1
   end
 
