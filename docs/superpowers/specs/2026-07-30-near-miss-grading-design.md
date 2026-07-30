@@ -176,12 +176,13 @@ Pure service `SubmissionRepair::Gate` — heavily unit-tested; no I/O, no LLM.
 ### 7.2 Concrete providers & registration
 
 - `Llm::SubmissionRepairSelfHostAssist` (default) — one class serving all
-  self-hosted models; the model key (`qwen` | `gemma`) comes from the rake
-  `SERVICE=` parameter, falling back to the `self_hosted_models:` default —
-  and `Llm::SubmissionRepairGenieAssist`.
+  self-hosted models; the model key (any key of the `self_hosted_models:` map,
+  e.g. `qwen`, `glm`, `kimi`, `gemma`) comes from the rake `SERVICE=`
+  parameter, falling back to `self_hosted_default` — and
+  `Llm::SubmissionRepairGenieAssist`.
 - Registered via a new `submission_repair_service:` key in `config/llm.yml`
   (same pattern as `viva_turn_service:`), overridable per-run by the rake
-  `SERVICE=` parameter (`qwen`/`gemma` → SelfHost, `genie` → Genie).
+  `SERVICE=` parameter (any self-host map key → SelfHost, `genie` → Genie).
 
 ### 7.3 `Llm::SubmissionRepairJob < Llm::RequestJob`
 
@@ -211,10 +212,39 @@ reasoning models need). Ported lessons from cp-api
   while the DGX merely echoes them — a wrong model string fails only on gemma,
   so test against it.
 
-Config: `self_hosted_models:` map in `llm.yml`, keyed by short name (`qwen`,
-`gemma`), each entry `{base_url, completion_path, model, max_tokens}`, plus a
-default-model key. Real values on `chula_cp`; blank/commented on `master` —
-same convention as the viva service keys. No credentials involved.
+**Naming principle: model identity is config data, never code.** No class,
+method, or column name references a specific model; the `self_hosted_models:`
+keys are operator-chosen labels. Adding, swapping, or renaming a model is a
+one-entry `llm.yml` edit with zero code change.
+
+Config sketch (real values on `chula_cp`; blank/commented on `master`, same
+convention as the viva service keys; no credentials involved):
+
+```yaml
+llm_services: &services
+  # …existing keys…
+  SelfHostAssist: qwen3.5,gemma-4-31b        # served-model names shown in the assist picker
+  submission_repair_service: Llm::SubmissionRepairSelfHostAssist
+  self_hosted_default: qwen
+  self_hosted_models:                        # keys are labels, not code
+    qwen:  { base_url: "http://<dgx>:8000",  completion_path: "/v1/chat/completions", model: "qwen3.5",     max_tokens: 4096 }
+    glm:   { base_url: "http://<dgx>:8001",  completion_path: "/v1/chat/completions", model: "glm-5.2",     max_tokens: 4096 }
+    kimi:  { base_url: "http://<dgx>:8002",  completion_path: "/v1/chat/completions", model: "kimi-k2.6",   max_tokens: 4096 }
+    gemma: { base_url: "http://<a100>:8000", completion_path: "/v1/chat/completions", model: "gemma-4-31b", max_tokens: 4096 }
+```
+
+All three DGX swap residents are listed even though at most one is live —
+a swapped-out entry simply refuses TCP, which the transport already treats as
+a clean retryable error, and `SERVICE=` against it fails fast with a clear
+message rather than misrouting.
+
+**Model-identity guard:** the DGX echoes the payload `model` string without
+validating it, so a redeployed port could silently answer as a different model
+— fatal for run comparability. The batch runner therefore calls
+`GET <base_url>/v1/models` once at startup and **aborts on mismatch** between
+the served model id and the configured `model`. (The A100 box validates
+per-request anyway.) `llm_model` on each attempt row records the verified
+served name.
 
 ### 8.2 `Llm::SelfHostAssist < Llm::CommentAssist`
 
@@ -238,7 +268,7 @@ for self-hosted models is 0.0; token counts are still recorded
 rake near_miss:repair CONTEST=<id> [PROBLEM=<id>] [SUBMISSION=<id>]
      [SCOPE=latest|all] [MIN_SCORE=<n>] [MAX_SCORE=<n>]
      [BUDGET_LINES=2] [BUDGET_CHARS=20] [ROUNDS=3]
-     [SERVICE=qwen|gemma|genie] [RUN=<label>] [LIMIT=<n>] [DRY=1]
+     [SERVICE=<self-host key>|genie] [RUN=<label>] [LIMIT=<n>] [DRY=1]
 ```
 
 - Target selection: `SCOPE=latest` (default) takes the latest submission per
