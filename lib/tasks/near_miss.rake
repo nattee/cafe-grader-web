@@ -54,9 +54,14 @@ namespace :near_miss do
     end
 
     # Model-identity guard (spec section 8.1): abort before enqueueing if the
-    # endpoint serves a different model than configured. Only for self-host
-    # services; a missing/blank service key will fail in the job instead.
-    if Rails.configuration.llm[:self_hosted_models].present?
+    # endpoint serves a different model than configured. Only meaningful when
+    # the configured repair service is the self-host provider — a Genie-class
+    # service ignores the self_hosted_models registry entirely (and SERVICE=
+    # would be an unknown key there). A missing/blank service key still gets
+    # the guard when self-host config exists; it then fails in the job.
+    repair_service = Rails.configuration.llm[:submission_repair_service].to_s
+    self_host_service = repair_service.blank? || repair_service == 'Llm::SubmissionRepairSelfHostAssist'
+    if self_host_service && Rails.configuration.llm[:self_hosted_models].present?
       chat = Llm::SelfHostChat.new(model_key: model_key)
       chat.verify_model!
       puts "  verified:   #{chat.model_key} serves #{chat.model_name}"
