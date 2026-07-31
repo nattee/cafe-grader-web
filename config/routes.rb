@@ -107,6 +107,13 @@ Rails.application.routes.draw do
 
   resources :audit_logs, only: [:index, :show]
 
+  # Near-Miss run browser (admin-only, read-only; runs are created by
+  # rake near_miss:repair). Run identity is the run_label string, passed as
+  # ?runs=<label>[,<label>...] so multi-run comparison needs no extra route.
+  get 'near_miss/runs',        to: 'near_miss_runs#index', as: :near_miss_runs
+  get 'near_miss/run',         to: 'near_miss_runs#show',  as: :near_miss_run
+  get 'near_miss/repairs/:id', to: 'near_miss_runs#repair', as: :near_miss_repair
+
   resources :messages do
     member do
       get 'hide'

@@ -59,6 +59,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   (`Llm::SelfHostChat`, configured via `self_hosted_models:` in `config/llm.yml`)
   with a submission-assist provider (`Llm::SelfHostAssist`) and the Near-Miss
   repair provider. Model identity is config data; no credentials (intranet). (revs 1928–1937)
+- **Near-Miss run browser** (Report → Near-Miss Runs, admin-only): web report
+  over repair batch runs — run list with outcome/token/cost rollups, per-problem
+  rescue-rate / mechanical-gap / budget-compliance tables (multiple runs render
+  side by side for budget and model comparisons), and per-attempt drill-down
+  showing the measured patch, rounds log, category, tokens/cost, and links to
+  the original and shadow submissions. (rev 1949)
 
 ### Changed
 

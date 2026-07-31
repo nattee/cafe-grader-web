@@ -83,6 +83,8 @@
                 %li= link_to 'Activity Report', activity_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :activity)
                 %li= link_to 'Login Report', login_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :login)
                 %li= link_to 'AI Report', ai_report_path, class: 'dropdown-item'+active_class_when(controller: :report, action: :ai)
+                - if @current_user.admin?
+                  %li= link_to 'Near-Miss Runs', near_miss_runs_path, class: 'dropdown-item'+active_class_when(controller: :near_miss_runs)
             .d-flex
               =link_to "#{@backlog} backlogs!",
                 grader_processes_path,
