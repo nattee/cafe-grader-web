@@ -444,9 +444,13 @@ connection/token plumbing, set per-1K rates in `compute_cost`, wire via
 
 Interaction model (staged ladder vs one-click AI repair vs mode-split),
 lifeline economy via the existing `comments.cost` machinery,
-GraderConfiguration budget keys, web report page. Deferred until batch-run
-data exists; see spec section 13
+GraderConfiguration budget keys. Deferred until batch-run data exists; see
+spec section 13
 (`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
+The **instructor-facing run browser** (`/near_miss/runs` — run list,
+per-problem stats via `SubmissionRepair.report_for`, per-attempt drill-down)
+shipped 2026-07-31 and is no longer part of this item; only the
+student-facing surface remains deferred.
 
 ## Near-Miss: first-pilot verification — EXECUTED 2026-07-30 (local dev, live qwen)
 
@@ -501,6 +505,16 @@ on qwen (same 10 subs; run labels `qwen-stmt-none/text/png`):
   help — observed burning 3 × 16384 thinking-tokens (~7 min, $0.60 on Genie
   per occurrence). Detect and fail the attempt with a "raise max_tokens"
   remark instead of retrying.
+- `SubmissionRepairAssist#verdict_text` decodes `grader_comment` per-char
+  into legend lines, but a compile-error submission's comment is the literal
+  string "Compilation error" — every such call ships ~17 nonsense
+  "testcase N: …" lines to the LLM. Skip the per-testcase decode when
+  `status = compilation_error` (the compiler-output block already covers it).
+- Consider promoting the repair system prompt from code
+  (`SubmissionRepairAssist`) to a `GraderConfiguration` entry so prompt
+  iteration between batch runs needs no commit. Tension to resolve: v1
+  deliberately added no GraderConfiguration keys (spec §3) — but this one is
+  instrument tuning, not student-facing policy.
 
 **Statement design pass (extends the SelfHostAssist item above):**
 - qwen3.5 on the DGX is **vision-capable** — accepts OpenAI object-form
