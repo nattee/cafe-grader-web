@@ -27,9 +27,16 @@ class Llm::SubmissionRepairGenieAssistTest < ActiveSupport::TestCase
     assert_equal 'gemini-2.5-pro', service.send(:model_name_for_record)
   end
 
-  test 'cost math uses the per-1K rates' do
+  test 'cost math uses per-model rates' do
     cost = service.send(:compute_cost, {'prompt_tokens' => 1000, 'completion_tokens' => 1000})
     assert_in_delta 0.01125, cost, 1e-9
+    claude = service(model_key: 'Claude-Sonnet')
+    assert_in_delta 0.018, claude.send(:compute_cost, {'prompt_tokens' => 1000, 'completion_tokens' => 1000}), 1e-9
+  end
+
+  test 'newly served models are permitted' do
+    assert_equal 'gemini-3.1-pro', service(model_key: 'gemini-3.1-pro').send(:resolved_model)
+    assert_equal 'Claude-Sonnet', service(model_key: 'Claude-Sonnet').send(:resolved_model)
   end
 
   test 'Genie keeps the statement PDF in the prompt' do

@@ -7,12 +7,16 @@ module Llm
   # image_url), so the engine's default include_statement_pdf? stays true.
   class SubmissionRepairGenieAssist < SubmissionRepairAssist
     DEFAULT_MODEL = 'gemini-2.5-pro'.freeze
-    PERMITTED_MODEL = ['gemini-2.5-pro', 'gemini-2.5-flash'].freeze
 
-    # Genie-relayed Gemini 2.5 Pro list pricing (USD per 1K tokens); the
-    # relay's internal accounting may differ — treat as an estimate.
-    COST_PER_1K_IN  = 0.00125
-    COST_PER_1K_OUT = 0.01
+    # Permitted models with USD-per-1K [input, output] list-price estimates —
+    # the relay's internal accounting may differ. Keys double as the
+    # allowlist (checked live via Llm::GenieAssist.list_model, 2026-07-31).
+    MODEL_RATES = {
+      'gemini-2.5-pro'   => [0.00125, 0.01],
+      'gemini-2.5-flash' => [0.0003, 0.0025],
+      'gemini-3.1-pro'   => [0.002, 0.012],
+      'Claude-Sonnet'    => [0.003, 0.015]
+    }.freeze
 
     private
 
@@ -24,7 +28,7 @@ module Llm
     def resolved_model
       @resolved_model ||= begin
         m = @other_args[:model_key].presence
-        PERMITTED_MODEL.include?(m) ? m : DEFAULT_MODEL
+        MODEL_RATES.key?(m) ? m : DEFAULT_MODEL
       end
     end
 
@@ -47,8 +51,9 @@ module Llm
     end
 
     def compute_cost(usage)
-      ((usage['prompt_tokens'].to_i / 1000.0) * COST_PER_1K_IN) +
-        ((usage['completion_tokens'].to_i / 1000.0) * COST_PER_1K_OUT)
+      rate_in, rate_out = MODEL_RATES.fetch(resolved_model)
+      ((usage['prompt_tokens'].to_i / 1000.0) * rate_in) +
+        ((usage['completion_tokens'].to_i / 1000.0) * rate_out)
     end
   end
 end
