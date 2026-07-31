@@ -484,3 +484,41 @@ Still-relevant caveats:
   problems' statements on disk); `encode_pdf_part` raises RuntimeError on a
   registered-but-missing blob, which lands the repair row in `failed` —
   correct behavior, but don't mistake it for an LLM failure in dev runs.
+
+## Near-Miss: LLM-call hardening + statement-format findings (2026-07-31)
+
+From the Genie batch (23 subs, $6.08) and the three-arm statement experiment
+on qwen (same 10 subs; run labels `qwen-stmt-none/text/png`):
+
+**Hardening (small, do together):**
+- `Llm::Request.connection` read_timeout is 300s, chosen before `max_tokens`
+  went to 16384 — a near-cap non-streaming reasoning generation on a shared
+  box legitimately exceeds it (observed: 3 timeouts across providers, all
+  transient). Add a `read_timeout:` kwarg (default 300) and have
+  `SelfHostChat` pass ~600s.
+- Engine fail-fast on truncation: a round with `finish_reason: "length"` and
+  empty content gets the same "no fenced block" retry feedback, which cannot
+  help — observed burning 3 × 16384 thinking-tokens (~7 min, $0.60 on Genie
+  per occurrence). Detect and fail the attempt with a "raise max_tokens"
+  remark instead of retrying.
+
+**Statement design pass (extends the SelfHostAssist item above):**
+- qwen3.5 on the DGX is **vision-capable** — accepts OpenAI object-form
+  `image_url` PNG (probe-verified); only the Genie bare-string shape and PDF
+  media fail. PDF→PNG via mutool (present on dev; poppler/mupdf becomes a
+  deploy dependency) is a real option.
+- `pdf-reader` text extraction **drops Thai combining marks** on our
+  statement PDFs (สระบน/ล่าง + วรรณยุกต์ vanish) — readable but degraded.
+- Experiment result (N=10, directional): text-statement arm accepted most
+  (7/10) but converted to MORE damage (2 negative gaps, 2 compile-broken)
+  and only 1 rescue; PNG arm was conservative (2 accepts, 0 damage) and
+  ~5× slower (vision prefill + longer thinking); no-statement baseline sat
+  between (2 rescues, 1 negative). Statement richness increases the model's
+  confidence faster than its correctness — repair stays text-only; for the
+  assist path prefer extracted text (fix the Thai-marks problem or try
+  mutool's own text extraction) over page images.
+- If PNG is ever adopted: render once per PROBLEM, not per call — cache the
+  rendered pages keyed by the statement blob's checksum (invalidate on
+  statement change), and keep statement parts FIRST in the user message:
+  sglang's RadixAttention prefix cache then reuses the statement tokens
+  across every submission of the same problem automatically.
