@@ -522,3 +522,25 @@ on qwen (same 10 subs; run labels `qwen-stmt-none/text/png`):
   statement change), and keep statement parts FIRST in the user message:
   sglang's RadixAttention prefix cache then reuses the statement tokens
   across every submission of the same problem automatically.
+
+## Near-Miss: `problems.statement_text` — designed 2026-07-31, deferred
+
+Decision (dae): statements reach LLM prompts as **pdf-reader-extracted text**,
+stored on the Problem as an **editable draft** (the `GroundingMaterial
+#extraction_draft` pattern), because raw extraction drops Thai combining
+marks and humans must be able to fix it once. Consumer: the ASSIST path
+(unblocks `SelfHostAssist` in the picker) — NOT repair, which measured
+better without statements. Integrity design (agreed after the
+clobbering-vs-staleness discussion):
+
+| Piece | Rule |
+|---|---|
+| `statement_text` (mediumtext) | machine draft or human-edited text |
+| `statement_text_auto` (bool, default true) | true = safe to regenerate; any human form-save sets false |
+| `statement_text_checksum` (string) | statement blob checksum the text was extracted from / edited against |
+| Upload hook | re-extract ONLY if auto or blank — never clobber human edits |
+| Problem form | textarea + staleness badge on checksum mismatch + explicit "Re-extract from PDF" button (resets auto) |
+
+Plus: `pdf-reader` graduates into the Gemfile; blank extraction (scanned
+PDFs) leaves the field blank and prompts omit the section; leave the column
+out of the audited attrs (derived, bulky).
