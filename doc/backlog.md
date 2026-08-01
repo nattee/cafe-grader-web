@@ -432,69 +432,21 @@ must never require the chula_cp branch.
   picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
   as an alternative repair provider.
 
-## Near-Miss: Genie repair provider (chula_cp-side follow-up)
+## Near-Miss: hardening batch (open)
 
-`Llm::SubmissionRepairGenieAssist` can only live on chula_cp
-(`Llm::GenieAssist`/`Llm::TokenManager` exist only there). Small class:
-subclass `Llm::SubmissionRepairAssist`, implement `execute_chat` via the Genie
-connection/token plumbing, set per-1K rates in `compute_cost`, wire via
-`submission_repair_service:` if Genie repair is ever preferred over self-host.
+Feature summary, operator guide, settled decisions, and the full five-study
+experimental record live in `doc/Near-Miss-Grading.md` — the findings prose
+that used to sit here is folded into that doc. Genuinely-open fixes, in
+priority order:
 
-## Near-Miss: student-facing phase (deliberately deferred)
-
-Interaction model (staged ladder vs one-click AI repair vs mode-split),
-lifeline economy via the existing `comments.cost` machinery,
-GraderConfiguration budget keys. Deferred until batch-run data exists; see
-spec section 13
-(`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
-The **instructor-facing run browser** (`/near_miss/runs` — run list,
-per-problem stats via `SubmissionRepair.report_for`, per-attempt drill-down)
-shipped 2026-07-31 and is no longer part of this item; only the
-student-facing surface remains deferred.
-
-## Near-Miss: first-pilot verification — EXECUTED 2026-07-30 (local dev, live qwen)
-
-**Pilot ran end-to-end on the dev copy** (submission 919133, a real
-`compilation_error`/0-point C++ sub): qwen3.5 proposed `+#include <cstdint>`
-(1 line / 18 chars, within the 2/20 budget, category `syntax`), the gate
-accepted, shadow 922764 was graded by the real judge (via
-`Replay::ReplayGrader.grade_sync` + a temporary `rails server` on :3000 for
-worker artifact transfer) — **0 → 100, all 20 testcases P, mechanical gap
-100**. `near_miss:report` stdout + CSV verified against the run.
-
-Findings fixed during the pilot (both committed):
-- **PDF parts fail on sglang in BOTH wire shapes** (bare-string `image_url`
-  → pydantic 400; object-form `{url:}` → image-loader error, a PDF is not an
-  image). Fix: self-host repair prompts are text-only via the
-  `include_statement_pdf?` provider hook (rev 1940). ChulaGenie-class
-  providers keep the PDF by default. NOTE: `Llm::SelfHostAssist` (the
-  comment-assist provider) still sends the PDF via `CommentAssist`'s prompt
-  — it will hit the same 400 if ever registered in the picker against
-  sglang; needs its own design pass (statement text? skip?) before enabling.
-- **`max_tokens: 4096` is NOT enough for repair on reasoning models**: qwen
-  spent the whole budget thinking (`finish_reason: length`, empty content,
-  3 unparseable rounds). At 16384 it succeeded in one 8.6s round (1337
-  output tokens). **Use `max_tokens: 16384` in the chula_cp
-  `self_hosted_models` entries for repair use.**
-- **Ruby 3.4 removed `csv` from default gems** — `near_miss:report`'s
-  `require 'csv'` raised LoadError; `gem "csv"` added (rev 1941).
-
-Still-relevant caveats:
-- Run-label resume keys on row existence, not status — a wholesale-failed
-  batch consumes its `RUN=` label; pick a fresh label after config fixes.
-- The A100 gemma box (10.0.5.25:8000) refused connections during the pilot
-  — re-verify it (and its multimodal validation behavior) when it's back.
-- Statement blobs: the dev copy has partial ActiveStorage sync (13 of ~500
-  problems' statements on disk); `encode_pdf_part` raises RuntimeError on a
-  registered-but-missing blob, which lands the repair row in `failed` —
-  correct behavior, but don't mistake it for an LLM failure in dev runs.
-
-## Near-Miss: LLM-call hardening + statement-format findings (2026-07-31)
-
-From the Genie batch (23 subs, $6.08) and the three-arm statement experiment
-on qwen (same 10 subs; run labels `qwen-stmt-none/text/png`):
-
-**Hardening (small, do together):**
+- **`SubmissionRepair.report_for` counts ungradeable shadows as real 0-point
+  grades** (found via the void a68_final grading pass): a shadow in
+  `grader_error` — or any non-`done` status — enters the gap stats as a real
+  zero, so a judging-infrastructure failure reads as a wall of fake negative
+  gaps ("0 rescues / 63 negatives"). Exclude non-`done` shadows from
+  gap/rescue stats and surface them as an explicit `ungradeable` count
+  (rake table, CSV, and the run browser all read `report_for`). **Do this
+  first — it's the instrument's correctness.**
 - `Llm::Request.connection` read_timeout is 300s, chosen before `max_tokens`
   went to 16384 — a near-cap non-streaming reasoning generation on a shared
   box legitimately exceeds it (observed: 3 timeouts across providers, all
@@ -515,27 +467,18 @@ on qwen (same 10 subs; run labels `qwen-stmt-none/text/png`):
   iteration between batch runs needs no commit. Tension to resolve: v1
   deliberately added no GraderConfiguration keys (spec §3) — but this one is
   instrument tuning, not student-facing policy.
+- Re-verify the A100 gemma box (10.0.5.25:8000) when it's back — it refused
+  connections during the pilot despite "always-on"; its multimodal
+  validation behavior is also unverified.
 
-**Statement design pass (extends the SelfHostAssist item above):**
-- qwen3.5 on the DGX is **vision-capable** — accepts OpenAI object-form
-  `image_url` PNG (probe-verified); only the Genie bare-string shape and PDF
-  media fail. PDF→PNG via mutool (present on dev; poppler/mupdf becomes a
-  deploy dependency) is a real option.
-- `pdf-reader` text extraction **drops Thai combining marks** on our
-  statement PDFs (สระบน/ล่าง + วรรณยุกต์ vanish) — readable but degraded.
-- Experiment result (N=10, directional): text-statement arm accepted most
-  (7/10) but converted to MORE damage (2 negative gaps, 2 compile-broken)
-  and only 1 rescue; PNG arm was conservative (2 accepts, 0 damage) and
-  ~5× slower (vision prefill + longer thinking); no-statement baseline sat
-  between (2 rescues, 1 negative). Statement richness increases the model's
-  confidence faster than its correctness — repair stays text-only; for the
-  assist path prefer extracted text (fix the Thai-marks problem or try
-  mutool's own text extraction) over page images.
-- If PNG is ever adopted: render once per PROBLEM, not per call — cache the
-  rendered pages keyed by the statement blob's checksum (invalidate on
-  statement change), and keep statement parts FIRST in the user message:
-  sglang's RadixAttention prefix cache then reuses the statement tokens
-  across every submission of the same problem automatically.
+## Near-Miss: student-facing phase (deliberately deferred)
+
+Interaction model (staged ladder vs one-click AI repair vs mode-split),
+lifeline economy via the existing `comments.cost` machinery,
+GraderConfiguration budget keys. Deferred until the batch data is digested —
+the contest-scale evidence now exists; see `doc/Near-Miss-Grading.md`
+(experimental record + the max(original, repaired) policy) and spec
+section 13 (`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
 
 ## Near-Miss: `problems.statement_text` — designed 2026-07-31, deferred
 
