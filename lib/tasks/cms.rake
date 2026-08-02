@@ -44,14 +44,17 @@ namespace :cms do
       abort 'Extraction failed (see [cms] lines above).' unless status&.success?
 
       # Pre-scan the archive before extracting: every member must live under
-      # bundle/ with safe path components, so a hostile/buggy bundle can't
-      # escape the tmp staging dir via '../' or an absolute path.
+      # bundle/ with safe path components (no . or .. segments, no absolute paths),
+      # so a hostile/buggy bundle can't escape the tmp staging dir.
       members, st = Open3.capture2('tar', '-tf', tar_path)
       abort 'bundle tar failed listing' unless st.success?
       members.each_line do |line|
         line = line.chomp
         next if line.empty?
-        abort "bundle tar contains unsafe member: #{line}" unless line.match?(%r{\Abundle(/[\w.\-]+)*/?\z})
+        segments = line.chomp('/').split('/')
+        unless line.match?(%r{\Abundle(/[\w.\-]+)*/?\z}) && segments.none? { |s| s == '.' || s == '..' }
+          abort "bundle tar contains unsafe member: #{line}"
+        end
       end
 
       system('tar', '-xf', tar_path, '-C', tmp) or abort 'could not untar bundle'
