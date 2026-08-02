@@ -250,4 +250,83 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
       @result[:warnings].join("\n")
     )
   end
+
+  # --- directory-style codename sanitization ------------------------------
+
+  test 'safe_codename sanitizes directory-style codenames for filesystem use' do
+    assert_equal 'result_01-01', Converters::CmsDumpConverter.safe_codename('result/01-01')
+    assert_equal 'test_1a', Converters::CmsDumpConverter.safe_codename('test/1a')
+  end
+
+  test 'safe_codename never returns a path with a slash or a dot/dotdot segment' do
+    safe = Converters::CmsDumpConverter.safe_codename('../tests/01-01')
+    refute_match %r{[/\\]}, safe
+    refute_equal '.', safe
+    refute_equal '..', safe
+  end
+
+  test 'safe_codename handles degenerate input without a blank, . or .. result' do
+    ['..', '.', '/', ''].each do |degenerate|
+      safe = Converters::CmsDumpConverter.safe_codename(degenerate)
+      assert safe.present?, "expected a non-empty safe name for #{degenerate.inspect}"
+      refute_equal '.', safe
+      refute_equal '..', safe
+    end
+  end
+
+  test 'directory-style codenames land as sanitized staging files, grouped by ORIGINAL lexicographic order' do
+    convert(mutate: ->(d) {
+      tcs = d['objects']['1414']['testcases']
+      d['objects']['1414']['testcases'] = {
+        'result-rev3/1-01' => tcs['1-01'],
+        'result/2-01' => tcs['2-01'],
+        'result/2-02' => tcs['2-02']
+      }
+    })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    # Original lexicographic order: "result-rev3/1-01" < "result/2-01" < "result/2-02"
+    # ('-' < '/' in ASCII), so the GroupMin [30,1],[70,2] split still puts
+    # "result-rev3/1-01" alone in group 1 — this only holds if grouping ran
+    # on the ORIGINAL codenames, not the sanitized ones.
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'result-rev3_1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'result_2-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'result_2-02'])
+    assert File.exist?(@staging + 'testcases' + 'result-rev3_1-01.in')
+    assert File.exist?(@staging + 'testcases' + 'result_2-01.sol')
+    assert File.exist?(@staging + 'testcases' + 'result_2-02.in')
+    assert_match(/sanitized for filesystem safety/, @result[:log].join("\n"))
+  end
+
+  test 'GroupMin regex params match against the ORIGINAL slashed codename' do
+    convert(mutate: ->(d) {
+      tcs = d['objects']['1414']['testcases']
+      d['objects']['1414']['testcases'] = {
+        'result/1-01' => tcs['1-01'],
+        'result/2-01' => tcs['2-01'],
+        'result/2-02' => tcs['2-02']
+      }
+      d['objects']['1414']['score_type_parameters'] = [[40, 'result/1-.*'], [60, 'result/2-.*']]
+    })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 40 }, tcs[:'result_1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 60 }, tcs[:'result_2-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 60 }, tcs[:'result_2-02'])
+  end
+
+  test 'codenames colliding after sanitization reject the task with both names named' do
+    convert(mutate: ->(d) {
+      tcs = d['objects']['1414']['testcases']
+      d['objects']['1414']['score_type'] = 'Sum'
+      d['objects']['1414']['score_type_parameters'] = 100
+      d['objects']['1414']['testcases'] = {
+        'a/b' => tcs['1-01'],
+        'a_b' => tcs['2-01']
+      }
+    })
+    assert_match(/a\/b/, @result[:errors].join)
+    assert_match(/a_b/, @result[:errors].join)
+    assert_match(/collision|sanitize to the same/, @result[:errors].join)
+  end
 end

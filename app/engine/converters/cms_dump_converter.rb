@@ -1,6 +1,7 @@
 require 'json'
 require 'open3'
 require 'fileutils'
+require 'digest'
 
 # Converts a CMS task bundle — produced by script/cms_extract/extract_task.py:
 # the official cmsDumpExporter subtree (task.json) plus digest-addressed blobs
@@ -37,6 +38,31 @@ class Converters::CmsDumpConverter
   # components; reject anything that isn't a plain filename before it
   # touches the filesystem.
   SAFE_FILENAME = /\A[\w.\-]+\z/
+
+  # CMS testcase codenames are free-form authoring strings — some real Chula
+  # tasks use directory-style codenames (e.g. "result/01-01", "../tests/01-01")
+  # that are perfectly legitimate to CMS but unsafe as a bare filename (path
+  # traversal / nested dirs). Grouping and ordering MUST still be computed on
+  # the ORIGINAL codename (see build_group_plan) — this helper only maps a
+  # codename to a safe on-disk name for the point where it is actually used
+  # as a path component (see safe_codename_map / write_dataset_into).
+  #
+  # Public so other tools (e.g. a companion audit script) can reproduce the
+  # exact same mapping.
+  def self.safe_codename(name)
+    s = name.to_s.gsub(/[^\w.\-]/, '_')
+    # Guards degenerate results that would still be unsafe/meaningless as a
+    # filename: '', '.', '..', or any string made up only of dots.
+    s = "tc_#{Digest::MD5.hexdigest(name.to_s)[0, 8]}" if s.blank? || s.gsub('.', '').blank?
+    unless s.match?(SAFE_FILENAME) && !%w[. ..].include?(s)
+      # Defensive: should be unreachable given the sanitization above. Kept
+      # so a future edit to this method can't silently regress the
+      # filesystem-safety property it exists to guarantee.
+      raise "Converters::CmsDumpConverter.safe_codename produced unsafe result " \
+            "#{s.inspect} for input #{name.inspect}"
+    end
+    s
+  end
 
   attr_reader :log, :warnings, :errors, :problem_meta
 
@@ -153,11 +179,14 @@ class Converters::CmsDumpConverter
   end
 
   # => [ {codename => {group:, group_name:, weight:}}, [error strings] ]
-  # Deterministic; called once for validation and once for writing.
+  # Deterministic; called once for validation and once for writing. Operates
+  # entirely on ORIGINAL CMS codenames, including directory-style ones (e.g.
+  # "result/01-01") — that mirrors what CMS itself does: ScoreTypeGroup
+  # slices testcases in lexicographic order of the raw codename, and GroupMin
+  # regex params are re.match'd against the raw codename. Filesystem safety
+  # is handled separately, at write time, via safe_codename_map — never here.
   def build_group_plan(ds)
     codenames = (ds['testcases'] || {}).keys
-    bad = codenames.reject { |c| c.match?(/\A[\w.\-]+\z/) }
-    return [{}, ["unsafe testcase codenames: #{bad.join(', ')}"]] if bad.any?
 
     # CMS ScoreTypeGroup consumes testcases in lexicographic codename order.
     sorted = codenames.sort
@@ -212,6 +241,28 @@ class Converters::CmsDumpConverter
     else
       [{}, []] # unreachable: score_type gated in dataset_reject_reasons
     end
+  end
+
+  # Original codename -> filesystem-safe codename, for one dataset's
+  # testcases. Called at write time, AFTER build_group_plan has already
+  # decided grouping/ordering on the originals — this only governs what
+  # actually lands on disk / in config.yml. Two distinct originals sanitizing
+  # to the same safe name would silently merge two testcases into one file,
+  # so that's a hard reject! (practically impossible; loud failure is right).
+  def safe_codename_map(codenames)
+    orig_to_safe = {}
+    safe_to_orig = {}
+    codenames.each do |c|
+      safe = self.class.safe_codename(c)
+      if safe_to_orig.key?(safe) && safe_to_orig[safe] != c
+        reject!("testcase codenames #{safe_to_orig[safe].inspect} and #{c.inspect} both " \
+                "sanitize to the same filesystem-safe name #{safe.inspect} — cannot import " \
+                '(rename one of them in the CMS source to disambiguate)')
+      end
+      safe_to_orig[safe] = c
+      orig_to_safe[c] = safe
+    end
+    orig_to_safe
   end
 
   def write_staging
@@ -311,19 +362,31 @@ class Converters::CmsDumpConverter
       cfg[:main_filename] = main
     end
 
+    # Grouping/ordering is decided on the ORIGINAL codenames (build_group_plan
+    # never sees the sanitized form). Only when actually emitting to disk /
+    # config.yml do we translate to filesystem-safe names.
     plan, _errs = build_group_plan(ds)
     if ds['score_type'] == 'Sum'
       @log << "dataset '#{ds_display_name(ds)}': CMS Sum " \
               "(params #{ds['score_type_parameters'].inspect}) -> cafe sum, every testcase weight 1"
     end
+    safe_map = safe_codename_map((ds['testcases'] || {}).keys)
     tc_cfg = {}
     (ds['testcases'] || {}).sort.each do |codename, tc_id|
       tc = fetch_obj(tc_id)
-      copy_blob(tc['input'],  dir + 'testcases' + "#{codename}.in")
-      copy_blob(tc['output'], dir + 'testcases' + "#{codename}.sol")
-      tc_cfg[codename] = plan[codename]
+      safe = safe_map.fetch(codename)
+      copy_blob(tc['input'],  dir + 'testcases' + "#{safe}.in")
+      copy_blob(tc['output'], dir + 'testcases' + "#{safe}.sol")
+      tc_cfg[safe] = plan[codename]
     end
     cfg[:testcases] = tc_cfg
+    rewritten = safe_map.reject { |orig, safe| orig == safe }
+    if rewritten.any?
+      sample = rewritten.first(5).map { |orig, safe| "#{orig} -> #{safe}" }.join(', ')
+      more = rewritten.size > 5 ? ", ... (#{rewritten.size} total)" : ''
+      @log << "dataset '#{ds_display_name(ds)}': #{rewritten.size} testcase codename(s) " \
+              "sanitized for filesystem safety: #{sample}#{more}"
+    end
     @log << "dataset '#{ds_display_name(ds)}': #{tc_cfg.size} testcases, " \
             "#{plan.values.map { |v| v[:group] }.uniq.size} group(s)"
   end
