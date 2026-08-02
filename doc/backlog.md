@@ -432,23 +432,6 @@ must never require the chula_cp branch.
   picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
   as an alternative repair provider.
 
-## Near-Miss: remaining open items
-
-Feature summary, operator guide, settled decisions, and the full five-study
-experimental record live in `doc/Near-Miss-Grading.md`. The 2026-08-02
-hardening batch landed the code fixes (report_for ungradeable-shadow
-exclusion, 600s self-host read timeout, truncation fail-fast, compile-error
-verdict cleanup); what remains:
-
-- Consider promoting the repair system prompt from code
-  (`SubmissionRepairAssist`) to a `GraderConfiguration` entry so prompt
-  iteration between batch runs needs no commit. Tension to resolve: v1
-  deliberately added no GraderConfiguration keys (spec §3) — but this one is
-  instrument tuning, not student-facing policy.
-- Re-verify the A100 gemma box (10.0.5.25:8000) when it's back — it refused
-  connections during the pilot despite "always-on"; its multimodal
-  validation behavior is also unverified.
-
 ## Near-Miss: student-facing phase (deliberately deferred)
 
 Interaction model (staged ladder vs one-click AI repair vs mode-split),
