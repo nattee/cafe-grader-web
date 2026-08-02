@@ -406,4 +406,110 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     assert_match(/a_b/, @result[:errors].join)
     assert_match(/collision|sanitize to the same/, @result[:errors].join)
   end
+
+  # --- fractional GroupMin points -> integer weight scaling ---------------
+  #
+  # CMS GroupMin score_type_parameters points may be fractional (real Chula
+  # tasks: may2022_bombs, may2022_manager, may2024_war, may2025_table,
+  # oct2022_magic, oct2023_triplets). cafe's testcases.weight column is an
+  # integer, so copying points straight in would silently truncate and
+  # change scores. group_min (app/engine/scorer.rb) normalises by total
+  # weight, so scaling every weight in a task up by the same positive
+  # integer k leaves the resulting score identical -- see the
+  # score-equivalence test below for that property made explicit.
+
+  test 'GroupMin fractional .5 points scale to integer weights exactly 2x, with a warning' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[1.5, 1], [2.5, 2]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 3 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 5 }, tcs[:'2-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 5 }, tcs[:'2-02'])
+    assert tcs.values.all? { |v| v[:weight].is_a?(Integer) }
+    assert_match(/GroupMin points are fractional \(1\.5, 2\.5\)/, @result[:log].join("\n"))
+    assert_match(/scaled ×2 to stay integral/, @result[:log].join("\n"))
+  end
+
+  test 'GroupMin .25-precision points scale with k=4' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[12.25, 1], [87.75, 2]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal 49, tcs[:'1-01'][:weight]
+    assert_equal 351, tcs[:'2-01'][:weight]
+    assert_equal 351, tcs[:'2-02'][:weight]
+    assert_match(/scaled ×4 to stay integral/, @result[:log].join("\n"))
+  end
+
+  test 'GroupMin integer points are not scaled and emit no scaling warning (the 87-task common path)' do
+    convert
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'2-01'])
+    refute_match(/scaled ×/, @result[:log].join("\n"))
+    refute_match(/fractional/, @result[:log].join("\n"))
+  end
+
+  test 'GroupMin fractional points with an uncovered tail: tail group weight stays 0 after scaling' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[1.5, 1], [2.5, 1]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 3 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 5 }, tcs[:'2-01'])
+    # leftover testcase ('2-02') lands in the weight-0 trailing group same as
+    # the integer-points case -- 0 * k == 0, no special-casing needed.
+    assert_equal({ group: 3, group_name: '3', weight: 0 }, tcs[:'2-02'])
+    assert_match(/scaled ×2 to stay integral/, @result[:log].join("\n"))
+  end
+
+  test 'GroupMin regex params with fractional points scale the same way as integer-count params' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[1.5, '1-.*'], [2.5, '2-.*']] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 3 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 5 }, tcs[:'2-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 5 }, tcs[:'2-02'])
+    assert_match(/GroupMin points are fractional \(1\.5, 2\.5\)/, @result[:log].join("\n"))
+  end
+
+  test 'GroupMin points needing an absurd scale factor round instead, with a loud warning' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[12.3456789, 3]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal 12, tcs[:'1-01'][:weight]
+    assert_equal 12, tcs[:'2-01'][:weight]
+    assert_equal 12, tcs[:'2-02'][:weight]
+    assert_match(/need scale factor \d+ \(> 1000\)/, @result[:log].join("\n"))
+    assert_match(/rounding each weight to the nearest integer instead/, @result[:log].join("\n"))
+    assert_match(/scores for this task may differ slightly from CMS/, @result[:log].join("\n"))
+  end
+
+  test 'group_min score is identical using CMS fractional weights vs converter-scaled integer weights' do
+    # This is the property the whole fix rests on: group_min (scorer.rb)
+    # normalises by total weight, so Σ(min·w)/Σw is invariant under scaling
+    # every w by the same positive factor. Prove it directly, independent
+    # of the DB-backed Scorer class, using the exact same formula shape.
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[1.5, 1], [2.5, 2]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+
+    cms_weights    = { 1 => 1.5, 2 => 2.5 } # raw CMS points (fractional)
+    scaled_weights = { 1 => tcs[:'1-01'][:weight], 2 => tcs[:'2-01'][:weight] } # converter output
+
+    # Fixed per-group "minimum testcase score" outcome to feed the formula:
+    # group 1 fully passes, group 2 fully fails.
+    min_outcomes = { 1 => 1, 2 => 0 }
+
+    normalized_score = lambda do |weights|
+      exact = weights.transform_values { |w| Rational(w.to_s) }
+      total = exact.values.sum
+      numer = exact.sum { |group, w| min_outcomes[group] * w }
+      numer / total * 100
+    end
+
+    cms_score = normalized_score.call(cms_weights)
+    scaled_score = normalized_score.call(scaled_weights)
+    assert_equal Rational(37.5.to_s), cms_score # sanity: 1.5 / (1.5+2.5) * 100
+    assert_in_delta cms_score.to_f, scaled_score.to_f, 1e-9
+  end
 end

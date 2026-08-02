@@ -28,6 +28,13 @@ class Converters::CmsDumpConverter
   SCORE_TYPE_MAP = { 'Sum' => 'sum', 'GroupMin' => 'group_min' }.freeze
   EVAL_MAP       = { 'diff' => 'default', 'comparator' => 'custom_cms' }.freeze
 
+  # Cap on the scale factor k used by scale_group_min_weights! (see there).
+  # Real CMS packages seen so far top out around k=100 (hundredths of a
+  # point); a k above this cap would only come from synthetic/absurd
+  # precision, where scaling every weight up would just produce huge,
+  # meaningless integers for no real fidelity gain.
+  GROUP_MIN_SCALE_CAP = 1000
+
   # Attachment filenames that would collide with ProblemImporter's root-level
   # recursive globs (*.pdf statement, *.md description, *.in/*.sol testcases)
   # or its recursive **/checker glob (a bare "checker" attachment) get
@@ -224,7 +231,13 @@ class Converters::CmsDumpConverter
         end
         uncovered = sorted - plan.keys
         errs << "testcases match no GroupMin pattern: #{uncovered.join(', ')}" if uncovered.any?
-        [errs.any? ? {} : plan, errs, []]
+        if errs.any?
+          [{}, errs, []]
+        else
+          warnings = []
+          scale_group_min_weights!(plan, warnings)
+          [plan, errs, warnings]
+        end
       else
         [{}, ['GroupMin parameters mix integer and regex styles (unsupported)'], []]
       end
@@ -282,7 +295,54 @@ class Converters::CmsDumpConverter
       [{}, ["GroupMin produced no usable testcase groups (params declare #{total}, " \
             "dataset has #{sorted.size} testcases)"], []]
     else
+      scale_group_min_weights!(plan, warnings)
       [plan, [], warnings]
+    end
+  end
+
+  # CMS GroupMin points may be fractional (e.g. a 100-point task split into
+  # subtasks worth 1.5, 2.5, 11.5, ...), but cafe's testcases.weight column
+  # is an integer, so copying points straight into weight would silently
+  # truncate and change scores. group_min (app/engine/scorer.rb) normalises
+  # by total weight -- Σ(min·weight) / Σweight × 100 -- so multiplying every
+  # weight in the plan by the same positive integer k leaves the resulting
+  # score identical. We therefore scale up to the smallest k that makes
+  # every weight an exact integer, using exact rational arithmetic
+  # (Rational(value.to_s), never float comparisons, so e.g. 0.1 + 0.2
+  # binary-float noise can't produce a wrong k).
+  #
+  # Mutates plan in place; appends a warning to `warnings` (the same array
+  # build_group_plan returns as its third element, which callers prefix
+  # and surface into @log) iff scaling actually happened. Integer-only
+  # points (the common case: 87 of 93 real tasks) are left byte-identical,
+  # no warning.
+  #
+  # A weight-0 group (e.g. the uncovered-tail group from
+  # build_group_min_int_plan) needs no special handling: Rational(0) has
+  # denominator 1, so it never affects k, and 0 * k == 0.
+  def scale_group_min_weights!(plan, warnings)
+    present = plan.values.map { |v| v[:weight] }.uniq
+    rationals = present.to_h { |w| [w, Rational(w.to_s)] }
+    return if rationals.values.all? { |r| r.denominator == 1 } # already integral: no-op, no warning
+
+    fractional = present.select { |w| rationals[w].denominator != 1 }
+    sample = fractional.first(4).join(', ')
+    sample += ', …' if fractional.size > 4
+    k = rationals.values.map(&:denominator).reduce(1) { |a, b| a.lcm(b) }
+
+    if k > GROUP_MIN_SCALE_CAP
+      plan.each_value do |v|
+        next if v[:weight].zero?
+
+        v[:weight] = [rationals[v[:weight]].round, 1].max
+      end
+      warnings << "GroupMin points need scale factor #{k} (> #{GROUP_MIN_SCALE_CAP}) to become exactly " \
+                  "integral (fractional points: #{sample}); rounding each weight to the nearest integer " \
+                  'instead -- scores for this task may differ slightly from CMS'
+    else
+      plan.each_value { |v| v[:weight] = (rationals[v[:weight]] * k).to_i }
+      warnings << "GroupMin points are fractional (#{sample}); all group weights scaled ×#{k} to stay " \
+                  'integral -- scoring is unchanged because group_min normalises by total weight'
     end
   end
 
