@@ -5,9 +5,12 @@ cafe-grader, ending on a **production** cafe server. Repeatable and reusable —
 this is a migration we expect to re-run (new tasks appear on c2; other CMS
 instances may follow), not a one-off copy.
 
-**Status: 1 of 95 transferable tasks cloned (to dev).** Pipeline built and
-validated end-to-end on that one task. Bulk clone and the Tier-1 validation
-sweep are the current work. Nothing has been imported to production yet.
+**Status (2026-08-02): all 95 transferable tasks cloned to dev and
+structurally verified against CMS (95/95 clean).** Five real defects were found
+and fixed along the way — see §5; all five were invisible to structural
+checking, and one of them (comparator argv order) would have silently scored
+every student zero on 22 tasks. The Tier-1 behavioural sweep is running.
+Nothing has been imported to production yet.
 
 Related documents:
 - Design: `docs/superpowers/specs/2026-08-02-cms-clone-import-design.md`
@@ -79,11 +82,13 @@ these.
 
 ### 1.2 Risk inside the transferable set
 
-**22 of the 95 use comparator checkers** (CMS `comparator` → cafe
-`custom_cms`). This path is **unvalidated**: our end-to-end validation covered
-white-diff tasks only, and CMS stores checkers as *compiled binaries*, so
-whether they execute correctly under cafe's judge on the target host is an
-open question. Validate one before trusting the batch:
+**22 of the 95 use comparator checkers.** This was flagged as the biggest
+unknown, and the flag was justified — validating one surfaced defect #5 in §4
+(CMS and cafe pass the checker's arguments in a different order), which scored
+0 on submissions CMS scored 100. They now import as the new `cms_comparator`
+evaluation type and have all been re-cloned. The checkers themselves are
+statically-linked x86-64 ELF binaries, so they carry across hosts without
+library dependencies. The tasks:
 
 `apr2022_die, apr2022_findpermutation, feb2022_askask, feb2022_goatforget,
 mar2023_updown, mar2024_alienlang, mar2024_immigration, mar2024_mapping,
@@ -164,6 +169,17 @@ checker behaviour, so:
 CLAUDE.md and `Replay::ReplayDiff`). Any other transition — especially a
 wrong-answer disagreement — is a real finding.
 
+**Read `score_exact` first.** `cms:validate` marks a task FAIL when ANY
+submission's per-testcase verdict string differs, but the metric that decides
+whether a clone is trustworthy is whether the **final score** matches CMS.
+Verdict-character differences that leave the score untouched are common and
+mostly benign: under `group_min` a group scores its weakest testcase, so once a
+group has failed, further differences inside it cannot move the score. Treat
+`score_exact < replayed` as the real signal and per-testcase noise as
+secondary. (The `Replay::ReplayDiff` benign set is deliberately narrow —
+`T→P` and `x→P` only — so resource-limit swaps such as `x↔T` count as
+mismatches even when the score is identical.)
+
 ### Validation results so far
 
 **`mar2025_eatingfish` (2026-08-02, dev):** 8 submissions replayed
@@ -177,7 +193,34 @@ testcases in groups 7/6/6/5/6/12 weighted 7/19/13/23/27/11 = 100, sibling
 
 ---
 
-## 4. Progress tracker
+## 4. Defects found by running against real data (2026-08-02)
+
+Every one of these was found by cloning or replaying the **live** archive, and
+none was reachable by the offline test fixtures. They are recorded because the
+same classes will recur on any other CMS instance.
+
+| # | Defect | Tasks hit | Why structural checks missed it |
+|---|---|---|---|
+| 1 | **Directory-style testcase codenames** (`result/01-01`, `tests/01-01`, and `../tests/01-01`) | 8 | The safety guard *rejected* the task outright, so nothing imported — visible, not silent. Fix: sanitise for the filesystem but compute grouping/ordering on the ORIGINAL codenames, because CMS slices integer subtask counts in lexicographic order of its own codenames and matches regex params against them. Getting that backwards would shift subtask boundaries silently. |
+| 2 | **GroupMin counts ≠ testcase count** (274 vs 275; and one task declaring 52 where 51 exist) | 3 | Rejected outright. CMS tolerates it: trailing testcases beyond the declared sum are evaluated but not scored. Fix: map the uncovered tail to a **weight-0 group** (cafe normalises by total weight, so weight 0 contributes nothing — exactly CMS's "ignored"), and slice defensively when over-declared. |
+| 3 | **Fractional GroupMin points truncated** (`1.5` → `1`) | 6 | Imported "successfully" with wrong weights; `may2022_bombs` lost 6 points of 100. Because cafe normalises by total weight, truncation shifts every score. Fix: scale ALL group weights by the smallest integer `k` making them integral (`k=2` for `.5`). Provably exact: `Σ(min·k·p)/Σ(k·p) = Σ(min·p)/Σp`. |
+| 4 | **Sanitised codenames starting with `.` became dotfiles** | 1 | **Silent corruption.** `../tests/01-01` → `.._tests_01-01`, and `Dir.glob("*.in")` does not match dotfiles without `FNM_DOTMATCH`, so `mar2023_updown` imported with **0 of 167 testcases and reported `ok`**. Fix: never emit a leading dot, plus the converter now refuses to emit a dataset whose emitted testcase count differs from the bundle's. |
+| 5 | **Comparator checker argv order** | **22** | **The dangerous one.** CMS invokes `checker <input> <correct> <user>` (`cms/grading/steps/trusted.py:237-240`); cafe's `custom_cms` invokes `checker <input> <user> <correct>` — the testlib/Codeforces order. Everything imported and structurally verified perfectly, then scored **0 for submissions CMS scored 100**. Fix: new `cms_comparator` evaluation type (enum 7) with CMS's order; `custom_cms` left untouched because existing cafe problems rely on it. |
+
+**How #5 was isolated** (worth repeating as a technique): cafe's `T`/`x`
+verdicts appeared in *exactly* the same positions as CMS's, proving the
+testcase data, limits, and execution were all correct and narrowing the fault
+to the checker invocation. The task that exposed it,
+`oct2022_spectrophotometer`, has **zero-byte correct outputs for all 83
+testcases** — a checker-only task judged from the input alone — so cafe was
+handing the checker an empty file where it expected the student's submission.
+
+**Operational rule learned:** `ProblemImporter` keeps the existing live dataset
+on re-import, so re-cloning a badly-imported problem does **not** repair it —
+it merely adds another dataset generation. A problem imported under buggy code
+must be **destroyed and cloned fresh**.
+
+## 5. Progress tracker
 
 | stage | state |
 |---|---|
@@ -186,10 +229,11 @@ testcases in groups 7/6/6/5/6/12 weighted 7/19/13/23/27/11 = 100, sibling
 | `cms:clone` operator surface | ✅ done, rev 1965 |
 | Single-task end-to-end proof (`mar2025_eatingfish`) | ✅ done, dev problem 717 |
 | Submission-replay validation of that task | ✅ done, 8/8 exact (hand-rolled script) |
-| Replay gate committed as a reusable tool | ⬜ Tier-1 prerequisite |
-| Bulk clone of 95 tasks (dev) | ⬜ in progress |
-| **Tier 1 sweep across 95 tasks** | ⬜ in progress |
-| Comparator-checker (`custom_cms`) validation | ⬜ **highest risk — 22 tasks** |
+| Replay gate committed as a reusable tool | ✅ `cms:validate` (rev 1972, 1975) |
+| Bulk clone of 95 tasks (dev) | ✅ 95/95, 0 failures (revs 1971-1979) |
+| Structural cross-check vs CMS (all 95) | ✅ 95/95 clean |
+| **Tier 1 sweep across 95 tasks** | ⬜ running |
+| Comparator-checker validation | ⚠️ argv-order bug found+fixed (`cms_comparator`); all 22 re-cloned, sweep pending |
 | First production import (one task, end-to-end) | ⬜ not started |
 | Bulk production import | ⬜ not started |
 | Unblock GroupMinPrereq (8 tasks) | ⬜ backlog |
