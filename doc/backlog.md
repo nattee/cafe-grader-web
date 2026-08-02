@@ -439,14 +439,6 @@ experimental record live in `doc/Near-Miss-Grading.md` — the findings prose
 that used to sit here is folded into that doc. Genuinely-open fixes, in
 priority order:
 
-- **`SubmissionRepair.report_for` counts ungradeable shadows as real 0-point
-  grades** (found via the void a68_final grading pass): a shadow in
-  `grader_error` — or any non-`done` status — enters the gap stats as a real
-  zero, so a judging-infrastructure failure reads as a wall of fake negative
-  gaps ("0 rescues / 63 negatives"). Exclude non-`done` shadows from
-  gap/rescue stats and surface them as an explicit `ungradeable` count
-  (rake table, CSV, and the run browser all read `report_for`). **Do this
-  first — it's the instrument's correctness.**
 - `Llm::Request.connection` read_timeout is 300s, chosen before `max_tokens`
   went to 16384 — a near-cap non-streaming reasoning generation on a shared
   box legitimately exceeds it (observed: 3 timeouts across providers, all

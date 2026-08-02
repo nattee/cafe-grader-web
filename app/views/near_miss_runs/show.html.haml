@@ -47,6 +47,9 @@
                     .d-flex.flex-wrap.gap-1
                       - s[:statuses].sort_by { |st, _| NearMissRunsHelper::STATUS_ORDER.index(st) || 99 }.each do |st, n|
                         = near_miss_status_badge(st, count: n)
+                      - if s[:ungradeable] > 0
+                        %span{title: 'accepted attempts whose shadow has no judge outcome (grader_error or still in flight) — excluded from gap/rescue stats'}
+                          = near_miss_status_badge('ungradeable', count: s[:ungradeable])
                   %td.text-end
                     %span{class: s[:rescued] > 0 ? 'text-success fw-semibold' : 'text-secondary'}= s[:rescued]
                   %td.text-end= number_to_percentage(s[:rescue_rate] * 100, precision: 1)

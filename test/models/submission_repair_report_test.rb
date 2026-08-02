@@ -35,6 +35,7 @@ class SubmissionRepairReportTest < ActiveSupport::TestCase
     assert_equal({within: 0, total: 1}, add_stats[:compliance][1])
     assert_equal({within: 1, total: 1}, add_stats[:compliance][2])
     assert_equal 200, add_stats[:tokens_in]
+    assert_equal 0, add_stats[:ungradeable]
 
     sub_stats = report['runA'][submissions(:sub1_by_james).problem.name]
     assert_equal 0, sub_stats[:rescued]
@@ -69,6 +70,51 @@ class SubmissionRepairReportTest < ActiveSupport::TestCase
     report = SubmissionRepair.report_for(['runC'])
     stats = report['runC'][@original.problem.name]
     assert_equal 42.5, stats[:median_gap]
+  end
+
+  test "report_for counts non-terminal shadows as ungradeable, never as 0-point grades" do
+    # The void a68_final grading pass: every shadow grader_error'd (judge
+    # 404s on missing testcase blobs) and the report read the error-zeros as
+    # "0 rescues / 63 negative gaps". Gap stats must only see real outcomes.
+    original = submissions(:add1_by_james)
+    original.update_columns(status: Submission.statuses[:done], points: 60)
+    err_shadow = Submission.new(user: original.user, problem: original.problem,
+                                language: original.language, submitted_at: Time.zone.now,
+                                source: 'e', repaired_from_id: original.id)
+    err_shadow.save!(validate: false)
+    err_shadow.update_columns(points: 0, status: Submission.statuses[:grader_error])
+    SubmissionRepair.create!(original_submission: original, repaired_submission: err_shadow,
+                             status: :accepted, budget_lines: 2, budget_chars: 20, run_label: 'runE')
+
+    inflight = Submission.new(user: @original.user, problem: @original.problem,
+                              language: @original.language, submitted_at: Time.zone.now,
+                              source: 'f', repaired_from_id: @original.id)
+    inflight.save!(validate: false)
+    inflight.update_columns(points: 0, status: Submission.statuses[:evaluating])
+    SubmissionRepair.create!(original_submission: @original, repaired_submission: inflight,
+                             status: :accepted, budget_lines: 2, budget_chars: 20, run_label: 'runE')
+
+    stats = SubmissionRepair.report_for(['runE'])['runE'][original.problem.name]
+    assert_equal 2, stats[:ungradeable]
+    assert_equal 0, stats[:rescued]
+    assert_nil stats[:mean_gap], 'error/in-flight shadows must not enter the gap sample as 0-point grades'
+    assert_nil stats[:median_gap]
+  end
+
+  test "a compilation_error shadow is a real grade (damage), not ungradeable" do
+    original = submissions(:add1_by_james)
+    original.update_columns(status: Submission.statuses[:done], points: 60)
+    broken = Submission.new(user: original.user, problem: original.problem,
+                            language: original.language, submitted_at: Time.zone.now,
+                            source: 'b', repaired_from_id: original.id)
+    broken.save!(validate: false)
+    broken.update_columns(points: 0, status: Submission.statuses[:compilation_error])
+    SubmissionRepair.create!(original_submission: original, repaired_submission: broken,
+                             status: :accepted, budget_lines: 2, budget_chars: 20, run_label: 'runF')
+
+    stats = SubmissionRepair.report_for(['runF'])['runF'][original.problem.name]
+    assert_equal 0, stats[:ungradeable]
+    assert_equal(-60.0, stats[:mean_gap], 'the repair broke the build — that IS a real negative gap')
   end
 
   test "median returns nil for empty, the element for odd N, and the averaged pair for even N" do

@@ -79,6 +79,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Fixed
 
+- **Near-Miss report: ungradeable shadows are no longer counted as 0-point
+  grades** — accepted attempts whose shadow has no real judge outcome
+  (`grader_error`, or still in flight) are excluded from gap/rescue statistics
+  and surfaced as an explicit `ungradeable` count in the rake report, CSV, and
+  run browser (a judging-infrastructure failure previously read as mass
+  negative gaps — the void a68_final lesson). (rev 1953)
 - Viva: archive now refreshes the page, viva submissions no longer open the code editor (evaluations/download/compiler_msg included), students see retake policy and remaining daily starts.
 - **"Import testcases" is stricter and no longer crashes on errors** — replacing
   into a dataset that no longer exists now shows an error toast instead of

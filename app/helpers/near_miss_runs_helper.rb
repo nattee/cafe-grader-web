@@ -14,7 +14,10 @@ module NearMissRunsHelper
     'processing'  => ['autorenew',      'bg-info-subtle text-info-emphasis'],
     'pending'     => ['schedule',       'bg-secondary-subtle text-secondary-emphasis'],
     'unparseable' => ['broken_image',   'bg-danger-subtle text-danger-emphasis'],
-    'unfixable'   => ['do_not_disturb', 'bg-light text-secondary border']
+    'unfixable'   => ['do_not_disturb', 'bg-light text-secondary border'],
+    # Not an attempt status: accepted attempts whose shadow has no real judge
+    # outcome (grader_error / still in flight) — excluded from gap stats.
+    'ungradeable' => ['report_off',     'bg-danger-subtle text-danger-emphasis']
   }.freeze
 
   # Badge for an attempt status / round gate outcome; count: prefixes the
@@ -35,11 +38,13 @@ module NearMissRunsHelper
 
   # Mechanical gap (repaired − original) colour-coded: green = rescue, red =
   # the repair made things worse (the safety signal from the Genie batch),
-  # muted = not accepted / not graded yet.
+  # muted = not accepted / no real judge outcome yet. Gated on shadow_graded?
+  # — a grader_error shadow's points column reads 0, which would otherwise
+  # paint a fake red gap for what is an infrastructure failure.
   def near_miss_gap(repair)
     orig = repair.original_submission&.points
     rep  = repair.repaired_submission&.points
-    return content_tag(:span, '—', class: 'text-secondary') unless repair.accepted? && orig && rep
+    return content_tag(:span, '—', class: 'text-secondary') unless repair.shadow_graded? && orig && rep
     gap = rep.to_f - orig.to_f
     if gap.positive?
       content_tag :span, "+#{near_miss_points(gap)}", class: 'text-success fw-semibold'

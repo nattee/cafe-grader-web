@@ -104,7 +104,7 @@ rake near_miss:report RUN=<label>[,<label>...]      # or CONTEST=<id>
 
 `CONTEST=<id>` picks up every label matching `contest<id>-…`. Output is a per-run, per-problem console table plus a CSV (path printed, under `tmp/`): targets, status counts, **rescued** (accepted attempts whose shadow outscored the original) and rescue rate, mean/median mechanical gap, fix-category histogram, median measured patch size (how much of the budget real fixes actually used), per-round budget compliance (how often each model's patch was within budget on round 1, 2, 3 — from `rounds_log`), and tokens/cost.
 
-**Known instrument bug (open, first item of the hardening batch in `doc/backlog.md`):** `report_for` counts *ungradeable* shadows — `grader_error` or otherwise non-`done` — as real 0-point grades. A judging-infrastructure failure therefore reads as a wall of fake negative gaps (this is exactly how the void a68_final grading first presented — see the experimental record). Until fixed: if a run's negatives look implausible, check shadow statuses before believing the gap stats.
+**Ungradeable shadows are excluded from gap stats** (fixed 2026-08-02, after the void a68_final grading pass — see the experimental record): an accepted attempt whose shadow has no real judge outcome (`grader_error`, or still in flight) is reported as an explicit `ungradeable` count — in the rake table, the CSV, and the run browser — and never enters the gap/rescue statistics as a fake 0-point grade. A shadow in `compilation_error` *is* a real outcome (the repair broke the build — damage data) and stays in the stats. A large `ungradeable` count means judging infrastructure trouble (usually missing blobs on a dev copy), not model behavior.
 
 ## The web browser: Report → Near-Miss Runs
 
@@ -220,7 +220,7 @@ Contest-scale rescue rate: **8.5%** of 201 targets — versus ~30% on practice p
 2. **Rescue rate is population-dependent**: ~30% on compile-error-rich practice pools, 8.5% on a final. The floor effect is real but a final's floor is mostly conceptual.
 3. **Damage is systemic across all models** (18% of accepted at scale) → any student-facing use must score `max(original, repaired)`.
 4. Statements don't help repair; free qwen matches paid rescuers; paid buys safety, not capability.
-5. The instrument needs one correctness fix before the next big run: exclude ungradeable shadows from gap stats (`report_for` — first hardening item in `doc/backlog.md`).
+5. The instrument needed one correctness fix before the next big run: excluding ungradeable shadows from gap stats — fixed in the 2026-08-02 hardening batch (`report_for` now reports them as `ungradeable`).
 
 ---
 
@@ -228,7 +228,7 @@ Contest-scale rescue rate: **8.5%** of 201 targets — versus ~30% on practice p
 
 All tracked in `doc/backlog.md` (Near-Miss sections); headline items:
 
-- **Hardening batch** — `report_for` must count non-`done` shadows as `ungradeable` instead of 0-point grades (first); `SelfHostChat` read_timeout 300s→~600s (16384-token reasoning generations legitimately exceed 300s); fail-fast on `finish_reason: length` truncation instead of burning retry rounds; skip the nonsense per-testcase decode of `grader_comment` for compile errors; consider promoting the repair system prompt to `GraderConfiguration` for commit-less prompt iteration.
+- **Hardening batch** — `SelfHostChat` read_timeout 300s→~600s (16384-token reasoning generations legitimately exceed 300s); fail-fast on `finish_reason: length` truncation instead of burning retry rounds; skip the nonsense per-testcase decode of `grader_comment` for compile errors; consider promoting the repair system prompt to `GraderConfiguration` for commit-less prompt iteration. (The `report_for` ungradeable-shadow exclusion, originally this batch's first item, landed 2026-08-02.)
 - **`problems.statement_text`** — pdf-reader-extracted, human-editable statement text on Problem (fixes the Thai-combining-marks loss). Consumer is the *assist* path, which is also what unblocks registering `Llm::SelfHostAssist` in the assist model picker (its inherited prompt still sends the statement PDF, which sglang 400s).
 - **Student-facing phase** (D7) — interaction model, lifeline economy, GraderConfiguration budget keys; to be designed from the batch data above.
 - Minor recorded caveats: single-`SUBMISSION` mode bypasses the viva exclusion; a wholesale-failed batch consumes its run label (resume keys on row existence); reporters (staff) can view shadow submissions — a deliberate deviation from the spec's "admin-only".

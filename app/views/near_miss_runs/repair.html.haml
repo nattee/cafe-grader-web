@@ -35,7 +35,10 @@
           %dd.col-sm-8
             - if @shadow
               = link_to "##{@shadow.id}", submission_path(@shadow.id), class: 'fw-medium text-primary text-decoration-none'
-              = "— #{near_miss_score(@shadow)}"
+              - if @repair.shadow_graded?
+                = "— #{near_miss_score(@shadow)}"
+              - else
+                %span.text-secondary= "— #{@shadow.status.humanize.downcase}, no judge outcome (score not counted)"
               - if @shadow.grader_comment.present?
                 %div
                   %span.grader-comment.text-break.small.text-secondary= @shadow.grader_comment
