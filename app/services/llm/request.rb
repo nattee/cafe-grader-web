@@ -100,11 +100,14 @@ module Llm
     end
 
     # Faraday factory used by all concrete subclasses' execute_call.
-    def self.connection(api_base_url)
+    # read_timeout: transports whose generations legitimately run long
+    # (SelfHostChat's 16384-token reasoning models) pass a higher value;
+    # 300s stays the default for every other provider.
+    def self.connection(api_base_url, read_timeout: 300)
       Faraday.new(url: api_base_url) do |f|
-        f.options.timeout      = 300
+        f.options.timeout      = read_timeout
         f.options.open_timeout = 10
-        f.options.read_timeout = 300
+        f.options.read_timeout = read_timeout
         f.request :json
         f.response :raise_error
         f.adapter Faraday.default_adapter

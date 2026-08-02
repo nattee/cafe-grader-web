@@ -17,8 +17,13 @@ class Llm::SubmissionRepairAssistTest < ActiveSupport::TestCase
     def execute_chat(messages)
       @calls << messages.map { |m| m[:role] }
       reply = @script.shift or raise 'script exhausted'
-      body = {choices: [{message: {content: reply}}],
-              usage: {prompt_tokens: 100, completion_tokens: 50}}.to_json
+      body = if reply == :truncated
+               {choices: [{finish_reason: 'length', message: {content: ''}}],
+                usage: {prompt_tokens: 100, completion_tokens: 16_384}}.to_json
+             else
+               {choices: [{message: {content: reply}}],
+                usage: {prompt_tokens: 100, completion_tokens: 50}}.to_json
+             end
       FakeResponse.new(body)
     end
   end
@@ -108,6 +113,28 @@ class Llm::SubmissionRepairAssistTest < ActiveSupport::TestCase
     run_scripted(huge, rounds: 1)
     assert @repair.reload.over_budget?
     assert_equal 1, @repair.rounds_used
+  end
+
+  test "finish_reason=length with empty content -> failed immediately, no retry burn" do
+    svc = run_scripted(:truncated, GOOD_REPLY)
+    @repair.reload
+    assert @repair.failed?
+    assert_equal 1, @repair.rounds_used
+    assert_match(/max_tokens/, @repair.remark)
+    assert_equal 'truncated', @repair.rounds_log.last['gate']
+    assert_equal 1, svc.calls.size, 'retry feedback cannot fix truncation — must not burn further rounds'
+  end
+
+  test "verdict_text skips the per-testcase decode for compile errors but keeps it for graded runs" do
+    @submission.update_columns(status: Submission.statuses[:compilation_error],
+                               grader_comment: 'Compilation error')
+    text = ScriptedRepair.new(submission: @submission.reload, repair: @repair).send(:verdict_text)
+    refute_includes text, 'testcase 1:', 'the literal "Compilation error" string must not be decoded per-char'
+
+    @submission.update_columns(status: Submission.statuses[:done], grader_comment: 'P-')
+    text = ScriptedRepair.new(submission: @submission.reload, repair: @repair).send(:verdict_text)
+    assert_includes text, 'testcase 1: passed'
+    assert_includes text, 'testcase 2: wrong answer'
   end
 
   test "job resolves service from config with abstract fallback" do

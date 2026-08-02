@@ -76,6 +76,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 - Viva jailbreak handling: the examiner now only *detects* (staying in character); the backend applies policy — flags are logged and a notice is shown to the student, never terminating the interview (was: immediate termination on any detection). The warn-then-terminate machinery from the original design stays in the codebase, dormant, for the Phase B per-contest policy below.
 - Viva authoring: the Description tab is now the "Scenario (markdown)" for viva problems (sent verbatim to the examiner; side-PDF generation disabled), with the examiner briefing, conduct profile, and turn caps edited together in the problem form; only `viva_conduct` tags are hidden from the generic tag picker (they have their own dedicated Conduct-profile select) — `llm_prompt` tags remain in the generic picker since it's the only UI that attaches them (to the AI-helper) and can never be public.
 - **Viva: practice/exam mode replaced by context-based policy** — every viva is practice outside contests, limited by a per-problem daily start limit (blank = site default, 0 = contest-only); exam strictness returns as per-contest retake budgets in Phase B.
+- **Near-Miss LLM-call hardening** — the self-host transport allows 600s reads
+  (16384-token reasoning generations legitimately exceed the stock 300s); a
+  round truncated at `max_tokens` with empty content now fails the attempt
+  immediately with a "raise max_tokens" remark instead of burning retry
+  rounds; compile-error verdicts no longer decode the literal "Compilation
+  error" string into nonsense per-testcase lines. (rev 1954)
 
 ### Fixed
 

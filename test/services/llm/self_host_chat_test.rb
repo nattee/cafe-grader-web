@@ -78,6 +78,15 @@ class Llm::SelfHostChatTest < ActiveSupport::TestCase
     end
   end
 
+  test "connection uses the 600s self-host read timeout; factory default stays 300" do
+    with_self_host_config do
+      opts = Llm::SelfHostChat.new.send(:connection).options
+      assert_equal 600, opts.read_timeout
+      assert_equal 600, opts.timeout
+      assert_equal 300, Llm::Request.connection('http://x.test').options.read_timeout
+    end
+  end
+
   test "verify_model! passes on match and raises on mismatch" do
     with_self_host_config do
       chat, _ = chat_with_fake(get_body: '{"data":[{"id":"qwen-test"}]}')

@@ -432,28 +432,14 @@ must never require the chula_cp branch.
   picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
   as an alternative repair provider.
 
-## Near-Miss: hardening batch (open)
+## Near-Miss: remaining open items
 
 Feature summary, operator guide, settled decisions, and the full five-study
-experimental record live in `doc/Near-Miss-Grading.md` — the findings prose
-that used to sit here is folded into that doc. Genuinely-open fixes, in
-priority order:
+experimental record live in `doc/Near-Miss-Grading.md`. The 2026-08-02
+hardening batch landed the code fixes (report_for ungradeable-shadow
+exclusion, 600s self-host read timeout, truncation fail-fast, compile-error
+verdict cleanup); what remains:
 
-- `Llm::Request.connection` read_timeout is 300s, chosen before `max_tokens`
-  went to 16384 — a near-cap non-streaming reasoning generation on a shared
-  box legitimately exceeds it (observed: 3 timeouts across providers, all
-  transient). Add a `read_timeout:` kwarg (default 300) and have
-  `SelfHostChat` pass ~600s.
-- Engine fail-fast on truncation: a round with `finish_reason: "length"` and
-  empty content gets the same "no fenced block" retry feedback, which cannot
-  help — observed burning 3 × 16384 thinking-tokens (~7 min, $0.60 on Genie
-  per occurrence). Detect and fail the attempt with a "raise max_tokens"
-  remark instead of retrying.
-- `SubmissionRepairAssist#verdict_text` decodes `grader_comment` per-char
-  into legend lines, but a compile-error submission's comment is the literal
-  string "Compilation error" — every such call ships ~17 nonsense
-  "testcase N: …" lines to the LLM. Skip the per-testcase decode when
-  `status = compilation_error` (the compiler-output block already covers it).
 - Consider promoting the repair system prompt from code
   (`SubmissionRepairAssist`) to a `GraderConfiguration` entry so prompt
   iteration between batch runs needs no commit. Tension to resolve: v1

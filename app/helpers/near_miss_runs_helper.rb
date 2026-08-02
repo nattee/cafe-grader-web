@@ -15,6 +15,7 @@ module NearMissRunsHelper
     'pending'     => ['schedule',       'bg-secondary-subtle text-secondary-emphasis'],
     'unparseable' => ['broken_image',   'bg-danger-subtle text-danger-emphasis'],
     'unfixable'   => ['do_not_disturb', 'bg-light text-secondary border'],
+    'truncated'   => ['content_cut',    'bg-danger-subtle text-danger-emphasis'],
     # Not an attempt status: accepted attempts whose shadow has no real judge
     # outcome (grader_error / still in flight) — excluded from gap stats.
     'ungradeable' => ['report_off',     'bg-danger-subtle text-danger-emphasis']
