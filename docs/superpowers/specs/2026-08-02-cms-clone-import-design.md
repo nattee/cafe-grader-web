@@ -37,16 +37,26 @@ loop is a thin wrapper later, but v1 does not build it.
   vs. reconstructing `gen/GEN # ST:` markers) and needs no HTML scraping.
   (An authenticated AdminWebServer scrape was proven viable as a fallback
   channel during recon, but is not built.)
+- **Why official tooling alone doesn't suffice** (verified on the box): CMS
+  ships no task-level exporter — `cmsDumpExporter` is contest-scoped only
+  (107 tasks, multi-GB with files), its structure dump always includes
+  Users/Participations with password hashes (no `--no-users` flag exists),
+  and no official CLI fetches selected blobs by digest. The extractor
+  therefore **wraps** the official exporter rather than replacing it: all
+  serialization is official; the custom glue is only task-scoping, secrets
+  stripping, and digest-selective blob fetch.
 
 ## Architecture
 
 ```
 [cafe box]  rake cms:clone[NAME]
-   │  ssh nattee@c2 → sudo -n -u cms python3 - < script/cms_extract/extract_task.py
+   │  ssh nattee@c2 → sudo -n -u cms bash (streams script/cms_extract/extract_task.py)
    ▼
-[c2, as cms]  extract_task.py       — READ-ONLY against CMS DB + FileCacher
-   │  writes /tmp/<run>/bundle:  task.json + files/<sha1-digest>
-   │  tars bundle to stdout → cafe box; server /tmp/<run> removed in the same ssh run
+[c2, as cms]  official cmsDumpExporter -F -S -c <contest>  → /tmp/<run>/dump   (structure only, ~seconds)
+              extract_task.py — pure JSON walk + FileCacher, READ-ONLY:
+                picks the ONE task's subtree → task.json  (users/participations never enter it)
+                resolves that task's digests → files/<sha1-digest>
+   │  tars bundle to stdout → cafe box; /tmp/<run> (0700) removed in the same ssh run
    ▼
 [cafe box]  CmsDumpConverter (Ruby, pure dir→dir)   → cafe staging dir
    ▼
@@ -61,18 +71,24 @@ the 2026-07-14 design).
 
 - Lives in the cafe repo; **streamed** to the server per run (`python3 -` over
   ssh) — nothing installed on c2.
-- Input: task name. Output: a bundle dir —
-  - `task.json` (`bundle_version: 1`): the task subtree only — Task row, **all**
-    its Datasets (each with task_type, task_type_parameters, score_type,
-    score_type_parameters, limits, description, managers, testcases
-    codename→digest map, `active` flag), Statements, Attachments. **No users,
-    participations, or submissions** — no password hashes ever leave the server.
-  - `files/<digest>`: every referenced blob, resolved via
-    `FileCacher().get_file()`.
-- Read-only by construction (SELECTs + file reads). FileCacher's cache dir is
-  pointed inside the run's own `/tmp/<run>` so server cleanup is one `rm -rf`,
-  executed in the same ssh invocation (no leftover state on failure either —
-  `trap`-style cleanup).
+- **Wraps official machinery — it does not query the DB itself.** The run
+  first invokes the official `cmsDumpExporter -F -S -c <contest>` (structure
+  only, no submissions; ~seconds, 4 MB JSON for the whole box). The script
+  then does two things CMS tooling cannot:
+  1. **Task-subtree filter** (pure JSON walk, no DB): from `contest.json`,
+     emit `task.json` = the official dump-format subtree for the ONE task —
+     Task row, **all** its Datasets (task_type, task_type_parameters,
+     score_type, score_type_parameters, limits, description, managers,
+     testcases codename→digest map, `active` flag), Statements, Attachments.
+     The dump's `_version` is carried through alongside `bundle_version: 1`.
+     **No users, participations, or submissions** — password hashes never
+     leave the server (the raw dump lives only in the 0700 run dir and is
+     deleted in the same ssh invocation).
+  2. **Digest-selective blob fetch** (~10 lines): `FileCacher().get_file()`
+     for exactly that task's digests → `files/<digest>`.
+- Read-only by construction (the official exporter + file reads). FileCacher's
+  cache dir is pointed inside `/tmp/<run>` so server cleanup is one `rm -rf`,
+  executed in the same ssh invocation even on failure (`trap`-style cleanup).
 
 ### Unit 2 — cafe-side converter (`app/engine/converters/cms_dump_converter.rb`)
 
@@ -195,3 +211,9 @@ Each stage fails loud and distinctly:
   eatingfish (white-diff).
 - FileCacher cache-dir override knob (constructor arg vs config) for the
   run-scoped tmp placement.
+- `cmsDumpExporter` flag semantics on this version: whether `-G`
+  (`--no-generated`) is safe/needed alongside `-F -S`, and the exact dump
+  `_version` emitted (converter pins the version it understands and fails
+  loud on others).
+- `-c <contest>` speed vs full-box dump (probe ran full-box in ~45 s;
+  contest-scoped should be faster — either is acceptable for v1).
