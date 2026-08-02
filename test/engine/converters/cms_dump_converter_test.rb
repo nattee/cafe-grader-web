@@ -60,6 +60,8 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     assert_equal 'default', cfg[:evaluation_type]
     assert_equal 'grader.cpp', cfg[:main_filename]
     assert_equal ['grader.cpp'], cfg[:main]
+    assert_equal 'managers', cfg[:managers_dir]
+    assert_equal '*', cfg[:managers_pattern]
   end
 
   test 'GroupMin integer params slice lexicographically sorted codenames' do
@@ -101,6 +103,8 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     refute frag.key?(:name)
     refute frag.key?(:compilation_type)
     refute frag.key?(:submission_filename)
+    assert_equal 'managers', frag[:managers_dir]
+    assert_equal '*', frag[:managers_pattern]
   end
 
   test 'active dataset violation rejects the whole task' do
@@ -174,5 +178,38 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
   test 'missing blob rejects' do
     convert(mutate: ->(d) { d['objects']['20001']['input'] = 'dig-nonexistent' })
     assert_match(/blob missing: dig-nonexistent/, @result[:errors].join)
+  end
+
+  # --- review round 1 additions -------------------------------------------
+
+  test 'missing testcase object rejects cleanly, no exception' do
+    convert(mutate: ->(d) { d['objects'].delete('20001') })
+    assert_match(/missing id .*20001/, @result[:errors].join)
+  end
+
+  test 'missing non-active dataset object rejects the whole task, no exception' do
+    convert(mutate: ->(d) { d['objects'].delete('1418') })
+    assert_match(/missing id .*1418/, @result[:errors].join)
+  end
+
+  test 'null testcase input digest rejects cleanly, no EISDIR' do
+    convert(mutate: ->(d) { d['objects']['20001']['input'] = nil })
+    assert_match(/blob.*digest|digest.*blob/i, @result[:errors].join)
+  end
+
+  test 'GroupMin invalid regex pattern rejects with a clear message' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[40, '(unclosed']] })
+    assert_match(/invalid regex/, @result[:errors].join)
+  end
+
+  test 'colliding dataset display name gets a deduped ds_name, no silent merge' do
+    convert(mutate: ->(d) { d['objects']['1418']['description'] = 'main' })
+    assert_equal [], @result[:errors]
+    assert_equal 'main', staging_cfg[:ds_name]
+    assert_equal ['main'], staging_cfg[:additional_datasets]
+    frag = YAML.safe_load(File.read(@staging + 'datasets' + 'main' + 'config.yml'),
+                          symbolize_names: true)
+    assert_equal 'main-2', frag[:ds_name]
+    assert_match(/renamed/, @result[:warnings].join)
   end
 end

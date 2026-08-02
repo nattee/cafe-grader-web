@@ -62,6 +62,16 @@ class Converters::CmsDumpConverter
     throw :reject
   end
 
+  # Guarded @objects[id] lookup — the bundle's referential integrity (task ->
+  # dataset -> manager/testcase/statement/attachment ids) is not verified by
+  # the extractor, so a dangling id must reject! cleanly instead of raising
+  # NoMethodError/EISDIR deep in a private helper.
+  def fetch_obj(id)
+    obj = @objects[id.to_s]
+    reject!("bundle objects map is missing id #{id.inspect}") unless obj.is_a?(Hash)
+    obj
+  end
+
   def parse_bundle
     tj = @bundle + 'task.json'
     reject!("bundle has no task.json (#{tj})") unless tj.exist?
@@ -86,15 +96,14 @@ class Converters::CmsDumpConverter
 
   def plan_datasets
     active_id = @task['active_dataset'].to_s
-    @active = @objects[active_id]
-    reject!('task has no active dataset') unless @active
+    @active = fetch_obj(active_id)
     reasons = dataset_reject_reasons(@active)
     if reasons.any?
       reject!("active dataset '#{ds_display_name(@active)}': #{reasons.join('; ')}")
     end
     @others = []
     (@task['datasets'] || []).map(&:to_s).reject { |i| i == active_id }.each do |id|
-      ds = @objects[id]
+      ds = fetch_obj(id)
       rs = dataset_reject_reasons(ds)
       if rs.any?
         @warnings << "skipped non-active dataset '#{ds_display_name(ds)}': #{rs.join('; ')}"
@@ -172,7 +181,12 @@ class Converters::CmsDumpConverter
         plan = {}
         errs = []
         params.each_with_index do |(points, pattern), i|
-          re = /\A(?:#{pattern})/ # CMS uses re.match => start-anchored
+          begin
+            re = /\A(?:#{pattern})/ # CMS uses re.match => start-anchored
+          rescue RegexpError => e
+            errs << "GroupMin pattern #{pattern.inspect} is an invalid regex: #{e.message}"
+            next
+          end
           sorted.each do |c|
             next unless re.match?(c)
             if plan.key?(c)
@@ -201,14 +215,25 @@ class Converters::CmsDumpConverter
     write_statement
     write_attachments
     additional = []
+    # ProblemImporter matches additional datasets BY NAME (ds_name), so two
+    # CMS datasets that display the same name (or the active dataset's own
+    # name) must not collide silently into one cafe dataset on import.
+    used_ds_names = [ds_display_name(@active)]
     @others.each do |ds|
-      dirname = unique_dirname(additional, ds_display_name(ds))
+      display_name = ds_display_name(ds)
+      dirname = unique_dirname(additional, display_name)
+      ds_name = unique_ds_name(used_ds_names, display_name)
+      if ds_name != display_name
+        @warnings << "dataset '#{display_name}' renamed to '#{ds_name}' in additional_datasets " \
+                     "to avoid colliding with another dataset's name"
+      end
       dir = @staging + ProblemImporter::RESERVED_DATASETS_DIRNAME + dirname
-      frag = { ds_name: ds_display_name(ds) }
+      frag = { ds_name: ds_name }
       write_dataset_into(ds, dir, frag)
       write_yaml(dir + OptionConst::YAML_FILENAME, frag)
       additional << dirname
-      @log << "additional dataset '#{ds_display_name(ds)}' -> " \
+      used_ds_names << ds_name
+      @log << "additional dataset '#{ds_name}' -> " \
               "#{ProblemImporter::RESERVED_DATASETS_DIRNAME}/#{dirname}/"
     end
     cfg[:additional_datasets] = additional if additional.any?
@@ -246,17 +271,23 @@ class Converters::CmsDumpConverter
     cfg[:memory_limit]    = ds['memory_limit'].to_i
     cfg[:score_type]      = SCORE_TYPE_MAP.fetch(ds['score_type'])
     cfg[:evaluation_type] = EVAL_MAP.fetch(eval_mode)
+    # ProblemImporter#read_cpp_extras globs additional managers at
+    # @options[:managers_dir] with @options[:managers_pattern], root-level
+    # only (recursive: false) — without these, managers/*.h land on disk but
+    # the importer never looks in managers/ and silently skips them.
+    cfg[:managers_dir]     = OptionConst::DEFAULT[:dir][:managers]
+    cfg[:managers_pattern] = '*'
 
     managers = ds['managers'] || {}
     if (checker_id = managers['checker'])
-      copy_blob(@objects[checker_id]['digest'], dir + 'checker' + 'checker')
+      copy_blob(fetch_obj(checker_id)['digest'], dir + 'checker' + 'checker')
       @warnings << "dataset '#{ds_display_name(ds)}': CMS comparator copied as checker/checker — " \
                    'CMS checkers are prebuilt binaries; verify it runs on the cafe judge host ' \
                    '(or replace with recompiled source)'
     end
     manager_names = managers.keys - ['checker']
     manager_names.each do |name|
-      copy_blob(@objects[managers[name]]['digest'], dir + 'managers' + name)
+      copy_blob(fetch_obj(managers[name])['digest'], dir + 'managers' + name)
     end
     if compilation == 'grader'
       main = manager_names.include?('grader.cpp') ? 'grader.cpp' : manager_names.sort.find { |n| n.end_with?('.cpp') }
@@ -271,7 +302,7 @@ class Converters::CmsDumpConverter
     end
     tc_cfg = {}
     (ds['testcases'] || {}).sort.each do |codename, tc_id|
-      tc = @objects[tc_id.to_s]
+      tc = fetch_obj(tc_id)
       copy_blob(tc['input'],  dir + 'testcases' + "#{codename}.in")
       copy_blob(tc['output'], dir + 'testcases' + "#{codename}.sol")
       tc_cfg[codename] = plan[codename]
@@ -289,7 +320,7 @@ class Converters::CmsDumpConverter
     end
     primary = (@task['primary_statements'] || []).first
     lang = [primary, 'th', 'en'].compact.find { |l| statements.key?(l) } || statements.keys.sort.first
-    copy_blob(@objects[statements[lang]]['digest'], @staging + OptionConst::DEFAULT[:file][:statement])
+    copy_blob(fetch_obj(statements[lang])['digest'], @staging + OptionConst::DEFAULT[:file][:statement])
     @log << "statement: language '#{lang}' -> #{OptionConst::DEFAULT[:file][:statement]}"
     (statements.keys - [lang]).sort.each do |l|
       @warnings << "statement language '#{l}' skipped (cafe holds one statement)"
@@ -297,7 +328,7 @@ class Converters::CmsDumpConverter
   end
 
   def write_attachments
-    atts = (@task['attachments'] || {}).map { |name, id| [name, @objects[id.to_s]['digest']] }
+    atts = (@task['attachments'] || {}).map { |name, id| [name, fetch_obj(id)['digest']] }
     return if atts.empty?
 
     dir = @staging + OptionConst::DEFAULT[:dir][:attachment]
@@ -319,6 +350,10 @@ class Converters::CmsDumpConverter
   end
 
   def copy_blob(digest, dest)
+    # A blank digest would resolve to @bundle/files itself (the directory),
+    # which #exist? reports true for — cp then blows up with Errno::EISDIR
+    # instead of a clean reject!. Catch it here, before building src.
+    reject!("bundle blob digest missing/blank for #{dest}") if digest.to_s.strip.empty?
     src = @bundle + 'files' + digest.to_s
     reject!("bundle blob missing: #{digest}") unless src.exist?
     dest.dirname.mkpath
@@ -337,6 +372,19 @@ class Converters::CmsDumpConverter
     while taken.include?(candidate)
       n += 1
       candidate = "#{base}-#{n}"
+    end
+    candidate
+  end
+
+  # Same collision-avoidance shape as unique_dirname, but on the raw
+  # (unparameterized) display name — this becomes the ds_name written into
+  # config.yml, which ProblemImporter uses to MATCH additional datasets.
+  def unique_ds_name(taken, display_name)
+    candidate = display_name
+    n = 1
+    while taken.include?(candidate)
+      n += 1
+      candidate = "#{display_name}-#{n}"
     end
     candidate
   end
