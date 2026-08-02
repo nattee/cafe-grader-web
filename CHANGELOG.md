@@ -65,6 +65,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   side by side for budget and model comparisons), and per-attempt drill-down
   showing the measured patch, rounds log, category, tokens/cost, and links to
   the original and shadow submissions. (rev 1949)
+- CMS task clone: `rails "cms:clone[task]"` imports a Batch task (all datasets)
+  straight from a live CMS server over ssh — official dump subtree + selective
+  blob fetch on the server, converted to the cafe package layout and imported
+  through the trusted importer. GroupMin (count and regex forms) maps to
+  `group_min`; Communication/OutputOnly, file-I/O, and GroupMinPrereq tasks are
+  rejected with clear messages (per-dataset skip when non-active). Connection
+  settings live in `config/cms_remote.yml` (gitignored; sample committed). (revs 1960–1965)
 
 ### Changed
 
