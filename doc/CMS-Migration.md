@@ -5,12 +5,13 @@ cafe-grader, ending on a **production** cafe server. Repeatable and reusable —
 this is a migration we expect to re-run (new tasks appear on c2; other CMS
 instances may follow), not a one-off copy.
 
-**Status (2026-08-02): all 95 transferable tasks cloned to dev and
-structurally verified against CMS (95/95 clean).** Five real defects were found
-and fixed along the way — see §5; all five were invisible to structural
-checking, and one of them (comparator argv order) would have silently scored
-every student zero on 22 tasks. The Tier-1 behavioural sweep is running.
-Nothing has been imported to production yet.
+**Status (2026-08-03): all 95 transferable tasks cloned to dev, structurally
+verified against CMS (95/95 exact), and behaviourally validated by replaying
+real c2 submissions (Tier 1).** Headline result: **50 tasks match CMS exactly,
+27 differ only for causes we understand and can name, 11 warrant a human
+glance** — and *no systematic grading defect was found anywhere*. Seven defects
+surfaced along the way (§4); six are fixed, one is a policy decision for the
+operator (§6). Nothing has been imported to production yet.
 
 Related documents:
 - Design: `docs/superpowers/specs/2026-08-02-cms-clone-import-design.md`
@@ -180,18 +181,53 @@ secondary. (The `Replay::ReplayDiff` benign set is deliberately narrow —
 `T→P` and `x→P` only — so resource-limit swaps such as `x↔T` count as
 mismatches even when the score is identical.)
 
-### Validation results so far
+### Tier 1 results (2026-08-03, 95 tasks, ~700 replayed submissions)
 
-**`mar2025_eatingfish` (2026-08-02, dev):** 8 submissions replayed
-(3 × 100, 2 × 69, 2 × 30, 1 × 7). **8/8 score-exact.** 6/8 identical
-testcase-for-testcase; the 2 with differences were cafe-passes-where-CMS-failed
-on testcases CMS recorded as `Execution timed out` (20/25) or
-`Execution killed (memory limits)` (10/10) — benign, zero wrong-answer
-divergence. Structural check also exact: 2 datasets, live `fish_rev2` with 42
-testcases in groups 7/6/6/5/6/12 weighted 7/19/13/23/27/11 = 100, sibling
-`Default` with 40 testcases in 7/6/6/7/5/9.
+| outcome | tasks |
+|---|---|
+| **Clean — every replayed submission scored exactly as on CMS** | **50** |
+| Differences, every one explained (see census below) | 27 |
+| Worth a human glance | 11 |
 
----
+Per-testcase disagreements, classified by **what CMS actually knew** about the
+testcase (a CMS timeout means CMS never learned the true verdict, so our faster
+judge discovering one is not a defect):
+
+| class | count | meaning | our problem? |
+|---|---|---|---|
+| `benign_timing` | 391 | CMS timed out; we finish and find the real verdict | No |
+| `REAL_grading_divergence` | 303 | ~6 individual submissions, each with a submission-specific cause | No — see below |
+| `HARSHER_we_crash` | 144 | we report crash/MLE where CMS graded fine | **Yes — §6 decision** |
+| `cafe_never_graded` | 142 | our newer g++ refuses to compile 2022-era code | No — compiler drift |
+| `looser_we_pass` + `fractional_score_drift` | 19 | quality-scored optimisation tasks | No — machine-dependent |
+
+**Every `REAL_grading_divergence` is one submission, in a task whose other
+submissions match exactly.** Root causes found: a submission using
+`rand()`/`srand` (inherently unreproducible); a submission on a grader-mediated
+query task that is the only one writing debug output to `cerr`; and duplicate
+resubmission pairs of the same program. **No task, and no consistent slice of
+any task, grades differently from CMS.**
+
+`cafe_never_graded` is compiler drift, proved concretely: `may2022_findhome`
+submissions 3050/3051 declare a global `bool close[330]`, which collides with
+POSIX `close()` that modern libstdc++ pulls in via `<bits/stdc++.h>`. It
+compiled on CMS's 2022-era g++ and does not compile here. This is the
+"CE from compiler-version differences — a real finding, not an import bug"
+class the 2026-07-14 design predicted.
+
+**Tasks worth a glance** (none blocking): `apr2022_colorful`, `feb2022_askask`,
+`feb2022_lingling`, `mar2023_updown`, `mar2024_mapping`, `mar2024_secretdeal`,
+`may2022_findhome`, `may2023_abc`, `may2023_landlord`, `may2025_prefixcircuit`,
+`oct2022_spectrophotometer`.
+
+**Reproducing the analysis.** `cms:validate` writes a JSON report per run; the
+classifier that produced the table above lives in the session scratchpad and
+reads those reports without re-grading anything (every verdict string is
+stored). Re-running it after any future sweep reproduces this census.
+
+**Method caveat.** The first 48 tasks were sampled at 2 submissions per score
+band (~10 each); the remaining 47 at 1 per band (~5 each) to finish in
+reasonable time. Every task and every score band is covered either way.
 
 ## 4. Defects found by running against real data (2026-08-02)
 
@@ -219,6 +255,47 @@ handing the checker an empty file where it expected the student's submission.
 on re-import, so re-cloning a badly-imported problem does **not** repair it —
 it merely adds another dataset generation. A problem imported under buggy code
 must be **destroyed and cloned fresh**.
+
+## 6. Open decisions for the operator
+
+Neither is an import defect; both are judge/environment policy that only you
+can settle.
+
+### 6.1 Memory accounting — address space vs cgroup (144 disagreements)
+
+Cafe limits **address space** (`RLIMIT_AS`, isolate `-m`) for C/C++;
+`isolate_need_cg_by_lang` (`app/engine/judge_base.rb:48`) enables cgroup
+accounting only for java/digital/go/python. CMS uses `--cg-mem` whenever
+`use_cgroups` is set, and its default is `True`
+(`cms/grading/Sandbox.py:1102-1106`, `cms/conf.py:116`).
+
+A C++ program with large *untouched* global arrays reserves address space it
+never faults in: fine under cgroup accounting, killed instantly under
+`RLIMIT_AS`. Confirmed on `feb2022_lingling` submission 5795 (`MAX_N`-sized 2D
+arrays; 100 on CMS, 0 here, every testcase crashing). **Imported problems can
+therefore be harsher than they were on CMS — students who passed there would
+get MLE here.**
+
+- **Option A — match CMS:** enable cg for c/cpp. Changes grading for *every
+  existing cafe problem*, not just imports. Needs a deliberate decision and
+  ideally a rejudge plan.
+- **Option B — accept:** document per-problem that memory enforcement is
+  stricter than the source instance.
+
+**Recommended first step (cheap, ~10 min):** flip the flag on dev, re-run the
+two known crashing submissions, and see whether they then match CMS. That turns
+the policy question into an evidence-based one. Note one flagged submission
+(`apr2022_colorful` 5388) has only small arrays, so a second cause (stack depth
+— cafe passes no `--stack` to isolate — or plain UB) may also be present.
+
+### 6.2 `custom_cms` argv order on production — see the 🔴 entry in `doc/backlog.md`
+
+Four pre-existing problems use the legacy `custom_cms` type whose argument
+order is testlib's, not CMS's. If any of their checkers was written to the CMS
+convention, that problem is mis-grading students today. Their blobs are not on
+the dev box, so this must be checked against production.
+
+---
 
 ## 5. Progress tracker
 
