@@ -13,6 +13,84 @@ Conventions:
 
 ---
 
+## 🔴 URGENT — `custom_cms` checker argv order may be mis-grading LIVE problems
+
+**Severity: high. Verify on production before the next exam that uses a custom
+checker.** Found 2026-08-02 while validating the CMS migration.
+
+**The defect.** Cafe's `custom_cms` evaluation type invokes a checker as
+
+```ruby
+# app/engine/checker.rb  (check_command)
+"#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"   # input, USER, correct
+```
+
+but CMS — whose name and whose "CMS/Codeforces convention" comment this type
+claims to follow — invokes it the other way round:
+
+```python
+# CMS 1.4.dev3, cms/grading/steps/trusted.py:237-240
+command = ["./checker", CHECKER_INPUT_FILENAME,           # input.txt
+                        CHECKER_CORRECT_OUTPUT_FILENAME,  # correct_output.txt
+                        output_filename]                  # USER output
+```
+
+**Arguments 2 and 3 are swapped.** Cafe's order matches testlib/Codeforces
+(`input, participant, jury`), not CMS.
+
+**Why it matters beyond the migration.** A checker written to the CMS
+convention receives the *correct answer* where it expects the *student's
+output*, and vice versa. Measured on a real imported task
+(`oct2022_spectrophotometer`): submissions CMS scored **100 graded 0** — every
+testcase "wrong", with no error anywhere. On tasks whose correct-output files
+are empty (checker-only tasks, judged from the input alone) it fails
+universally; on others it can fail subtly or pass by luck if the checker's
+comparison happens to be symmetric.
+
+**Live exposure — needs checking.** Four PRE-EXISTING problems use
+`custom_cms` (dev DB, 2026-08-02):
+
+| problem id | name | checker size |
+|---|---|---|
+| 570 | `d68_q3a_jobqueue` | 2,409,096 B |
+| 606 | `a68_q1a_horse` | 2,345,736 B |
+| 656 | `a68_q4z_guitar_array3` | 3,095 B |
+| 659 | `a68_q4a_normal_puzzle` | 2,408,448 B |
+
+Three are multi-megabyte compiled binaries — the same size profile as the CMS
+checkers we imported. **If any of those checkers follows the CMS convention,
+that problem has been grading students incorrectly.** Their blobs are not
+present on the dev box, so this could not be settled locally; it must be
+checked against production.
+
+**How to check (per problem, ~10 minutes each).** Pull the checker, run it by
+hand on one testcase in both argument orders against a known-correct output,
+and see which order returns "correct":
+
+```
+checker <input> <correct> <user>     # CMS order
+checker <input> <user> <correct>     # cafe's current order
+```
+
+Faster proxy: `strings <checker> | grep -iE 'wrong answer|quitf|testlib'` —
+testlib-derived checkers are cafe-order-correct; a checker printing a bare
+score plus `translate:` text is CMS-style and therefore mis-invoked today.
+
+**Resolution options.**
+1. If all four are testlib-style → nothing is broken; document the naming trap
+   loudly (the type is *named* `custom_cms` but is **not** CMS-compatible) and
+   consider renaming it to `custom_testlib` with a data migration.
+2. If any is CMS-style → that problem's grades are wrong. Switch it to the new
+   `cms_comparator` type (added 2026-08-02, enum 7, CMS-native order) and
+   rejudge affected submissions.
+
+**Already done:** `cms_comparator` exists and the CMS importer targets it, so
+newly imported CMS tasks are correct. `custom_cms` was deliberately left
+unchanged to avoid breaking whatever currently depends on it — which is
+exactly the thing that needs verifying.
+
+---
+
 ## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
 
 **Context.** Viva grounding was extracted off `Tag` into a dedicated
