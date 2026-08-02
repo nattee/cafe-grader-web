@@ -29,7 +29,16 @@ class Checker
       # User's checker. CMS/Codeforces convention: exit 0, score on
       # stdout, comment on stderr. _raw variant outputs a raw decimal
       # score meant to pair with score_type :raw_sum.
+      # NOTE: legacy testlib/Codeforces argv order (input, USER, correct).
+      # Kept as-is for backwards compatibility with existing cafe problems —
+      # do NOT change. See 'cms_comparator' below for the CMS-native order.
       return "#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"
+    when 'cms_comparator'
+      # User's checker, CMS-native argv order (input, CORRECT, USER) — this is
+      # what CMS itself invokes (cms/grading/steps/trusted.py), swapped from
+      # custom_cms's legacy order. Same result protocol as custom_cms: exit 0,
+      # score on stdout, comment on stderr (see process_result_cms).
+      return "#{@prob_checker_file} #{input_file} #{ans_file} #{output_file}"
     when 'custom_cafe'
       # User's checker. Receives <lang> <tc_num> <in> <out> <ans> 10.
       # Output is two lines: line1 CORRECT/INCORRECT/COMMENT:, line2 score
@@ -85,9 +94,9 @@ class Checker
       end
     when 'postgres'
       return process_result_cms(out, err)
-    when 'custom_cms', 'custom_cms_raw', 'custom_cafe'
+    when 'custom_cms', 'custom_cms_raw', 'custom_cafe', 'cms_comparator'
       if status.exitstatus == 0
-        if evaluation_type == 'custom_cms'
+        if evaluation_type == 'custom_cms' || evaluation_type == 'cms_comparator'
           return process_result_cms(out, err)
         elsif evaluation_type == 'custom_cms_raw'
           return process_result_cms_raw(out, err)
@@ -110,7 +119,7 @@ class Checker
   def check_for_required_file
     raise "Output file [#{@output_file.cleanpath}] does not exists" unless @output_file.exist?
     raise "Answer file [#{@ans_file.cleanpath}] does not exists" unless @ans_file.exist?
-    if ['custom_cms', 'custom_cms_raw', 'custom_cafe'].include?(@ds.evaluation_type) &&
+    if ['custom_cms', 'custom_cms_raw', 'custom_cafe', 'cms_comparator'].include?(@ds.evaluation_type) &&
         (@prob_checker_file.nil? || @prob_checker_file.exist? == false)
       raise GraderError.new("Checker file does not exists", submission_id: @sub.id)
     end

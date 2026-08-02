@@ -229,7 +229,7 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     assert_match(/match no GroupMin pattern: 2-01, 2-02/, @result[:errors].join)
   end
 
-  test 'comparator eval maps to custom_cms and pulls the checker manager' do
+  test 'comparator eval maps to cms_comparator and pulls the checker manager' do
     convert(mutate: lambda { |d|
       d['objects']['1414']['task_type_parameters'] = ['grader', ['', ''], 'comparator']
       d['objects']['1414']['managers'] = d['objects']['1414']['managers'].merge('checker' => '10097')
@@ -237,7 +237,7 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
                                 'filename' => 'checker', 'digest' => 'dig-header' }
     })
     assert_equal [], @result[:errors]
-    assert_equal 'custom_cms', staging_cfg[:evaluation_type]
+    assert_equal 'cms_comparator', staging_cfg[:evaluation_type]
     assert File.exist?(@staging + 'checker' + 'checker')
     refute File.exist?(@staging + 'managers' + 'checker')
     assert_match(/prebuilt/, @result[:warnings].join)

@@ -26,7 +26,13 @@ class Converters::CmsDumpConverter
   SUPPORTED_DUMP_VERSION = 39
 
   SCORE_TYPE_MAP = { 'Sum' => 'sum', 'GroupMin' => 'group_min' }.freeze
-  EVAL_MAP       = { 'diff' => 'default', 'comparator' => 'custom_cms' }.freeze
+  # 'comparator' maps to cms_comparator, NOT custom_cms: CMS invokes its
+  # checker as (input, correct, USER) (cms/grading/steps/trusted.py), while
+  # custom_cms is cafe's legacy testlib/Codeforces-order evaluator (input,
+  # USER, correct) kept for backwards compatibility with existing cafe
+  # problems. Using custom_cms here fed CMS checkers arguments in the wrong
+  # order (see app/engine/checker.rb, doc/dataset-scoring-and-evaluation.md).
+  EVAL_MAP       = { 'diff' => 'default', 'comparator' => 'cms_comparator' }.freeze
 
   # Cap on the scale factor k used by scale_group_min_weights! (see there).
   # Real CMS packages seen so far top out around k=100 (hundredths of a

@@ -72,6 +72,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   `group_min`; Communication/OutputOnly, file-I/O, and GroupMinPrereq tasks are
   rejected with clear messages (per-dataset skip when non-active). Connection
   settings live in `config/cms_remote.yml` (gitignored; sample committed). (revs 1960–1965)
+- **`cms_comparator` evaluation type**: user checker invoked with CMS's own
+  argv order (`input, correct, user`), distinct from the legacy `custom_cms`
+  order (`input, user, correct`) that existing cafe problems depend on;
+  `Converters::CmsDumpConverter` now maps CMS's `comparator` evaluation mode to
+  it, unblocking correct import/grading of checker-based CMS comparator tasks.
 
 ### Changed
 
