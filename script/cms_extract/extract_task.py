@@ -3,7 +3,7 @@
 
 Runs ON the CMS server as the cms user, streamed over ssh (never installed):
 
-    ssh HOST sudo -n -u cms /home/cms/cms_venv/bin/python3 - TASKNAME \
+    ssh HOST sudo -n -u cms /home/cms/cms_venv/bin/python3 - TASKNAME [DUMP_DIR] \
         < script/cms_extract/extract_task.py > bundle.tar
 
 Wraps the official cmsDumpExporter for ALL serialization (structure-only,
@@ -15,6 +15,19 @@ needed). Adds only what official tooling cannot do:
   * digest-selective blob fetch via cms FileCacher (blobs live in the DB;
     there is no on-disk file store on c2)
 
+Optional second positional argument DUMP_DIR lets callers reuse ONE dump
+across many invocations (bulk cloning, see lib/tasks/cms.rake cms:clone_all):
+  * if <DUMP_DIR>/dump/contest.json already exists, the exporter is SKIPPED
+    and that file is read directly (logged as reusing the dump);
+  * otherwise the exporter is run INTO <DUMP_DIR>/dump, creating DUMP_DIR
+    itself (0700) if needed -- the exporter refuses to write into an
+    already-existing dir, so "dump" is always a fresh subpath the first time,
+    and present for every later call to reuse.
+DUMP_DIR itself is never removed by this script -- the caller owns its
+lifecycle (created and rm -rf'd once for the whole bulk run). Omitting
+DUMP_DIR keeps prior behaviour exactly: the dump lives under this run's own
+temp dir and is deleted with it on exit.
+
 stdout: fd 1 is reserved for the tar stream of bundle/ (task.json +
     files/<digest>) ONLY. Before any work starts, main() dup2's fd 1 onto
     stderr and keeps the real stdout fd aside, so any library that writes
@@ -22,7 +35,8 @@ stdout: fd 1 is reserved for the tar stream of bundle/ (task.json +
     of corrupting the tar; the tar is written straight to the saved fd.
 stderr: progress log + any stdout chatter from libraries
     exit: 0 ok, 2 usage, 3 task not found
-Read-only against CMS. Work dir is 0700 under /tmp and removed on exit.
+Read-only against CMS. This run's own temp work dir is 0700 under /tmp and
+    removed on exit; a caller-supplied DUMP_DIR is not (see above).
 Consumed by app/engine/converters/cms_dump_converter.rb (bundle_version 1).
 """
 import json
@@ -77,6 +91,15 @@ def build_subtree(objects, task_name):
     return tid, subtree, digests
 
 
+def run_exporter(dump_dir):
+    """Run the official cmsDumpExporter INTO dump_dir (must not yet exist)."""
+    log("[extract] official cmsDumpExporter (structure only, no submissions) ...")
+    subprocess.run(
+        [os.path.join(VENV, "bin", "cmsDumpExporter"),
+         "-F", "-S", "-U", "-P", dump_dir],
+        check=True, stdout=sys.stderr, stderr=sys.stderr)
+
+
 def main():
     # CMS logs to stdout from *inside our process* (not just the
     # cmsDumpExporter subprocess, which is already redirected below via
@@ -89,22 +112,32 @@ def main():
     real_stdout_fd = os.dup(sys.stdout.fileno())
     os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
 
-    if len(sys.argv) != 2:
-        log("usage: extract_task.py <task_name>")
+    if len(sys.argv) not in (2, 3):
+        log("usage: extract_task.py <task_name> [dump_dir]")
         return 2
     task_name = sys.argv[1]
+    dump_dir_arg = sys.argv[2] if len(sys.argv) == 3 else None
     work = tempfile.mkdtemp(prefix="cms_extract_")
     os.chmod(work, 0o700)
     try:
         # The exporter/FileCacher may create relative cache dirs -> keep them
         # inside the 0700 work dir.
         os.chdir(work)
-        dump_dir = os.path.join(work, "dump")  # exporter refuses existing dirs
-        log("[extract] official cmsDumpExporter (structure only, no submissions) ...")
-        subprocess.run(
-            [os.path.join(VENV, "bin", "cmsDumpExporter"),
-             "-F", "-S", "-U", "-P", dump_dir],
-            check=True, stdout=sys.stderr, stderr=sys.stderr)
+        if dump_dir_arg:
+            # Reusable across many invocations (bulk clone): the exporter
+            # writes into a fresh "dump" subpath the first time; later calls
+            # find it there and skip the exporter entirely.
+            dump_dir = os.path.join(dump_dir_arg, "dump")
+            if os.path.exists(os.path.join(dump_dir, "contest.json")):
+                log("[extract] reusing existing dump at %s" % dump_dir)
+            else:
+                if not os.path.isdir(dump_dir_arg):
+                    os.makedirs(dump_dir_arg)
+                    os.chmod(dump_dir_arg, 0o700)
+                run_exporter(dump_dir)
+        else:
+            dump_dir = os.path.join(work, "dump")  # exporter refuses existing dirs
+            run_exporter(dump_dir)
         with open(os.path.join(dump_dir, "contest.json")) as f:
             dump = json.load(f)
         dump_version = dump.get("_version")
