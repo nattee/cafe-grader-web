@@ -35,7 +35,8 @@ class ExtractTaskFilterTest < ActiveSupport::TestCase
   PY
 
   test 'build_subtree keeps the task subtree, drops users, collects all digests' do
-    out, err, status = Open3.capture3('python3', '-c', PYTEST, SCRIPT.to_s, FIXTURE.to_s)
+    out, err, status = Open3.capture3({ 'PYTHONDONTWRITEBYTECODE' => '1' },
+                                       'python3', '-c', PYTEST, SCRIPT.to_s, FIXTURE.to_s)
     assert status.success?, "python failed:\n#{err}"
     assert_includes out, 'OK'
   end

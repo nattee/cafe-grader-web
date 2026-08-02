@@ -212,4 +212,42 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     assert_equal 'main-2', frag[:ds_name]
     assert_match(/renamed/, @result[:warnings].join)
   end
+
+  # --- final review additions ---------------------------------------------
+
+  test 'unsafe manager filename rejects, no file written outside staging' do
+    convert(mutate: ->(d) {
+      managers = d['objects']['1414']['managers']
+      managers['../evil.h'] = managers.delete('eatingfish.h')
+    })
+    assert_match(/unsafe manager filename/, @result[:errors].join)
+    refute Dir.glob(@tmp + '**' + '*evil*').any?
+  end
+
+  test 'unsafe attachment filename rejects, no file written outside staging' do
+    convert(mutate: ->(d) {
+      atts = d['objects']['408']['attachments']
+      d['objects']['408']['attachments'] = { '../evil.zip' => atts.delete('starter.zip') }
+    })
+    assert_match(/unsafe attachment filename/, @result[:errors].join)
+    refute Dir.glob(@tmp + '**' + '*evil*').any?
+  end
+
+  test 'bare checker attachment is wrapped in a zip to avoid the recursive checker glob' do
+    convert(mutate: lambda { |d|
+      d['objects']['408']['attachments'] = { 'checker' => '1417' }
+      d['objects']['1417']['filename'] = 'checker'
+    })
+    assert_equal [], @result[:errors]
+    refute File.exist?(@staging + 'attachment' + 'checker')
+    assert File.exist?(@staging + 'attachment' + 'eatingfish_mini-files.zip')
+  end
+
+  test 'sibling dataset with different compilation than active gets a promotion warning' do
+    convert
+    assert_match(
+      /dataset 'rev2': compilation 'alone' differs from the active dataset's 'grader'/,
+      @result[:warnings].join("\n")
+    )
+  end
 end

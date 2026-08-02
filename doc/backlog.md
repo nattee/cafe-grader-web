@@ -462,3 +462,28 @@ clobbering-vs-staleness discussion):
 Plus: `pdf-reader` graduates into the Gemfile; blank extraction (scanned
 PDFs) leaves the field blank and prompts omit the section; leave the column
 out of the audited attrs (derived, bulky).
+
+## CMS clone — deferred hardening batch (from 2026-08-02 final review)
+
+- Nil CMS `time_limit`/`memory_limit` convert to `0` silently via `.to_f`/`.to_i`
+  — add a reject-or-warn guard. `app/engine/converters/cms_dump_converter.rb:284-285`
+  (`write_dataset_into`).
+- Fractional `GroupMin` points truncate to an int weight with no warning —
+  add a warn when `points` isn't a whole number.
+  `app/engine/converters/cms_dump_converter.rb:172-202` (`build_group_plan`).
+- `Errno::EPIPE` on the ssh stdin write surfaces as a raw backtrace instead
+  of a clean `abort` — rescue it. `lib/tasks/cms.rake:36` (`stdin.write(File.read(script))`).
+- Add `-o ConnectTimeout=10` to the ssh invocation so a dead/unreachable CMS
+  host fails fast instead of hanging on the default TCP timeout.
+  `lib/tasks/cms.rake:31` (the `ssh -o BatchMode=yes ...` cmd array).
+- An empty ACTIVE dataset (0 testcases) imports with no warning — give it
+  root parity with the additional-dataset warning path (non-active empty
+  datasets already get a `skipped non-active dataset` warning via
+  `dataset_reject_reasons`; the active one has no equivalent signal).
+  `app/engine/converters/cms_dump_converter.rb:127-147` (`dataset_reject_reasons`),
+  `:327` (the per-dataset testcase-count log line).
+- `script/cms_extract/extract_task.py`'s module docstring documents exit
+  codes `0 ok, 2 usage, 3 task not found` but not the traceback/exit-1 case
+  for an unhandled exception (e.g. `cmsDumpExporter` failure) — the rake
+  task already treats any nonzero exit as failure so behavior is correct,
+  just undocumented. `script/cms_extract/extract_task.py:1-21` (docstring).

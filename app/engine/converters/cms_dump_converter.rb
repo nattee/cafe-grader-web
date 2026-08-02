@@ -29,8 +29,14 @@ class Converters::CmsDumpConverter
 
   # Attachment filenames that would collide with ProblemImporter's root-level
   # recursive globs (*.pdf statement, *.md description, *.in/*.sol testcases)
-  # get wrapped in a zip instead of shipped bare.
-  RISKY_ATTACHMENT = /\.(pdf|md|in|sol|yml)\z/i
+  # or its recursive **/checker glob (a bare "checker" attachment) get
+  # wrapped in a zip instead of shipped bare.
+  RISKY_ATTACHMENT = /\.(pdf|md|in|sol|yml)\z|\Achecker\z/i
+
+  # Manager/attachment names come from the bundle and are used as path
+  # components; reject anything that isn't a plain filename before it
+  # touches the filesystem.
+  SAFE_FILENAME = /\A[\w.\-]+\z/
 
   attr_reader :log, :warnings, :errors, :problem_meta
 
@@ -227,6 +233,14 @@ class Converters::CmsDumpConverter
         @warnings << "dataset '#{display_name}' renamed to '#{ds_name}' in additional_datasets " \
                      "to avoid colliding with another dataset's name"
       end
+      ds_compilation = ds['task_type_parameters']&.first
+      active_compilation = @active['task_type_parameters']&.first
+      if ds_compilation != active_compilation
+        @warnings << "dataset '#{display_name}': compilation '#{ds_compilation}' differs from " \
+                     "the active dataset's '#{active_compilation}' — problem-level compilation_type " \
+                     'follows the ACTIVE dataset; promoting this dataset live later needs a manual ' \
+                     'compilation_type change'
+      end
       dir = @staging + ProblemImporter::RESERVED_DATASETS_DIRNAME + dirname
       frag = { ds_name: ds_name }
       write_dataset_into(ds, dir, frag)
@@ -286,6 +300,8 @@ class Converters::CmsDumpConverter
                    '(or replace with recompiled source)'
     end
     manager_names = managers.keys - ['checker']
+    bad_manager = manager_names.find { |name| !name.match?(SAFE_FILENAME) }
+    reject!("unsafe manager filename #{bad_manager.inspect}") if bad_manager
     manager_names.each do |name|
       copy_blob(fetch_obj(managers[name])['digest'], dir + 'managers' + name)
     end
@@ -330,6 +346,9 @@ class Converters::CmsDumpConverter
   def write_attachments
     atts = (@task['attachments'] || {}).map { |name, id| [name, fetch_obj(id)['digest']] }
     return if atts.empty?
+
+    bad_attachment = atts.map(&:first).find { |name| !name.match?(SAFE_FILENAME) }
+    reject!("unsafe attachment filename #{bad_attachment.inspect}") if bad_attachment
 
     dir = @staging + OptionConst::DEFAULT[:dir][:attachment]
     if atts.size == 1 && atts.first.first !~ RISKY_ATTACHMENT

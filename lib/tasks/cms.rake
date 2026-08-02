@@ -11,6 +11,7 @@ namespace :cms do
     abort 'Usage: rails "cms:clone[<task_name>]"' if name.blank?
     # Task name goes onto the remote command line -- keep it shell-inert.
     abort "Task name '#{name}' contains unsupported characters" unless name.match?(/\A[\w.\-]+\z/)
+    Current.actor_note = "Rake: cms:clone[#{name}]"
 
     cfg_file = Rails.root.join('config', 'cms_remote.yml')
     cfg = File.exist?(cfg_file) ? YAML.safe_load(File.read(cfg_file), symbolize_names: true) : {}
@@ -42,6 +43,17 @@ namespace :cms do
       end
       abort 'Extraction failed (see [cms] lines above).' unless status&.success?
 
+      # Pre-scan the archive before extracting: every member must live under
+      # bundle/ with safe path components, so a hostile/buggy bundle can't
+      # escape the tmp staging dir via '../' or an absolute path.
+      members, st = Open3.capture2('tar', '-tf', tar_path)
+      abort 'bundle tar failed listing' unless st.success?
+      members.each_line do |line|
+        line = line.chomp
+        next if line.empty?
+        abort "bundle tar contains unsafe member: #{line}" unless line.match?(%r{\Abundle(/[\w.\-]+)*/?\z})
+      end
+
       system('tar', '-xf', tar_path, '-C', tmp) or abort 'could not untar bundle'
       bundle_dir = File.join(tmp, 'bundle')
       staging = File.join(tmp, 'staging')
@@ -62,9 +74,25 @@ namespace :cms do
       abort "Import errors: #{pi.errors.join('; ')}" if pi.errors.any?
 
       # Carry the CMS dataset name onto the live dataset (importer auto-names it).
-      pi.dataset.update(name: meta[:live_dataset_name]) if meta[:live_dataset_name].present?
+      if meta[:live_dataset_name].present? && pi.dataset
+        target = meta[:live_dataset_name]
+        sibling_names = pi.problem.datasets.where.not(id: pi.dataset.id).pluck(:name)
+        if sibling_names.include?(target)
+          n = 2
+          candidate = "#{target}-#{n}"
+          while sibling_names.include?(candidate)
+            n += 1
+            candidate = "#{target}-#{n}"
+          end
+          puts "NOTE: dataset name '#{target}' already used by another dataset of this problem; " \
+               "renamed to '#{candidate}'."
+          target = candidate
+        end
+        pi.dataset.update!(name: target)
+      end
+      avail_note = pi.problem.available == false ? '; available=false until you enable it' : ''
       puts "Cloned '#{meta[:name]}' -> problem id #{pi.problem.id} " \
-           "(#{pi.problem.datasets.count} dataset(s); available=false until you enable it)."
+           "(#{pi.problem.datasets.count} dataset(s)#{avail_note})."
     end
   end
 end
