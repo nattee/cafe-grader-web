@@ -187,6 +187,33 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     assert_match(/no usable testcase groups/, @result[:errors].join)
   end
 
+  # The under-declared/weight-0-tail path must still group/order on the
+  # ORIGINAL (possibly slashed) codename and only translate to the
+  # filesystem-safe name at emission -- same property the sanitization pass
+  # guarantees elsewhere (see "directory-style codenames land as sanitized
+  # staging files" above). Here the LEFTOVER testcase itself is slashed.
+  test 'GroupMin under-count leftover with a slashed codename sanitizes correctly in the weight-0 group' do
+    convert(mutate: ->(d) {
+      tcs = d['objects']['1414']['testcases']
+      d['objects']['1414']['testcases'] = {
+        '1-01' => tcs['1-01'],
+        '2-01' => tcs['2-01'],
+        'result/2-02' => tcs['2-02']
+      }
+      d['objects']['1414']['score_type_parameters'] = [[30, 1], [70, 1]]
+    })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'2-01'])
+    # 'result/2-02' still sorts after '2-01' by its ORIGINAL codename, lands
+    # in the weight-0 trailing group, and is written under its sanitized name.
+    assert_equal({ group: 3, group_name: '3', weight: 0 }, tcs[:'result_2-02'])
+    assert File.exist?(@staging + 'testcases' + 'result_2-02.in')
+    assert_match(/GroupMin params cover 2 of 3 testcases; the remaining 1 assigned to a weight-0 group/,
+                 @result[:log].join("\n"))
+  end
+
   test 'GroupMin regex params assign by anchored match' do
     convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[40, '1-.*'], [60, '2-.*']] })
     assert_equal [], @result[:errors]
