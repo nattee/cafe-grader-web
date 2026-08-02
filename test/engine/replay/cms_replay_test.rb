@@ -132,4 +132,105 @@ class Replay::CmsReplayTest < ActiveSupport::TestCase
     assert_match(/a\?b/, err.message)
     assert_match(/ambiguous/, err.message)
   end
+
+  # --- run: compile-error submissions & score-based verdicts ---------------
+  #
+  # These exercise C.run end to end but stub Replay::ReplayGrader.grade_sync
+  # (same technique as Replay::SubmissionReplayTest) so no real judge/isolate
+  # box is needed -- only the report-shaping logic in cms_replay.rb is under
+  # test here.
+
+  def build_live_dataset(group_sizes)
+    dataset = build_dataset(group_sizes)
+    dataset.problem.update!(live_dataset: dataset)
+    dataset
+  end
+
+  def cpp_entry(id, cms_score:, evaluations: {}, compilation_outcome: nil)
+    { "cms_submission_id" => id, "language" => "C++11 / g++", "cms_score" => cms_score,
+      "compilation_outcome" => compilation_outcome, "source" => "int main(){}", "evaluations" => evaluations }
+  end
+
+  test "a submission with empty CMS evaluations and compilation_outcome fail is classified compile_only, " \
+       "never errored, and passes when cafe also scores 0" do
+    dataset = build_live_dataset([2])
+    problem = dataset.problem
+    sample = { "task" => problem.name, "dataset_id" => dataset.id,
+               "submissions" => [cpp_entry(1, cms_score: 0.0, compilation_outcome: "fail")] }
+
+    Replay::ReplayGrader.stub :grade_sync, ->(*) { { points: 0.0, grader_comment: nil, status: "compilation_error" } } do
+      report = C.run(problem, sample)
+      assert_equal 1, report[:replayed]
+      assert_equal 1, report[:compile_only]
+      assert_equal 0, report[:errored], "compile-error submissions must never be bucketed as errored"
+      assert_equal 0, report[:score_mismatch]
+      assert_equal 1, report[:score_exact]
+      assert_empty report[:mismatch_details]
+    end
+    assert_equal 0, Submission.joins(:user).where(users: { login: "replay_bot" }).count,
+                 "the replayed submission must be destroyed"
+  end
+
+  test "a compile_only submission where cafe scores non-zero is a real score mismatch, not silently passed" do
+    dataset = build_live_dataset([2])
+    problem = dataset.problem
+    sample = { "task" => problem.name, "dataset_id" => dataset.id,
+               "submissions" => [cpp_entry(2, cms_score: 0.0, compilation_outcome: "fail")] }
+
+    Replay::ReplayGrader.stub :grade_sync, ->(*) { { points: 55.0, grader_comment: nil, status: "done" } } do
+      report = C.run(problem, sample)
+      assert_equal 1, report[:compile_only]
+      assert_equal 0, report[:errored]
+      assert_equal 1, report[:score_mismatch],
+                   "cafe scoring where CMS recorded a compile failure is a genuine finding"
+      assert_equal 0, report[:score_exact]
+      assert_equal 1, report[:mismatch_details].size
+      detail = report[:mismatch_details].first
+      assert_equal :compile_only, detail[:kind]
+      assert_in_delta 0.0, detail[:cms_score].to_f, 0.001
+      assert_in_delta 55.0, detail[:cafe_points].to_f, 0.001
+    end
+  end
+
+  test "a verdict-string difference with an identical score is verdict_only_diff and does not fail the task" do
+    dataset = build_live_dataset([1]) # single testcase "01-01"
+    problem = dataset.problem
+    evaluations = { "01-01" => { "outcome" => 1.0, "text" => "Output is correct" } } # cms_gc = "P"
+    sample = { "task" => problem.name, "dataset_id" => dataset.id,
+               "submissions" => [cpp_entry(3, cms_score: 100.0, evaluations: evaluations)] }
+
+    # grade_sync is stubbed, so no real Evaluation row is ever created for
+    # the fresh submission -- cafe_verdict_string reads back "?" (no
+    # evaluation row), a genuine per-testcase character difference against
+    # CMS's "P", while the stubbed score matches CMS exactly.
+    Replay::ReplayGrader.stub :grade_sync, ->(*) { { points: 100.0, grader_comment: nil, status: "done" } } do
+      report = C.run(problem, sample)
+      assert_equal 0, report[:score_mismatch], "a task must NOT fail on verdict-character noise alone"
+      assert_equal 0, report[:errored]
+      assert_equal 1, report[:verdict_only_diff]
+      assert_equal 1, report[:score_exact]
+      assert_equal 1, report[:verdict_only_details].size
+      assert_empty report[:mismatch_details], "verdict-only diffs must not appear in the score-mismatch payload"
+    end
+  end
+
+  test "a submission whose score differs is a score_mismatch and fails the task" do
+    dataset = build_live_dataset([1])
+    problem = dataset.problem
+    evaluations = { "01-01" => { "outcome" => 1.0, "text" => "Output is correct" } }
+    sample = { "task" => problem.name, "dataset_id" => dataset.id,
+               "submissions" => [cpp_entry(4, cms_score: 100.0, evaluations: evaluations)] }
+
+    Replay::ReplayGrader.stub :grade_sync, ->(*) { { points: 40.0, grader_comment: nil, status: "done" } } do
+      report = C.run(problem, sample)
+      assert_equal 1, report[:score_mismatch], "a genuine score disagreement must fail the task"
+      assert_equal 0, report[:verdict_only_diff]
+      assert_equal 0, report[:score_exact]
+      assert_equal 1, report[:mismatch_details].size
+      detail = report[:mismatch_details].first
+      assert_equal :score_mismatch, detail[:kind]
+      assert_in_delta 100.0, detail[:cms_score].to_f, 0.001
+      assert_in_delta 40.0, detail[:cafe_points].to_f, 0.001
+    end
+  end
 end

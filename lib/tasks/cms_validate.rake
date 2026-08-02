@@ -72,6 +72,41 @@ module CmsValidateSupport
     false
   end
 
+  # A task FAILS iff it produced a real score disagreement (score_mismatch)
+  # or a genuine per-submission error (errored) -- verdict-character noise
+  # (verdict_only_diff) never fails a task on its own (doc/CMS-Migration.md
+  # Sec 3, "Read score_exact first").
+  def task_failed?(result)
+    result[:score_mismatch].to_i.positive? || result[:errored].to_i.positive?
+  end
+
+  # Rewrites the WHOLE report file from the results accumulated so far.
+  # Called after every task (not just at the end) so a killed/interrupted
+  # sweep still leaves a readable, up-to-date report on disk instead of
+  # losing everything -- a prior long run was killed and lost its output.
+  # +complete+ is false on every incremental write and flipped to true only
+  # by the final call after the task loop finishes, so a reader can tell an
+  # interrupted report apart from a finished one at a glance.
+  def write_report(out_path, target:, limit:, results:, complete: false)
+    failed = results.select { |r| task_failed?(r) }
+    verdict_only_only = results.reject { |r| task_failed?(r) }
+                               .select { |r| r[:verdict_only_diff].to_i.positive? }
+    run_errored = results.select { |r| r[:error] }.map { |r| r[:task] }
+
+    File.write(out_path, JSON.pretty_generate({
+      generated_at: Time.zone.now.iso8601,
+      target: target,
+      per_band_limit: limit,
+      complete: complete,
+      failed_tasks: failed.map { |r| { task: r[:task], score_mismatch: r[:score_mismatch].to_i,
+                                       errored: r[:errored].to_i } },
+      verdict_only_tasks: verdict_only_only.map { |r| { task: r[:task], verdict_only_diff: r[:verdict_only_diff].to_i } },
+      errored_tasks: run_errored,
+      results: results
+    }))
+    { failed: failed, verdict_only_only: verdict_only_only, run_errored: run_errored }
+  end
+
   # Streams extract_submissions.py to the CMS host over ssh (identical shape
   # to cms:clone's extraction of extract_task.py), captures fd 1 (the JSON
   # payload) and returns it parsed. [cms] stderr lines are echoed live via
@@ -141,12 +176,18 @@ namespace :cms do
     end
 
     script_path = Rails.root.join('script', 'cms_extract', 'extract_submissions.py')
+    # Fixed for the whole sweep -- written (rewritten in full) after EVERY
+    # task below, not just at the end, so a killed/interrupted run (this
+    # has happened on a real overnight sweep) still leaves a readable,
+    # up-to-date report on disk instead of losing everything.
+    out_path = Rails.root.join('tmp', "cms_validate_#{Time.zone.now.strftime('%Y%m%d_%H%M%S')}.json")
     results = []
     task_names.each do |name|
       problem = Problem.find_by(name: name)
       unless problem
         puts "#{name}: SKIP (no local Problem named '#{name}' -- clone it first with cms:clone)"
         results << { task: name, skipped: true, reason: 'not cloned locally' }
+        CmsValidateSupport.write_report(out_path, target: target, limit: limit, results: results)
         next
       end
 
@@ -156,32 +197,47 @@ namespace :cms do
                                                   task_name: name, limit: limit)
         report = Replay::CmsReplay.run(problem, data)
         results << report
-        verdict = report[:mismatch].to_i.positive? ? 'FAIL' : 'ok'
-        puts format('  %-28<task>s %-4<verdict>s replayed=%-3<replayed>d exact=%-3<exact>d ' \
-                    'benign=%-3<benign>d mismatch=%-3<mismatch>d errored=%-3<errored>d score_exact=%<score_exact>d',
-                    task: name, verdict: verdict, replayed: report[:replayed], exact: report[:exact],
-                    benign: report[:benign], mismatch: report[:mismatch], errored: report[:errored],
-                    score_exact: report[:score_exact])
+        # Lead with SCORE agreement -- that's the signal that decides
+        # whether the clone is trustworthy (doc/CMS-Migration.md Sec 3).
+        # verdict_only_diff (per-testcase character noise with an identical
+        # final score, e.g. x<->T swaps inside an already-failed group_min
+        # group) is reported but never fails the task on its own.
+        verdict = CmsValidateSupport.task_failed?(report) ? 'FAIL' : 'ok'
+        puts format('  %-28<task>s %-4<verdict>s replayed=%-3<replayed>d score_exact=%-3<score_exact>d ' \
+                    'score_mismatch=%-3<score_mismatch>d verdict_only=%-3<verdict_only>d ' \
+                    'compile_only=%-3<compile_only>d errored=%<errored>d',
+                    task: name, verdict: verdict, replayed: report[:replayed], score_exact: report[:score_exact],
+                    score_mismatch: report[:score_mismatch], verdict_only: report[:verdict_only_diff],
+                    compile_only: report[:compile_only], errored: report[:errored])
       rescue StandardError => e
         warn "  #{name}: ERROR #{e.message}"
         results << { task: name, error: e.message }
       end
+      CmsValidateSupport.write_report(out_path, target: target, limit: limit, results: results)
     end
 
-    failed  = results.select { |r| r[:mismatch].to_i.positive? }.map { |r| r[:task] }
-    errored = results.select { |r| r[:error] }.map { |r| r[:task] }
+    summary = CmsValidateSupport.write_report(out_path, target: target, limit: limit, results: results, complete: true)
+    failed_names = summary[:failed].map { |r| r[:task] }
 
     puts "\n=== cms:validate summary ==="
-    puts "tasks: #{results.size}  FAIL (mismatch > 0): #{failed.size}  errored: #{errored.size}"
-    puts "FAILED tasks: #{failed.any? ? failed.join(', ') : 'none'}"
-    puts "ERRORED tasks (could not complete): #{errored.join(', ')}" if errored.any?
-
-    out_path = Rails.root.join('tmp', "cms_validate_#{Time.zone.now.strftime('%Y%m%d_%H%M%S')}.json")
-    File.write(out_path, JSON.pretty_generate({ generated_at: Time.zone.now.iso8601, target: target,
-                                                per_band_limit: limit, failed_tasks: failed,
-                                                errored_tasks: errored, results: results }))
+    puts "tasks: #{results.size}  FAIL (score_mismatch>0 or errored>0): #{summary[:failed].size}  " \
+         "could-not-complete: #{summary[:run_errored].size}"
+    if summary[:failed].any?
+      puts 'FAILED tasks: ' + summary[:failed].map { |r| "#{r[:task]}(score_mismatch=#{r[:score_mismatch].to_i})" }
+                                              .join(', ')
+    else
+      puts 'FAILED tasks: none'
+    end
+    if summary[:verdict_only_only].any?
+      puts 'Tasks with verdict-only differences only (score agrees, NOT failing): ' +
+           summary[:verdict_only_only].map { |r| "#{r[:task]}(verdict_only=#{r[:verdict_only_diff].to_i})" }
+                                       .join(', ')
+    end
+    puts "ERRORED tasks (could not complete): #{summary[:run_errored].join(', ')}" if summary[:run_errored].any?
     puts "Full report: #{out_path}"
 
-    abort "cms:validate FAILED -- #{failed.size} task(s) with real mismatches: #{failed.join(', ')}" if failed.any?
+    if failed_names.any?
+      abort "cms:validate FAILED -- #{failed_names.size} task(s) with real score mismatches: #{failed_names.join(', ')}"
+    end
   end
 end

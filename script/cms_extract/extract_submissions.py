@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """Extract a stratified sample of a task's real submissions from a live CMS
-instance -- source + CMS-recorded per-testcase outcomes -- as the oracle
-input for Mode B submission-replay validation (doc/CMS-Migration.md Sec 3).
+instance -- source + CMS-recorded per-testcase outcomes, plus
+compilation_outcome/compilation_text -- as the oracle input for Mode B
+submission-replay validation (doc/CMS-Migration.md Sec 3).
+
+A submission whose compilation FAILED on CMS (`compilation_outcome ==
+"fail"`) has NO SubmissionEvaluation rows at all -- there is nothing
+per-testcase to sample, only a final score of 0.0. Such a submission still
+lands in the "0" score band and is still extracted (with an empty
+`evaluations` dict); `compilation_outcome` is what lets the Ruby side
+(app/engine/replay/cms_replay.rb) recognise it and fall back to a
+score-only comparison instead of trying to build a per-testcase verdict
+string from nothing.
 
 Runs ON the CMS server as the cms user, streamed over ssh (never installed),
 the same shape as extract_task.py:
@@ -97,6 +107,14 @@ def band_submission_results(session, sr_cls, sub_cls, dataset, lo, hi, limit):
 def extract_submission(fc, sr):
     """Build one submission's JSON entry, or return None (with a stderr
     warning) if it has no submitted file to read a source from.
+
+    `compilation_outcome` is always included ("ok" / "fail" / None). When
+    compilation failed, `sr.evaluations` is empty by construction (CMS never
+    evaluates a submission that didn't compile) -- that's expected, not an
+    extraction bug, and is exactly the signal the Ruby side uses to switch
+    to a score-only comparison. `compilation_text` (CMS's compiler
+    output, an ARRAY(String) like Evaluation.text) is included, normalised
+    to a string, only when CMS actually recorded one.
     """
     sub = sr.submission
     files = list(sub.files.values())
@@ -118,13 +136,17 @@ def extract_submission(fc, sr):
             "text": normalize_text(ev.text),
         }
 
-    return {
+    entry = {
         "cms_submission_id": sub.id,
         "language": sub.language,
         "cms_score": float(sr.score),
+        "compilation_outcome": sr.compilation_outcome,
         "source": source,
         "evaluations": evaluations,
     }
+    if sr.compilation_text:
+        entry["compilation_text"] = normalize_text(sr.compilation_text)
+    return entry
 
 
 def main():

@@ -167,15 +167,36 @@ module Replay
     # so a systemic outage shows up as every submission erroring rather than
     # a silent skip).
     #
-    # Returns a report Hash: task, replayed, exact, benign, mismatch,
-    # errored, score_exact, mismatch_details (cms id, cms score, cafe
-    # points, both verdict strings, first differing codenames).
+    # Returns a report Hash. The verdict that matters is score-based:
+    #   score_mismatch  -- final score differs from CMS. THIS is what makes
+    #                       a task FAIL (see lib/tasks/cms_validate.rake).
+    #   exact           -- per-testcase verdict strings identical (score
+    #                       trivially matches too).
+    #   benign          -- score matches; the only per-testcase differences
+    #                       are the narrow T->P / x->P set (Replay::ReplayDiff).
+    #   verdict_only_diff -- score matches, but per-testcase characters
+    #                       differ in some other way (e.g. x<->T swaps under
+    #                       group_min, where the group already failed on a
+    #                       different testcase so the swap can't move the
+    #                       score). Reported, does NOT fail the task.
+    #   compile_only    -- the CMS submission had NO per-testcase evaluations
+    #                       at all (compilation failed on CMS) -- compared by
+    #                       final score only. Counts toward score_mismatch on
+    #                       disagreement, never toward errored.
+    #   errored         -- a genuine exception while replaying (unsupported
+    #                       language, judge failure, missing codename, ...).
+    # mismatch_details carries the full debugging payload (cms id, both
+    # scores, both verdict strings where available, differing codenames with
+    # the ORIGINAL CMS codename shown) for every score_mismatch.
+    # verdict_only_details carries a compact summary (counts + a few example
+    # codenames) for verdict_only_diff, so the JSON stays readable.
     def run(problem, sample_json, deadline: 700)
       data = sample_json.is_a?(String) ? JSON.parse(sample_json) : sample_json
       submissions = (data['submissions'] || data[:submissions] || []).to_a
 
       report = { task: data['task'] || data[:task], replayed: 0, exact: 0, benign: 0,
-                mismatch: 0, errored: 0, score_exact: 0, mismatch_details: [], error_details: [] }
+                verdict_only_diff: 0, score_mismatch: 0, compile_only: 0, errored: 0,
+                score_exact: 0, mismatch_details: [], verdict_only_details: [], error_details: [] }
 
       dataset = problem.live_dataset
       unless dataset
@@ -203,11 +224,27 @@ module Replay
     end
     private_class_method :normalize_entry
 
+    # A submission whose CMS `evaluations` hash is empty has nothing
+    # per-testcase to compare -- verified against the live CMS DB, this is
+    # exactly (and only) what a compilation failure looks like
+    # (`compilation_outcome == 'fail'`, zero SubmissionEvaluation rows,
+    # score 0.0). Detected structurally (empty evaluations), not by trusting
+    # `compilation_outcome`'s value, so it degrades safely even if a future
+    # extractor revision or a hand-built sample sets that field differently.
+    def compile_only_entry?(entry)
+      (entry['evaluations'] || {}).empty?
+    end
+    private_class_method :compile_only_entry?
+
     def replay_one(report, problem, dataset, bot, entry, deadline)
       fresh = nil
       begin
         language = language_for(entry['language'])
-        cms_gc = cms_verdict_string(entry['evaluations'], dataset)
+        compile_only = compile_only_entry?(entry)
+        # Building cms_verdict_string for a compile_only entry would raise
+        # (nothing to walk the dataset's testcases against) -- skip it
+        # entirely rather than working around the raise.
+        cms_gc = compile_only ? nil : cms_verdict_string(entry['evaluations'], dataset)
 
         fresh = Submission.new(user: bot, problem: problem, language: language,
                                source_filename: "cms_#{entry['cms_submission_id']}.#{language.ext}",
@@ -216,9 +253,14 @@ module Replay
         fresh.save!(validate: false) # replaying an already-accepted CMS source; skip submit-auth validation
 
         res = Replay::ReplayGrader.grade_sync(fresh, dataset, deadline: deadline)
-        cafe_gc = cafe_verdict_string(fresh, dataset)
-        diff = Replay::ReplayDiff.classify(cms_gc, entry['cms_score'], cafe_gc, res[:points])
-        tally(report, diff, entry, res, cms_gc, cafe_gc, dataset)
+
+        if compile_only
+          tally_compile_only(report, entry, res, fresh, dataset)
+        else
+          cafe_gc = cafe_verdict_string(fresh, dataset)
+          diff = Replay::ReplayDiff.classify(cms_gc, entry['cms_score'], cafe_gc, res[:points])
+          tally(report, diff, entry, res, cms_gc, cafe_gc, dataset)
+        end
       rescue StandardError => e
         report[:errored] += 1
         report[:error_details] << { cms_submission_id: entry['cms_submission_id'], error: e.message }
@@ -245,36 +287,109 @@ module Replay
     end
     private_class_method :language_for
 
+    # Splits the two signals: whether the FINAL SCORE agrees with CMS (the
+    # only thing that should fail a task -- see doc/CMS-Migration.md Sec 3,
+    # "Read score_exact first") vs. whether the per-testcase verdict
+    # STRING agrees (informative, but under group_min a group scores its
+    # weakest testcase, so once a group has failed, further differences
+    # inside it cannot move the score -- that's expected noise, not a
+    # defect). Score disagreement takes priority over the verdict-string
+    # classification: even a submission with an IDENTICAL verdict string
+    # counts as score_mismatch if the scores differ (e.g. a scoring-formula
+    # bug), never silently folded into :exact.
     def tally(report, diff, entry, res, cms_gc, cafe_gc, dataset)
-      # cms_gc and cafe_gc are always the same length (both built by mapping
-      # the identical dataset.testcases.order(:num) walk), so :structural
-      # (length mismatch) should be unreachable here -- fold it into
-      # :mismatch defensively rather than dropping it on the floor.
-      key = diff[:verdict] == :structural ? :mismatch : diff[:verdict]
-      report[key] += 1
+      cms_score = entry['cms_score'].to_f
+      cafe_points = res[:points].to_f
+      score_match = (cms_score - cafe_points).abs < SCORE_EPSILON
+      report[:score_exact] += 1 if score_match
+
+      unless score_match
+        report[:score_mismatch] += 1
+        report[:mismatch_details] << mismatch_detail(entry, res, dataset, cms_verdict: cms_gc, cafe_verdict: cafe_gc,
+                                                                          diff: diff)
+        return
+      end
+
+      # :structural (grader_comment length differs) should be unreachable --
+      # cms_gc and cafe_gc are always built from the identical
+      # dataset.testcases.order(:num) walk -- but the score already matched,
+      # so treat it the same as any other non-benign verdict difference
+      # rather than dropping it on the floor.
+      case diff[:verdict]
+      when :exact  then report[:exact] += 1
+      when :benign then report[:benign] += 1
+      else
+        report[:verdict_only_diff] += 1
+        report[:verdict_only_details] << verdict_only_detail(entry, diff, dataset)
+      end
+    end
+    private_class_method :tally
+
+    # A compile_only entry (empty CMS evaluations -- CMS's compilation
+    # failed) has no per-testcase data to diff at all; the only comparison
+    # possible is the final score, which CMS forces to 0.0 on a compile
+    # failure. Agreement is a PASS; disagreement (cafe compiled and scored
+    # where CMS didn't) is a genuine compiler-environment finding, counted
+    # as a real score_mismatch -- never silently folded into :exact/:benign,
+    # and never reported as :errored (there is nothing wrong with the
+    # replay itself).
+    def tally_compile_only(report, entry, res, fresh, dataset)
+      report[:compile_only] += 1
 
       cms_score = entry['cms_score'].to_f
       cafe_points = res[:points].to_f
-      report[:score_exact] += 1 if (cms_score - cafe_points).abs < SCORE_EPSILON
+      score_match = (cms_score - cafe_points).abs < SCORE_EPSILON
+      report[:score_exact] += 1 if score_match
+      return if score_match
 
-      return unless key == :mismatch
+      report[:score_mismatch] += 1
+      report[:mismatch_details] << {
+        cms_submission_id: entry['cms_submission_id'],
+        kind: :compile_only,
+        cms_score: entry['cms_score'],
+        cafe_points: res[:points],
+        cms_compilation_outcome: entry['compilation_outcome'],
+        cms_verdict: nil,
+        cafe_verdict: cafe_verdict_string(fresh, dataset),
+        note: "CMS recorded compilation_outcome=#{entry['compilation_outcome'].inspect} " \
+              "(no per-testcase evaluations, score forced to 0) but cafe scored #{res[:points]} -- " \
+              'possible compiler-environment difference'
+      }
+    end
+    private_class_method :tally_compile_only
 
+    def mismatch_detail(entry, res, dataset, cms_verdict:, cafe_verdict:, diff:)
       # safe_evaluations was already called (successfully -- no raise) while
       # building cms_gc for this same entry, so recomputing it here just to
       # get the safe->original codename map back is cheap and can't raise
       # again on the same input.
       safe_to_orig = safe_evaluations(entry['evaluations']).transform_values(&:first)
-      report[:mismatch_details] << {
+      {
         cms_submission_id: entry['cms_submission_id'],
+        kind: :score_mismatch,
         cms_score: entry['cms_score'],
         cafe_points: res[:points],
-        cms_verdict: cms_gc,
-        cafe_verdict: cafe_gc,
+        cms_verdict: cms_verdict,
+        cafe_verdict: cafe_verdict,
         diff_codenames: diff_codenames(diff[:positions], dataset, safe_to_orig),
         note: diff[:note]
       }
     end
-    private_class_method :tally
+    private_class_method :mismatch_detail
+
+    # Compact summary for a verdict-only difference (score identical) -- a
+    # count and a handful of example codenames, NOT the full verdict strings
+    # / mismatch_detail payload, so the JSON report stays readable when this
+    # (expected, mostly-harmless) bucket is large.
+    def verdict_only_detail(entry, diff, dataset)
+      safe_to_orig = safe_evaluations(entry['evaluations']).transform_values(&:first)
+      {
+        cms_submission_id: entry['cms_submission_id'],
+        diff_count: diff[:positions].size,
+        example_codenames: diff_codenames(diff[:positions], dataset, safe_to_orig, limit: 3)
+      }
+    end
+    private_class_method :verdict_only_detail
 
     # Reports codenames traceable back to CMS: the cafe (safe) code_name,
     # plus the original CMS codename in parens when sanitisation changed it
