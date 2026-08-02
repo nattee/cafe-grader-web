@@ -15,8 +15,13 @@ needed). Adds only what official tooling cannot do:
   * digest-selective blob fetch via cms FileCacher (blobs live in the DB;
     there is no on-disk file store on c2)
 
-stdout: tar stream of bundle/ (task.json + files/<digest>)
-stderr: progress log            exit: 0 ok, 2 usage, 3 task not found
+stdout: fd 1 is reserved for the tar stream of bundle/ (task.json +
+    files/<digest>) ONLY. Before any work starts, main() dup2's fd 1 onto
+    stderr and keeps the real stdout fd aside, so any library that writes
+    to stdout/print() (CMS logs there in-process) lands on stderr instead
+    of corrupting the tar; the tar is written straight to the saved fd.
+stderr: progress log + any stdout chatter from libraries
+    exit: 0 ok, 2 usage, 3 task not found
 Read-only against CMS. Work dir is 0700 under /tmp and removed on exit.
 Consumed by app/engine/converters/cms_dump_converter.rb (bundle_version 1).
 """
@@ -73,6 +78,17 @@ def build_subtree(objects, task_name):
 
 
 def main():
+    # CMS logs to stdout from *inside our process* (not just the
+    # cmsDumpExporter subprocess, which is already redirected below via
+    # stdout=sys.stderr) -- e.g. constructing FileCacher() alone emits an
+    # INFO line to stdout. In the 2026-08-02 live run those lines, plus more
+    # emitted during the blob-fetch loop, interleaved into the tar bytes and
+    # corrupted the received stream. Reserve the real fd 1 for the tar only:
+    # save it aside, then point fd 1 at stderr so ANY library write to
+    # stdout (now or in a future CMS version) is harmless.
+    real_stdout_fd = os.dup(sys.stdout.fileno())
+    os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+
     if len(sys.argv) != 2:
         log("usage: extract_task.py <task_name>")
         return 2
@@ -123,9 +139,16 @@ def main():
             src.close()
 
         log("[extract] streaming bundle to stdout ...")
-        with tarfile.open(fileobj=sys.stdout.buffer, mode="w|") as tar:
-            tar.add(bundle, arcname="bundle")
-        sys.stdout.buffer.flush()
+        out_stream = os.fdopen(real_stdout_fd, "wb")
+        try:
+            tar = tarfile.open(fileobj=out_stream, mode="w|")
+            try:
+                tar.add(bundle, arcname="bundle")
+            finally:
+                tar.close()
+            out_stream.flush()
+        finally:
+            out_stream.close()
         log("[extract] done")
         return 0
     finally:
