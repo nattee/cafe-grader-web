@@ -302,6 +302,47 @@ surface via GitHub's auto-generated sidebar, so no Home edit was needed.
 
 ## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
 
+**Status 2026-08-02.** A *live-server* CMS import path shipped (master revs 1960–1968;
+spec `docs/superpowers/specs/2026-08-02-cms-clone-import-design.md`):
+`rails "cms:clone[task]"` ssh's to the CMS host, wraps the official `cmsDumpExporter`,
+filters one task's subtree, fetches its blobs via `FileCacher`, and converts through
+`Converters::CmsDumpConverter` into the trusted `ProblemImporter`. Validated against
+c2 (`mar2025_eatingfish`): structure exact, and a replay of 8 real c2 submissions
+scored 8/8 identical to CMS (only benign `T→P`/`x→P` per-testcase diffs). None of the
+capability items below are closed by that work — Communication / OutputOnly / file-I/O
+/ GroupMinPrereq are now *detected and rejected with a clear message* pointing here,
+which is the interim behavior the 2026-07-14 design specified.
+
+**Production transport that works today** (verified 2026-08-02, no new code needed):
+clone on a box that has ssh to the CMS host → problem page **Download (all datasets)** →
+upload that zip on the production server's existing **Problems → Import** page. Export→
+import was round-tripped on the cloned problem: every field identical (both datasets,
+42 testcases, weights, managers, statement, testcase bytes). This keeps production from
+ever needing ssh/sudo access to the CMS host. Known cosmetic gap: the **live** dataset's
+name is not preserved through a plain zip import (root `ds_name` is inert — the importer
+auto-names the live dataset `Dataset N`; additional datasets keep their names). `cms:clone`
+renames it explicitly; the web import path does not.
+
+**Open, in the order that serves "import c2 → production, repeatably":**
+
+- **UI-facing CMS *package* import (unbuilt).** The 2026-07-14 design's UI decision —
+  "existing import page with format auto-detect" — is still unimplemented. Note the
+  shape difference: `CmsDumpConverter` consumes a *dump bundle* produced by our own
+  extractor, NOT a CMS-native package, so the upload path needs the originally-planned
+  `CmsItalianConverter` (`task.yaml`) and/or `TpsConverter` (`problem.json`) plus
+  sniffing in `problems_controller#do_import`. They slot into `app/engine/converters/`
+  behind the same `convert(src, dest) → {log:, warnings:, errors:}` contract and can
+  reuse the staging-layout knowledge (notably: a converter MUST emit `managers_dir` +
+  `managers_pattern` or the importer silently skips `managers/*`). Needed when someone
+  hands over a package file and there is no DB access; NOT needed for the c2→production
+  flow above. Size: ~1 day per format + fixtures.
+- **Mode B replay gate (CMS-source) before any bulk clone.** The 2026-08-02 validation
+  was a hand-rolled script. Committing it as a CMS source mode in the existing
+  `Replay::` harness (reuse `ReplayGrader`/`ReplayDiff`; new pieces are a CMS submission
+  sampler and a CMS-outcome→cafe-verdict-char translator) turns per-task validation into
+  one command. Matters because the 8-submission check only exercised white-diff +
+  integer GroupMin + grader compilation; `Sum`, regex GroupMin params, and comparator
+  (`custom_cms`) checkers have never been run against a real task. Size: ~half a day.
 - Communication task support in the judge (manager process + FIFOs) — unblocks CMS Communication import/export.
 - OutputOnly grading support — unblocks CMS OutputOnly import/export.
 - GroupMinPrereq scoring in cafe's scorer (`score_param` to hold the prereq DAG) — unblocks importing dae's CMS camp tasks that use the custom score type.
