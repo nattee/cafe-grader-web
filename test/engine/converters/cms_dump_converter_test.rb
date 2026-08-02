@@ -132,9 +132,59 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     refute staging_cfg.key?(:additional_datasets)
   end
 
-  test 'GroupMin count mismatch rejects' do
+  # Was: 'GroupMin count mismatch rejects' -- the converter used to hard
+  # reject any mismatch between the declared param counts and the actual
+  # testcase count. Real Chula tasks (may2022_bombs, may2023_robots,
+  # oct2023_rescue) hit exactly this with off-by-one counts, so the rule
+  # changed to CMS's own defensive-slicing semantics (see
+  # build_group_min_int_plan). These params (declared sum 6, only 3
+  # testcases exist) over-declare, but since the shortfall is absorbed by
+  # the LAST group getting fewer testcases than declared rather than an
+  # empty group, this succeeds silently (no warning) -- the "loud warning"
+  # case is a group ending up with literally zero testcases, covered below.
+  test 'GroupMin params over-declaring without an empty group succeeds, group gets fewer than declared' do
     convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[30, 1], [70, 5]] })
-    assert_match(/counts sum to 6 but dataset has 3/, @result[:errors].join)
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'2-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'2-02'])
+  end
+
+  test 'GroupMin params under-covering testcases: leftover lands in a weight-0 trailing group with a warning' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[30, 1], [70, 1]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'1-01'])
+    assert_equal({ group: 2, group_name: '2', weight: 70 }, tcs[:'2-01'])
+    # leftover testcase ('2-02', the ORIGINAL lexicographic last) -> new
+    # trailing group 3, weight 0 (cafe's group_min normalizes by total
+    # weight, so a weight-0 group scores exactly like CMS ignoring it).
+    assert_equal({ group: 3, group_name: '3', weight: 0 }, tcs[:'2-02'])
+    assert_match(/GroupMin params cover 2 of 3 testcases; the remaining 1 assigned to a weight-0 group/,
+                 @result[:log].join("\n"))
+  end
+
+  test 'GroupMin params over-declaring so a trailing group is fully empty: group dropped with a loud warning' do
+    convert(mutate: ->(d) { d['objects']['1414']['score_type_parameters'] = [[30, 3], [70, 2]] })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'1-01'])
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'2-01'])
+    assert_equal({ group: 1, group_name: '1', weight: 30 }, tcs[:'2-02'])
+    # group 2 wanted 2 testcases but none were left -- dropped entirely, not
+    # emitted as a bogus zero-testcase group.
+    refute(staging_cfg[:testcases].values.any? { |v| v[:group] == 2 })
+    assert_match(/GroupMin params declare 5 testcases but only 3 exist; group 2 is empty and was dropped/,
+                 @result[:log].join("\n"))
+  end
+
+  test 'GroupMin integer params producing zero usable groups still rejects' do
+    convert(mutate: ->(d) {
+      d['objects']['1414']['testcases'] = {}
+      d['objects']['1414']['score_type_parameters'] = [[100, 3]]
+    })
+    assert_match(/no usable testcase groups/, @result[:errors].join)
   end
 
   test 'GroupMin regex params assign by anchored match' do

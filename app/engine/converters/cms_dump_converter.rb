@@ -172,19 +172,21 @@ class Converters::CmsDumpConverter
       reasons << 'grader compilation but no .cpp manager to use as main file'
     end
     if SCORE_TYPE_MAP.key?(ds['score_type'])
-      _plan, plan_errors = build_group_plan(ds)
+      _plan, plan_errors, = build_group_plan(ds)
       reasons.concat(plan_errors)
     end
     reasons
   end
 
-  # => [ {codename => {group:, group_name:, weight:}}, [error strings] ]
-  # Deterministic; called once for validation and once for writing. Operates
-  # entirely on ORIGINAL CMS codenames, including directory-style ones (e.g.
-  # "result/01-01") — that mirrors what CMS itself does: ScoreTypeGroup
-  # slices testcases in lexicographic order of the raw codename, and GroupMin
-  # regex params are re.match'd against the raw codename. Filesystem safety
-  # is handled separately, at write time, via safe_codename_map — never here.
+  # => [ {codename => {group:, group_name:, weight:}}, [error strings], [warning strings] ]
+  # Deterministic; called once for validation (dataset_reject_reasons, which
+  # only looks at the error list) and once for writing (write_dataset_into,
+  # which surfaces the warning list to @log). Operates entirely on ORIGINAL
+  # CMS codenames, including directory-style ones (e.g. "result/01-01") —
+  # that mirrors what CMS itself does: ScoreTypeGroup slices testcases in
+  # lexicographic order of the raw codename, and GroupMin regex params are
+  # re.match'd against the raw codename. Filesystem safety is handled
+  # separately, at write time, via safe_codename_map — never here.
   def build_group_plan(ds)
     codenames = (ds['testcases'] || {}).keys
 
@@ -192,26 +194,14 @@ class Converters::CmsDumpConverter
     sorted = codenames.sort
     case ds['score_type']
     when 'Sum'
-      [sorted.to_h { |c| [c, { group: 1, group_name: '1', weight: 1 }] }, []]
+      [sorted.to_h { |c| [c, { group: 1, group_name: '1', weight: 1 }] }, [], []]
     when 'GroupMin'
       params = ds['score_type_parameters']
       unless params.is_a?(Array) && params.all? { |p| p.is_a?(Array) && p.size == 2 }
-        return [{}, ["GroupMin parameters malformed: #{params.inspect}"]]
+        return [{}, ["GroupMin parameters malformed: #{params.inspect}"], []]
       end
       if params.all? { |_m, t| t.is_a?(Integer) }
-        total = params.sum { |_m, t| t }
-        unless total == sorted.size
-          return [{}, ["GroupMin testcase counts sum to #{total} but dataset has #{sorted.size} testcases"]]
-        end
-        plan = {}
-        cursor = 0
-        params.each_with_index do |(points, count), i|
-          sorted[cursor, count].each do |c|
-            plan[c] = { group: i + 1, group_name: (i + 1).to_s, weight: points }
-          end
-          cursor += count
-        end
-        [plan, []]
+        build_group_min_int_plan(params, sorted)
       elsif params.all? { |_m, t| t.is_a?(String) }
         plan = {}
         errs = []
@@ -234,12 +224,65 @@ class Converters::CmsDumpConverter
         end
         uncovered = sorted - plan.keys
         errs << "testcases match no GroupMin pattern: #{uncovered.join(', ')}" if uncovered.any?
-        [errs.any? ? {} : plan, errs]
+        [errs.any? ? {} : plan, errs, []]
       else
-        [{}, ['GroupMin parameters mix integer and regex styles (unsupported)']]
+        [{}, ['GroupMin parameters mix integer and regex styles (unsupported)'], []]
       end
     else
-      [{}, []] # unreachable: score_type gated in dataset_reject_reasons
+      [{}, [], []] # unreachable: score_type gated in dataset_reject_reasons
+    end
+  end
+
+  # GroupMin with integer testcase-count params. CMS's own ScoreTypeGroup
+  # walks sorted codenames and slices exactly `count` per subtask, in
+  # declaration order — it does NOT require the counts to sum to the actual
+  # testcase count. Real Chula tasks hit both mismatch directions:
+  #   - params_sum < count: CMS simply leaves the trailing testcases out of
+  #     any subtask — they're evaluated but never scored. Cafe's group_min
+  #     scorer normalizes by total weight (app/engine/scorer.rb), so a
+  #     weight-0 trailing group reproduces that exactly (contributes 0 to
+  #     both numerator and denominator).
+  #   - params_sum > count: a slice runs out of testcases before it gets its
+  #     declared count (defensive slicing — Array#[] naturally caps at what's
+  #     available); if a slice comes up completely empty, that whole group is
+  #     dropped rather than emitted as a bogus zero-testcase group.
+  # Only reject if NOTHING usable comes out of this (empty dataset or every
+  # group empty and nothing left over) — that's genuinely unusable data.
+  def build_group_min_int_plan(params, sorted)
+    total = params.sum { |_m, t| t }
+    plan = {}
+    warnings = []
+    dropped_groups = []
+    cursor = 0
+    params.each_with_index do |(points, count), i|
+      slice = sorted[cursor, count] || []
+      if slice.empty? && count.positive?
+        dropped_groups << (i + 1)
+      else
+        slice.each { |c| plan[c] = { group: i + 1, group_name: (i + 1).to_s, weight: points } }
+      end
+      cursor += count
+    end
+
+    if dropped_groups.any?
+      warnings << "GroupMin params declare #{total} testcases but only #{sorted.size} exist; " \
+                  "group #{dropped_groups.join(', ')} is empty and was dropped — " \
+                  'scores may not match CMS for this task'
+    end
+
+    if cursor < sorted.size
+      leftover = sorted[cursor..] || []
+      leftover_group = params.size + 1
+      leftover.each { |c| plan[c] = { group: leftover_group, group_name: leftover_group.to_s, weight: 0 } }
+      warnings << "GroupMin params cover #{total} of #{sorted.size} testcases; the remaining " \
+                  "#{leftover.size} assigned to a weight-0 group (CMS ignores them for scoring)"
+    end
+
+    if plan.empty?
+      [{}, ["GroupMin produced no usable testcase groups (params declare #{total}, " \
+            "dataset has #{sorted.size} testcases)"], []]
+    else
+      [plan, [], warnings]
     end
   end
 
@@ -365,7 +408,8 @@ class Converters::CmsDumpConverter
     # Grouping/ordering is decided on the ORIGINAL codenames (build_group_plan
     # never sees the sanitized form). Only when actually emitting to disk /
     # config.yml do we translate to filesystem-safe names.
-    plan, _errs = build_group_plan(ds)
+    plan, _errs, plan_warnings = build_group_plan(ds)
+    plan_warnings.each { |w| @log << "dataset '#{ds_display_name(ds)}': #{w}" }
     if ds['score_type'] == 'Sum'
       @log << "dataset '#{ds_display_name(ds)}': CMS Sum " \
               "(params #{ds['score_type_parameters'].inspect}) -> cafe sum, every testcase weight 1"
