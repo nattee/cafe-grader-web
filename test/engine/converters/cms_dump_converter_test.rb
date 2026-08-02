@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'minitest/mock'
 
 class CmsDumpConverterTest < ActiveSupport::TestCase
   FIXTURE = Rails.root.join('test/cms_bundles/eatingfish_mini')
@@ -340,15 +341,31 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     refute_match %r{[/\\]}, safe
     refute_equal '.', safe
     refute_equal '..', safe
+    refute safe.start_with?('.')
   end
 
   test 'safe_codename handles degenerate input without a blank, . or .. result' do
-    ['..', '.', '/', ''].each do |degenerate|
+    ['..', '.', '/', '', '...'].each do |degenerate|
       safe = Converters::CmsDumpConverter.safe_codename(degenerate)
       assert safe.present?, "expected a non-empty safe name for #{degenerate.inspect}"
       refute_equal '.', safe
       refute_equal '..', safe
+      refute safe.start_with?('.'), "expected no leading dot for #{degenerate.inspect}, got #{safe.inspect}"
     end
+  end
+
+  # Regression: mar2023_updown had 167 testcases with codenames like
+  # "../tests/01-01". Before this fix, safe_codename mapped that to
+  # "..__tests_01-01" -- filesystem-safe (no /, no bare . or ..) but still a
+  # DOTFILE, which is invisible to ProblemImporter's plain Dir.glob (no
+  # File::FNM_DOTMATCH). The clone reported "ok, 0 testcase(s)" with no
+  # error. The leading run of dots must never survive into the result.
+  test 'safe_codename never produces a leading-dot (dotfile) result' do
+    assert_equal '__tests_01-01', Converters::CmsDumpConverter.safe_codename('../tests/01-01')
+    assert_equal '_hidden', Converters::CmsDumpConverter.safe_codename('.hidden')
+    refute Converters::CmsDumpConverter.safe_codename('../tests/01-01').start_with?('.')
+    refute Converters::CmsDumpConverter.safe_codename('.hidden').start_with?('.')
+    refute Converters::CmsDumpConverter.safe_codename('...').start_with?('.')
   end
 
   test 'directory-style codenames land as sanitized staging files, grouped by ORIGINAL lexicographic order' do
@@ -390,6 +407,62 @@ class CmsDumpConverterTest < ActiveSupport::TestCase
     assert_equal({ group: 1, group_name: '1', weight: 40 }, tcs[:'result_1-01'])
     assert_equal({ group: 2, group_name: '2', weight: 60 }, tcs[:'result_2-01'])
     assert_equal({ group: 2, group_name: '2', weight: 60 }, tcs[:'result_2-02'])
+  end
+
+  # Regression test for the mar2023_updown incident: 167 testcases with
+  # "../tests/NN-NN"-style codenames converted "clean" (no errors) but the
+  # emitted files were dotfiles, invisible to ProblemImporter's plain
+  # Dir.glob("*.in") (no FNM_DOTMATCH) -- so the live import silently landed
+  # 0 testcases. This asserts the exact importer-visible glob count matches
+  # the testcase count; that assertion is the regression guard.
+  test 'leading-dot-producing codenames do not emit dotfiles and are all visible to a plain Dir.glob' do
+    convert(mutate: ->(d) {
+      tcs = d['objects']['1414']['testcases']
+      d['objects']['1414']['testcases'] = {
+        '../tests/1-01' => tcs['1-01'],
+        '../tests/2-01' => tcs['2-01'],
+        '../tests/2-02' => tcs['2-02']
+      }
+    })
+    assert_equal [], @result[:errors]
+    tcs = staging_cfg[:testcases]
+    assert_equal 3, tcs.size
+    refute tcs.keys.any? { |k| k.to_s.start_with?('.') }
+
+    # Exactly what ProblemImporter#read_testcase does: no File::FNM_DOTMATCH.
+    found = Dir.glob((@staging + 'testcases' + '*.in').to_s)
+    assert_equal tcs.size, found.size
+    refute found.any? { |f| File.basename(f).start_with?('.') }
+  end
+
+  test 'emitted-vs-bundle testcase count guard passes silently on a normal conversion' do
+    convert
+    assert_equal [], @result[:errors]
+    bundle_count = 3 # eatingfish_mini active dataset: 1-01, 2-01, 2-02
+    emitted_count = Dir.glob((@staging + 'testcases' + '*.in').to_s).size
+    assert_equal bundle_count, emitted_count
+  end
+
+  # Forcing a real mismatch through the public `convert` path is no longer
+  # possible on its own -- that's the point of the safe_codename fix above,
+  # which guarantees no codename can produce a dotfile in the first place.
+  # So this exercises the guard directly at its actual seam: it reproduces
+  # ProblemImporter's glob via Dir.glob, so stub Dir.glob to under-report
+  # exactly the testcases/*.in listing (falling through to the real
+  # implementation for every other pattern, so fixture setup / Rails
+  # internals are unaffected) and confirm write_dataset_into's count check
+  # rejects, naming both counts.
+  test 'emitted-vs-bundle testcase count mismatch rejects, naming both counts' do
+    real_glob = Dir.method(:glob)
+    stub_impl = lambda do |pattern, *rest|
+      if pattern.to_s.end_with?('testcases/*.in')
+        []
+      else
+        real_glob.call(pattern, *rest)
+      end
+    end
+    Dir.stub(:glob, stub_impl) { convert }
+    assert_match(/bundle has 3 testcase\(s\) but only 0/, @result[:errors].join)
   end
 
   test 'codenames colliding after sanitization reject the task with both names named' do

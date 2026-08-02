@@ -61,7 +61,21 @@ class Converters::CmsDumpConverter
     # Guards degenerate results that would still be unsafe/meaningless as a
     # filename: '', '.', '..', or any string made up only of dots.
     s = "tc_#{Digest::MD5.hexdigest(name.to_s)[0, 8]}" if s.blank? || s.gsub('.', '').blank?
-    unless s.match?(SAFE_FILENAME) && !%w[. ..].include?(s)
+    # A result that still starts with a dot (e.g. "../tests/01-01" ->
+    # ".._tests_01-01" after the gsub above) is filesystem-safe but becomes a
+    # DOTFILE on disk -- and ProblemImporter#read_testcase finds testcases
+    # via a plain Dir["**/*.in"], which (like Ruby glob in general) never
+    # matches a leading dot without File::FNM_DOTMATCH. Without this, the
+    # testcase is written successfully but is silently invisible to the
+    # importer: a dataset can convert clean and still import as "ok, 0
+    # testcase(s))" (the mar2023_updown incident: 167 "../tests/…" codenames,
+    # 0 imported, no error anywhere). Collapse the entire leading run of dots
+    # to a single underscore (".._tests_01-01" -> "__tests_01-01") --
+    # deterministic and stable, since the replay gate
+    # (app/engine/replay/cms_replay.rb) calls this same helper to match CMS
+    # results back to cafe testcases.
+    s = s.sub(/\A\.+/, '_')
+    unless s.match?(SAFE_FILENAME) && !%w[. ..].include?(s) && !s.start_with?('.')
       # Defensive: should be unreachable given the sanitization above. Kept
       # so a future edit to this method can't silently regress the
       # filesystem-safety property it exists to guarantee.
@@ -484,6 +498,25 @@ class Converters::CmsDumpConverter
       tc_cfg[safe] = plan[codename]
     end
     cfg[:testcases] = tc_cfg
+
+    # Refuse to hand ProblemImporter a dataset that LOOKS converted but is
+    # silently empty (or short) to it. This is the direct regression guard
+    # for the mar2023_updown incident: every testcase above can copy_blob
+    # successfully and land in tc_cfg, yet still be invisible at import time
+    # if it ended up a dotfile (or any other future bug drops it from the
+    # importer's view). Reproduce ProblemImporter#read_testcase's exact glob
+    # (Dir[...], no File::FNM_DOTMATCH) and compare by EQUALITY against the
+    # bundle's testcase count -- not "> 0" -- because some real CMS tasks
+    # (please_ignore, tennisballs) legitimately have zero testcases and must
+    # still convert cleanly (0 == 0 passes).
+    bundle_tc_count = (ds['testcases'] || {}).size
+    emitted_tc_count = Dir.glob((dir + 'testcases' + '*.in').to_s).size
+    if emitted_tc_count != bundle_tc_count
+      reject!("dataset '#{ds_display_name(ds)}': bundle has #{bundle_tc_count} testcase(s) but " \
+              "only #{emitted_tc_count} would be visible to ProblemImporter's testcase glob " \
+              '(internal inconsistency -- refusing to emit a silently-broken dataset)')
+    end
+
     rewritten = safe_map.reject { |orig, safe| orig == safe }
     if rewritten.any?
       sample = rewritten.first(5).map { |orig, safe| "#{orig} -> #{safe}" }.join(', ')
