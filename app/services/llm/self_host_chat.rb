@@ -17,6 +17,12 @@ module Llm
 
     MIN_MAX_TOKENS = 4096
 
+    # A near-cap non-streaming reasoning generation on a shared box
+    # legitimately exceeds the stock 300s once max_tokens is 16384
+    # (observed: transient read timeouts across providers in the 2026-07
+    # batches) — double it for this transport only.
+    READ_TIMEOUT = 600
+
     attr_reader :model_key, :entry
 
     def initialize(model_key: nil)
@@ -64,7 +70,7 @@ module Llm
     private
 
     def connection
-      @connection ||= Llm::Request.connection(entry[:base_url])
+      @connection ||= Llm::Request.connection(entry[:base_url], read_timeout: READ_TIMEOUT)
     end
   end
 end

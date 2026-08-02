@@ -8,6 +8,13 @@ class SubmissionRepair < ApplicationRecord
 
   FIX_CATEGORIES = %w[io_format parsing syntax boundary logic other].freeze
 
+  # Shadow judge states that are real grading outcomes. compilation_error IS
+  # one (the repair broke the build — damage data); grader_error and
+  # in-flight states are not grades at all, yet their points column reads 0 —
+  # counting those zeros as grades made the void a68_final run look like
+  # mass model damage ("0 rescues / 63 negative gaps").
+  GRADED_SHADOW_STATUSES = %w[done compilation_error].freeze
+
   belongs_to :original_submission, class_name: 'Submission'
   belongs_to :repaired_submission, class_name: 'Submission', optional: true
 
@@ -15,6 +22,13 @@ class SubmissionRepair < ApplicationRecord
 
   validates :budget_lines, :budget_chars, numericality: {greater_than: 0}
   validates :fix_category, inclusion: {in: FIX_CATEGORIES}, allow_nil: true
+
+  # True when the attempt's shadow has a real judge outcome; an accepted
+  # attempt whose shadow lacks one is "ungradeable" and must stay out of
+  # every gap/rescue statistic.
+  def shadow_graded?
+    accepted? && GRADED_SHADOW_STATUSES.include?(repaired_submission&.status)
+  end
 
   # Batch target selection (rake near_miss:repair). Returns ids of
   # submissions eligible for repair:
@@ -70,10 +84,13 @@ class SubmissionRepair < ApplicationRecord
   end
 
   # Aggregated per-run, per-problem study report.
-  # {run_label => {problem_name => {targets:, statuses: {..}, rescued:,
-  #   rescue_rate:, mean_gap:, median_gap:, categories: {..},
+  # {run_label => {problem_name => {targets:, statuses: {..}, ungradeable:,
+  #   rescued:, rescue_rate:, mean_gap:, median_gap:, categories: {..},
   #   sizes: [changed_chars,...], compliance: {round => {within:, total:}},
   #   tokens_in:, tokens_out:, cost:}}}
+  # Gap/rescue stats read only shadows with a real judge outcome
+  # (GRADED_SHADOW_STATUSES); accepted attempts whose shadow has none are
+  # reported as `ungradeable`, never as 0-point grades.
   def self.report_for(run_labels)
     attempts = where(run_label: run_labels)
                .includes(original_submission: :problem)
@@ -82,8 +99,9 @@ class SubmissionRepair < ApplicationRecord
     attempts.group_by(&:run_label).each do |label, rows|
       per_problem = {}
       rows.group_by { |r| r.original_submission.problem.name }.each do |pname, prows|
-        gaps = prows.select { |r| r.accepted? && r.repaired_submission&.points }
-                    .map { |r| r.repaired_submission.points.to_f - r.original_submission.points.to_f }
+        accepted_rows = prows.select(&:accepted?)
+        graded_rows   = accepted_rows.select(&:shadow_graded?)
+        gaps = graded_rows.map { |r| r.repaired_submission.points.to_f - r.original_submission.points.to_f }
         rescued = gaps.count(&:positive?)
         compliance = Hash.new { |h, k| h[k] = {within: 0, total: 0} }
         prows.each do |r|
@@ -97,6 +115,7 @@ class SubmissionRepair < ApplicationRecord
         per_problem[pname] = {
           targets:    prows.size,
           statuses:   prows.group_by(&:status).transform_values(&:size),
+          ungradeable: accepted_rows.size - graded_rows.size,
           rescued:    rescued,
           rescue_rate: prows.size.zero? ? 0.0 : (rescued.to_f / prows.size).round(3),
           mean_gap:   gaps.empty? ? nil : (gaps.sum / gaps.size).round(2),

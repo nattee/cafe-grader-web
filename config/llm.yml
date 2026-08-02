@@ -40,24 +40,24 @@ llm_services: &services
   #     values live on chula_cp, same convention as the viva keys) ---
 
   # Concrete Llm::SubmissionRepairAssist subclass used by SubmissionRepairJob.
-  # chula_cp sets: Llm::SubmissionRepairSelfHostAssist
-  submission_repair_service:
+  submission_repair_service: Llm::SubmissionRepairSelfHostAssist
 
   # Registry of self-hosted OpenAI-compatible endpoints. Keys are operator
   # labels (model identity is config data, never code). max_tokens: reasoning
   # models spend completion budget on thinking — 4096 yields empty content on
-  # repair-sized prompts (pilot-verified: finish_reason=length); use 16384 for
-  # the DGX reasoning residents. chula_cp example:
-  #   self_hosted_default: qwen
-  #   self_hosted_models:
-  #     qwen:  { base_url: "http://<dgx>:8000",  completion_path: "/v1/chat/completions", model: "qwen3.5",     max_tokens: 16384 }
-  #     glm:   { base_url: "http://<dgx>:8001",  completion_path: "/v1/chat/completions", model: "glm-5.2",     max_tokens: 16384 }
-  #     kimi:  { base_url: "http://<dgx>:8002",  completion_path: "/v1/chat/completions", model: "kimi-k2.6",   max_tokens: 16384 }
-  #     gemma: { base_url: "http://<a100>:8000", completion_path: "/v1/chat/completions", model: "gemma-4-31b", max_tokens: 4096 }
-  # To expose them in the submission-assist picker, also register the served
-  # names:  SelfHostAssist: qwen3.5,gemma-4-31b
-  self_hosted_default:
+  # repair-sized prompts (pilot-verified: finish_reason=length); 16384 for
+  # the DGX reasoning residents (gemma is not one). The three DGX ports are
+  # swap slots — at most one is alive; a dead port refuses TCP, which the
+  # transport treats as a clean retryable error.
+  # DO NOT register SelfHostAssist in the assist picker yet: its
+  # comment-assist prompt still sends the statement PDF, which sglang/vLLM
+  # reject with 400 (blocked on problems.statement_text — doc/backlog.md).
+  self_hosted_default: qwen
   self_hosted_models:
+    qwen:  { base_url: "http://161.200.93.200:8000", completion_path: "/v1/chat/completions", model: "qwen3.5",     max_tokens: 16384 }
+    glm:   { base_url: "http://161.200.93.200:8001", completion_path: "/v1/chat/completions", model: "glm-5.2",     max_tokens: 16384 }
+    kimi:  { base_url: "http://161.200.93.200:8002", completion_path: "/v1/chat/completions", model: "kimi-k2.6",   max_tokens: 16384 }
+    gemma: { base_url: "http://10.0.5.25:8000",      completion_path: "/v1/chat/completions", model: "gemma-4-31b", max_tokens: 4096 }
 
 development:
   <<: *services

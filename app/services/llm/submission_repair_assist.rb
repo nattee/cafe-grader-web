@@ -51,6 +51,14 @@ module Llm
       loop do
         record_usage(response)
         @last_body = response.body
+
+        if truncated_empty?(response)
+          rounds_log << {'round' => round, 'gate' => 'truncated'}
+          return finalize(:failed, rounds_log, round,
+                          remark: 'response truncated at max_tokens with empty content ' \
+                                  '(finish_reason: length) — raise max_tokens for this model')
+        end
+
         parsed = parse_reply(response)
 
         if parsed[:unfixable]
@@ -124,15 +132,29 @@ module Llm
       {ok: true, repair_id: @repair.id, shadow_id: shadow.id}
     end
 
-    def finalize(status, rounds_log, round)
+    def finalize(status, rounds_log, round, remark: nil)
       last = rounds_log.reverse.find { |r| r['changed_lines'] }
-      @repair.update!(status: status, rounds_used: round, rounds_log: rounds_log,
-                      changed_lines: last&.fetch('changed_lines'),
-                      changed_chars: last&.fetch('changed_chars'),
-                      llm_model: model_name_for_record,
-                      token_count_in: @tokens_in, token_count_out: @tokens_out,
-                      cost: @dollar_cost, llm_response: @last_body)
+      attrs = {status: status, rounds_used: round, rounds_log: rounds_log,
+               changed_lines: last&.fetch('changed_lines'),
+               changed_chars: last&.fetch('changed_chars'),
+               llm_model: model_name_for_record,
+               token_count_in: @tokens_in, token_count_out: @tokens_out,
+               cost: @dollar_cost, llm_response: @last_body}
+      attrs[:remark] = remark if remark
+      @repair.update!(attrs)
       {ok: true, repair_id: @repair.id}
+    end
+
+    # A round that hit max_tokens with EMPTY content (the model spent the
+    # whole completion budget thinking) cannot be fixed by retry feedback —
+    # fail the attempt immediately with an actionable remark instead of
+    # burning rounds (observed: 3 × 16384 thinking-tokens, ~7 min and ~$0.60
+    # per occurrence on Genie).
+    def truncated_empty?(response)
+      choice = JSON.parse(response.body).dig('choices', 0) || {}
+      choice['finish_reason'] == 'length' && choice.dig('message', 'content').to_s.strip.empty?
+    rescue JSON::ParserError
+      false
     end
 
     def sanitize_category(cat)
@@ -216,7 +238,10 @@ module Llm
       lines = ["Grading verdict for this submission:",
                "- status: #{@submission.status}",
                "- points: #{@submission.points.to_f} out of 100"]
-      if @submission.grader_comment.present?
+      # A compile-error submission's grader_comment is the literal string
+      # "Compilation error" — decoding it per-char ships ~17 nonsense
+      # "testcase N:" lines; the compiler-output block below covers it.
+      if @submission.grader_comment.present? && !@submission.compilation_error?
         legend = @submission.grader_comment.chars.each_with_index.map do |ch, i|
           "testcase #{i + 1}: #{VERDICT_LEGEND.fetch(ch, ch)}"
         end

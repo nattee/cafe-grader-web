@@ -90,7 +90,7 @@ namespace :near_miss do
     require 'csv'
     csv_path = Rails.root.join('tmp', "near_miss_report_#{Time.zone.now.strftime('%Y%m%d_%H%M%S')}.csv")
     CSV.open(csv_path, 'w') do |csv|
-      csv << %w[run_label problem targets accepted over_budget no_change failed rescued
+      csv << %w[run_label problem targets accepted over_budget no_change failed ungradeable rescued
                 rescue_rate mean_gap median_gap categories median_size tokens_in tokens_out cost]
       report.each do |label, per_problem|
         puts "\n=== run: #{label} ==="
@@ -101,6 +101,8 @@ namespace :near_miss do
           puts format('  %-24s targets=%-4d accepted=%-4d over_budget=%-4d no_change=%-4d failed=%-4d',
                       pname, s[:targets], st['accepted'].to_i, st['over_budget'].to_i,
                       st['no_change'].to_i, st['failed'].to_i)
+          puts format('  %-24s UNGRADEABLE=%d (shadows without a judge outcome — excluded from gap stats)',
+                      '', s[:ungradeable]) if s[:ungradeable].positive?
           puts format('  %-24s rescued=%d (rate %.1f%%)  gap mean=%s median=%s  median_size=%s chars',
                       '', s[:rescued], s[:rescue_rate] * 100,
                       s[:mean_gap] || '-', s[:median_gap] || '-', median_size || '-')
@@ -110,7 +112,7 @@ namespace :near_miss do
           end
           puts format('  %-24s tokens in/out: %d/%d  cost: $%.4f', '', s[:tokens_in], s[:tokens_out], s[:cost])
           csv << [label, pname, s[:targets], st['accepted'].to_i, st['over_budget'].to_i,
-                  st['no_change'].to_i, st['failed'].to_i, s[:rescued], s[:rescue_rate],
+                  st['no_change'].to_i, st['failed'].to_i, s[:ungradeable], s[:rescued], s[:rescue_rate],
                   s[:mean_gap], s[:median_gap], s[:categories].to_json, median_size,
                   s[:tokens_in], s[:tokens_out], s[:cost]]
         end
