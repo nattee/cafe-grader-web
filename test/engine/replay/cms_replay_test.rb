@@ -94,4 +94,42 @@ class Replay::CmsReplayTest < ActiveSupport::TestCase
     evaluations = { "01-01" => { outcome: 1.0, text: "Output is correct" } }
     assert_equal "P", C.cms_verdict_string(evaluations, dataset)
   end
+
+  # --- directory-style codename sanitisation (rev eb25440b2285 follow-up) --
+
+  test "cms_verdict_string matches sanitized cafe code_names against original slashed CMS codenames" do
+    # 8 real CMS tasks use directory-style codenames (e.g. "test/1a") that
+    # Converters::CmsDumpConverter#safe_codename turns into a safe filename
+    # at import time (e.g. "test_1a") -- so Testcase#code_name is the
+    # SANITIZED form while the CMS evaluations hash (straight from
+    # extract_submissions.py) stays keyed by the ORIGINAL form.
+    problem = Problem.create!(name: "cmsreplay_#{SecureRandom.hex(3)}", full_name: "Sanitized codename fixture")
+    dataset = Dataset.create!(problem: problem, name: "D1")
+    Testcase.create!(dataset: dataset, problem: problem, num: 1, group: 1, code_name: "result_1-01", weight: 1)
+    Testcase.create!(dataset: dataset, problem: problem, num: 2, group: 1, code_name: "result_2-01", weight: 1)
+    evaluations = {
+      "result/1-01" => { "outcome" => 1.0, "text" => "Output is correct" },
+      "result/2-01" => { "outcome" => 0.0, "text" => "Output isn't correct" }
+    }
+    assert_equal "P-", C.cms_verdict_string(evaluations, dataset)
+  end
+
+  test "cms_verdict_string raises loudly when two original codenames collide on the same safe name" do
+    # Converters::CmsDumpConverter#safe_codename_map already hard-rejects
+    # this at import time, so it should be unreachable in practice -- but a
+    # hand-built or corrupted sample must fail loudly here too, never
+    # silently pick one evaluation over the other.
+    dataset = build_dataset([1])
+    Testcase.update_all(code_name: "a_b") # what both "a/b" and "a?b" sanitize to (safe_codename replaces any non \w.\- char with "_")
+    assert_equal "a_b", Converters::CmsDumpConverter.safe_codename("a/b")
+    assert_equal "a_b", Converters::CmsDumpConverter.safe_codename("a?b")
+    evaluations = {
+      "a/b" => { "outcome" => 1.0, "text" => "" },
+      "a?b" => { "outcome" => 0.0, "text" => "" }
+    }
+    err = assert_raises(RuntimeError) { C.cms_verdict_string(evaluations, dataset) }
+    assert_match(/a\/b/, err.message)
+    assert_match(/a\?b/, err.message)
+    assert_match(/ambiguous/, err.message)
+  end
 end

@@ -27,6 +27,16 @@ module Replay
   # display-formatted grader_comment column) -- lengths and positions are
   # then equal by construction. Replay::ReplayDiff.classify itself is reused
   # completely unchanged, exactly as directed.
+  #
+  # FOLLOW-UP (rev eb25440b2285 in the converter): 8 real tasks use
+  # directory-style CMS codenames (e.g. "test/1a") that
+  # Converters::CmsDumpConverter sanitizes at import time into a safe
+  # filename (e.g. "test_1a") -- so cafe's Testcase#code_name is the
+  # SANITIZED form while CMS's own evaluations (extract_submissions.py) stay
+  # keyed by the ORIGINAL form. cms_verdict_string matches through the
+  # converter's public Converters::CmsDumpConverter.safe_codename (see
+  # safe_evaluations below) rather than a bare code_name lookup, so the two
+  # representations can never silently drift apart.
   module CmsReplay
     module_function
 
@@ -81,10 +91,19 @@ module Replay
     # dataset but missing from +evaluations+ is a hard error -- report it,
     # never silently pad (a short/padded string would corrupt every
     # position after the gap).
+    #
+    # Matching is done through Converters::CmsDumpConverter.safe_codename,
+    # NOT a bare hash lookup: 8 real tasks use directory-style CMS codenames
+    # (e.g. "test/1a") that the converter sanitizes at import time (e.g.
+    # "test_1a") because a "/" can't be a filename -- so cafe's
+    # Testcase#code_name is the SANITIZED name while +evaluations+ (straight
+    # from CMS) is keyed by the ORIGINAL name. For the vast majority of
+    # tasks (already-safe codenames) safe_codename is the identity, so this
+    # path is uniform rather than a special case.
     def cms_verdict_string(evaluations, dataset)
-      evaluations ||= {}
+      by_safe = safe_evaluations(evaluations)
       dataset.testcases.order(:num).map do |tc|
-        ev = evaluations[tc.code_name] || evaluations[tc.code_name.to_s]
+        _orig, ev = by_safe[tc.code_name]
         if ev.nil?
           raise "missing CMS evaluation for codename #{tc.code_name.inspect} (testcase ##{tc.num})"
         end
@@ -92,6 +111,35 @@ module Replay
         verdict_char(ev['outcome'] || ev[:outcome], ev['text'] || ev[:text])
       end.join
     end
+
+    # Re-keys a raw CMS evaluations hash (codename => {outcome:, text:}, as
+    # produced by extract_submissions.py -- always keyed by CMS's ORIGINAL
+    # codename) by its filesystem-safe form, returning
+    # { safe_codename => [original_codename, evaluation_hash] }. Calls the
+    # converter's PUBLIC Converters::CmsDumpConverter.safe_codename rather
+    # than reimplementing the sanitisation, so the importer (which wrote
+    # Testcase#code_name from the same helper) and this lookup can never
+    # drift apart.
+    #
+    # Two distinct original codenames sanitizing to the same safe name is a
+    # real ambiguity -- the converter already hard-rejects such a task at
+    # import time (Converters::CmsDumpConverter#safe_codename_map), so this
+    # should be unreachable in practice, but a hand-built or corrupted
+    # sample must fail loudly here too rather than silently picking one.
+    def safe_evaluations(evaluations)
+      by_safe = {}
+      (evaluations || {}).each do |orig, ev|
+        safe = Converters::CmsDumpConverter.safe_codename(orig)
+        if by_safe.key?(safe) && by_safe[safe][0] != orig
+          raise "CMS codenames #{by_safe[safe][0].inspect} and #{orig.inspect} both sanitize to " \
+                "#{safe.inspect} -- ambiguous match, cannot replay"
+        end
+
+        by_safe[safe] = [orig, ev]
+      end
+      by_safe
+    end
+    private_class_method :safe_evaluations
 
     # Builds the cafe-fresh grading string using the identical walk order as
     # cms_verdict_string (so positions line up by construction, regardless
@@ -211,23 +259,36 @@ module Replay
 
       return unless key == :mismatch
 
+      # safe_evaluations was already called (successfully -- no raise) while
+      # building cms_gc for this same entry, so recomputing it here just to
+      # get the safe->original codename map back is cheap and can't raise
+      # again on the same input.
+      safe_to_orig = safe_evaluations(entry['evaluations']).transform_values(&:first)
       report[:mismatch_details] << {
         cms_submission_id: entry['cms_submission_id'],
         cms_score: entry['cms_score'],
         cafe_points: res[:points],
         cms_verdict: cms_gc,
         cafe_verdict: cafe_gc,
-        diff_codenames: diff_codenames(diff[:positions], dataset),
+        diff_codenames: diff_codenames(diff[:positions], dataset, safe_to_orig),
         note: diff[:note]
       }
     end
     private_class_method :tally
 
-    def diff_codenames(positions, dataset, limit: 8)
+    # Reports codenames traceable back to CMS: the cafe (safe) code_name,
+    # plus the original CMS codename in parens when sanitisation changed it
+    # (e.g. "test_1a (CMS: test/1a)"), so a mismatch can be looked up on
+    # either side without guessing.
+    def diff_codenames(positions, dataset, safe_to_orig, limit: 8)
       return [] if positions.blank? || dataset.nil?
 
       ordered = dataset.testcases.order(:num).pluck(:code_name)
-      positions.first(limit).map { |p| ordered[p[:i]] || "idx#{p[:i]}" }
+      positions.first(limit).map do |p|
+        safe = ordered[p[:i]] || "idx#{p[:i]}"
+        orig = safe_to_orig[safe]
+        orig && orig.to_s != safe.to_s ? "#{safe} (CMS: #{orig})" : safe
+      end
     end
     private_class_method :diff_codenames
   end
