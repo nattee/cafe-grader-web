@@ -261,32 +261,50 @@ must be **destroyed and cloned fresh**.
 Neither is an import defect; both are judge/environment policy that only you
 can settle.
 
-### 6.1 Memory accounting — address space vs cgroup (144 disagreements)
+### 6.1 Memory accounting — address space vs cgroup  ⚑ PROVEN BY EXPERIMENT
 
-Cafe limits **address space** (`RLIMIT_AS`, isolate `-m`) for C/C++;
+Cafe limits **address space** (`RLIMIT_AS`, isolate `-m`) for C/C++:
 `isolate_need_cg_by_lang` (`app/engine/judge_base.rb:48`) enables cgroup
 accounting only for java/digital/go/python. CMS uses `--cg-mem` whenever
 `use_cgroups` is set, and its default is `True`
 (`cms/grading/Sandbox.py:1102-1106`, `cms/conf.py:116`).
 
-A C++ program with large *untouched* global arrays reserves address space it
-never faults in: fine under cgroup accounting, killed instantly under
-`RLIMIT_AS`. Confirmed on `feb2022_lingling` submission 5795 (`MAX_N`-sized 2D
-arrays; 100 on CMS, 0 here, every testcase crashing). **Imported problems can
-therefore be harsher than they were on CMS — students who passed there would
-get MLE here.**
+A C++ program that *reserves* memory it never touches — large globals, or heap
+that vectors reserve — passes under cgroup accounting and is killed under
+`RLIMIT_AS`. **Imported problems are therefore harsher than they were on CMS:
+students lose points they demonstrably earned on the source instance.**
 
-- **Option A — match CMS:** enable cg for c/cpp. Changes grading for *every
-  existing cafe problem*, not just imports. Needs a deliberate decision and
-  ideally a rejudge plan.
-- **Option B — accept:** document per-problem that memory enforcement is
-  stricter than the source instance.
+**Experiment (2026-08-03, dev only, reverted afterwards).** Enabling cgroup
+accounting for `c`/`cpp` and re-running the two worst-affected tasks:
 
-**Recommended first step (cheap, ~10 min):** flip the flag on dev, re-run the
-two known crashing submissions, and see whether they then match CMS. That turns
-the policy question into an evidence-based one. Note one flagged submission
-(`apr2022_colorful` 5388) has only small arrays, so a second cause (stack depth
-— cafe passes no `--stack` to isolate — or plain UB) may also be present.
+| task | before | after |
+|---|---|---|
+| `feb2022_lingling` | 9/10 score-exact (a CMS-100 submission scored **0**) | **10/10, zero mismatches** |
+| `apr2022_colorful` | 8/10 score-exact | **10/10, zero mismatches** |
+
+Both reach an exact match with CMS. This confirms the diagnosis by measurement,
+not just by reading both codebases, and it accounts for the **entire**
+`HARSHER_we_crash` class (144 testcase disagreements). An earlier guess that
+`apr2022_colorful` had a second, unrelated cause (its static arrays are small)
+was **wrong** — its heap reservations are counted by `RLIMIT_AS` just the same.
+
+**The decision is therefore no longer "should we match CMS?" but "cafe's C++
+memory enforcement is stricter than intended, and we can prove it costs
+students points."** The change is one line:
+
+```ruby
+# app/engine/judge_base.rb#isolate_need_cg_by_lang
+when 'java', 'digital', 'go', 'python', 'c', 'cpp'
+```
+
+It is **not** applied, because it changes grading for *every existing cafe
+problem*, not only imports. What it needs from the operator:
+
+1. a decision to adopt CMS/IOI memory semantics,
+2. a check that the judge hosts have cgroup support enabled for isolate
+   (the four cg languages already rely on it, so this is likely satisfied),
+3. a rejudge plan for existing problems whose grades would change — strictly in
+   students' favour, since the current setting can only be harsher.
 
 ### 6.2 `custom_cms` argv order on production — see the 🔴 entry in `doc/backlog.md`
 
