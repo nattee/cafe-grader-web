@@ -306,6 +306,41 @@ problem*, not only imports. What it needs from the operator:
 3. a rejudge plan for existing problems whose grades would change — strictly in
    students' favour, since the current setting can only be harsher.
 
+### 6.1b C++ standard mismatch — cafe compiles gnu++17, CMS used gnu++11
+
+**Verified on both sides.** CMS 1.4.dev3 ships exactly one C++ language,
+`cpp11_gpp`, compiling with `-std=gnu++11` (`cms/grading/languages/cpp11_gpp.py:68`).
+Cafe hardcodes `-std=gnu++17` (`app/engine/compiler/cpp.rb:27`). **Every imported
+task is therefore graded under a different language standard than it was
+authored and tested against.**
+
+Consequences seen in the sweep:
+- **Compile failures** (`cafe_never_graded`, 546 testcase disagreements). Proven
+  example: `may2022_findhome` submissions declaring a global `bool close[330]`,
+  which collides with POSIX `close()` under modern libstdc++. C++17 also removed
+  library features common in older competitive code (e.g. `std::random_shuffle`).
+- **Grader behaviour.** `may2023_landlord` is a `with_managers` task whose
+  grader drives a seeded PRNG and hashes answers, so its expected output depends
+  on the grader's exact arithmetic and evaluation order — an area C++17 changed.
+
+**Experiment (2026-08-03, dev only, reverted).** Compiling as `gnu++11` and
+re-running `may2023_landlord`: score-exact **2/5 → 3/5**, score mismatches
+**3 → 1**. A real improvement, but *not* a complete explanation — one mismatch
+and one error remain, so at least one further cause is present in that task.
+
+**Options for the operator.**
+1. Compile imported CMS problems as `gnu++11` for fidelity. Cafe hardcodes the
+   standard in `Compiler::Cpp`, so this needs either a per-language entry
+   (a `cpp11` language alongside `cpp`) or a per-problem compile option — a
+   design decision, not a one-liner.
+2. Accept the drift and treat compile failures on old submissions as expected.
+   Note this only affects *replaying historical submissions*; new students
+   writing new code against a modern compiler are unaffected.
+
+Recommendation: option 2 for the migration itself (students will submit fresh
+code), and option 1 only if you want historical-submission fidelity or intend
+to rejudge archives.
+
 ### 6.2 `custom_cms` argv order on production — see the 🔴 entry in `doc/backlog.md`
 
 Four pre-existing problems use the legacy `custom_cms` type whose argument
