@@ -11,7 +11,7 @@ real c2 submissions (Tier 1).** Headline result: **50 tasks match CMS exactly,
 27 differ only for causes we understand and can name, 11 warrant a human
 glance** — and *no systematic grading defect was found anywhere*. Seven defects
 surfaced along the way (§4); six are fixed, one is a policy decision for the
-operator (§6). Nothing has been imported to production yet.
+operator (§5). Nothing has been imported to production yet.
 
 Related documents:
 - Design: `docs/superpowers/specs/2026-08-02-cms-clone-import-design.md`
@@ -197,7 +197,7 @@ judge discovering one is not a defect):
 |---|---|---|---|
 | `benign_timing` | 391 | CMS timed out; we finish and find the real verdict | No |
 | `REAL_grading_divergence` | 303 | ~6 individual submissions, each with a submission-specific cause | No — see below |
-| `HARSHER_we_crash` | 144 | we report crash/MLE where CMS graded fine | **Yes — §6 decision** |
+| `HARSHER_we_crash` | 144 | we report crash/MLE where CMS graded fine | **Yes — §5 decision** |
 | `cafe_never_graded` | 142 | our newer g++ refuses to compile 2022-era code | No — compiler drift |
 | `looser_we_pass` + `fractional_score_drift` | 19 | quality-scored optimisation tasks | No — machine-dependent |
 
@@ -256,12 +256,12 @@ on re-import, so re-cloning a badly-imported problem does **not** repair it —
 it merely adds another dataset generation. A problem imported under buggy code
 must be **destroyed and cloned fresh**.
 
-## 6. Open decisions for the operator
+## 5. Open decisions for the operator
 
 Neither is an import defect; both are judge/environment policy that only you
 can settle.
 
-### 6.1 Memory accounting — address space vs cgroup  ⚑ PROVEN BY EXPERIMENT
+### 5.1 Memory accounting — address space vs cgroup  ⚑ PROVEN BY EXPERIMENT
 
 Cafe limits **address space** (`RLIMIT_AS`, isolate `-m`) for C/C++:
 `isolate_need_cg_by_lang` (`app/engine/judge_base.rb:48`) enables cgroup
@@ -306,7 +306,7 @@ problem*, not only imports. What it needs from the operator:
 3. a rejudge plan for existing problems whose grades would change — strictly in
    students' favour, since the current setting can only be harsher.
 
-### 6.1b C++ standard mismatch — cafe compiles gnu++17, CMS used gnu++11
+### 5.2 C++ standard mismatch — cafe compiles gnu++17, CMS used gnu++11
 
 **Verified on both sides.** CMS 1.4.dev3 ships exactly one C++ language,
 `cpp11_gpp`, compiling with `-std=gnu++11` (`cms/grading/languages/cpp11_gpp.py:68`).
@@ -341,7 +341,7 @@ Recommendation: option 2 for the migration itself (students will submit fresh
 code), and option 1 only if you want historical-submission fidelity or intend
 to rejudge archives.
 
-### 6.2 `custom_cms` argv order on production — see the 🔴 entry in `doc/backlog.md`
+### 5.3 `custom_cms` argv order on production — see the 🔴 entry in `doc/backlog.md`
 
 Four pre-existing problems use the legacy `custom_cms` type whose argument
 order is testlib's, not CMS's. If any of their checkers was written to the CMS
@@ -350,7 +350,7 @@ the dev box, so this must be checked against production.
 
 ---
 
-## 5. Progress tracker
+## 6. Progress tracker
 
 | stage | state |
 |---|---|
