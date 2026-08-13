@@ -91,6 +91,107 @@ exactly the thing that needs verifying.
 
 ---
 
+## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
+
+**Raised 2026-08-03 from the CMS migration validation.** Three separate things
+are tangled here; separating them makes the decision much easier.
+
+### The mechanics (verified on both sides)
+
+Both graders run isolate. Cafe passes `-m <KB>` for C/C++ → **RLIMIT_AS**, which
+caps *address space*: everything the process maps, including memory reserved and
+never touched. CMS passes `--cg-mem` → **cgroup accounting**, which caps pages
+actually faulted in (RSS).
+
+Concretely: a global `int dp[5000][5000]` is 100 MB of address space the instant
+the binary maps its BSS, so cafe kills it at startup even if the solution touches
+2 MB. Under cgroups the untouched pages cost ~nothing and it runs. Cafe fails on
+*declaration*; CMS fails on *use*.
+
+Cafe already uses cgroups for java/digital/go/python
+(`app/engine/judge_base.rb#isolate_need_cg_by_lang`) — C/C++ are the exception.
+isolate supports **both** flags simultaneously (`-m` and `--cg-mem` are separate
+options), which enables the hybrid below.
+
+### Issue 1 — POLICY: should unused declared memory count? (legitimate either way)
+
+**Cafe style (address space) — for:**
+- Deterministic: the verdict never depends on which testcase or how much of the
+  array gets touched. Same program, same verdict, every run.
+- Teaches memory discipline explicitly: "your solution must FIT in 256 MB" is a
+  real competitive-programming skill, and declaring `MAXN` far beyond the limit
+  is caught immediately rather than tolerated.
+- Prevents lucky passes: a solution declaring 1 GB but touching little passes the
+  given tests under cgroups, then dies on data that touches more. Address-space
+  limiting rejects it consistently.
+- Fails fast (cheaper to grade).
+
+**Cafe style — against:**
+- Counts things the student does not control: the static binary's mappings,
+  allocator arenas, thread stacks, libstdc++'s own reservations. A solution
+  genuinely using 50 MB can show substantially more address space.
+- Penalises a widely-taught idiom (declare `dp[MAXN][MAXN]`, use a submatrix).
+- Diverges from IOI / CMS / Codeforces, where limits are RSS-based. Students
+  trained elsewhere — and problems authored elsewhere — assume the other model.
+- Linux over-commits by default, so reserved-but-untouched memory costs the
+  machine nothing; the limit measures something that is not a real resource cost.
+
+**cgroup style — for:** measures what the machine actually pays; matches the
+convention every imported problem was authored against; enables correct MLE
+reporting (see Issue 2). **Against:** allows declare-huge-touch-little
+solutions to pass; verdict can vary by testcase; may count page cache for files
+the sandbox reads (needs testing on large-input tasks).
+
+### Issue 2 — A BUG, independent of the policy choice
+
+```
+Evaluation.count                          6,922,221
+Evaluation.where(result: :memory_limit)           0     <-- never, not once
+Evaluation.where(result: :crash)            555,119     (8.0%)
+```
+
+**Cafe has never once reported "memory limit exceeded" for C/C++.** Under
+`RLIMIT_AS`, an over-limit allocation makes `malloc` return NULL or throw
+`bad_alloc`; the process dies by signal and isolate reports a runtime error, so
+cafe records `crash` (`x`). Students exceeding memory are told their program
+crashed — indistinguishable from a segfault. isolate can only report a genuine
+memory-limit kill through cgroup accounting (`cg-oom-killed`), so **accurate MLE
+verdicts require cgroups regardless of which policy is chosen for the limit.**
+
+### Issue 3 — Imported CMS problems are effectively stricter than authored
+
+Their `memory_limit` values were calibrated against RSS semantics. Enforced as
+address space, the same number is a tighter budget, so students lose points they
+earned on the source instance. Measured in the migration sweep: submissions CMS
+scored 100 scored **0** here; enabling cgroups took two affected tasks from 8-9/10
+to **10/10 exact** (`doc/CMS-Migration.md` §5.1).
+
+### Options
+
+1. **Keep cafe policy, fix the verdict.** Run with cgroups for accounting/reporting
+   but keep an address-space cap too (`--cg-mem=<limit>` *and* `-m=<limit>`):
+   students get a correct MLE verdict, and declaring beyond the limit still fails.
+   Closest to today's behaviour while fixing Issue 2.
+2. **Adopt CMS semantics** (`--cg-mem` only): full fidelity for imported problems,
+   matches IOI convention. Strictly more permissive, so no existing grade can fall.
+3. **Hybrid, per origin:** CMS semantics for imported problems, cafe semantics for
+   native ones. Most faithful, but two grading models to explain and maintain —
+   probably not worth it.
+4. **Do nothing**, and raise imported problems' memory limits to compensate.
+
+### Rollout requirement whichever is chosen
+
+Use the existing Mode A replay harness (`problems:replay_validate`) to re-grade a
+sample of **existing, non-imported** problems before/after and diff against stored
+grades. Expect only `x -> P` transitions; **any `P -> x` means the page-cache
+effect is real and stops the rollout.** Include tasks with large inputs. ~1 hour
+of machine time; converts "should be safe" into "measured".
+
+**Size:** the code change is one line (plus one more for the hybrid). The
+decision and the verification are the work.
+
+---
+
 ## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
 
 **Context.** Viva grounding was extracted off `Tag` into a dedicated
