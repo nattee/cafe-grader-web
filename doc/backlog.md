@@ -166,7 +166,63 @@ earned on the source instance. Measured in the migration sweep: submissions CMS
 scored 100 scored **0** here; enabling cgroups took two affected tasks from 8-9/10
 to **10/10 exact** (`doc/CMS-Migration.md` §5.1).
 
+### Measured behaviour (isolate experiments, 2026-08-03)
+
+**How RSS/cgroup accounting actually charges.** A program declaring a 1 GiB
+global array, touching the first 64 MiB, then the last 64 MiB, leaving the
+middle untouched:
+
+| point | RSS |
+|---|---|
+| declared, nothing touched | 1.6 MB |
+| after touching FIRST 64 MiB | 67 MB |
+| after touching LAST 64 MiB | **133 MB** |
+
+So cgroup accounting charges the **sum of every distinct page ever touched** —
+not the maximum of the regions, not the whole array. Untouched pages are never
+charged; once an anonymous page is faulted in it stays charged (a judge box has
+no swap, so nothing is reclaimed). Granularity is one page: touching a single
+byte charges 4 KB. Note transparent hugepages are `madvise` on this host; under
+`always`, a single byte could charge a 2 MB huge page and inflate sparse
+patterns considerably.
+
+**What `-m` and `--cg-mem` do together.** They are independent limits and both
+are enforced — whichever binds first wins. Measured with a 128 MiB limit and a
+program declaring 256 MiB:
+
+| flags | declares 256 MiB, touches 0 | declares 256 MiB, touches 200 MiB |
+|---|---|---|
+| `-m` only (today) | killed, **signal 11**, `max-rss: 816 KB` | killed at startup, same |
+| `--cg-mem` only | **runs fine** | killed, **signal 9**, `cg-mem` exactly at limit |
+| both, equal | killed, **signal 11** (AS binds first) | killed at startup |
+| `--cg-mem` limit + generous `-m` (1 G) | **runs fine** | killed, **signal 9** at exactly the limit |
+
+**The decisive detail: signal 11 vs signal 9.** An address-space kill reports
+SIGSEGV with `max-rss` of a few hundred KB — the process died having used almost
+no memory, because the kernel refused the mapping, and *nothing in isolate's meta
+indicates memory was the cause*. That is precisely why this repo has 555,119
+`crash` verdicts and zero `memory_limit` ones. A cgroup kill reports SIGKILL with
+`cg-mem` sitting exactly at the limit — unambiguous, and mappable to a proper `M`
+verdict.
+
+**Consequence for the policy debate:** "declaring `dp[5000][5000]` beyond the
+limit should show MLE" is **not achievable through `-m`**. Address-space
+enforcement can fail the program but can only ever report it as a crash. Wanting
+both fail-on-declaration *and* an honest MLE verdict means `-m` cannot supply the
+second half.
+
 ### Options
+
+1. **Keep `-m` alone (status quo).** Your policy, but over-declaration keeps
+   reading as "crash" and imported problems stay stricter than authored.
+2. **Both flags, equal limits.** Byte-for-byte the same declaration behaviour as
+   today, but a program that stays within address space and then over-uses gets a
+   clean MLE. Strictly better reporting, zero loosening — the conservative fix.
+3. **`--cg-mem` at the limit, `-m` generous (e.g. 4x).** Real memory overuse gets
+   an accurate verdict; absurd declarations still fail fast; the common idiom
+   (declare `MAXN`, use a submatrix) passes as it does on CMS/IOI/Codeforces.
+
+Older framing kept below for reference:
 
 1. **Keep cafe policy, fix the verdict.** Run with cgroups for accounting/reporting
    but keep an address-space cap too (`--cg-mem=<limit>` *and* `-m=<limit>`):
