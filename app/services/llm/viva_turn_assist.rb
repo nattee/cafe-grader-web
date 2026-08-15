@@ -10,7 +10,11 @@ module Llm
     ALERT_SENTINEL = '[[VIVA_ALERT]]'.freeze
     ALERT_BANNER   = '⚠️ Jailbreaking attempt detected. This viva has been terminated and flagged for instructor review.'.freeze
     EXAM_WARNING_NOTICE = '⚠️ WARNING: a possible attempt to subvert the exam was detected and recorded. A second detection will terminate this viva.'.freeze
-    MAX_TOKENS     = 2048
+    # Reasoning models spend completion budget on hidden thinking before the
+    # visible reply (see VivaGradeAssist::MAX_TOKENS); a scenario-reproducing
+    # opening or a careful trace check ran to ~1100 tokens under gemini-2.5-flash,
+    # so 2048 risked silently truncated interviewer messages.
+    MAX_TOKENS     = 4096
     DEFAULT_MODEL  = nil
 
     # Backend-injected security policy. Centralized here (not in the author-supplied
