@@ -453,6 +453,18 @@ class User < ApplicationRecord
     return problems_for_action(:report).where(id: problem.id).any?
   end
 
+  # THE submit gate: may this user create a submission for this problem?
+  # :submit covers members (and any enabled group role) on fully-live problems;
+  # :edit additionally lets a group's editor test-submit a draft/hidden problem
+  # in their own groups (intended design, 2026-08-22 — web behavior is
+  # authoritative). Use this everywhere a submission can be created or a
+  # submit UI is offered, so the button and the gate can never disagree.
+  def can_submit_to_problem?(problem)
+    return true if admin?
+    return problems_for_action(:submit).where(id: problem).any? ||
+           problems_for_action(:edit).where(id: problem).any?
+  end
+
   def can_edit_problem?(problem)
     # admin always has right
     return true if admin?

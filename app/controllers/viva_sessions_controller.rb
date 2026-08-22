@@ -35,7 +35,10 @@ class VivaSessionsController < ApplicationController
       redirect_to list_main_path, alert: 'This problem is not a viva exam.' and return
     end
 
-    unless @current_user.problems_for_action(:submit).where(id: @problem.id).any?
+    # Same gate as code problems (User#can_submit_to_problem?): members need a
+    # fully-live problem; a group's editor may also test-start a draft/hidden
+    # viva in their own groups. Viva authorization matches normal problems.
+    unless @current_user.can_submit_to_problem?(@problem)
       redirect_to list_main_path, alert: 'Authorization error: you have no right to start a viva for this problem.' and return
     end
 
@@ -65,10 +68,12 @@ class VivaSessionsController < ApplicationController
       if @problem.viva_daily_limit == 0
         # 0 = contest-only (design 2026-07-21, Phase A). We don't yet have a
         # per-contest retake budget (that's Phase B) — but in contest mode,
-        # the @current_user.problems_for_action(:submit) check above already
-        # proved this problem is visible only because it's included in an
-        # active contest the student is enrolled in right now, so gating on
-        # contest_mode? here is sufficient for Phase A.
+        # the can_submit_to_problem? check above already proved (for a
+        # student's :submit arm) this problem is visible only because it's
+        # included in an active contest the student is enrolled in right now,
+        # so gating on contest_mode? here is sufficient for Phase A. (Editors
+        # reaching here via the :edit arm are blocked in normal mode like
+        # everyone else; admins skip this whole block.)
         unless GraderConfiguration.contest_mode?
           redirect_to list_main_path, alert: 'This viva can only be taken during a contest.' and return
         end

@@ -87,6 +87,10 @@ class SubmissionsController < ApplicationController
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = [] # won't allow llm models on the first submission
     @submission_source = nil
+    # a reporter can VIEW a problem hidden from students without being able to
+    # submit — render the page view-only instead of a submit form that would
+    # only fail at POST time
+    @can_submit = @current_user.can_submit_to_problem?(@problem)
     render 'edit'
   end
 
@@ -98,6 +102,7 @@ class SubmissionsController < ApplicationController
     @last_sub = @current_user.last_submission_by_problem(@problem)
     @models = Rails.configuration.llm[:provider].keys
     @submission_source = @submission&.source unless @as_binary
+    @can_submit = @current_user.can_submit_to_problem?(@problem)
   end
 
   # as Turbo

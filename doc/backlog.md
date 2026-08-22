@@ -786,3 +786,27 @@ out of the audited attrs (derived, bulky).
   for an unhandled exception (e.g. `cmsDumpExporter` failure) — the rake
   task already treats any nonzero exit as failure so behavior is correct,
   just undocumented. `script/cms_extract/extract_task.py:1-21` (docstring).
+
+---
+
+## Upstream GitHub Pages for docs/ + wiki visual-companion links
+
+**Why it matters.** The user-facing authorization guide
+(`docs/guide/authorization.html`) and the audit report are published only on
+the fork's Pages site (`nattee.github.io/cafe-grader-web`) — the upstream wiki
+can't link them canonically yet, and the fork wiki pointer references the
+temporary URL.
+
+**Current state.** The code alignment this entry originally tracked shipped at
+rev 1996 (`User#can_submit_to_problem?` everywhere; disabled memberships grant
+no role; resurrected model lock). Fork Pages serves master:/docs and works.
+
+**What remains.** After the next /upstream-sync carries `docs/` to
+cafe-grader-team: an org **admin** (dae's token is WRITE, not admin) must
+enable GitHub Pages there (Settings → Pages → Deploy from a branch →
+master + /docs), then (1) add the visual-companion link block to the wiki
+page `Users-Roles-and-Access-Control` pointing at
+`https://cafe-grader-team.github.io/cafe-grader-web/guide/authorization.html`,
+(2) swap the temporary fork URLs in the fork-wiki pointer page.
+
+**Size.** Trivial once the admin flips the Pages switch.

@@ -102,7 +102,7 @@ The system operates in either **contest mode** or **group mode** (configured via
 
 - Lives in `app/controllers/api/v1/`, routes under `namespace :api / :v1`
 - **JWT auth** via `Authorization: Bearer <token>` (session auth is NOT used)
-- **Must reuse existing model authorization** (`User#problems_for_action`, `User#can_view_testcase?`, `User#can_view_submission?`, etc.) — never duplicate business logic in API controllers
+- **Must reuse existing model authorization** (`User#problems_for_action`, `User#can_submit_to_problem?`, `User#can_view_testcase?`, `User#can_view_submission?`, etc.) — never duplicate business logic in API controllers. The API must accept exactly what the web accepts — never less or more (decision 2026-08-22: the running web app is authoritative)
 - **rswag** specs in `spec/requests/api/v1/` double as tests and Swagger docs
 - After changing any API spec: **always run `rails rswag:specs:swaggerize`** to regenerate `swagger/v1/swagger.yaml`
 - Swagger UI is served at `/api-docs`
@@ -124,6 +124,8 @@ Session-based auth (`session[:user_id]`). Key controller methods:
 - `current_user` — logged-in user
 - `admin_authorization` — restricts to admin role
 - `group_editor_authorization` — restricts to group editors
+
+Submit authorization is ONE predicate, `User#can_submit_to_problem?` (admin ∨ `:submit` ∨ `:edit` — the `:edit` arm is the editor's test-submit right on draft/hidden problems in their own groups). It backs the web submit, the API create, viva start, the submit-form UI, and the model-layer validation (`Submission#must_have_valid_problem`, the last line of defense; trusted tooling bypasses with `save!(validate: false)`). Never hand-roll a submit check from scopes — add to or call the predicate. A disabled `groups_users` row grants NO role (member, reporter, or editor). Full design + role matrix: `doc/decisions.md` 2026-08-22, `docs/guide/authorization.html`.
 
 ### Background Processing
 
