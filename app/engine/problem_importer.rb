@@ -415,6 +415,12 @@ class ProblemImporter
       end
 
       language = Language.where(name: lang_name).first
+      # explicit guard: save!(validate: false) below skips must_specify_language,
+      # so an unknown <lang>_ prefix must be rejected here, not silently saved
+      if language.nil?
+        @log << "  ERROR: unknown language prefix '#{lang_name}' in '#{pn.basename}'; skipped"
+        next
+      end
       sub =  Submission.new(user: user,
                             problem: @problem,
                             submitted_at: Time.zone.now,
@@ -424,10 +430,16 @@ class ProblemImporter
       sub.source = File.open(fn, 'r:UTF-8', &:read)
       sub.source.encode!('UTF-8', 'UTF-8', invalid: :replace, replace: '')
 
-      if sub.save
+      # validate: false — trusted server-side import; the submitting user is an
+      # arbitrary stand-in (User.first) and the problem is typically still a
+      # draft, so must_have_valid_problem would wrongly reject model solutions.
+      # Same bypass as the repair/replay engines. before_save still assigns the
+      # next submission number.
+      begin
+        sub.save!(validate: false)
         sub.add_judge_job
-      else
-        @log << "  ERROR: could not save solution: #{sub.errors.full_messages.join('; ')}"
+      rescue ActiveRecord::ActiveRecordError => e
+        @log << "  ERROR: could not save solution: #{e.message}"
       end
     end
   end

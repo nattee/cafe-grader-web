@@ -389,16 +389,22 @@ class Submission < ApplicationRecord
     end
   end
 
+  # Last line of defense behind the controller gates: the DB write itself
+  # re-checks submit authorization via THE shared gate
+  # (User#can_submit_to_problem? — also used by main#submit, the API create,
+  # and viva start), so a future controller that forgets its gate still can't
+  # create an unauthorized submission. Creation-only (new_record?): grading
+  # updates to existing rows never re-run authorization. Applies to binary
+  # submissions too (the old version skipped them via `return if source==nil`,
+  # and its errors[:base] << never registered on Rails >= 6.1 — the check had
+  # been a silent no-op). Trusted server-side tooling that must write
+  # submissions regardless (repair shadows, replay engines, model-solution
+  # import) bypasses explicitly with save!(validate: false).
   def must_have_valid_problem
-    return if self.source==nil
-    if self.problem==nil
-      errors.add(:problem, :blank, 'aaa')
-    else
-      # admin always have right
-      return if self.user.admin?
-
-      # check if user has the right to submit the problem
-      errors[:base] << "Authorization error: you have no right to submit to this problem" if (!self.user.problems_for_action(:submit).include?(self.problem)) and (self.new_record?)
+    if self.problem.nil?
+      errors.add(:problem, :blank)
+    elsif self.new_record? && !self.user.can_submit_to_problem?(self.problem)
+      errors.add(:base, 'Authorization error: you have no right to submit to this problem')
     end
   end
 

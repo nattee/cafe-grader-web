@@ -105,9 +105,13 @@ class Problem < ApplicationRecord
   # minus user management. This lets an editor manage a finished (archived) or
   # not-yet-available (draft) problem in their own group; the old scope required
   # available: true, which silently locked editors out of their own drafts.
+  # GroupUser#enabled is NOT ignored: a disabled membership row is not an
+  # editor at all (intended design, 2026-08-22) — matching the group-level
+  # Group.editable_by_user, which always required an enabled row.
   scope :group_editable_by_user, ->(user_id) {
     joins(groups_problems: {group: :groups_users})
       .where('groups_users.user_id': user_id)   # user is in the group
+      .where('groups_users.enabled': true)      # ...with an enabled membership
       .where('groups_users.role': 'editor')     # ...as an editor
       .distinct
   }
@@ -117,11 +121,15 @@ class Problem < ApplicationRecord
   # unavailable) UNIONed with the reporter-gated set, so "editor >= reporter"
   # holds everywhere. GroupProblem#enabled is intentionally ignored for both (a
   # problem disabled within a group is a student-only hide; staff still report).
+  # GroupUser#enabled is NOT ignored: a reporter is "a member with extra sight",
+  # so a disabled membership row revokes the reporter's sight the same way it
+  # revokes a member's (intended design, 2026-08-22).
   scope :group_reportable_by_user, ->(user_id) {
     reporter_gated = Problem.joins(groups_problems: {group: :groups_users})
       .where(available: true)                   # available problems only
       .where('groups.enabled': true)            # groups is enabled
       .where('groups_users.user_id': user_id)   # user is in the group
+      .where('groups_users.enabled': true)      # ...with an enabled membership
       .where('groups_users.role': 'reporter')   # ...as a reporter
     Problem.where(id: Problem.group_editable_by_user(user_id))
            .or(Problem.where(id: reporter_gated))

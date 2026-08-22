@@ -80,6 +80,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Changed
 
+- **Submit authorization now flows through one predicate**
+  (`User#can_submit_to_problem?`): the web submit, the JSON API, viva start,
+  the submit-form UI, and the model-layer validation all share the same gate.
+  An editor's test-submit right on draft/hidden problems in their own groups —
+  previously web-only — now also applies to the API and to starting a viva
+  (intended design: viva authorization matches normal problems). (rev 1996)
 - Viva: the examiner prompt now lives on the problem (`viva_prompt`, audited/redacted) layered with optional shared `viva_conduct` tags in a fixed order; `llm_prompt` tags are again exclusively the AI-helper's namespace.
 - **Viva grounding is now attached to problems via a viva-only "Grounding
   materials" selector** (with a per-problem token total) instead of the mixed
@@ -97,6 +103,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Fixed
 
+- **Model-layer submit-authorization validation was a silent no-op since the
+  Rails 6.1 era** — `Submission#must_have_valid_problem` refused via
+  `errors[:base] <<`, which registers nothing on modern Rails, and skipped
+  binary submissions entirely (`return if source==nil`). Resurrected with
+  `errors.add` on the shared submit gate; trusted server-side tooling (repair
+  shadows, replay engines, model-solution import) bypasses explicitly with
+  `save!(validate: false)`. (rev 1996)
+- **Reporters no longer get a submit form they can't use** — on a problem
+  hidden from students (in-group switch off) a reporter can view the problem
+  but not submit; the editor page now renders view-only with a notice instead
+  of a Submit button that always failed after the fact. (rev 1996)
 - **Near-Miss report: ungradeable shadows are no longer counted as 0-point
   grades** — accepted attempts whose shadow has no real judge outcome
   (`grader_error`, or still in flight) are excluded from gap/rescue statistics
@@ -142,6 +159,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Security
 
+- **A disabled group membership row now revokes editor/reporter problem
+  access** — previously a membership with `enabled=false` still conferred the
+  editor's full problem-level powers (view, edit, test-submit, rejudge) and a
+  reporter's view access; a disabled membership now grants no role at all,
+  matching members (intended design: disabled editor IS NOT an editor).
+  (rev 1996)
 - **Problem import/export no longer builds shell strings** — unzip/zip run
   with argv-style exec (a hostile problem name could previously inject shell
   syntax), extraction directories are derived via `parameterize`, and a
