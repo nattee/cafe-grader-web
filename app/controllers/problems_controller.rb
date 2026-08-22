@@ -28,6 +28,14 @@ class ProblemsController < ApplicationController
 
   def index
     @problem = problem_for_manage(@current_user)
+    # For viva rows the action column offers Start Viva / View Viva instead of
+    # Submit (a viva can't be reached through the code editor; see
+    # SubmissionsController#direct_edit_problem). One query for the current
+    # user's active viva session per problem, keyed by problem_id.
+    @my_active_viva = Submission.regular
+      .where(user: @current_user, viva_archived_at: nil,
+             problem: @problems.select(&:viva_exam?))
+      .index_by(&:problem_id)
   end
 
   def manage_query
