@@ -786,3 +786,40 @@ out of the audited attrs (derived, bulky).
   for an unhandled exception (e.g. `cmsDumpExporter` failure) — the rake
   task already treats any nonzero exit as failure so behavior is correct,
   just undocumented. `script/cms_extract/extract_task.py:1-21` (docstring).
+
+---
+
+## Align API + model layer with authoritative web submit behavior (editor drafts)
+
+**Why it matters.** The 2026-08-22 authorization audit
+(`docs/reports/submit-authorization.html`, probe:
+`test/integration/authz_submit_probe_test.rb` — untracked) measured that
+`main#submit` accepts problems in `:submit` OR `:edit`, so a group editor can
+submit to draft (`available=false`) and group-disabled problems in their own
+groups from the web UI. Decision (dae, 2026-08-22): **the web behavior is
+authoritative — docs and the other layers should match it**, not the other way
+around. Two layers currently contradict it:
+
+- `Api::V1::SubmissionsController#create` checks only `:submit` → 403s the
+  editor-draft submit the web allows. Candidate fix: honor `:edit` like
+  `main_controller.rb:57`.
+- `Submission#must_have_valid_problem` (submission.rb:401) is a silent no-op
+  on Rails ≥ 6.1 (`errors[:base] << …` adds nothing — verified). If
+  resurrected with `errors.add`, it must accept `:submit` OR `:edit`, or it
+  re-breaks the authoritative web path. Also decide whether the
+  `source.nil?` early-return (binary submissions skip the check entirely)
+  should stay.
+
+**Also pending (docs side).** After the next /upstream-sync carries `docs/`
+to cafe-grader-team: an org **admin** must enable GitHub Pages there
+(Settings → Pages → Deploy from a branch → master + /docs), then add the
+visual-companion link block to the wiki page `Users-Roles-and-Access-Control`
+pointing at `https://cafe-grader-team.github.io/cafe-grader-web/guide/authorization.html`.
+
+**Current state.** Docs updated to match web behavior (upstream wiki page +
+`docs/guide/authorization.html`). No tests cover POST `/main/submit` denials
+or the editor `:edit` path — see the audit report's coverage-gaps section;
+the probe file is the natural seed for permanent tests.
+
+**Size.** Small once decided — one-line API change + one `errors.add` fix +
+tests promoted from the probe.
