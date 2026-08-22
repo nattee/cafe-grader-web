@@ -103,6 +103,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Fixed
 
+- **Problems manage page: viva rows offer Start Viva / View Viva** instead of
+  the code-editor Submit button, which bounced viva problems to the main list
+  — a dead end for a student-hidden viva (in-group switch off), since the
+  student-scoped main list never shows it. Together with the editor
+  test-start right (rev 1996) this makes hidden vivas actually startable by
+  the group's editors and admins. (rev 2000)
 - **Model-layer submit-authorization validation was a silent no-op since the
   Rails 6.1 era** — `Submission#must_have_valid_problem` refused via
   `errors[:base] <<`, which registers nothing on modern Rails, and skipped
