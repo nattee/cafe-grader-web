@@ -13,6 +13,264 @@ Conventions:
 
 ---
 
+## API ↔ web parity: IP whitelist not enforced on `/api/v1`
+
+**Why it matters.** The 2026-08-19 single-user-mode bypass (fixed rev 1992)
+showed the API layer silently skipping web-side gates. One known gate is
+still missing: `check_valid_login` blocks non-admin logins from IPs outside
+`right.whitelist_ip` (unless `right.whitelist_ignore`), but
+`Api::V1::BaseController#authenticate_api_user!` never consults it — during
+an on-site exam that locks logins to lab IPs, a student's JWT keeps working
+from anywhere.
+
+**Current state.** Deliberately deferred from the rev-1992 fix: whitelist
+semantics for stateless API clients need a decision (enforce per-request like
+the new single-user gate? only at `auth/login`? exempt editors the way the
+web path does?). The authorization sweep spec
+(`spec/requests/api/v1/authorization_sweep_spec.rb`) is the natural home for
+the regression test once decided.
+
+**Size.** Small once the policy is chosen — one gate in
+`authenticate_api_user!` mirroring `is_request_ip_allowed?`
+(`app/controllers/application_controller.rb`), plus sweep coverage.
+
+---
+
+## 🔴 URGENT — `custom_cms` checker argv order may be mis-grading LIVE problems
+
+**Severity: high. Verify on production before the next exam that uses a custom
+checker.** Found 2026-08-02 while validating the CMS migration.
+
+**The defect.** Cafe's `custom_cms` evaluation type invokes a checker as
+
+```ruby
+# app/engine/checker.rb  (check_command)
+"#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"   # input, USER, correct
+```
+
+but CMS — whose name and whose "CMS/Codeforces convention" comment this type
+claims to follow — invokes it the other way round:
+
+```python
+# CMS 1.4.dev3, cms/grading/steps/trusted.py:237-240
+command = ["./checker", CHECKER_INPUT_FILENAME,           # input.txt
+                        CHECKER_CORRECT_OUTPUT_FILENAME,  # correct_output.txt
+                        output_filename]                  # USER output
+```
+
+**Arguments 2 and 3 are swapped.** Cafe's order matches testlib/Codeforces
+(`input, participant, jury`), not CMS.
+
+**Why it matters beyond the migration.** A checker written to the CMS
+convention receives the *correct answer* where it expects the *student's
+output*, and vice versa. Measured on a real imported task
+(`oct2022_spectrophotometer`): submissions CMS scored **100 graded 0** — every
+testcase "wrong", with no error anywhere. On tasks whose correct-output files
+are empty (checker-only tasks, judged from the input alone) it fails
+universally; on others it can fail subtly or pass by luck if the checker's
+comparison happens to be symmetric.
+
+**Live exposure — needs checking.** Four PRE-EXISTING problems use
+`custom_cms` (dev DB, 2026-08-02):
+
+| problem id | name | checker size |
+|---|---|---|
+| 570 | `d68_q3a_jobqueue` | 2,409,096 B |
+| 606 | `a68_q1a_horse` | 2,345,736 B |
+| 656 | `a68_q4z_guitar_array3` | 3,095 B |
+| 659 | `a68_q4a_normal_puzzle` | 2,408,448 B |
+
+Three are multi-megabyte compiled binaries — the same size profile as the CMS
+checkers we imported. **If any of those checkers follows the CMS convention,
+that problem has been grading students incorrectly.** Their blobs are not
+present on the dev box, so this could not be settled locally; it must be
+checked against production.
+
+**How to check (per problem, ~10 minutes each).** Pull the checker, run it by
+hand on one testcase in both argument orders against a known-correct output,
+and see which order returns "correct":
+
+```
+checker <input> <correct> <user>     # CMS order
+checker <input> <user> <correct>     # cafe's current order
+```
+
+Faster proxy: `strings <checker> | grep -iE 'wrong answer|quitf|testlib'` —
+testlib-derived checkers are cafe-order-correct; a checker printing a bare
+score plus `translate:` text is CMS-style and therefore mis-invoked today.
+
+**Resolution options.**
+1. If all four are testlib-style → nothing is broken; document the naming trap
+   loudly (the type is *named* `custom_cms` but is **not** CMS-compatible) and
+   consider renaming it to `custom_testlib` with a data migration.
+2. If any is CMS-style → that problem's grades are wrong. Switch it to the new
+   `cms_comparator` type (added 2026-08-02, enum 7, CMS-native order) and
+   rejudge affected submissions.
+
+**Already done:** `cms_comparator` exists and the CMS importer targets it, so
+newly imported CMS tasks are correct. `custom_cms` was deliberately left
+unchanged to avoid breaking whatever currently depends on it — which is
+exactly the thing that needs verifying.
+
+---
+
+## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
+
+**Raised 2026-08-03 from the CMS migration validation.** Three separate things
+are tangled here; separating them makes the decision much easier.
+
+### The mechanics (verified on both sides)
+
+Both graders run isolate. Cafe passes `-m <KB>` for C/C++ → **RLIMIT_AS**, which
+caps *address space*: everything the process maps, including memory reserved and
+never touched. CMS passes `--cg-mem` → **cgroup accounting**, which caps pages
+actually faulted in (RSS).
+
+Concretely: a global `int dp[5000][5000]` is 100 MB of address space the instant
+the binary maps its BSS, so cafe kills it at startup even if the solution touches
+2 MB. Under cgroups the untouched pages cost ~nothing and it runs. Cafe fails on
+*declaration*; CMS fails on *use*.
+
+Cafe already uses cgroups for java/digital/go/python
+(`app/engine/judge_base.rb#isolate_need_cg_by_lang`) — C/C++ are the exception.
+isolate supports **both** flags simultaneously (`-m` and `--cg-mem` are separate
+options), which enables the hybrid below.
+
+### Issue 1 — POLICY: should unused declared memory count? (legitimate either way)
+
+**Cafe style (address space) — for:**
+- Deterministic: the verdict never depends on which testcase or how much of the
+  array gets touched. Same program, same verdict, every run.
+- Teaches memory discipline explicitly: "your solution must FIT in 256 MB" is a
+  real competitive-programming skill, and declaring `MAXN` far beyond the limit
+  is caught immediately rather than tolerated.
+- Prevents lucky passes: a solution declaring 1 GB but touching little passes the
+  given tests under cgroups, then dies on data that touches more. Address-space
+  limiting rejects it consistently.
+- Fails fast (cheaper to grade).
+
+**Cafe style — against:**
+- Counts things the student does not control: the static binary's mappings,
+  allocator arenas, thread stacks, libstdc++'s own reservations. A solution
+  genuinely using 50 MB can show substantially more address space.
+- Penalises a widely-taught idiom (declare `dp[MAXN][MAXN]`, use a submatrix).
+- Diverges from IOI / CMS / Codeforces, where limits are RSS-based. Students
+  trained elsewhere — and problems authored elsewhere — assume the other model.
+- Linux over-commits by default, so reserved-but-untouched memory costs the
+  machine nothing; the limit measures something that is not a real resource cost.
+
+**cgroup style — for:** measures what the machine actually pays; matches the
+convention every imported problem was authored against; enables correct MLE
+reporting (see Issue 2). **Against:** allows declare-huge-touch-little
+solutions to pass; verdict can vary by testcase; may count page cache for files
+the sandbox reads (needs testing on large-input tasks).
+
+### Issue 2 — A BUG, independent of the policy choice
+
+```
+Evaluation.count                          6,922,221
+Evaluation.where(result: :memory_limit)           0     <-- never, not once
+Evaluation.where(result: :crash)            555,119     (8.0%)
+```
+
+**Cafe has never once reported "memory limit exceeded" for C/C++.** Under
+`RLIMIT_AS`, an over-limit allocation makes `malloc` return NULL or throw
+`bad_alloc`; the process dies by signal and isolate reports a runtime error, so
+cafe records `crash` (`x`). Students exceeding memory are told their program
+crashed — indistinguishable from a segfault. isolate can only report a genuine
+memory-limit kill through cgroup accounting (`cg-oom-killed`), so **accurate MLE
+verdicts require cgroups regardless of which policy is chosen for the limit.**
+
+### Issue 3 — Imported CMS problems are effectively stricter than authored
+
+Their `memory_limit` values were calibrated against RSS semantics. Enforced as
+address space, the same number is a tighter budget, so students lose points they
+earned on the source instance. Measured in the migration sweep: submissions CMS
+scored 100 scored **0** here; enabling cgroups took two affected tasks from 8-9/10
+to **10/10 exact** (`doc/CMS-Migration.md` §5.1).
+
+### Measured behaviour (isolate experiments, 2026-08-03)
+
+**How RSS/cgroup accounting actually charges.** A program declaring a 1 GiB
+global array, touching the first 64 MiB, then the last 64 MiB, leaving the
+middle untouched:
+
+| point | RSS |
+|---|---|
+| declared, nothing touched | 1.6 MB |
+| after touching FIRST 64 MiB | 67 MB |
+| after touching LAST 64 MiB | **133 MB** |
+
+So cgroup accounting charges the **sum of every distinct page ever touched** —
+not the maximum of the regions, not the whole array. Untouched pages are never
+charged; once an anonymous page is faulted in it stays charged (a judge box has
+no swap, so nothing is reclaimed). Granularity is one page: touching a single
+byte charges 4 KB. Note transparent hugepages are `madvise` on this host; under
+`always`, a single byte could charge a 2 MB huge page and inflate sparse
+patterns considerably.
+
+**What `-m` and `--cg-mem` do together.** They are independent limits and both
+are enforced — whichever binds first wins. Measured with a 128 MiB limit and a
+program declaring 256 MiB:
+
+| flags | declares 256 MiB, touches 0 | declares 256 MiB, touches 200 MiB |
+|---|---|---|
+| `-m` only (today) | killed, **signal 11**, `max-rss: 816 KB` | killed at startup, same |
+| `--cg-mem` only | **runs fine** | killed, **signal 9**, `cg-mem` exactly at limit |
+| both, equal | killed, **signal 11** (AS binds first) | killed at startup |
+| `--cg-mem` limit + generous `-m` (1 G) | **runs fine** | killed, **signal 9** at exactly the limit |
+
+**The decisive detail: signal 11 vs signal 9.** An address-space kill reports
+SIGSEGV with `max-rss` of a few hundred KB — the process died having used almost
+no memory, because the kernel refused the mapping, and *nothing in isolate's meta
+indicates memory was the cause*. That is precisely why this repo has 555,119
+`crash` verdicts and zero `memory_limit` ones. A cgroup kill reports SIGKILL with
+`cg-mem` sitting exactly at the limit — unambiguous, and mappable to a proper `M`
+verdict.
+
+**Consequence for the policy debate:** "declaring `dp[5000][5000]` beyond the
+limit should show MLE" is **not achievable through `-m`**. Address-space
+enforcement can fail the program but can only ever report it as a crash. Wanting
+both fail-on-declaration *and* an honest MLE verdict means `-m` cannot supply the
+second half.
+
+### Options
+
+1. **Keep `-m` alone (status quo).** Your policy, but over-declaration keeps
+   reading as "crash" and imported problems stay stricter than authored.
+2. **Both flags, equal limits.** Byte-for-byte the same declaration behaviour as
+   today, but a program that stays within address space and then over-uses gets a
+   clean MLE. Strictly better reporting, zero loosening — the conservative fix.
+3. **`--cg-mem` at the limit, `-m` generous (e.g. 4x).** Real memory overuse gets
+   an accurate verdict; absurd declarations still fail fast; the common idiom
+   (declare `MAXN`, use a submatrix) passes as it does on CMS/IOI/Codeforces.
+
+Older framing kept below for reference:
+
+1. **Keep cafe policy, fix the verdict.** Run with cgroups for accounting/reporting
+   but keep an address-space cap too (`--cg-mem=<limit>` *and* `-m=<limit>`):
+   students get a correct MLE verdict, and declaring beyond the limit still fails.
+   Closest to today's behaviour while fixing Issue 2.
+2. **Adopt CMS semantics** (`--cg-mem` only): full fidelity for imported problems,
+   matches IOI convention. Strictly more permissive, so no existing grade can fall.
+3. **Hybrid, per origin:** CMS semantics for imported problems, cafe semantics for
+   native ones. Most faithful, but two grading models to explain and maintain —
+   probably not worth it.
+4. **Do nothing**, and raise imported problems' memory limits to compensate.
+
+### Rollout requirement whichever is chosen
+
+Use the existing Mode A replay harness (`problems:replay_validate`) to re-grade a
+sample of **existing, non-imported** problems before/after and diff against stored
+grades. Expect only `x -> P` transitions; **any `P -> x` means the page-cache
+effect is real and stops the rollout.** Include tasks with large inputs. ~1 hour
+of machine time; converts "should be safe" into "measured".
+
+**Size:** the code change is one line (plus one more for the hybrid). The
+decision and the verification are the work.
+
+---
+
 ## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
 
 **Context.** Viva grounding was extracted off `Tag` into a dedicated
@@ -302,6 +560,47 @@ surface via GitHub's auto-generated sidebar, so no Home edit was needed.
 
 ## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
 
+**Status 2026-08-02.** A *live-server* CMS import path shipped (master revs 1960–1968;
+spec `docs/superpowers/specs/2026-08-02-cms-clone-import-design.md`):
+`rails "cms:clone[task]"` ssh's to the CMS host, wraps the official `cmsDumpExporter`,
+filters one task's subtree, fetches its blobs via `FileCacher`, and converts through
+`Converters::CmsDumpConverter` into the trusted `ProblemImporter`. Validated against
+c2 (`mar2025_eatingfish`): structure exact, and a replay of 8 real c2 submissions
+scored 8/8 identical to CMS (only benign `T→P`/`x→P` per-testcase diffs). None of the
+capability items below are closed by that work — Communication / OutputOnly / file-I/O
+/ GroupMinPrereq are now *detected and rejected with a clear message* pointing here,
+which is the interim behavior the 2026-07-14 design specified.
+
+**Production transport that works today** (verified 2026-08-02, no new code needed):
+clone on a box that has ssh to the CMS host → problem page **Download (all datasets)** →
+upload that zip on the production server's existing **Problems → Import** page. Export→
+import was round-tripped on the cloned problem: every field identical (both datasets,
+42 testcases, weights, managers, statement, testcase bytes). This keeps production from
+ever needing ssh/sudo access to the CMS host. Known cosmetic gap: the **live** dataset's
+name is not preserved through a plain zip import (root `ds_name` is inert — the importer
+auto-names the live dataset `Dataset N`; additional datasets keep their names). `cms:clone`
+renames it explicitly; the web import path does not.
+
+**Open, in the order that serves "import c2 → production, repeatably":**
+
+- **UI-facing CMS *package* import (unbuilt).** The 2026-07-14 design's UI decision —
+  "existing import page with format auto-detect" — is still unimplemented. Note the
+  shape difference: `CmsDumpConverter` consumes a *dump bundle* produced by our own
+  extractor, NOT a CMS-native package, so the upload path needs the originally-planned
+  `CmsItalianConverter` (`task.yaml`) and/or `TpsConverter` (`problem.json`) plus
+  sniffing in `problems_controller#do_import`. They slot into `app/engine/converters/`
+  behind the same `convert(src, dest) → {log:, warnings:, errors:}` contract and can
+  reuse the staging-layout knowledge (notably: a converter MUST emit `managers_dir` +
+  `managers_pattern` or the importer silently skips `managers/*`). Needed when someone
+  hands over a package file and there is no DB access; NOT needed for the c2→production
+  flow above. Size: ~1 day per format + fixtures.
+- **Mode B replay gate (CMS-source) before any bulk clone.** The 2026-08-02 validation
+  was a hand-rolled script. Committing it as a CMS source mode in the existing
+  `Replay::` harness (reuse `ReplayGrader`/`ReplayDiff`; new pieces are a CMS submission
+  sampler and a CMS-outcome→cafe-verdict-char translator) turns per-task validation into
+  one command. Matters because the 8-submission check only exercised white-diff +
+  integer GroupMin + grader compilation; `Sum`, regex GroupMin params, and comparator
+  (`custom_cms`) checkers have never been run against a real task. Size: ~half a day.
 - Communication task support in the judge (manager process + FIFOs) — unblocks CMS Communication import/export.
 - OutputOnly grading support — unblocks CMS OutputOnly import/export.
 - GroupMinPrereq scoring in cafe's scorer (`score_param` to hold the prereq DAG) — unblocks importing dae's CMS camp tasks that use the custom score type.
@@ -462,3 +761,28 @@ clobbering-vs-staleness discussion):
 Plus: `pdf-reader` graduates into the Gemfile; blank extraction (scanned
 PDFs) leaves the field blank and prompts omit the section; leave the column
 out of the audited attrs (derived, bulky).
+
+## CMS clone — deferred hardening batch (from 2026-08-02 final review)
+
+- Nil CMS `time_limit`/`memory_limit` convert to `0` silently via `.to_f`/`.to_i`
+  — add a reject-or-warn guard. `app/engine/converters/cms_dump_converter.rb:284-285`
+  (`write_dataset_into`).
+- Fractional `GroupMin` points truncate to an int weight with no warning —
+  add a warn when `points` isn't a whole number.
+  `app/engine/converters/cms_dump_converter.rb:172-202` (`build_group_plan`).
+- `Errno::EPIPE` on the ssh stdin write surfaces as a raw backtrace instead
+  of a clean `abort` — rescue it. `lib/tasks/cms.rake:36` (`stdin.write(File.read(script))`).
+- Add `-o ConnectTimeout=10` to the ssh invocation so a dead/unreachable CMS
+  host fails fast instead of hanging on the default TCP timeout.
+  `lib/tasks/cms.rake:31` (the `ssh -o BatchMode=yes ...` cmd array).
+- An empty ACTIVE dataset (0 testcases) imports with no warning — give it
+  root parity with the additional-dataset warning path (non-active empty
+  datasets already get a `skipped non-active dataset` warning via
+  `dataset_reject_reasons`; the active one has no equivalent signal).
+  `app/engine/converters/cms_dump_converter.rb:127-147` (`dataset_reject_reasons`),
+  `:327` (the per-dataset testcase-count log line).
+- `script/cms_extract/extract_task.py`'s module docstring documents exit
+  codes `0 ok, 2 usage, 3 task not found` but not the traceback/exit-1 case
+  for an unhandled exception (e.g. `cmsDumpExporter` failure) — the rake
+  task already treats any nonzero exit as failure so behavior is correct,
+  just undocumented. `script/cms_extract/extract_task.py:1-21` (docstring).

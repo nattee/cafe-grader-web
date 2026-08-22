@@ -72,6 +72,8 @@ For `viva_exam` problems, the Description tab is relabeled **"Scenario (markdown
 
 Security-boundary framing (from the authoring UI): the scenario is the exam paper — nothing secret, could be shown to students post-exam. Rubric and model answers belong in `viva_prompt`, never here.
 
+**The student does not see the scenario in the UI.** Neither the viva page nor `/main/list` renders `description` for a viva problem (and the PDF is hidden, see §4) — the scenario reaches the student only through the interviewer's messages. Write the conduct profile / briefing so the examiner **opens by reproducing the scenario verbatim** (the course-prep conduct profiles do this), and keep scenarios compact enough to read in a chat bubble. A persistent scenario panel on the viva page is a plausible future UI addition (not built).
+
 ## 4. Statement PDF — optional, figures only
 
 Attach `problem.statement` (a regular ActiveStorage attachment) only when the scenario needs diagrams or the original exam layout. The system base64-encodes it into the first user message as an `image_url` content part, alongside the scenario text — every interview turn and the grade call re-sends the PDF so the LLM always has it in view. `Problem#pdf_visible_to_student?` returns `false` for viva problems, so the PDF download icon on `/main/list` and the Viva Info card is hidden from students (admins/editors bypass via `User#can_view_problem_pdf?`) — the PDF is the interviewer's brief, not student-facing material.
@@ -151,6 +153,10 @@ A few properties of this design:
 - **The DB role enum is `student`; on the wire we send `user`.** `VivaTurn` rows store `role: student` so the transcript view can render student bubbles, but every message handed to the LLM remaps `student → user` to conform to the chat-completions role schema. System turns (opening marker, injected warning/alert-log turns) are filtered out entirely; `:processing`/`:error` turns are also filtered (the LLM doesn't see the placeholder it's about to fill, nor the failed turns).
 
 - **No interview state lives outside the database.** The transcript of `VivaTurn` rows is the source of truth; every LLM call is rebuilt from the system prompt + first user message + the persisted prior turns. There is no hidden conversation state on the provider side.
+
+## LLM completion budgets
+
+`Llm::VivaTurnAssist::MAX_TOKENS` (4096) and `Llm::VivaGradeAssist::MAX_TOKENS` (8192) are the `max_tokens` sent on the turn and grade calls. They were 2048 until 2026-08-15, when a 13-turn practice viva graded by `gemini-2.5-flash` returned `finish_reason: length` with 1963 reasoning tokens (3301 on a re-run) consumed *before* the JSON — the grade JSON was truncated and the submission landed in `grader_error`. Reasoning models spend the completion budget on hidden thinking first, so these caps must stay well above the visible output size (~300 tokens of grade JSON, ~200–1100 tokens of interviewer text incl. the scenario-reproducing opener). If a provider exposes a thinking budget knob, that is the better lever; until then, keep these generous.
 
 ## Turn caps (design D8)
 
@@ -345,7 +351,7 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 
 # Known Gaps
 
-- **Export/import does not support viva problems.** `app/engine/problem_exporter.rb` and `app/engine/problem_importer.rb` (originally built 2023, well before viva existed — viva shipped 2026-04-19, and the format was substantially redesigned again in `doc/problem-import-export-design-2026-07-14.md` without viva in scope) have no viva-specific handling at all: no `viva_prompt`, `viva_conduct` tags, `viva_daily_limit`/caps, or `GroundingMaterial` attachments are included in a problem export/import round-trip today. This is a known gap, not yet started or formally tracked as its own item in `doc/backlog.md` — closing it is future work.
+- **Export/import does not support viva problems.** (The `viva:import` rake task covers the *kit → problems* direction for authoring; the general problem export/import round-trip is what remains open.) `app/engine/problem_exporter.rb` and `app/engine/problem_importer.rb` (originally built 2023, well before viva existed — viva shipped 2026-04-19, and the format was substantially redesigned again in `doc/problem-import-export-design-2026-07-14.md` without viva in scope) have no viva-specific handling at all: no `viva_prompt`, `viva_conduct` tags, `viva_daily_limit`/caps, or `GroundingMaterial` attachments are included in a problem export/import round-trip today. This is a known gap, not yet started or formally tracked as its own item in `doc/backlog.md` — closing it is future work.
 - **D7 authoring validation (test-drive + preflight lint) is designed but not implemented.** There is no "take your own viva as a test session excluded from reports/limits" flow and no LLM-based lint pass over the assembled prompt yet. The inoculation incident above is exactly the kind of thing the planned lint would catch pre-emptively.
 - **Alert-review admin page and red-team regression rake task (D3, Phase 2)** are designed but not implemented — see "Jailbreak Detection & Consequence Policy" above.
 - **D4 grounding PDF→text extraction** is designed (a one-shot LLM job drafting `GroundingMaterial#body` from an attached PDF, author-reviewed before save) but not implemented; grounding files are always sent as raw PDF bytes today.
@@ -367,6 +373,7 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 - [ ] *(Optional)* Attach **grounding materials** (create/edit under **Manage → Grounding**, attach via the problem form's select) for additional reference material.
 - [ ] Review/set **Soft turn cap** and **Hard turn cap** (defaults 10/15) if the default pacing doesn't fit the topic.
 - [ ] Review/set **Daily start limit** — blank for the site default (currently 3/day), a positive number for a custom limit, or `0` to make the viva contest-only.
+- [ ] *(Bulk authoring)* A course-prep kit (a directory with `manifest.yml` + one scenario `.md` + one briefing `.md` per problem + an optional shared conduct `.md`) can be created/updated in one command: `bin/rails viva:import DIR=/path/to/kit` (report only) then `APPLY=1` to write. Idempotent by problem `name` and conduct-tag name; `available` is applied on create only; every touched problem is post-checked with `viva_setup_errors`. See `Viva::KitImporter` and `course-prep/README.md`.
 - [ ] Confirm a `Language` named `viva` is seeded — the system requires it to create viva submissions.
 - [ ] Confirm `viva_turn_service` and `viva_grade_service` are configured in `config/llm.yml` for the deployment (on chula_cp they're `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist`; on master they're blank, intentionally — the abstract bases raise `NotImplementedError` to signal "no provider configured for this deployment").
 - [ ] Have a colleague (or yourself, as an editor) run a viva end-to-end before exposing it to students. Read the transcript and the rubric breakdown. If the grader returned prose, escalate to `gemini-2.5-pro` via the Re-run grading model picker.

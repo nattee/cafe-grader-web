@@ -65,6 +65,18 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   side by side for budget and model comparisons), and per-attempt drill-down
   showing the measured patch, rounds log, category, tokens/cost, and links to
   the original and shadow submissions. (rev 1949)
+- CMS task clone: `rails "cms:clone[task]"` imports a Batch task (all datasets)
+  straight from a live CMS server over ssh — official dump subtree + selective
+  blob fetch on the server, converted to the cafe package layout and imported
+  through the trusted importer. GroupMin (count and regex forms) maps to
+  `group_min`; Communication/OutputOnly, file-I/O, and GroupMinPrereq tasks are
+  rejected with clear messages (per-dataset skip when non-active). Connection
+  settings live in `config/cms_remote.yml` (gitignored; sample committed). (revs 1960–1965)
+- **`cms_comparator` evaluation type**: user checker invoked with CMS's own
+  argv order (`input, correct, user`), distinct from the legacy `custom_cms`
+  order (`input, user, correct`) that existing cafe problems depend on;
+  `Converters::CmsDumpConverter` now maps CMS's `comparator` evaluation mode to
+  it, unblocking correct import/grading of checker-based CMS comparator tasks.
 
 ### Changed
 
@@ -146,6 +158,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   interview scenario to students** — the description IS the hidden scenario
   for viva problems; the endpoint was missing the same `can_view_problem_pdf?`
   gate the sibling PDF endpoint already enforced.
+- **API now honors single-user (lockdown) mode** (rev 1992) — enabling
+  `system.single_user_mode` blocked web sessions but not the JSON API: a JWT
+  obtained beforehand kept submitting, and `auth/login` even issued fresh
+  tokens (exploited on 2026-08-19 during a pre-quiz lockdown; submissions
+  934223–934226 on the algo grader). Non-admins are now rejected per-request
+  and at login while the mode is on, and tokens issued before the last
+  lockdown (`min_last_login_time`, bumped when the mode is switched on) are
+  retroactively invalid — the API parallel of the web session kill. A new
+  route-enumerating sweep spec asserts the no-token and lockdown gates on
+  every `/api/v1` endpoint, so future endpoints are covered automatically.
 
 ## [4.4.2] — 2026-07-01
 

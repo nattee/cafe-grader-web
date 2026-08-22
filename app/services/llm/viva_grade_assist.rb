@@ -3,7 +3,13 @@ module Llm
   # and writes VivaGrade + updates Submission. Provider-agnostic; speaks OpenAI-compatible
   # chat-completion shape. Deployment branches provide a concrete #execute_call subclass.
   class VivaGradeAssist < Request
-    MAX_TOKENS    = 2048
+    # Completion budget. Reasoning models (gemini-2.5-* on Chula Genie) spend
+    # this budget on hidden thinking BEFORE the JSON: a 13-turn transcript
+    # graded by gemini-2.5-flash used 1963 reasoning tokens of a 2048 cap and
+    # returned truncated JSON (finish_reason: length) -> grader_error
+    # (observed 2026-08-15 on a practice viva). The JSON itself is ~300
+    # tokens, so 8192 leaves ample thinking room without being unbounded.
+    MAX_TOKENS    = 8192
     DEFAULT_MODEL = nil
 
     # Provider-supported model names. Concrete subclasses override with their

@@ -17,16 +17,23 @@ class Dataset < ApplicationRecord
   #   exact          diff -q (strict)
   #   relative       lib/checker/relative.rb (numbers compared with 1e-6)
   #   custom_cafe    user's checker; line1=CORRECT/INCORRECT/COMMENT, line2=score/10
-  #   custom_cms     user's checker; CMS/Codeforces — score on stdout, comment on stderr
+  #   custom_cms     user's checker; CMS/Codeforces — score on stdout, comment on
+  #                  stderr. Legacy testlib/Codeforces-style argv order (input,
+  #                  user, correct) — kept as-is for backwards compatibility with
+  #                  existing cafe problems; do NOT change this behaviour.
   #   postgres       lib/checker/postgres_checker.rb (CMS-style, strips CREATE/DROP VIEW)
   #   custom_cms_raw user's checker; raw decimal stdout. Pair with score_type :raw_sum.
+  #   cms_comparator user's checker, CMS-native argv order (input, correct, user);
+  #                  score on stdout, comment on stderr. Use this (not custom_cms)
+  #                  for tasks imported from CMS, whose checkers expect this order.
   enum :evaluation_type, { default: 0,
                            exact: 1,
                            relative: 2,
                            custom_cafe: 3,
                            custom_cms: 4,
                            postgres: 5,
-                           custom_cms_raw: 6}
+                           custom_cms_raw: 6,
+                           cms_comparator: 7}
 
   # How per-testcase scores aggregate into the submission's final grade.
   # Computed in app/engine/scorer.rb (sum_of_all_testcases, group_min, raw_sum).
