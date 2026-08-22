@@ -3,6 +3,53 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-08-22 — Submit authorization: one gate, web behavior is authoritative
+
+**Decision.** Whether a user may create a submission is decided by exactly one
+predicate, `User#can_submit_to_problem?` = admin, OR the problem is in the
+user's `:submit` set (member on a fully-live problem: `available` ∧
+`group.enabled` ∧ `groups_problems.enabled` ∧ `groups_users.enabled`), OR in
+their `:edit` set (a group's **editor may test-submit draft/hidden problems in
+their own groups**). Every layer consults it: `main#submit`, the API create,
+viva start (**viva authorization matches normal problems**), the submit-form
+UI (`@can_submit` — a reporter who can *view* a student-hidden problem gets a
+view-only page, never a Submit button that fails at POST), and the model-layer
+validation `Submission#must_have_valid_problem` as the last line of defense.
+Trusted server-side tooling (repair shadows, replay engines, model-solution
+import) bypasses explicitly with `save!(validate: false)`. Shipped rev 1996.
+
+The intended role model, in @nattee's words: admin is site-wide everything;
+editor is "almost admin-like" for any problem in the groups they edit; member
+sees/submits only when everything is on; reporter is just a member that can
+additionally *see* problems whose in-group switch is off. **A disabled
+membership row (`groups_users.enabled = false`) grants no role at all** — not
+member, not reporter, not editor.
+
+**Why (decided by @nattee):**
+
+1. **The running web app is the spec.** The design was realized on the web
+   first and documented later; when an audit found docs/API contradicting the
+   web (the API 403'd editor test-submits the web allowed), the ruling was
+   "the doc should match the web," not the reverse.
+2. **One predicate, because drift is how the bugs happened.** The 2026-08-22
+   audit (`docs/reports/submit-authorization.html`) found three layers each
+   hand-rolling the rule: the web checked `:submit ∪ :edit`, the API `:submit`
+   only, and the model check had been a silent no-op since the Rails 6.1 era
+   (`errors[:base] <<` registers nothing; binary submissions skipped it
+   entirely). Independent copies of an authorization rule *will* disagree.
+3. **Disabled ≠ removed, but disabled = no powers.** Editor/reporter problem
+   scopes previously ignored `groups_users.enabled`, so a disabled editor
+   kept view/edit/test-submit. Disabling a membership is the UI's revocation
+   gesture; it must revoke everything while preserving the row.
+
+**Guard rails.** `test/models/submission_authorization_lock_test.rb` (the
+model lock blocks unauthorized direct saves), `test/integration/submission_view_only_test.rb`
+(form vs view-only notice). The measurement harness that found all of this —
+an actor × problem-variant × entry-point matrix driver — is kept untracked as
+`test/integration/authz_submit_probe_test.rb` for the future contest-mode pass.
+User-facing docs: wiki "Users, Roles & Access Control" + the visual guide at
+`docs/guide/authorization.html`.
+
 ## 2026-07-30 — LLM provider placement: generality decides the branch, config activates
 
 **Decision.** Where an LLM provider's *code* lives is governed by one test:

@@ -16,9 +16,9 @@ not).
 ## 1. Transcript & grade visibility
 
 A viva's transcript, turns, and grade are all reached through one gate:
-`User#can_view_submission?` (`app/models/user.rb:446-474`), reused as-is from
+`User#can_view_submission?` (`app/models/user.rb:458-499`), reused as-is from
 ordinary code submissions — `VivaSessionsController#show`/`#refresh` call it
-via `authorize_viva_view` (`app/controllers/viva_sessions_controller.rb:334-344`),
+via `authorize_viva_view` (`app/controllers/viva_sessions_controller.rb:345-355`),
 and the same predicate backs `SubmissionAuthorization#can_view_submission`
 (`app/controllers/concerns/submission_authorization.rb`) used by the regular
 submission-show flow. **The checks run in this fixed order**, and it matters:
@@ -183,11 +183,11 @@ gates every attempt on `problems.viva_daily_limit` (nullable integer,
 |---|---|---|
 | `nil` | Fall back to the site-wide `GraderConfiguration['viva.practice_daily_start_limit']` (seeded default **3**, `db/seeds.rb:211-216`). If that config key is itself missing/blank/non-positive, fall back further to a hardcoded `DAILY_START_LIMIT_FALLBACK = 3` — a misconfigured global key must fail safe to a limit, never to "unlimited." | Counts every `Submission` for that user+problem started today (`submitted_at >= beginning_of_day`), **including archived ones** — restarting does not refund the day's budget. |
 | `N > 0` | At most N starts per student per problem per calendar day. | Same counting rule as above. |
-| `0` | **Contest-only.** The problem can never be started outside an active contest window. | `VivaSessionsController#start` checks `GraderConfiguration.contest_mode?` directly; the earlier `problems_for_action(:submit)` check has already proven the problem is visible right now only because it's part of an active, enrolled contest, so the contest-mode flag alone is sufficient today (no per-contest budget exists yet — that's the Phase B work in the context-policy spec). |
+| `0` | **Contest-only.** The problem can never be started outside an active contest window. | `VivaSessionsController#start` checks `GraderConfiguration.contest_mode?` directly; the earlier `can_submit_to_problem?` gate has already proven (for a student, via its `:submit` arm) the problem is visible right now only because it's part of an active, enrolled contest, so the contest-mode flag alone is sufficient today (no per-contest budget exists yet — that's the Phase B work in the context-policy spec). Editors reaching the gate via its `:edit` arm are still blocked here in normal mode; admins skip the guard entirely. |
 
 **Admins are exempt from the whole guard block** — both the daily-limit
 count and the `0`/contest-only branch are inside `unless @current_user.admin?`
-(`viva_sessions_controller.rb:64-84`). In practice this means a problem
+(`viva_sessions_controller.rb:67-90`). In practice this means a problem
 author (who is typically an admin) can start/restart their own viva as often
 as needed to test-drive a briefing, with no daily-limit or contest-only
 friction. **This is not the same as the planned, dedicated "test session"

@@ -226,7 +226,7 @@ Key differences from the turn call:
 
 - **`nil`** → falls back to `GraderConfiguration['viva.practice_daily_start_limit']` (seeded default **3**, admin-editable). If that config key is itself missing/blank/non-positive, the controller falls back further to a hardcoded `DAILY_START_LIMIT_FALLBACK = 3` — a misconfigured global key must fail safe to a limit, never to "unlimited."
 - **`N > 0`** → at most N starts per student per problem per calendar day (`Time.zone.now.beginning_of_day`). The counter is every `Submission` for that user+problem started today, **including archived ones** — restarting doesn't refund the day's budget.
-- **`0`** → **contest-only.** The problem can never be started outside an active contest window. `VivaSessionsController#start` checks `GraderConfiguration.contest_mode?` directly for this case; since the earlier `problems_for_action(:submit)` check already proved the problem is only visible right now because it's included in an active, enrolled contest, gating on the global contest-mode flag here is sufficient for the current implementation (Phase A — no per-contest retake budget exists yet, see "Phase B" below).
+- **`0`** → **contest-only.** The problem can never be started outside an active contest window. `VivaSessionsController#start` checks `GraderConfiguration.contest_mode?` directly for this case; since the earlier `can_submit_to_problem?` gate already proved (for a student, via its `:submit` arm) the problem is only visible right now because it's included in an active, enrolled contest, gating on the global contest-mode flag here is sufficient for the current implementation (Phase A — no per-contest retake budget exists yet, see "Phase B" below). An editor reaching the gate via its `:edit` arm is still blocked here in normal mode like everyone else; admins skip the whole guard block.
 - **Admins are exempt** from the daily limit entirely (`unless @current_user.admin?` wraps the whole check block).
 
 The resolved limit and remaining count are surfaced on the viva page's Viva Info card ("N of L starts left today", or "Contest-only viva — starts are governed by the contest" when the limit is 0, or "Unlimited starts (admin)").
@@ -289,7 +289,7 @@ This is deliberate, not an oversight: **retaking never lowers your score.** A st
 # Lifecycle of a Viva Session
 
 1. **Start.** The student clicks **Start Viva** on `/main/list` (`POST /problems/:id/viva/start`).
-   - Confirms `compilation_type == viva_exam` and that the problem is in the student's `problems_for_action(:submit)` set.
+   - Confirms `compilation_type == viva_exam` and that the user passes `User#can_submit_to_problem?` — the same gate as code submissions (rev 1996: viva authorization matches normal problems). For a student that means the problem is fully live in one of their groups; a group's editor may also test-start a draft/hidden viva in their own groups.
    - Confirms the `viva` `Language` is seeded.
    - `Problem#viva_setup_errors` runs. If `viva_prompt` is blank or missing a `# Rubric` section, redirects to `/main/list` with a flash alert listing what's missing. No submission is created.
    - Defensive check: if the user already has an active (non-archived) viva for this problem, refuses — stops a stale tab or direct POST from creating a parallel session.
