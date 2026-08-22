@@ -492,6 +492,19 @@
 <section id="findings">
   <h2>Findings</h2>
 
+  <div class="finding info">
+    <h3><span class="fid">STATUS</span>Resolved at rev 1996 (2026-08-22) — findings kept below as the audit record</h3>
+    <p>The intended design was confirmed: <em>the running web app is authoritative</em>, and the editor
+      test-submit (F1) is a feature. All layers now share one predicate, <code>User#can_submit_to_problem?</code>:
+      the API honors the editor test-submit (F1), the model validation is resurrected on the shared gate with
+      the binary-skip hole closed (F2), and the reporter's dead-end submit form is now a view-only page (F3).
+      Two follow-up decisions also landed in rev 1996: a <em>disabled membership row grants no role</em>
+      (previously a disabled editor kept problem-level powers and a disabled reporter kept sight — an axis this
+      report did not originally drive), and viva start uses the same gate (viva authorization matches normal
+      problems). Regression tests: <code>test/models/submission_authorization_lock_test.rb</code>,
+      <code>test/integration/submission_view_only_test.rb</code>.</p>
+  </div>
+
   <div class="finding" id="f1">
     <h3><span class="fid">F1</span>Editors can web-submit to hidden problems — but the API refuses the same action</h3>
     <p><code>main#submit</code> accepts a problem in <code>:submit</code> <em>or</em> <code>:edit</code>, and the

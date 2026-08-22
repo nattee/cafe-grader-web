@@ -789,37 +789,24 @@ out of the audited attrs (derived, bulky).
 
 ---
 
-## Align API + model layer with authoritative web submit behavior (editor drafts)
+## Upstream GitHub Pages for docs/ + wiki visual-companion links
 
-**Why it matters.** The 2026-08-22 authorization audit
-(`docs/reports/submit-authorization.html`, probe:
-`test/integration/authz_submit_probe_test.rb` — untracked) measured that
-`main#submit` accepts problems in `:submit` OR `:edit`, so a group editor can
-submit to draft (`available=false`) and group-disabled problems in their own
-groups from the web UI. Decision (dae, 2026-08-22): **the web behavior is
-authoritative — docs and the other layers should match it**, not the other way
-around. Two layers currently contradict it:
+**Why it matters.** The user-facing authorization guide
+(`docs/guide/authorization.html`) and the audit report are published only on
+the fork's Pages site (`nattee.github.io/cafe-grader-web`) — the upstream wiki
+can't link them canonically yet, and the fork wiki pointer references the
+temporary URL.
 
-- `Api::V1::SubmissionsController#create` checks only `:submit` → 403s the
-  editor-draft submit the web allows. Candidate fix: honor `:edit` like
-  `main_controller.rb:57`.
-- `Submission#must_have_valid_problem` (submission.rb:401) is a silent no-op
-  on Rails ≥ 6.1 (`errors[:base] << …` adds nothing — verified). If
-  resurrected with `errors.add`, it must accept `:submit` OR `:edit`, or it
-  re-breaks the authoritative web path. Also decide whether the
-  `source.nil?` early-return (binary submissions skip the check entirely)
-  should stay.
+**Current state.** The code alignment this entry originally tracked shipped at
+rev 1996 (`User#can_submit_to_problem?` everywhere; disabled memberships grant
+no role; resurrected model lock). Fork Pages serves master:/docs and works.
 
-**Also pending (docs side).** After the next /upstream-sync carries `docs/`
-to cafe-grader-team: an org **admin** must enable GitHub Pages there
-(Settings → Pages → Deploy from a branch → master + /docs), then add the
-visual-companion link block to the wiki page `Users-Roles-and-Access-Control`
-pointing at `https://cafe-grader-team.github.io/cafe-grader-web/guide/authorization.html`.
+**What remains.** After the next /upstream-sync carries `docs/` to
+cafe-grader-team: an org **admin** (dae's token is WRITE, not admin) must
+enable GitHub Pages there (Settings → Pages → Deploy from a branch →
+master + /docs), then (1) add the visual-companion link block to the wiki
+page `Users-Roles-and-Access-Control` pointing at
+`https://cafe-grader-team.github.io/cafe-grader-web/guide/authorization.html`,
+(2) swap the temporary fork URLs in the fork-wiki pointer page.
 
-**Current state.** Docs updated to match web behavior (upstream wiki page +
-`docs/guide/authorization.html`). No tests cover POST `/main/submit` denials
-or the editor `:edit` path — see the audit report's coverage-gaps section;
-the probe file is the natural seed for permanent tests.
-
-**Size.** Small once decided — one-line API change + one `errors.add` fix +
-tests promoted from the probe.
+**Size.** Trivial once the admin flips the Pages switch.

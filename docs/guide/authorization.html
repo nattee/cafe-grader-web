@@ -142,7 +142,9 @@
 <section id="matrix">
   <h2>The matrix: visibility and submitting, by role and switch</h2>
   <p>Roles are <em>per group</em> — Reporter/Editor privileges apply only inside groups where the user
-    holds that role. “See” means the problem appears in the student list / its statement opens.</p>
+    holds that role, and only while that membership row is <em>enabled</em>: a disabled membership grants
+    no role at all (not member, reporter, or editor). “See” means the problem appears in the student
+    list / its statement opens.</p>
   <div class="tablewrap">
   <table>
     <thead>
@@ -173,7 +175,7 @@
       </tr>
       <tr>
         <td class="func">Submit</td>
-        <td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill web">✓ web</span></td><td><span class="pill ok">✓</span></td>
+        <td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill web">✓ editor</span></td><td><span class="pill ok">✓</span></td>
       </tr>
       <tr class="scen-start">
         <td class="scenario" rowspan="2">Problem Available OFF<small>draft or retired problem</small></td>
@@ -182,7 +184,7 @@
       </tr>
       <tr>
         <td class="func">Submit</td>
-        <td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill web">✓ web</span></td><td><span class="pill ok">✓</span></td>
+        <td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill web">✓ editor</span></td><td><span class="pill ok">✓</span></td>
       </tr>
       <tr class="scen-start">
         <td class="scenario" rowspan="2">Group disabled<small>archived course</small></td>
@@ -191,7 +193,7 @@
       </tr>
       <tr>
         <td class="func">Submit</td>
-        <td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill web">✓ web</span></td><td><span class="pill ok">✓</span></td>
+        <td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill no">✗</span></td><td><span class="pill web">✓ editor</span></td><td><span class="pill ok">✓</span></td>
       </tr>
     </tbody>
   </table>
@@ -199,7 +201,7 @@
   <div class="legend">
     <span><span class="pill ok">✓</span> allowed</span>
     <span><span class="pill no">✗</span> hidden / refused</span>
-    <span><span class="pill web">✓ web</span> editor’s own groups, via the web UI only — the JSON API currently refuses these</span>
+    <span><span class="pill web">✓ editor</span> editor test-submit in their own groups (web, API, and viva start)</span>
   </div>
 </section>
 
@@ -234,7 +236,7 @@
     <div class="down">↓ yes</div>
     <div class="step">
       <div class="q">6 · Is the problem Available?<small>the problem’s master switch</small></div>
-      <div class="out"><b>NO →</b> hidden from members and reporters. Editors of its groups still see it (and can test-submit from the web).</div>
+      <div class="out"><b>NO →</b> hidden from members and reporters. Editors of its groups still see it (and can test-submit).</div>
     </div>
     <div class="down">↓ yes</div>
     <div class="step">
