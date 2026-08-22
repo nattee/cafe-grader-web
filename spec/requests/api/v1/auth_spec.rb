@@ -55,7 +55,7 @@ RSpec.describe "Auth API", type: :request do
         end
       end
 
-      response "403", "account disabled" do
+      response "403", "account disabled, or single-user lockdown is on (non-admins get no token)" do
         schema type: :object, additionalProperties: false, properties: { error: { type: :string } }
 
         before { users(:john).update!(enabled: false) }

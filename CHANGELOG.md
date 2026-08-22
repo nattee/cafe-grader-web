@@ -158,6 +158,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   interview scenario to students** — the description IS the hidden scenario
   for viva problems; the endpoint was missing the same `can_view_problem_pdf?`
   gate the sibling PDF endpoint already enforced.
+- **API now honors single-user (lockdown) mode** (rev 1992) — enabling
+  `system.single_user_mode` blocked web sessions but not the JSON API: a JWT
+  obtained beforehand kept submitting, and `auth/login` even issued fresh
+  tokens (exploited on 2026-08-19 during a pre-quiz lockdown; submissions
+  934223–934226 on the algo grader). Non-admins are now rejected per-request
+  and at login while the mode is on, and tokens issued before the last
+  lockdown (`min_last_login_time`, bumped when the mode is switched on) are
+  retroactively invalid — the API parallel of the web session kill. A new
+  route-enumerating sweep spec asserts the no-token and lockdown gates on
+  every `/api/v1` endpoint, so future endpoints are covered automatically.
 
 ## [4.4.2] — 2026-07-01
 

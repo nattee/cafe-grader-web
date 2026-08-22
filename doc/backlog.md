@@ -13,6 +13,29 @@ Conventions:
 
 ---
 
+## API ↔ web parity: IP whitelist not enforced on `/api/v1`
+
+**Why it matters.** The 2026-08-19 single-user-mode bypass (fixed rev 1992)
+showed the API layer silently skipping web-side gates. One known gate is
+still missing: `check_valid_login` blocks non-admin logins from IPs outside
+`right.whitelist_ip` (unless `right.whitelist_ignore`), but
+`Api::V1::BaseController#authenticate_api_user!` never consults it — during
+an on-site exam that locks logins to lab IPs, a student's JWT keeps working
+from anywhere.
+
+**Current state.** Deliberately deferred from the rev-1992 fix: whitelist
+semantics for stateless API clients need a decision (enforce per-request like
+the new single-user gate? only at `auth/login`? exempt editors the way the
+web path does?). The authorization sweep spec
+(`spec/requests/api/v1/authorization_sweep_spec.rb`) is the natural home for
+the regression test once decided.
+
+**Size.** Small once the policy is chosen — one gate in
+`authenticate_api_user!` mirroring `is_request_ip_allowed?`
+(`app/controllers/application_controller.rb`), plus sweep coverage.
+
+---
+
 ## 🔴 URGENT — `custom_cms` checker argv order may be mis-grading LIVE problems
 
 **Severity: high. Verify on production before the next exam that uses a custom
