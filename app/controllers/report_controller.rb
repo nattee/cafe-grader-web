@@ -137,6 +137,16 @@ class ReportController < ApplicationController
     end
   end
 
+  def login_failure_query
+    @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
+    @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
+
+    # The user/group filter deliberately does not apply: the interesting
+    # failures (attacks, typo'd logins) mostly match no user at all.
+    @failures = Login.includes(:user).where(success: false)
+      .where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
+  end
+
   def submission
     @problems = @current_user.problems_for_action(:report)
     @groups = @current_user.groups_for_action(:report)

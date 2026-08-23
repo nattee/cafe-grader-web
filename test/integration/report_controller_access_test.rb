@@ -90,4 +90,14 @@ class ReportControllerAccessTest < ActionDispatch::IntegrationTest
     post "/report/login_detail_query", params: { user_id: users(:john).id }, as: :json
     assert_response :success
   end
+
+  test "admin can query login_failure data as JSON" do
+    sign_in_as("admin", "admin")
+    Login.create!(attempted_login: 'ghost', ip_address: '203.0.113.9', success: false)
+    post "/report/login_failure_query",
+         params: { since_datetime: 1.hour.ago.to_s, until_datetime: 1.hour.from_now.to_s }, as: :json
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert(body["data"].any? { |row| row["attempted_login"] == "ghost" })
+  end
 end
