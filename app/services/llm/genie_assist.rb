@@ -4,7 +4,9 @@ module Llm
   # builds; the only provider-specific bits are auth (bearer token) + endpoint
   # (configured via Rails credentials llm.genie) + the permitted-models guard.
   class GenieAssist < CommentAssist
-    PERMITTED_MODEL = ["gemini-2.5-pro", "gemini-2.5-flash", "Claude-3.5-Sonnet", "Claude-3.5-Haiku"]
+    # Must use the relay's exact model names (Llm::GenieAssist.list_model) —
+    # a picker model missing here is silently downgraded by prepare_data.
+    PERMITTED_MODEL = ["gemini-2.5-pro", "gemini-2.5-flash", "Claude-Sonnet", "Claude-Haiku"]
     DEFAULT_MODEL   = "gemini-2.5-pro".freeze
 
     private
