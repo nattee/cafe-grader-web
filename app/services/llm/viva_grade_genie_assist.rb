@@ -10,11 +10,14 @@ module Llm
 
     # Models accessible through Chula Genie's chat-completion endpoint. Drives
     # the admin "Re-run grading" model picker on /submissions/:id/viva.
-    # Source: Llm::GenieAssist.list_model output (run from console).
+    # Source: Llm::GenieAssist.list_model output (run from console, 2026-08-23).
     # If genie's roster changes, update this list — out-of-list values still
     # work if the admin types one in (the form's <select> doesn't enforce
     # exact match; the upstream rejects unknown models with a 4xx).
     KNOWN_MODELS = %w[
+      gemini-3.1-pro
+      gemini-3.1-flash-lite
+      gemini-3-flash
       gemini-2.5-pro
       gemini-2.5-flash
       gemini-2.5-flash-lite

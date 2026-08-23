@@ -6,8 +6,9 @@ module Llm
   class GenieAssist < CommentAssist
     # Must use the relay's exact model names (Llm::GenieAssist.list_model) —
     # a picker model missing here is silently downgraded by prepare_data.
-    PERMITTED_MODEL = ["gemini-2.5-pro", "gemini-2.5-flash", "Claude-Sonnet", "Claude-Haiku"]
-    DEFAULT_MODEL   = "gemini-2.5-pro".freeze
+    # gemini-3.1-pro is a reasoning model (thinking tokens billed as output).
+    PERMITTED_MODEL = ["gemini-3.1-pro", "gemini-2.5-pro", "gemini-2.5-flash", "Claude-Sonnet", "Claude-Haiku"]
+    DEFAULT_MODEL   = "gemini-3.1-pro".freeze
 
     private
 
