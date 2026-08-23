@@ -328,6 +328,7 @@ Rails.application.routes.draw do
     post 'login_stat'
     post 'login_summary_query'
     post 'login_detail_query'
+    post 'login_failure_query'
     get 'multiple_login'
 
     # ai report

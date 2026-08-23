@@ -64,7 +64,8 @@ paths:
                   error:
                     type: string
         '429':
-          description: too many login attempts (rate limited per client IP)
+          description: too many failed login attempts (per-IP / per-account failure
+            budget, pooled with the web login form)
           content:
             application/json:
               schema:

@@ -96,6 +96,7 @@ class ReportController < ApplicationController
     @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
     record = User
       .left_outer_joins(:logins).group('users.id')
+      .where(logins: { success: true })
       .where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
     case params[:users]
     when 'enabled'
@@ -106,7 +107,7 @@ class ReportController < ApplicationController
 
     record = record.pluck("users.id,users.login,users.full_name,count(logins.created_at),min(logins.created_at),max(logins.created_at)")
     record.each do |user|
-      query = Login.where("user_id = ? AND created_at >= ? AND created_at <= ?", user[0], @since_time, @until_time)
+      query = Login.successful.where("user_id = ? AND created_at >= ? AND created_at <= ?", user[0], @since_time, @until_time)
       ips =  query.pluck(:ip_address).uniq
       cookie = query.pluck(:cookie).uniq
 
@@ -127,13 +128,23 @@ class ReportController < ApplicationController
     @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
     @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
 
-    @logins = Login.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
+    @logins = Login.successful.includes(:user).where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
     case params[:users]
     when 'enabled'
       @logins = @logins.where(users: {enabled: true})
     when 'group'
       @logins = @logins.joins(user: :groups).where(user: {groups: {id: params[:groups]}}) if params[:groups]
     end
+  end
+
+  def login_failure_query
+    @since_time = Time.zone.parse(params[:since_datetime]) || Time.zone.now rescue Time.zone.now
+    @until_time = Time.zone.parse(params[:until_datetime]) || DateTime.new(3000, 1, 1) rescue DateTime.new(3000, 1, 1)
+
+    # The user/group filter deliberately does not apply: the interesting
+    # failures (attacks, typo'd logins) mostly match no user at all.
+    @failures = Login.includes(:user).where(success: false)
+      .where("logins.created_at >= ? AND logins.created_at <= ?", @since_time, @until_time)
   end
 
   def submission
@@ -487,7 +498,7 @@ class ReportController < ApplicationController
     end
 
     # multi login
-    @ml = Login.joins(:user).where("logins.created_at >= ? and logins.created_at <= ?", @since_time, @until_time).select('users.login,count(distinct ip_address) as count,users.full_name').group("users.id").having("count > 1")
+    @ml = Login.successful.joins(:user).where("logins.created_at >= ? and logins.created_at <= ?", @since_time, @until_time).select('users.login,count(distinct ip_address) as count,users.full_name').group("users.id").having("count > 1")
 
     st = <<-SQL
   SELECT l2.*
@@ -495,23 +506,23 @@ class ReportController < ApplicationController
     (SELECT u.id,COUNT(DISTINCT ip_address) as count,u.login,u.full_name
       FROM logins l
       INNER JOIN users u ON l.user_id =  u.id
-      WHERE l.created_at >= '#{@since_time.in_time_zone("UTC")}' and l.created_at <= '#{@until_time.in_time_zone("UTC")}'
+      WHERE l.success = TRUE and l.created_at >= '#{@since_time.in_time_zone("UTC")}' and l.created_at <= '#{@until_time.in_time_zone("UTC")}'
       GROUP BY u.id
       HAVING count > 1
     ) ml ON l2.user_id = ml.id
-    WHERE l2.created_at >= '#{@since_time.in_time_zone("UTC")}' and l2.created_at <= '#{@until_time.in_time_zone("UTC")}'
+    WHERE l2.success = TRUE and l2.created_at >= '#{@since_time.in_time_zone("UTC")}' and l2.created_at <= '#{@until_time.in_time_zone("UTC")}'
 UNION
   SELECT l2.*
     FROM logins l2 INNER JOIN
     (SELECT l.ip_address,COUNT(DISTINCT u.id) as count
       FROM logins l
       INNER JOIN users u ON l.user_id =  u.id
-      WHERE l.created_at >= '#{@since_time.in_time_zone("UTC")}' and l.created_at <= '#{@until_time.in_time_zone("UTC")}'
+      WHERE l.success = TRUE and l.created_at >= '#{@since_time.in_time_zone("UTC")}' and l.created_at <= '#{@until_time.in_time_zone("UTC")}'
       GROUP BY l.ip_address
       HAVING count > 1
     ) ml on ml.ip_address = l2.ip_address
     INNER JOIN users u ON l2.user_id = u.id
-    WHERE l2.created_at >= '#{@since_time.in_time_zone("UTC")}' and l2.created_at <= '#{@until_time.in_time_zone("UTC")}'
+    WHERE l2.success = TRUE and l2.created_at >= '#{@since_time.in_time_zone("UTC")}' and l2.created_at <= '#{@until_time.in_time_zone("UTC")}'
 ORDER BY ip_address,created_at
               SQL
     @mld = Login.find_by_sql(st)
@@ -522,7 +533,7 @@ ORDER BY ip_address,created_at
     (SELECT u.id,COUNT(DISTINCT ip_address) as count,u.login,u.full_name
       FROM logins l
       INNER JOIN users u ON l.user_id =  u.id
-      WHERE l.created_at >= ? and l.created_at <= ?
+      WHERE l.success = TRUE and l.created_at >= ? and l.created_at <= ?
       GROUP BY u.id
       HAVING count > 1
     ) ml ON s.user_id = ml.id
@@ -533,7 +544,7 @@ UNION
     (SELECT l.ip_address,COUNT(DISTINCT u.id) as count
       FROM logins l
       INNER JOIN users u ON l.user_id =  u.id
-      WHERE l.created_at >= ? and l.created_at <= ?
+      WHERE l.success = TRUE and l.created_at >= ? and l.created_at <= ?
       GROUP BY l.ip_address
       HAVING count > 1
     ) ml on ml.ip_address = s.ip_address
@@ -575,7 +586,7 @@ ORDER BY ip_address,submitted_at
     @st = <<-SQL
   SELECT l.created_at as submitted_at ,-1 as id,u.login,u.full_name,l.ip_address,"" as problem_id,"" as points,l.user_id
   FROM logins l INNER JOIN users u on l.user_id  = u.id
-  WHERE l.created_at >= ? AND l.created_at <= ? AND #{condition}
+  WHERE l.success = TRUE AND l.created_at >= ? AND l.created_at <= ? AND #{condition}
 UNION
   SELECT s.submitted_at,s.id,u.login,u.full_name,s.ip_address,s.problem_id,s.points,s.user_id
   FROM submissions s INNER JOIN users u ON s.user_id = u.id

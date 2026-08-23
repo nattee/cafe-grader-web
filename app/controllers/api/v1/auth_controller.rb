@@ -6,16 +6,22 @@ class Api::V1::AuthController < Api::V1::BaseController
   # Keep it within a working day.
   TOKEN_TTL = 12.hours
 
-  # Brute-force throttle, per client IP. The session login form is not
-  # scriptable in the same way; this endpoint is.
-  rate_limit to: 10, within: 1.minute, only: :login,
-             with: -> { render json: { error: "Too many login attempts; try again later" }, status: :too_many_requests }
+  # Brute-force protection shared with the web login: one pooled per-IP /
+  # per-account failure budget across both doors (see LoginThrottling).
+  include LoginThrottling
 
   def login
+    if login_throttled?
+      render json: { error: "Too many failed login attempts; try again later" },
+             status: :too_many_requests and return
+    end
+
     user = User.authenticate(params[:login], params[:password])
     unless user
+      record_login_failure!
       render json: { error: "Invalid login or password" }, status: :unauthorized and return
     end
+    clear_login_failures!
 
     # The web flow lets a disabled user authenticate and then blocks every
     # request (check_valid_login); issuing no token at all is the API

@@ -12,6 +12,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **Failed-attempts tab on the Login report** — the Logins report
+  (Report → Login) gains a third tab listing failed password attempts (web
+  and API) in the selected date range: attempted login string, matched user
+  (when the account exists), time with seconds, and source IP. The user/group
+  filter deliberately does not apply — most failures match no user. Data
+  comes from the failure rows recorded since rev 2002. (rev 2003)
+
 - Viva grounding: one-click PDF→markdown extraction producing a review-first draft (author must copy/edit into the body; body text replaces per-turn PDF re-sending once saved).
 - Viva: alert-review admin page (Graders → Viva alerts) listing flagged sessions with the triggering student utterance — the jailbreak-calibration instrument for the practice month.
 - Viva: examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
@@ -165,6 +172,22 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Security
 
+- **Login brute-force throttling, pooled across the web form and the API** —
+  failed password attempts are counted per client IP and per attempted
+  account (30 failures within a sliding 3-minute window, sized well above
+  real frustrated-student retry bursts at exam starts); once a budget is
+  exhausted, further attempts are refused before any password check — web
+  gets a redirect with an alert, the API its existing 429 — until the window
+  drains. Both doors draw down the same counters, replacing the API's old
+  per-controller `rate_limit` (which an attacker could sidestep by splitting
+  attempts across doors, and which counted successful logins too). Failed
+  attempts are now also recorded in `logins` (`success` flag +
+  `attempted_login` column, migration required); login/cheat reports and the
+  heartbeat user lookup were scoped to successful logins so failures don't
+  pollute multi-IP cheat detection. A successful login clears the account
+  counter (proof of ownership) but deliberately not the IP counter. No
+  permanent per-account lockout on purpose: that would let anyone lock a
+  victim out of an exam by hammering their login name. (rev 2002)
 - **A disabled group membership row now revokes editor/reporter problem
   access** — previously a membership with `enabled=false` still conferred the
   editor's full problem-level powers (view, edit, test-submit, rejudge) and a
