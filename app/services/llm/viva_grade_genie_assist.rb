@@ -3,10 +3,18 @@ module Llm
   # handling from Llm::VivaGradeAssist; only the HTTP/auth call and pricing are
   # provider-specific. Mirrors the POST pattern in Llm::GenieAssist#execute_call.
   class VivaGradeGenieAssist < VivaGradeAssist
-    DEFAULT_MODEL = 'gemini-2.5-flash'.freeze
+    # gemini-3.1-pro chosen over 2.5-flash after a 12-session comparison on
+    # real practice vivas (2026-08-23): agrees within flash's own ±10 rerun
+    # noise on 9/11, and on both divergent sessions pro was right — flash
+    # credited interviewer scaffolding as student knowledge (sub 937769) and
+    # reproducibly role-played the next interview turn instead of emitting
+    # the grade JSON (sub 937805). ~5x cost (~$0.034/grading), fine for batch.
+    DEFAULT_MODEL = 'gemini-3.1-pro'.freeze
 
-    COST_PER_1K_IN  = 0.0003
-    COST_PER_1K_OUT = 0.0025
+    # Chula Genie-relayed Gemini 3.1 Pro list-price estimates (USD per 1K).
+    # Reasoning model: thinking tokens bill as output (~1.6k/grading observed).
+    COST_PER_1K_IN  = 0.002
+    COST_PER_1K_OUT = 0.012
 
     # Models accessible through Chula Genie's chat-completion endpoint. Drives
     # the admin "Re-run grading" model picker on /submissions/:id/viva.
