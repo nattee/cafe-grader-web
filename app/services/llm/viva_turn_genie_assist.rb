@@ -3,11 +3,18 @@ module Llm
   # handling from Llm::VivaTurnAssist; only the HTTP/auth call and pricing are
   # provider-specific. Mirrors the POST pattern in Llm::GenieAssist#execute_call.
   class VivaTurnGenieAssist < VivaTurnAssist
-    DEFAULT_MODEL = 'gemini-2.5-flash'.freeze
+    # Claude-Sonnet (relay-served claude-sonnet-4-5, unpinned) chosen
+    # 2026-08-24 after replaying real practice-viva turns through five relay
+    # models: only Sonnet never leaked an answer to the student (2.5-flash
+    # and 3-flash both gave sub-answers away; Haiku lectured), it follows the
+    # scenario script, matches the student's Thai, and sits on a GA model ID
+    # — unlike the Gemini 3.x aliases, which the relay serves from retired or
+    # retirable -preview IDs, and 2.5-flash, which Vertex retires ~2026-10-16.
+    DEFAULT_MODEL = 'Claude-Sonnet'.freeze
 
-    # Chula Genie-relayed Gemini 2.5 Flash pricing (USD per 1K tokens).
-    COST_PER_1K_IN  = 0.0003
-    COST_PER_1K_OUT = 0.0025
+    # Chula Genie-relayed Claude Sonnet 4.5 list pricing (USD per 1K tokens).
+    COST_PER_1K_IN  = 0.003
+    COST_PER_1K_OUT = 0.015
 
     private
 
