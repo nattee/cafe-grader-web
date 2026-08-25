@@ -297,8 +297,9 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_nil problem.viva_daily_limit, "sanity: fixture default must be nil (falls back to global config)"
     user = users(:john)
     3.times do
-      Submission.create!(user: user, problem: problem, language: viva_language,
-                         status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+      s = Submission.create!(user: user, problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+      s.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
     end
     post viva_start_problem_path(problem)   # 4th today -> refused
     assert_redirected_to list_main_path
@@ -317,6 +318,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     user = users(:john)
     Submission.create!(user: user, problem: problem, language: viva_language,
                        status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+              .viva_turns.create!(role: :student, status: :ok, content: 'answered once')
     post viva_start_problem_path(problem)   # 2nd today -> refused under the lowered limit
     assert_redirected_to list_main_path
     assert_match(/Daily practice limit reached.*\(1\/day\)/, flash[:alert])
@@ -330,6 +332,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     user = users(:john)
     Submission.create!(user: user, problem: problem, language: viva_language,
                        status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+              .viva_turns.create!(role: :student, status: :ok, content: 'answered once')
     post viva_start_problem_path(problem)   # 2nd today -> refused under the per-problem limit
     assert_redirected_to list_main_path
     assert_match(/Daily practice limit reached.*\(1\/day\)/, flash[:alert])
@@ -379,8 +382,13 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     # used/left arithmetic (fixture default limit is 3/day; see
     # grader_configurations.yml).
     @owner_sub.update!(submitted_at: Time.zone.now)
+    # Zero student turns yet: an unengaged session is free (doesn't count).
     get viva_submission_path(@owner_sub)
     assert_response :success
+    assert_match(/3 of 3 starts left today/, @response.body)
+    # Once the student has answered, this session consumes one slot.
+    @owner_sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    get viva_submission_path(@owner_sub)
     assert_match(/2 of 3 starts left today/, @response.body)
   end
 
@@ -394,5 +402,41 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/Unlimited starts \(admin\)/, @response.body)
     assert_no_match(/starts left today/, @response.body)
+  end
+
+  test "zero-engagement sessions do not count toward the daily start limit" do
+    set_grader_config("viva.practice_daily_start_limit", 1)
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
+    user = users(:john)
+    # An archived greeting-only session (opened, never answered) is free.
+    Submission.create!(user: user, problem: problem, language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+    post viva_start_problem_path(problem)
+    assert_equal 2, problem.submissions.where(user: user).count,
+                 "a zero-turn session must not consume the daily budget"
+  end
+
+  test "finish refuses with no student turns, then ends the viva and enqueues grading" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now)
+
+    post viva_finish_submission_path(sub)
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/Answer at least one question/, flash[:alert])
+    assert_equal 'submitted', sub.reload.status
+
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'my answer')
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+      post viva_finish_submission_path(sub)
+    end
+    assert_redirected_to viva_submission_path(sub)
+    assert_equal 'evaluating', sub.reload.status
+    assert sub.viva_turns.where(role: :system).where("content LIKE '%student ended%'").exists?,
+           "finish must leave the end-of-interview system turn"
   end
 end

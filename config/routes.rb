@@ -285,6 +285,7 @@ Rails.application.routes.draw do
       post 'viva/turns/:turn_id/retry', to: 'viva_sessions#retry_turn', as: 'viva_retry_turn'
       get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
       post 'viva/restart', to: 'viva_sessions#restart', as: 'viva_restart'
+      post 'viva/finish', to: 'viva_sessions#finish', as: 'viva_finish'
       post 'archive_viva'
     end
     collection do
