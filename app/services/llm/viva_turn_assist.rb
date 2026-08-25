@@ -213,7 +213,13 @@ module Llm
         updates = {status: :evaluating}
         updates[:viva_terminated_at] = Time.current if terminate
         @submission.update!(updates)
-        Llm::VivaGradeAssistJob.perform_later(@submission, model: @model)
+        # No model: is passed — grading always uses the grade service's own
+        # DEFAULT_MODEL, exactly like the hard-cap path in
+        # VivaSessionsController#answer. Passing the interview model here made
+        # the grader depend on HOW the interview ended (observed 2026-08-24:
+        # sentinel-ended vivas graded by the turn model, hard-capped ones by
+        # the grade default — two graders in one cohort).
+        Llm::VivaGradeAssistJob.perform_later(@submission)
       end
 
       {done: finish, alerted: alerted}

@@ -10,6 +10,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Fixed
+
+- **Viva grading model no longer depends on how the interview ended** —
+  the done-sentinel path passed the interview model into
+  `Llm::VivaGradeAssistJob` while the hard-cap path used the grade
+  service's default, so one cohort could be graded by two different
+  models. Both paths now use the grade service's default; only the admin
+  "Re-run grading" picker passes an explicit model. (rev 2010)
+
 ### Added
 
 - **Failed-attempts tab on the Login report** — the Logins report
