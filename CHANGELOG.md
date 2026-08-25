@@ -17,7 +17,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   `Llm::VivaGradeAssistJob` while the hard-cap path used the grade
   service's default, so one cohort could be graded by two different
   models. Both paths now use the grade service's default; only the admin
-  "Re-run grading" picker passes an explicit model. (rev 2010)
+  "Re-run grading" picker passes an explicit model. (rev 2011)
 
 ### Added
 
