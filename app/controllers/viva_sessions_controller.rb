@@ -1,7 +1,7 @@
 class VivaSessionsController < ApplicationController
   before_action :check_valid_login
   before_action :set_problem, only: %i[start]
-  before_action :set_submission, only: %i[show answer refresh retry_turn restart]
+  before_action :set_submission, only: %i[show answer refresh retry_turn restart finish]
   # #answer/#retry_turn/#restart already enforce their own (stricter, owner-
   # or-admin) checks below — this gate is only for the read paths, which
   # previously had no authorization beyond being logged in at all. Reuses
@@ -79,8 +79,7 @@ class VivaSessionsController < ApplicationController
         end
       else
         limit = daily_start_limit_for(@problem)
-        if @problem.submissions.regular.where(user: @current_user)
-                    .where('submitted_at >= ?', Time.zone.now.beginning_of_day).count >= limit
+        if engaged_starts_today(@problem, @current_user) >= limit
           redirect_to list_main_path,
                       alert: "Daily practice limit reached for '#{@problem.name}' (#{limit}/day). Try again tomorrow."
           return
@@ -268,6 +267,46 @@ class VivaSessionsController < ApplicationController
     redirect_to list_main_path, notice: notice
   end
 
+  # POST /submissions/:submission_id/viva/finish
+  #
+  # Student-initiated end (practice only): finalize the interview now and
+  # grade what the transcript shows. Mirrors the hard-cap path in #answer —
+  # same system turn + :evaluating + grade job with no model: argument (the
+  # grade service's default decides, rev 2011). Rubric criteria never
+  # reached score zero, so the UI confirm warns before committing. Not
+  # offered on contest-only vivas (viva_daily_limit == 0): ending early to
+  # lock in credit before deeper probing is an exam-gaming vector — Phase B
+  # revisits this with the contest-snapshot policy.
+  def finish
+    unless @current_user == @submission.user
+      redirect_to viva_submission_path(@submission), alert: 'Only the owner can end their viva.' and return
+    end
+    unless @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission), alert: 'Finish is only available for viva exam problems.' and return
+    end
+    if @submission.problem.viva_daily_limit == 0
+      redirect_to viva_submission_path(@submission), alert: 'Contest vivas cannot be ended early.' and return
+    end
+    unless @submission.status.to_s == 'submitted'
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has already ended.' and return
+    end
+    if @submission.viva_archived_at.present?
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has been archived.' and return
+    end
+    if @submission.viva_turns.where(status: :processing).exists?
+      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.' and return
+    end
+    unless @submission.viva_turns.where(role: :student).exists?
+      redirect_to viva_submission_path(@submission), alert: 'Answer at least one question first — or use Restart to start over.' and return
+    end
+
+    @submission.viva_turns.create!(role: :system, status: :ok,
+      content: '(student ended the interview — grading begins)')
+    @submission.update!(status: :evaluating)
+    Llm::VivaGradeAssistJob.perform_later(@submission)
+    redirect_to viva_submission_path(@submission), notice: 'Interview ended — grading has started.'
+  end
+
   # GET /submissions/:submission_id/viva/refresh
   def refresh
     load_viva_state
@@ -287,6 +326,21 @@ class VivaSessionsController < ApplicationController
   # "N of L starts left today" display. nil on the problem falls back to
   # the site-wide GraderConfiguration default; a per-problem 0 is handled
   # separately by callers (contest-only — never routed through here).
+  # Daily-limit accounting: a start counts once the student has sent at
+  # least one answer. Greeting-only sessions (opened, never engaged) are
+  # free — the 2026-08-24 trial had 27 of 70 starts as zero-engagement
+  # peeks, each burning a slot of the daily budget on what was often a
+  # misclick. Free peeks still cost one LLM greeting call each; if that is
+  # ever abused, add a coarse total-starts ceiling here rather than
+  # re-counting peeks.
+  def engaged_starts_today(problem, user)
+    problem.submissions.regular
+           .where(user: user)
+           .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
+           .joins(:viva_turns).where(viva_turns: {role: :student})
+           .distinct.count
+  end
+
   def daily_start_limit_for(problem)
     problem.viva_daily_limit.nil? ? global_daily_start_limit : problem.viva_daily_limit
   end
@@ -318,12 +372,9 @@ class VivaSessionsController < ApplicationController
 
     # Retake-policy visibility: every viva session shows how many of
     # today's starts are left, using the SAME count #start's rate-limit
-    # guard uses (today's submissions for this user+problem — the current
-    # session counts against its own budget).
-    used = @submission.problem.submissions.regular
-             .where(user: @submission.user)
-             .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
-             .count
+    # guard uses (engaged sessions only — this session counts against its
+    # own budget once the student has answered).
+    used = engaged_starts_today(@submission.problem, @submission.user)
     @daily_start_limit = daily_start_limit_for(@submission.problem)
     @starts_left = [@daily_start_limit - used, 0].max
   end

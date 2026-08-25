@@ -10,6 +10,29 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+
+- **"End interview & get graded" button on viva sessions** — the owner of an
+  active practice viva can finalize it early and be graded on the transcript
+  so far (topics never reached score zero; the confirm dialog says so).
+  Contest-only vivas (`viva_daily_limit: 0`) do not offer it. Previously a
+  student who stopped answering left the session parked ungraded forever.
+  (rev 2014)
+
+### Changed
+
+- **Viva daily start limit counts engaged sessions only** — a start consumes
+  one of the day's slots once the student sends their first answer;
+  greeting-only sessions (opened, never engaged — 39% of starts in the first
+  student trial) no longer burn the budget. (rev 2014)
+- **Viva integrity alerts narrowed to real subversion** — off-topic chat,
+  frustration, break requests, and asking to skip or stop no longer raise
+  `[[VIVA_ALERT]]` (they get a one-sentence redirect instead); the alert
+  triggers now cover role spoofing, score/answer extraction, question
+  laundering, and credit negotiation. Cuts the practice-log noise and, under
+  the future exam policy, stops benign behavior from drawing warnings.
+  (rev 2014)
+
 ### Fixed
 
 - **Viva grading model no longer depends on how the interview ended** —
