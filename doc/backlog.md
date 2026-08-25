@@ -810,3 +810,33 @@ page `Users-Roles-and-Access-Control` pointing at
 (2) swap the temporary fork URLs in the fork-wiki pointer page.
 
 **Size.** Trivial once the admin flips the Pages switch.
+
+---
+
+## Viva grading: harden against transcript-continuation failures
+
+**Why it matters.** `Llm::VivaGradeAssist` sends the interview transcript as
+a user message; the grader model can get absorbed into it and answer as the
+*interviewer's next turn* instead of emitting the grade JSON. Observed
+2026-08-23 on a real practice viva (prod sub 937805): gemini-2.5-flash did
+this reproducibly (the stored grading AND a fresh rerun, 2/2). The result is
+a `VivaGrade` row with `total_points: nil`, empty rubric/narrative — a
+student-visible zero with no retry and no admin alert.
+
+**Current state.** Mitigated, not fixed: the chula_cp deployment moved the
+default grader to gemini-3.1-pro (chula_cp rev 2008), which graded the same
+transcript cleanly. The engine-side gap in `handle_response`
+(`app/services/llm/viva_grade_assist.rb`) remains: a non-JSON response is
+persisted as a nil-score grade and dropped on the floor.
+
+**Proposed direction.** (a) Detect a parse/schema failure and retry once,
+optionally reinforcing "output ONLY the JSON object" in the retry prompt;
+(b) surface still-failed gradings to admins (viva alert or grading-error
+state) instead of storing a silent nil-score row; (c) consider pinning the
+narrative language in the grading prompt — today it's model-mood-dependent
+(gemini-3.1-pro answered one session in Thai, another in English, while
+2.5-flash always wrote English).
+
+**Size.** Small-medium — retry + error surfacing in one service class plus a
+test with a canned non-JSON response; the language pin is a one-line prompt
+edit but needs a policy decision (Thai? match the student?).
