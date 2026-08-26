@@ -21,7 +21,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   default), the API key in Rails credentials (`llm.ai_gateway.api_key`).
   PDF attachments are rewritten to the OpenAI `file` content-part shape the
   gateways require, and per-call cost is taken from the gateway's own
-  `x-litellm-response-cost` accounting header. (rev 2018)
+  `x-litellm-response-cost` accounting header. (revs 2018–2019)
 
 - **Abandoned viva sessions are finalized automatically** — a new hourly
   Solid Queue recurring task (`viva_session_reaper`, production only) grades
