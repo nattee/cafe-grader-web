@@ -55,6 +55,31 @@ llm_services: &services
   self_hosted_default:
   self_hosted_models:
 
+  # --- Hosted OpenAI-compatible gateway (bearer key) ---------------------
+  # Generic transport for a LiteLLM proxy / OpenRouter-style aggregator
+  # (Llm::AiGatewayTransport + the *AiGateway* role subclasses). Blank on
+  # master; a deployment fills the block. The API key NEVER goes here (this
+  # file is checked in) — it lives in Rails credentials:
+  #   llm:
+  #     ai_gateway:
+  #       api_key: sk-...
+  # chula_cp example:
+  #   ai_gateway:
+  #     display_name: "Chula AI Gateway"
+  #     base_url: "https://api.gateway.chula-ai.com"
+  #     completion_path: "/v1/chat/completions"
+  #     models_path: "/v1/models"
+  #     default_model: claude-sonnet-4-5     # any role without an override
+  #     default_models:                      # optional per-role overrides; keys:
+  #       grounding_extract: gemini-3.7-flash  # assist, viva_turn, viva_grade,
+  #                                            # grounding_extract, submission_repair
+  #     models:                              # served roster: allowlist + admin pickers
+  #       [claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5,
+  #        gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash]
+  # To expose models in the submission-assist picker, also register them:
+  #   AiGatewayAssist: claude-sonnet-4-5,gemini-3.7-flash
+  ai_gateway:
+
 development:
   <<: *services
 
