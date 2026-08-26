@@ -12,6 +12,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **Abandoned viva sessions are finalized automatically** — a new hourly
+  Solid Queue recurring task (`viva_session_reaper`, production only) grades
+  sessions idle for 24+ hours that have at least one student answer, and
+  archives greeting-only ones. Previously a student who closed the tab
+  mid-interview was never graded. (rev 2016)
+
 - **"End interview & get graded" button on viva sessions** — the owner of an
   active practice viva can finalize it early and be graded on the transcript
   so far (topics never reached score zero; the confirm dialog says so).
