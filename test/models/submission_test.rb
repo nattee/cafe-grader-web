@@ -1,6 +1,7 @@
 require "test_helper"
 
 class SubmissionTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
   # --- Enums ---
 
   test "status enum values" do
@@ -175,6 +176,56 @@ class SubmissionTest < ActiveSupport::TestCase
 
     assert_equal 0, count, "a viva_grade row already existing means grading is mid-write — a different bug, not this sweeper's job"
     assert_predicate sub, :evaluating?
+  end
+
+  # --- reap_abandoned_vivas! (see Submission::ABANDONED_VIVA_REAP_AFTER) ---
+
+  def make_abandoned_viva(with_student_turn:, idle: 25.hours)
+    sub = make_viva_submission(status: :submitted)
+    sub.update_column(:submitted_at, Time.zone.now - idle)
+    greeting = sub.viva_turns.create!(role: :assistant, status: :ok, content: 'hello')
+    stamp_updated_at(greeting, Time.zone.now - idle)
+    if with_student_turn
+      t = sub.viva_turns.create!(role: :student, status: :ok, content: 'my answer')
+      stamp_updated_at(t, Time.zone.now - idle)
+    end
+    sub
+  end
+
+  test "reap_abandoned_vivas! grades an idle session that has a student answer" do
+    sub = make_abandoned_viva(with_student_turn: true)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+      assert_equal({graded: 1, archived: 0}, Submission.reap_abandoned_vivas!)
+    end
+    sub.reload
+    assert_predicate sub, :evaluating?
+    assert sub.viva_turns.where(role: :system).where("content LIKE '%expired%'").exists?,
+           "must leave the expiry system turn in the transcript"
+  end
+
+  test "reap_abandoned_vivas! archives an idle greeting-only session without grading" do
+    sub = make_abandoned_viva(with_student_turn: false)
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      assert_equal({graded: 0, archived: 1}, Submission.reap_abandoned_vivas!)
+    end
+    sub.reload
+    assert_predicate sub, :submitted?
+    assert sub.viva_archived_at.present?, "greeting-only session must be archived, not graded"
+  end
+
+  test "reap_abandoned_vivas! leaves sessions with recent turn activity alone" do
+    sub = make_abandoned_viva(with_student_turn: true)
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'still here') # fresh updated_at
+    assert_equal({graded: 0, archived: 0}, Submission.reap_abandoned_vivas!)
+    assert_predicate sub.reload, :submitted?
+  end
+
+  test "reap_abandoned_vivas! skips sessions with a processing turn (fail_stale! owns those)" do
+    sub = make_abandoned_viva(with_student_turn: true)
+    t = sub.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    stamp_updated_at(t, Time.zone.now - 25.hours)
+    assert_equal({graded: 0, archived: 0}, Submission.reap_abandoned_vivas!)
+    assert_predicate sub.reload, :submitted?
   end
 
   test "fail_stale_viva_evaluating! ignores non-viva submissions even if evaluating and stale" do

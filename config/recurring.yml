@@ -29,6 +29,13 @@ development:
     schedule: every 5 minutes
 
 production:
+  # Finalize abandoned viva sessions (>= 24h with no turn activity): grade
+  # the ones with at least one student answer, archive greeting-only peeks.
+  # Production-only on purpose — in development this would silently spend
+  # LLM tokens grading forgotten local sessions.
+  viva_session_reaper:
+    command: "Submission.reap_abandoned_vivas!"
+    schedule: every hour
   audit_log_cleanup:
     command: "AuditLog.cleanup!"
     schedule: at 3am every day
