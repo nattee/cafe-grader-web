@@ -26,6 +26,7 @@ llm_services: &services
   # Per-model service registrations
   # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
   GenieAssist: gemini-3.1-pro,Claude-Sonnet
+  AiGatewayAssist: claude-sonnet-4-5,gemini-3.7-flash
 
   # as of 23 Aug 2026, the list_model method gives
   # ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash",
@@ -60,6 +61,46 @@ llm_services: &services
     glm:   { base_url: "http://161.200.93.200:8001", completion_path: "/v1/chat/completions", model: "glm-5.2",     max_tokens: 16384 }
     kimi:  { base_url: "http://161.200.93.200:8002", completion_path: "/v1/chat/completions", model: "kimi-k2.6",   max_tokens: 16384 }
     gemma: { base_url: "http://10.0.5.25:8000",      completion_path: "/v1/chat/completions", model: "gemma-4-31b", max_tokens: 4096 }
+
+  # --- Hosted OpenAI-compatible gateway (bearer key) ---------------------
+  # Generic transport for a LiteLLM proxy / OpenRouter-style aggregator
+  # (Llm::AiGatewayTransport + the *AiGateway* role subclasses). Blank on
+  # master; a deployment fills the block. The API key NEVER goes here (this
+  # file is checked in) — it lives in Rails credentials:
+  #   llm:
+  #     ai_gateway:
+  #       api_key: sk-...
+  # chula_cp example:
+  #   ai_gateway:
+  #     display_name: "Chula AI Gateway"
+  #     base_url: "https://api.gateway.chula-ai.com"
+  #     completion_path: "/v1/chat/completions"
+  #     models_path: "/v1/models"
+  #     default_model: claude-sonnet-4-5     # any role without an override
+  #     default_models:                      # optional per-role overrides; keys:
+  #       grounding_extract: gemini-3.7-flash  # assist, viva_turn, viva_grade,
+  #                                            # grounding_extract, submission_repair
+  #     models:                              # served roster: allowlist + admin pickers
+  #       [claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5,
+  #        gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash]
+  # To expose models in the submission-assist picker, also register them:
+  #   AiGatewayAssist: claude-sonnet-4-5,gemini-3.7-flash
+  # Chula AI Gateway (OIT/Minervia LiteLLM proxy, per-person keys; spec PDF
+  # dated 2026-08-26). Roster checked live via Llm::AiGatewayAssist.list_model
+  # the same day; mock-gpt (free canned-text test model) is deliberately NOT
+  # in the roster so admin pickers never offer it.
+  ai_gateway:
+    display_name: "Chula AI Gateway"
+    base_url: "https://api.gateway.chula-ai.com"
+    completion_path: "/v1/chat/completions"
+    models_path: "/v1/models"
+    default_model: claude-sonnet-4-5
+    default_models:
+      grounding_extract: gemini-3.7-flash
+    models:
+      [claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5,
+       gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash,
+       gemini-3.5-flash-lite, gemini-2.5-flash]
 
 development:
   <<: *services

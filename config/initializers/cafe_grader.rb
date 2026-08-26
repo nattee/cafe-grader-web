@@ -9,7 +9,7 @@ Rails.configuration.llm = Rails.application.config_for(:llm)
 # (e.g., viva_turn_service points directly at a concrete class). Skip those.
 LLM_NON_SERVICE_KEYS = %i[viva_turn_service viva_grade_service grounding_extract_service
                           submission_repair_service self_hosted_default self_hosted_models
-                          provider].freeze
+                          ai_gateway provider].freeze
 
 provider = Hash.new
 Rails.configuration.llm.each do |x|

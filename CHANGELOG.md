@@ -12,6 +12,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **Hosted AI-gateway LLM provider** — a new generic provider family
+  (`Llm::AiGatewayTransport` + per-role `*AiGatewayAssist` subclasses for
+  comment assist, viva turns, viva grading, grounding extraction, and
+  submission repair) speaks to any bearer-key OpenAI-compatible gateway (a
+  LiteLLM proxy, OpenRouter, …). Everything deployment-specific is config:
+  endpoint/roster/defaults in `config/llm.yml` (`ai_gateway:`, blank by
+  default), the API key in Rails credentials (`llm.ai_gateway.api_key`).
+  PDF attachments are rewritten to the OpenAI `file` content-part shape the
+  gateways require, and per-call cost is taken from the gateway's own
+  `x-litellm-response-cost` accounting header. (revs 2018–2019)
+
 - **Abandoned viva sessions are finalized automatically** — a new hourly
   Solid Queue recurring task (`viva_session_reaper`, production only) grades
   sessions idle for 24+ hours that have at least one student answer, and
