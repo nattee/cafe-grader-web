@@ -707,29 +707,22 @@ completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
 reports that read `grader_comment`. Backlogged per dae: "requires full design
 change".
 
-## OpenRouter LLM provider — design sketch (no implementation scheduled)
+## OpenRouter LLM provider — MOSTLY SUPERSEDED by Llm::AiGatewayTransport (rev 2018)
 
-Per the 2026-07-30 placement decision (`doc/decisions.md`), OpenRouter is a
-**master-side** provider: any deployment with its own API key can use it, so it
-must never require the chula_cp branch.
-
-**Shape when it lands:**
-- `Llm::OpenRouterChat` — sibling of `Llm::SelfHostChat`. Extract the shared
-  OpenAI-compatible payload build + `choices`/`usage` parsing into a mixin
-  (e.g. `Llm::OpenAiCompatPayload`) at that point, not before. Differences
-  from self-host: `Authorization: Bearer` header (key from
-  `Rails.application.credentials.llm.openrouter.api_key` — NEVER in llm.yml,
-  which is checked in), real `compute_cost` (OpenRouter returns usage/cost;
-  per-1K fallback rates in config), slash-namespaced model ids
-  (`anthropic/claude-…`), no `/v1/models` identity guard (the hosted API
-  validates model names itself).
-- Config: a separate `openrouter:` section in `llm.yml` (model list + default),
-  NOT extra fields on `self_hosted_models:` — keeping the self-host invariants
-  (no auth, cost 0, swap-slot identity guard) explicit rather than optional.
-- Registration reuses both existing mechanisms unchanged: per-model map entry
-  (`OpenRouterAssist: anthropic/claude-…,google/gemini-…`) for the assist
-  picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
-  as an alternative repair provider.
+The generic bearer-key OpenAI-compatible gateway provider this sketch called
+for now exists: `Llm::AiGatewayTransport` + the `*AiGateway*` role subclasses
+(built 2026-08-26 for the Chula AI Gateway, a LiteLLM proxy). Pointing the
+`ai_gateway:` config block at OpenRouter should work as-is — bearer key from
+credentials, per-model picker registration, `file`-block PDF rewrite — with
+two known gaps if OpenRouter is ever actually wanted:
+- `compute_cost` reads LiteLLM's `x-litellm-response-cost` response header;
+  OpenRouter reports cost in the response body (`usage.cost` with
+  `usage: {include: true}`). Cost would silently record 0.0 until a small
+  adapter branch reads the body field.
+- The config block is a **single registry** — one gateway per deployment.
+  Running two bearer-key gateways side by side (e.g. Chula AI Gateway AND
+  OpenRouter) needs `ai_gateway:` generalized into a keyed registry like
+  `self_hosted_models:`, plus per-entry provider classes.
 
 ## Near-Miss: student-facing phase (deliberately deferred)
 
