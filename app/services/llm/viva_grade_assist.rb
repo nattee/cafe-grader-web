@@ -116,13 +116,29 @@ module Llm
 
     # Student turns are remapped from the DB role enum to the OpenAI wire role,
     # so the transcript reads USER:/ASSISTANT: rather than mixing in STUDENT:.
+    # Transcript labels + trailing re-anchor are prompt-robustness features, not
+    # cosmetics (bake-off 2026-08-27): with wire-role labels (ASSISTANT:/USER:)
+    # and no re-anchor, Claude models slid into the interviewer role and kept
+    # interviewing instead of grading in 21/24 calls; domain labels plus the
+    # END OF TRANSCRIPT sandwich took compliance to 16/16 with Gemini
+    # unaffected. Recency wins over system-prompt instructions — keep the
+    # final instruction AFTER the transcript.
     def transcript_payload
       turns = @submission.viva_turns.ordered.reject { |t| t.system? || t.processing? || t.error? }
       lines = turns.map do |t|
-        wire_role = t.student? ? 'user' : t.role
-        "#{wire_role.upcase}: #{t.content}"
+        label = t.student? ? 'STUDENT' : 'INTERVIEWER'
+        "#{label}: #{t.content}"
       end
-      "Transcript:\n\n#{lines.join("\n\n")}"
+      <<~TXT
+        Transcript:
+
+        #{lines.join("\n\n")}
+
+        === END OF TRANSCRIPT ===
+        You are the GRADER, not a participant in the dialogue above. Do not answer
+        the last question and do not continue the interview. Output ONLY the grade
+        JSON now, exactly per the schema in your instructions.
+      TXT
     end
 
     def execute_call(data)

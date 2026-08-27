@@ -707,29 +707,22 @@ completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
 reports that read `grader_comment`. Backlogged per dae: "requires full design
 change".
 
-## OpenRouter LLM provider — design sketch (no implementation scheduled)
+## OpenRouter LLM provider — MOSTLY SUPERSEDED by Llm::AiGatewayTransport (rev 2018)
 
-Per the 2026-07-30 placement decision (`doc/decisions.md`), OpenRouter is a
-**master-side** provider: any deployment with its own API key can use it, so it
-must never require the chula_cp branch.
-
-**Shape when it lands:**
-- `Llm::OpenRouterChat` — sibling of `Llm::SelfHostChat`. Extract the shared
-  OpenAI-compatible payload build + `choices`/`usage` parsing into a mixin
-  (e.g. `Llm::OpenAiCompatPayload`) at that point, not before. Differences
-  from self-host: `Authorization: Bearer` header (key from
-  `Rails.application.credentials.llm.openrouter.api_key` — NEVER in llm.yml,
-  which is checked in), real `compute_cost` (OpenRouter returns usage/cost;
-  per-1K fallback rates in config), slash-namespaced model ids
-  (`anthropic/claude-…`), no `/v1/models` identity guard (the hosted API
-  validates model names itself).
-- Config: a separate `openrouter:` section in `llm.yml` (model list + default),
-  NOT extra fields on `self_hosted_models:` — keeping the self-host invariants
-  (no auth, cost 0, swap-slot identity guard) explicit rather than optional.
-- Registration reuses both existing mechanisms unchanged: per-model map entry
-  (`OpenRouterAssist: anthropic/claude-…,google/gemini-…`) for the assist
-  picker; `submission_repair_service: Llm::SubmissionRepairOpenRouterAssist`
-  as an alternative repair provider.
+The generic bearer-key OpenAI-compatible gateway provider this sketch called
+for now exists: `Llm::AiGatewayTransport` + the `*AiGateway*` role subclasses
+(built 2026-08-26 for the Chula AI Gateway, a LiteLLM proxy). Pointing the
+`ai_gateway:` config block at OpenRouter should work as-is — bearer key from
+credentials, per-model picker registration, `file`-block PDF rewrite — with
+two known gaps if OpenRouter is ever actually wanted:
+- `compute_cost` reads LiteLLM's `x-litellm-response-cost` response header;
+  OpenRouter reports cost in the response body (`usage.cost` with
+  `usage: {include: true}`). Cost would silently record 0.0 until a small
+  adapter branch reads the body field.
+- The config block is a **single registry** — one gateway per deployment.
+  Running two bearer-key gateways side by side (e.g. Chula AI Gateway AND
+  OpenRouter) needs `ai_gateway:` generalized into a keyed registry like
+  `self_hosted_models:`, plus per-entry provider classes.
 
 ## Near-Miss: student-facing phase (deliberately deferred)
 
@@ -840,3 +833,68 @@ narrative language in the grading prompt — today it's model-mood-dependent
 **Size.** Small-medium — retry + error surfacing in one service class plus a
 test with a canned non-JSON response; the language pin is a one-line prompt
 edit but needs a policy decision (Thai? match the student?).
+
+---
+
+## Grader.watchdog duplicate-spawn → isolate box collisions (`!` results)
+
+**Why it matters.** 2026-08-27 incident on the ISE grader (10.0.5.70): every
+`Grader.start(1..8)` was running **twice**. Whenever both copies of a box
+graded concurrently, isolate refused (`This box is currently in use by
+another process`), the evaluation was stored as `grader_error` (`!` in
+`grader_comment`), and students lost points on testcases that never ran —
+195 error evaluations across ~130 submissions that day alone, with earlier
+bursts Jun 23–29 and Jul 17 (350). Silent score deflation during live
+classes/exams.
+
+**Root cause — two stacked failures.**
+1. *Whenever identifier drift (deploy pipeline).* `whenever
+   --update-crontab` (run by the automation repo's deploy job,
+   `.gitlab-ci.yml` "Syncing crontab" step) identifies "its" crontab block
+   by the schedule.rb absolute path. The app dir was renamed
+   `cafe-grader` → `cafe_grader` on some hosts; the next deploy wrote a
+   fresh block and **orphaned** the old one → two `* * * * *`
+   `Grader.watchdog` lines. On 10.0.5.70 the orphaned block's job lines had
+   been hand-edited to the new path (while its Begin/End identifier
+   comments kept the old path), so both lines were live.
+2. *Watchdog not duplicate-safe.* `Grader.watchdog`
+   (`app/engine/grader.rb`) spawns a grader when `ps` shows none for a
+   box, and treats `lines.count >= 1` as healthy. Two watchdogs firing in
+   the same minute race the ps-check and each spawn a full set; once
+   duplicated, `>= 1` hides the problem forever.
+
+**Proposed hardening.**
+- Watchdog: treat `lines.count > 1` as unhealthy — kill the extras (keep
+  the oldest), log loudly. Optionally wrap the check+spawn in an `flock`
+  so concurrent watchdog invocations serialize.
+- Deploy: pass a stable identifier so path changes can never orphan a
+  block: `bundle exec whenever --update-crontab cafe-grader` in the
+  automation repo (note: the identifier switch itself orphans the current
+  block once per host — pair it with a one-time sweep for stray
+  `# Begin Whenever` blocks).
+- Optional deeper defense: on a box-in-use isolate error, retry the
+  testcase once instead of persisting `grader_error`.
+- Evaluator rerun-idempotency (second defect, found during the incident
+  rejudge): an interrupted evaluation can leave
+  `isolate_submission/<sub>/<tc>/output/stdout.txt` at mode 0644 owned by
+  that box's uid — the post-run `chmod 0666` (`app/engine/evaluator.rb`,
+  the second `run_isolate` call) is itself an isolate run and dies with
+  the box. A later rejudge that lands the testcase on a *different* box
+  uid then can't truncate-open the file and fails with isolate message
+  `open("/output/stdout.txt")` → `grader_error` again (14 of the 142
+  rejudged submissions on 2026-08-27). Fix: host-side
+  `@output_file.unlink if @output_file.exist?` in
+  `prepare_testcase_directory` (`app/engine/judge_base.rb`) so every run
+  starts from a clean redirect target, making reruns independent of how
+  the previous run ended.
+
+**Current state.** One-time cleanup done 2026-08-27: 10.0.5.70 (crontab
+deduped, duplicate graders killed, affected submissions rejudged) and
+10.0.5.105 (stale block removed; it pointed at a deleted checkout, so it
+was inert). Other deploy-matrix hosts swept clean the same day;
+10.24.0.100 (TOI) unreachable from the office network — still unchecked.
+Crontab backups: `~/crontab.backup-2026-08-27.txt` on both fixed hosts.
+No code changes yet.
+
+**Size.** Small-medium — watchdog duplicate-kill + flock with a test, plus
+a one-line change in the automation repo.

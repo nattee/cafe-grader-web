@@ -26,7 +26,7 @@ llm_services: &services
   # Per-model service registrations
   # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
   GenieAssist: gemini-3.1-pro,Claude-Sonnet
-  AiGatewayAssist: claude-sonnet-4-5,gemini-3.7-flash
+  AiGatewayAssist: claude-opus-4-5,gemini-3.7-flash
 
   # as of 23 Aug 2026, the list_model method gives
   # ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash",
@@ -35,9 +35,12 @@ llm_services: &services
   # (gemini-3.1-pro is served as gemini-3.1-pro-preview; it is a reasoning model)
 
   # Direct viva service overrides
-  viva_turn_service:  Llm::VivaTurnGenieAssist
-  viva_grade_service: Llm::VivaGradeGenieAssist
-  grounding_extract_service: Llm::GroundingExtractGenieAssist
+  # Switched from the Genie relay classes to the Chula AI Gateway on
+  # 2026-08-27 after the model bake-off (~/cafe-grader/bakeoff-2026-08-27/);
+  # per-role models come from ai_gateway.default_models below.
+  viva_turn_service:  Llm::VivaTurnAiGatewayAssist
+  viva_grade_service: Llm::VivaGradeAiGatewayAssist
+  grounding_extract_service: Llm::GroundingExtractAiGatewayAssist
 
   # --- Near-Miss Grading / self-hosted providers (blank on master; real
   #     values live on chula_cp, same convention as the viva keys) ---
@@ -95,7 +98,13 @@ llm_services: &services
     completion_path: "/v1/chat/completions"
     models_path: "/v1/models"
     default_model: claude-sonnet-4-5
+    # Role models per the 2026-08-27 bake-off decision: opus for assist
+    # (depth), 3.7-flash for all viva roles (only compliant grader, 2.7x
+    # faster turns, no leaks, ±2 rerun noise).
     default_models:
+      assist:            claude-opus-4-5
+      viva_turn:         gemini-3.7-flash
+      viva_grade:        gemini-3.7-flash
       grounding_extract: gemini-3.7-flash
     models:
       [claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5,
