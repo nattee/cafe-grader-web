@@ -874,6 +874,19 @@ classes/exams.
   `# Begin Whenever` blocks).
 - Optional deeper defense: on a box-in-use isolate error, retry the
   testcase once instead of persisting `grader_error`.
+- Evaluator rerun-idempotency (second defect, found during the incident
+  rejudge): an interrupted evaluation can leave
+  `isolate_submission/<sub>/<tc>/output/stdout.txt` at mode 0644 owned by
+  that box's uid — the post-run `chmod 0666` (`app/engine/evaluator.rb`,
+  the second `run_isolate` call) is itself an isolate run and dies with
+  the box. A later rejudge that lands the testcase on a *different* box
+  uid then can't truncate-open the file and fails with isolate message
+  `open("/output/stdout.txt")` → `grader_error` again (14 of the 142
+  rejudged submissions on 2026-08-27). Fix: host-side
+  `@output_file.unlink if @output_file.exist?` in
+  `prepare_testcase_directory` (`app/engine/judge_base.rb`) so every run
+  starts from a clean redirect target, making reruns independent of how
+  the previous run ended.
 
 **Current state.** One-time cleanup done 2026-08-27: 10.0.5.70 (crontab
 deduped, duplicate graders killed, affected submissions rejudged) and
