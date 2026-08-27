@@ -833,3 +833,55 @@ narrative language in the grading prompt — today it's model-mood-dependent
 **Size.** Small-medium — retry + error surfacing in one service class plus a
 test with a canned non-JSON response; the language pin is a one-line prompt
 edit but needs a policy decision (Thai? match the student?).
+
+---
+
+## Grader.watchdog duplicate-spawn → isolate box collisions (`!` results)
+
+**Why it matters.** 2026-08-27 incident on the ISE grader (10.0.5.70): every
+`Grader.start(1..8)` was running **twice**. Whenever both copies of a box
+graded concurrently, isolate refused (`This box is currently in use by
+another process`), the evaluation was stored as `grader_error` (`!` in
+`grader_comment`), and students lost points on testcases that never ran —
+195 error evaluations across ~130 submissions that day alone, with earlier
+bursts Jun 23–29 and Jul 17 (350). Silent score deflation during live
+classes/exams.
+
+**Root cause — two stacked failures.**
+1. *Whenever identifier drift (deploy pipeline).* `whenever
+   --update-crontab` (run by the automation repo's deploy job,
+   `.gitlab-ci.yml` "Syncing crontab" step) identifies "its" crontab block
+   by the schedule.rb absolute path. The app dir was renamed
+   `cafe-grader` → `cafe_grader` on some hosts; the next deploy wrote a
+   fresh block and **orphaned** the old one → two `* * * * *`
+   `Grader.watchdog` lines. On 10.0.5.70 the orphaned block's job lines had
+   been hand-edited to the new path (while its Begin/End identifier
+   comments kept the old path), so both lines were live.
+2. *Watchdog not duplicate-safe.* `Grader.watchdog`
+   (`app/engine/grader.rb`) spawns a grader when `ps` shows none for a
+   box, and treats `lines.count >= 1` as healthy. Two watchdogs firing in
+   the same minute race the ps-check and each spawn a full set; once
+   duplicated, `>= 1` hides the problem forever.
+
+**Proposed hardening.**
+- Watchdog: treat `lines.count > 1` as unhealthy — kill the extras (keep
+  the oldest), log loudly. Optionally wrap the check+spawn in an `flock`
+  so concurrent watchdog invocations serialize.
+- Deploy: pass a stable identifier so path changes can never orphan a
+  block: `bundle exec whenever --update-crontab cafe-grader` in the
+  automation repo (note: the identifier switch itself orphans the current
+  block once per host — pair it with a one-time sweep for stray
+  `# Begin Whenever` blocks).
+- Optional deeper defense: on a box-in-use isolate error, retry the
+  testcase once instead of persisting `grader_error`.
+
+**Current state.** One-time cleanup done 2026-08-27: 10.0.5.70 (crontab
+deduped, duplicate graders killed, affected submissions rejudged) and
+10.0.5.105 (stale block removed; it pointed at a deleted checkout, so it
+was inert). Other deploy-matrix hosts swept clean the same day;
+10.24.0.100 (TOI) unreachable from the office network — still unchecked.
+Crontab backups: `~/crontab.backup-2026-08-27.txt` on both fixed hosts.
+No code changes yet.
+
+**Size.** Small-medium — watchdog duplicate-kill + flock with a test, plus
+a one-line change in the automation repo.
