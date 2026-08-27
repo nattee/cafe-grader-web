@@ -33,12 +33,21 @@ class Llm::VivaGradeAssistTest < ActiveSupport::TestCase
     assert_includes msgs[1][:content], '(no scenario provided)'
   end
 
-  test "transcript labels student turns as USER:, not STUDENT:" do
+  test "transcript uses domain labels and ends with the grader re-anchor" do
     transcript = @assist.send(:transcript_payload)
-    assert_includes transcript, 'USER: my answer'
-    refute_includes transcript, 'STUDENT:'
-    assert_includes transcript, 'ASSISTANT: first question'
-    assert_includes transcript, 'ASSISTANT: follow-up'
+    # Domain labels, not wire roles: ASSISTANT:/USER: labels pulled Claude
+    # models into continuing the interview instead of grading (bake-off
+    # 2026-08-27, 21/24 role-slips; 0/16 after this change).
+    assert_includes transcript, 'STUDENT: my answer'
+    assert_includes transcript, 'INTERVIEWER: first question'
+    assert_includes transcript, 'INTERVIEWER: follow-up'
+    refute_includes transcript, 'ASSISTANT:'
+    refute_includes transcript, 'USER:'
+    # The sandwich: the LAST thing the model reads must re-anchor the grader
+    # role, after the transcript, not only in the system prompt.
+    assert_includes transcript, '=== END OF TRANSCRIPT ==='
+    assert transcript.index('END OF TRANSCRIPT') > transcript.index('STUDENT: my answer'),
+           're-anchor must come after the transcript body'
   end
 
   test "system prompt describes the consolidated user message layout" do

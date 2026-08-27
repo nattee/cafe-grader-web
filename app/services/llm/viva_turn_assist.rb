@@ -144,9 +144,23 @@ module Llm
     # the parsing in handle_response. Kept centralized here (rather than
     # baked into every problem's viva_prompt) because it's a code contract, not
     # prompt-author guidance.
+    # The token must be BINDING, not conditional: in the 2026-08-27 bake-off a
+    # model announced "the interview has ended" without the token, leaving the
+    # session parked for the abandoned-session reaper.
     def done_sentinel_directive
       "When you are satisfied you have enough signal to grade the student, " \
-        "append exactly `#{DONE_SENTINEL}` at the very end of your final message to end the interview."
+        "append exactly `#{DONE_SENTINEL}` at the very end of your final message to end the interview. " \
+        "This token is the ONLY thing that ends the session: if your message states or implies " \
+        "that the interview is over, it MUST end with `#{DONE_SENTINEL}` — never announce the end without it."
+    end
+
+    # Student-facing turns render through safe_markdown, which has no LaTeX
+    # support — $x$ math reaches the student as raw dollar signs
+    # (observed from gemini-3.7-flash and claude-sonnet-4-5 in the bake-off).
+    def format_directive
+      "Formatting: write plain text with simple Markdown only (bold, `code`, lists). " \
+        "Do NOT use LaTeX/TeX math notation ($...$, \\(...\\), \\frac{}{}) — it is not rendered " \
+        "and reaches the student as raw symbols."
     end
 
     # Design D8: pacing instruction. Soft only — the hard stop is enforced
@@ -164,7 +178,7 @@ module Llm
       briefing = @problem.viva_prompt.to_s.strip
       raise RuntimeError, "Problem '#{@problem.name}' has a blank viva_prompt — viva needs the examiner briefing" if briefing.blank?
 
-      [conduct, briefing, SECURITY_DIRECTIVE, soft_cap_directive, done_sentinel_directive].reject(&:blank?).join("\n\n")
+      [conduct, briefing, SECURITY_DIRECTIVE, soft_cap_directive, format_directive, done_sentinel_directive].reject(&:blank?).join("\n\n")
     end
 
     # OpenAI chat-completions only accepts system/user/assistant/tool roles, so we

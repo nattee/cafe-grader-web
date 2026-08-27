@@ -70,6 +70,10 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     # the test setup sets viva_prompt to 'You are a viva interviewer.'
     assert_includes sys, 'You are a viva interviewer.'
     assert_includes sys, '[[VIVA_DONE]]'
+    # Binding-token rule: announcing the end without the token strands the session.
+    assert_includes sys, 'never announce the end without it'
+    # No-LaTeX rule: safe_markdown renders $...$ as raw symbols.
+    assert_includes sys, 'Do NOT use LaTeX'
     # backend no longer injects scenario-handling guidance — that's the prompt's job
     refute_includes sys, 'first user message contains the scenario'
   end

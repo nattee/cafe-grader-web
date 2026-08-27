@@ -38,6 +38,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Changed
 
+- **Viva prompts hardened for provider robustness** — the grading transcript
+  now uses `INTERVIEWER:`/`STUDENT:` labels and ends with an explicit
+  "END OF TRANSCRIPT — output only the grade JSON" re-anchor (with wire-role
+  labels and no re-anchor, Claude models kept interviewing instead of grading
+  in 21/24 bake-off calls; 16/16 compliant after); the `[[VIVA_DONE]]` token
+  is now binding (a model may never announce the interview's end without it);
+  and interviewer turns are instructed to use plain Markdown only (no LaTeX —
+  `safe_markdown` renders `$...$` as raw symbols). (rev 2024)
+
 - **Viva daily start limit counts engaged sessions only** — a start consumes
   one of the day's slots once the student sends their first answer;
   greeting-only sessions (opened, never engaged — 39% of starts in the first
