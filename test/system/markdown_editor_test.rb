@@ -8,7 +8,9 @@ class MarkdownEditorTest < ApplicationSystemTestCase
     login("admin", "admin")
     visit edit_problem_path(problems(:prob_viva))
 
-    within "[data-controller='markdown-editor']", match: :first do
+    # scope to the briefing's editor (the viva layout has several on the page)
+    briefing_editor = find("textarea#problem_viva_prompt", visible: false).ancestor("[data-controller='markdown-editor']")
+    within briefing_editor do
       assert_selector ".ace_editor", wait: 10
       # Ace's hidden textarea receives keyboard input
       find(".ace_text-input", visible: false).send_keys([:control, "a"], "# Rubric\n\n| a | b |\n|---|---|\n| 1 | 2 |")

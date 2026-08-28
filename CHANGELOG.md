@@ -65,6 +65,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Changed
 
+- **Viva problem edit page uses both columns** — for viva problems the
+  (empty) Dataset half of `/problems/:id/edit` becomes a "Viva Exam" card
+  holding the Scenario, the Examiner briefing and the interview setup
+  (grounding materials, conduct profile, turn caps, daily start limit) at full
+  width, while the Detail card keeps the general settings; both cards are one
+  form. The Description and Hint tabs are dropped for viva problems (the
+  scenario lives in the card; hints are a code-submission feature), and
+  switching a problem to or from viva now redraws the layout on save. Regular
+  problems are unchanged. (rev 2031)
+
 - **Viva prompts hardened for provider robustness** — the grading transcript
   now uses `INTERVIEWER:`/`STUDENT:` labels and ends with an explicit
   "END OF TRANSCRIPT — output only the grade JSON" re-anchor (with wire-role
