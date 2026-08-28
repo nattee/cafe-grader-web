@@ -12,6 +12,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **"Score report" button on the problem statistics page** — `/problems/:id/stat`
+  now links straight into the Best Score report with the problem preselected
+  and a user group pre-picked, so the table loads with that section's scores
+  on arrival: the current (non-archived) section if its students have
+  submitted the problem, otherwise the cohort that actually used it (archived
+  sections included), otherwise the newest live group. Switch the group there
+  to compare sections. Shown to everyone who can open the stat page (admins
+  and group editors). (rev 2029)
+
 - **Viva kit importer carries grounding materials** — `manifest.yml` accepts a
   `grounding:` list (title, markdown file, optional description, attach list);
   `bin/rails viva:import` upserts each `GroundingMaterial` by title and attaches
@@ -68,6 +77,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   (rev 2014)
 
 ### Fixed
+
+- **Report filters can be prefilled from the URL** — the Problems / Users
+  filter cards shared by the Best Score, Submission, Activity and AI reports
+  read their preselection from parameter names Rails never produces
+  (`params[:'probs[ids][]']`, `params[:group_id]`), so a link such as
+  `/report/max_score?probs[use]=ids&probs[ids][]=42` always rendered an empty
+  form. They now honour `probs[use|ids|group_ids|tag_ids]` and
+  `users[use|group_ids]`, falling back to the old defaults on missing or
+  malformed values. (rev 2029)
 
 - **Viva grading model no longer depends on how the interview ended** —
   the done-sentinel path passed the interview model into

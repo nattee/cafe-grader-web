@@ -219,4 +219,62 @@ class ReportControllerTest < ActionDispatch::IntegrationTest
     get problem_hof_view_report_path(problems(:prob_viva))
     assert_response :success
   end
+
+  # --- filter prefill from the query string ---
+  # The shared _problem_select / _user_select partials preselect their radios
+  # and selects from `probs[...]` / `users[...]` params, so other pages can
+  # deep-link into a report (e.g. the "Score report" button on /problems/:id/stat).
+
+  test "max_score filter form is prefilled from probs/users query params" do
+    sign_in_as("admin", "admin")
+    prob  = problems(:prob_add)
+    group = groups(:group_a)
+    get max_score_report_path(probs: { use: "ids", ids: [prob.id] },
+                              users: { use: "group", group_ids: group.id })
+    assert_response :success
+    assert_select "input[name='probs[use]'][value=ids][checked]"
+    assert_select "input[name='probs[use]'][value=groups]:not([checked])"
+    assert_select "select[name='probs[ids][]'] option[value=?][selected]", prob.id.to_s
+    assert_select "input[name='users[use]'][value=group][checked]"
+    assert_select "input[name='users[use]'][value=all]:not([checked])"
+    assert_select "select[name='users[group_ids]'] option[value=?][selected]", group.id.to_s
+  end
+
+  test "max_score filter form keeps its defaults without prefill params" do
+    sign_in_as("admin", "admin")
+    get max_score_report_path
+    assert_response :success
+    assert_select "input[name='probs[use]'][value=ids][checked]"
+    assert_select "input[name='users[use]'][value=all][checked]"
+    assert_select "select[name='probs[ids][]'] option[selected]", count: 0
+    assert_select "select[name='users[group_ids]'] option[selected]", count: 0
+  end
+
+  test "malformed prefill params fall back to the defaults instead of erroring" do
+    sign_in_as("admin", "admin")
+    get max_score_report_path(probs: "garbage", users: { use: "bogus" })
+    assert_response :success
+    assert_select "input[name='probs[use]'][value=ids][checked]"
+    assert_select "input[name='users[use]'][value=all][checked]"
+  end
+
+  test "probs[use]=all falls back to ids on a report that does not offer the All radio" do
+    sign_in_as("admin", "admin")
+    get max_score_report_path(probs: { use: "all" })
+    assert_response :success
+    assert_select "input[name='probs[use]'][value=all]", count: 0
+    assert_select "input[name='probs[use]'][value=ids][checked]"
+  end
+
+  test "prefill works on the other reports sharing the filter partials" do
+    sign_in_as("admin", "admin")
+    group = groups(:group_a)
+    get activity_report_path(probs: { use: "groups", group_ids: [group.id] })
+    assert_response :success
+    assert_select "input[name='probs[use]'][value=groups][checked]"
+    assert_select "select[name='probs[group_ids][]'] option[value=?][selected]", group.id.to_s
+
+    get activity_report_path(probs: { use: "all" })
+    assert_select "input[name='probs[use]'][value=all][checked]"
+  end
 end

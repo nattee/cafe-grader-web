@@ -254,6 +254,10 @@ class ProblemsController < ApplicationController
     # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
     @can_view_ip =  true
+
+    # Group pre-picked by the "Score report" toolbar link (nil -> the report
+    # opens with its default user filter instead).
+    @report_group = @problem.report_group_for(@current_user)
   end
 
   def manage
