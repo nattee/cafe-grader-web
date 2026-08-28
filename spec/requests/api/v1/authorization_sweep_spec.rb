@@ -67,4 +67,64 @@ RSpec.describe "API authorization sweep", type: :request do
         "#{verb.upcase} #{path}: admin was blocked by the single-user gate"
     end
   end
+
+  # ==============================
+  # IP whitelist (right.whitelist_ip / right.whitelist_ignore)
+  # ==============================
+  # Request specs arrive from 127.0.0.1, so a whitelist that excludes
+  # loopback simulates "outside the lab" and one that includes it "inside".
+
+  def activate_whitelist(ranges)
+    set_grader_config("right.whitelist_ignore", "false")
+    set_grader_config("right.whitelist_ip", ranges)
+  end
+
+  it "rejects every endpoint for a non-whitelisted IP while the whitelist is active" do
+    activate_whitelist("10.99.0.0/16")
+    headers = auth_header_for(users(:john))
+    api_routes.each do |verb, path|
+      send(verb, path, headers: headers)
+      expect(response).to have_http_status(:forbidden),
+        "#{verb.upcase} #{path}: expected 403 from a non-whitelisted IP, got #{response.status}"
+      expect(JSON.parse(response.body)["error"]).to match(/IP is not allowed/i),
+        "#{verb.upcase} #{path}: 403 did not come from the IP whitelist gate"
+    end
+  end
+
+  it "does not apply the IP gate to requests from a whitelisted IP" do
+    activate_whitelist("127.0.0.0/8, 10.99.0.0/16")
+    headers = auth_header_for(users(:john))
+    api_routes.each do |verb, path|
+      send(verb, path, headers: headers)
+      next unless response.status == 403
+      expect(JSON.parse(response.body)["error"]).not_to match(/IP is not allowed/i),
+        "#{verb.upcase} #{path}: whitelisted IP was blocked by the IP gate"
+    end
+  end
+
+  it "does not lock admins out while the whitelist is active" do
+    activate_whitelist("10.99.0.0/16")
+    headers = auth_header_for(users(:admin))
+    api_routes.each do |verb, path|
+      send(verb, path, headers: headers)
+      next unless response.status == 403
+      expect(JSON.parse(response.body)["error"]).not_to match(/IP is not allowed/i),
+        "#{verb.upcase} #{path}: admin was blocked by the IP gate"
+    end
+  end
+
+  it "does not lock problem editors out while the whitelist is active" do
+    # Same exemption as the web (check_valid_login): a user with :edit right
+    # on any problem bypasses the whitelist. mary is an editor of group_a,
+    # which only grants :edit problems while group mode is on.
+    set_grader_config("system.use_problem_group", "true")
+    activate_whitelist("10.99.0.0/16")
+    headers = auth_header_for(users(:mary))
+    api_routes.each do |verb, path|
+      send(verb, path, headers: headers)
+      next unless response.status == 403
+      expect(JSON.parse(response.body)["error"]).not_to match(/IP is not allowed/i),
+        "#{verb.upcase} #{path}: problem editor was blocked by the IP gate"
+    end
+  end
 end

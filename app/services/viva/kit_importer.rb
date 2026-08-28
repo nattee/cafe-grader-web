@@ -3,8 +3,9 @@ require 'yaml'
 module Viva
   # Imports a viva-scenario kit (a directory with `manifest.yml`, one scenario
   # .md + one examiner-briefing .md per problem, and an optional shared conduct
-  # profile) into viva_exam Problems. Idempotent: existing problems are matched
-  # by `name` and updated in place; the conduct tag is matched by tag name.
+  # profile, optional shared grounding texts) into viva_exam Problems.
+  # Idempotent: existing problems are matched by `name` and updated in place;
+  # the conduct tag is matched by tag name; grounding materials by title.
   # Report-first: only mutates when apply: true.
   #
   # Manifest shape (see course-prep/<course>/viva/<batch>/manifest.yml):
@@ -18,8 +19,16 @@ module Viva
   #       briefing: 01-x.briefing.md   # -> problem.viva_prompt (must contain a `# Rubric` heading)
   #       viva_soft_cap / viva_hard_cap / viva_daily_limit / available   # optional overrides
   #
+  #   grounding:                                  # optional, shared reference texts
+  #     - title: "DS: STL usage, decks 01-07"     # GroundingMaterial#title (unique key)
+  #       file: _grounding-stl.md                 # -> body (markdown; re-sent to the LLM every turn)
+  #       description: "..."                      # optional
+  #       problems: [v69_x, v69_y]                # attach to these manifest problems (add-only)
+  #
   # `available` is applied on CREATE only — instructors flip it in the UI as
   # the course reaches each scenario's topic; re-importing never un-publishes.
+  # Grounding links are add-only too: an import never detaches material an
+  # instructor attached by hand (e.g. a `-sol` PDF).
   class KitImporter
     UPDATABLE = %w[full_name description viva_prompt viva_soft_cap viva_hard_cap viva_daily_limit].freeze
 
@@ -41,6 +50,8 @@ module Viva
       ActiveRecord::Base.transaction do
         conduct = upsert_conduct(manifest['conduct_tag'])
         Array(manifest['problems']).each { |entry| upsert_problem(entry, defaults, conduct) }
+        kit_names = Array(manifest['problems']).map { |e| e['name'].to_s }
+        Array(manifest['grounding']).each { |spec| upsert_grounding(spec, kit_names) }
         post_check
         raise ActiveRecord::Rollback unless @apply && @errors.empty?
       end
@@ -107,7 +118,7 @@ module Viva
         'viva_prompt' => briefing,
         'viva_soft_cap' => entry.fetch('viva_soft_cap', defaults['viva_soft_cap'] || 10),
         'viva_hard_cap' => entry.fetch('viva_hard_cap', defaults['viva_hard_cap'] || 15),
-        'viva_daily_limit' => entry.fetch('viva_daily_limit', defaults['viva_daily_limit']),
+        'viva_daily_limit' => entry.fetch('viva_daily_limit', defaults['viva_daily_limit'])
       }
 
       problem = Problem.find_by(name: name)
@@ -155,6 +166,59 @@ module Viva
     def link_conduct(problem, conduct)
       return false if conduct.nil? || problem.tags.include?(conduct)
       problem.tags << conduct
+      true
+    end
+
+    # Shared reference text → a GroundingMaterial (matched by title), attached
+    # to the named kit problems. Only problems declared in this manifest may be
+    # targeted — a typo must fail the import, not silently attach nothing.
+    def upsert_grounding(spec, kit_names)
+      title = spec['title'].to_s.strip
+      if title.blank?
+        @errors << 'grounding entry without a title'
+        return
+      end
+      body = read_file(spec['file'], "grounding '#{title}'")
+      return if body.nil?
+      targets = Array(spec['problems']).map(&:to_s)
+      unknown = targets - kit_names
+      if unknown.any?
+        @errors << "grounding '#{title}' names problems not in this manifest: #{unknown.join(', ')}"
+        return
+      end
+
+      gm = GroundingMaterial.find_or_initialize_by(title: title)
+      attrs = { 'body' => body }
+      attrs['description'] = spec['description'] if spec.key?('description')
+      if gm.new_record?
+        gm.assign_attributes(attrs)
+        gm.save!
+        @io.puts "GROUNDING create '#{title}' (#{body.length} chars ≈ #{gm.compute_estimated_tokens} tokens, re-sent every turn)"
+      else
+        changed = attrs.keys.select { |k| normalize(gm[k]) != normalize(attrs[k]) }
+        if changed.empty?
+          @io.puts "GROUNDING unchanged '#{title}'"
+        else
+          gm.update!(attrs.slice(*changed))
+          @io.puts "GROUNDING update '#{title}' — #{changed.join(', ')} (≈ #{gm.compute_estimated_tokens} tokens)"
+        end
+      end
+
+      linked = targets.select { |name| link_grounding(Problem.find_by(name: name), gm) }
+      if linked.any?
+        @io.puts "GROUNDING attach '#{title}' -> #{linked.join(', ')}"
+      else
+        @io.puts "GROUNDING links unchanged '#{title}' (#{targets.size} problem(s))"
+      end
+    rescue ActiveRecord::RecordInvalid => e
+      @errors << "grounding '#{title}': #{e.record.errors.full_messages.join('; ')}"
+    end
+
+    # Returns true when a link was added. nil problem = its upsert already
+    # failed and recorded an error; nothing to attach to.
+    def link_grounding(problem, gm)
+      return false if problem.nil? || problem.grounding_materials.include?(gm)
+      problem.grounding_materials << gm
       true
     end
 

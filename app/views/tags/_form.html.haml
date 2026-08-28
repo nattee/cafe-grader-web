@@ -12,4 +12,4 @@
       Staff-only kind — never visible to students.
       - if @tag.persisted?
         Used by #{@tag.problems.distinct.count} problem(s) — edits apply to all of them.
-    = f.input :params, label: (@tag.viva_conduct? ? 'Viva conduct (shared examiner persona)' : 'AI-helper prompt'), input_html: {style: 'height: 20rem'}
+    = f.input :params, label: (@tag.viva_conduct? ? 'Viva conduct (shared examiner persona)' : 'AI-helper prompt'), wrapper_html: {data: markdown_editor_data}, input_html: {rows: 18, data: markdown_editor_source}

@@ -49,8 +49,8 @@ pin "ace-builds" # @1.42.0
 # --- ace editor pin ---
 # pin_all_from does not work so I have to pin each individual files that is required by ace editor
 # however, we also have to import all of these as well, see setup_ace
-ace_mode = %w[ c_cpp pascal ruby python java rust golang php haskell sql xml ]
-ace_theme =%w[ merbivore merbivore_soft dracula ]
+ace_mode = %w[ c_cpp pascal ruby python java rust golang php haskell sql xml markdown ]  # markdown: markdown_editor_controller
+ace_theme =%w[ merbivore merbivore_soft dracula github ]  # github: light theme for markdown_editor_controller
 
 ace_mode.each { |mod| pin "ace-mode-#{mod}", to: "ace-noconflict/mode-#{mod}.js" }
 ace_theme.each { |theme| pin "ace-theme-#{theme}", to: "ace-noconflict/theme-#{theme}.js" }

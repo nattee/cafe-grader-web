@@ -56,6 +56,9 @@ Rails.application.routes.draw do
     post :index_query, on: :collection
   end
 
+  # markdown-editor preview pane (see MarkdownController)
+  post 'markdown/preview', to: 'markdown#preview', as: :markdown_preview
+
   resources :grounding_materials, except: [:show] do
     delete 'delete_file', on: :member
     post 'extract', on: :member

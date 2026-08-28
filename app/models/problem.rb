@@ -428,6 +428,35 @@ class Problem < ApplicationRecord
   end
 
   # -- private section --
+  # The group to pre-pick when deep-linking from this problem's stat page into
+  # the Best Score report (ProblemsHelper#problem_score_report_path), chosen
+  # among the groups this problem is live in that `user` may report on:
+  #
+  #   1. a live (non-archived) group whose members have submitted it — the
+  #      current section of a running course; most submissions, then newest;
+  #   2. otherwise the group whose members submitted it the most, archived
+  #      included — the cohort an old exam problem was actually used in
+  #      (yearly sections get archived, but that is where the data lives);
+  #   3. otherwise the newest live group (nobody has submitted yet).
+  #
+  # Returns nil when there is no candidate at all.
+  def report_group_for(user)
+    candidates = user.groups_for_action(:report)
+                     .where(id: groups.where(groups_problems: { enabled: true }).select(:id))
+                     .to_a
+    return nil if candidates.empty?
+
+    sub_counts = Submission.regular.where(problem_id: id)
+                           .joins(user: :groups_users)
+                           .where(groups_users: { group_id: candidates.map(&:id), enabled: true })
+                           .group('groups_users.group_id').count
+    candidates.max_by do |g|
+      subs = sub_counts.fetch(g.id, 0)
+      tier = if g.enabled && subs > 0 then 2 elsif subs > 0 then 1 else 0 end
+      [tier, subs, g.enabled ? 1 : 0, g.id]
+    end
+  end
+
   private
 
   def should_generate_pdf?

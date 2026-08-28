@@ -28,37 +28,7 @@
     .vr.mx-1
     = link_to 'Cancel', problems_path, class: 'btn btn-link text-secondary text-decoration-none'
 
-.row
-  -# problem card
-  .col-md-6
-    .card.shadow-sm.mb-4
-      .card-body
-        %h5.fw-bold.text-secondary.mb-3 Detail
-        = render 'form', problem: @problem
-  -# dataset card
-  .col-md-6
-    .card.shadow-sm.mb-4
-      .card-body{data: {controller: 'bs-tab dataset-mode-toggle', 'dataset-mode-toggle-compilation-type-value': @problem.compilation_type, action: 'mode:compilation-type-changed@window->dataset-mode-toggle#syncCompilationType'}}
-        - if @problem.viva_exam?
-          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Viva Exam
-          %p.text-secondary
-            This problem is a Viva Exam. Interview flow is driven by the
-            %strong Examiner briefing
-            (Description tab area of the form) — the rubric and model
-            answers — optionally layered with a shared
-            %code viva_conduct
-            tag (examiner persona, picked via the Conduct profile select)
-            plus any
-            %strong Grounding materials
-            attached above (course materials, managed under Manage &rarr; Grounding). Test-case datasets do not apply.
-        - else
-          %h5.fw-bold.text-body-emphasis.mb-3.pb-2.border-bottom Datasets
-          -# dataset selector
-          = turbo_frame_tag :dataset_select do
-            = render partial: 'datasets/dataset_select', locals: {ds: @problem.live_dataset, problem: @problem}
-          -# dataset form
-          - if @problem.live_dataset
-            = turbo_frame_tag :dataset, src: edit_dataset_path(@problem.live_dataset), data: {'problem-target': 'dataset', 'current-id': @problem.live_dataset.id}
+= render 'edit_body'
 
 -# Offcanvas help drawer (kept outside .row so it overlays the page on the right)
 = render 'edit_help'

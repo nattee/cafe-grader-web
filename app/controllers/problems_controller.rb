@@ -168,6 +168,7 @@ class ProblemsController < ApplicationController
   end
 
   def update
+    was_viva = @problem.viva_exam?
     if @problem.update(problem_params)
       msg = 'Problem was successfully updated. '
       msg += 'A new statement PDF is uploaded' if problem_params[:statement]
@@ -190,6 +191,10 @@ class ProblemsController < ApplicationController
                                                  header_class: 'bg-danger-subtle',
                                                  body_msg: error_html.html_safe}
     else
+      # Crossing the viva boundary swaps the edit page between its two layouts
+      # (Detail + Dataset cards vs. one form over Detail + Viva Exam cards), so
+      # update.turbo_stream redraws the whole #problem-edit body, not just the form.
+      @layout_changed = was_viva != @problem.viva_exam?
       render :update
     end
   end
@@ -254,6 +259,10 @@ class ProblemsController < ApplicationController
     # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
     @can_view_ip =  true
+
+    # Group pre-picked by the "Score report" toolbar link (nil -> the report
+    # opens with its default user filter instead).
+    @report_group = @problem.report_group_for(@current_user)
   end
 
   def manage

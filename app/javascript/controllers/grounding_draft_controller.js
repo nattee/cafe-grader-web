@@ -13,6 +13,9 @@ export default class extends Controller {
   copyIntoBody() {
     if (!this.hasDraftTarget || !this.hasBodyTarget) return
     this.bodyTarget.value = this.draftTarget.textContent.trim()
+    // The Body textarea is wrapped by markdown-editor (Ace); a `change` event
+    // is how it learns about external writes like this one.
+    this.bodyTarget.dispatchEvent(new Event("change", { bubbles: true }))
     this.bodyTarget.focus()
     this.bodyTarget.scrollIntoView({ behavior: "smooth", block: "center" })
   }

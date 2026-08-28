@@ -337,6 +337,40 @@ RSpec.describe "API Authorization", type: :request do
   end
 
   # ==============================
+  # IP whitelist
+  # ==============================
+  # Per-request enforcement over the whole API surface lives in
+  # authorization_sweep_spec.rb; this covers the login door. Request specs
+  # arrive from 127.0.0.1.
+  describe "IP whitelist" do
+    def activate_whitelist(ranges)
+      set_grader_config("right.whitelist_ignore", "false")
+      set_grader_config("right.whitelist_ip", ranges)
+    end
+
+    it "refuses to issue a token to a non-admin from a non-whitelisted IP" do
+      activate_whitelist("10.99.0.0/16")
+      post "/api/v1/auth/login", params: { login: "john", password: "hello" }
+      expect(response).to have_http_status(:forbidden)
+      expect(JSON.parse(response.body)["error"]).to match(/IP is not allowed/i)
+    end
+
+    it "issues a token from a whitelisted IP" do
+      activate_whitelist("127.0.0.0/8")
+      post "/api/v1/auth/login", params: { login: "john", password: "hello" }
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["token"]).to be_present
+    end
+
+    it "still issues a token to an admin from a non-whitelisted IP" do
+      activate_whitelist("10.99.0.0/16")
+      post "/api/v1/auth/login", params: { login: "admin", password: "admin" }
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["token"]).to be_present
+    end
+  end
+
+  # ==============================
   # Retroactive token invalidation (min_last_login_time)
   # ==============================
   describe "tokens issued before the last lockdown" do

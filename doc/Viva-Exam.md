@@ -93,6 +93,8 @@ Each attached material contributes to the LLM call two independent ways:
 
 Grounding is optional. A problem with a clear scenario + clear `viva_prompt` instructions does not need grounding material at all.
 
+Kits can also carry grounding: `manifest.yml` accepts a `grounding:` list (`title`, markdown `file`, optional `description`, `problems:` attach list restricted to the manifest's own problems), and `bin/rails viva:import` upserts each `GroundingMaterial` by title and attaches it add-only — so shared reference text deploys with the kit instead of being pasted into Manage → Grounding on every server (since rev 2027).
+
 ---
 
 # How the Prompt Is Assembled
@@ -373,7 +375,7 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 - [ ] *(Optional)* Attach **grounding materials** (create/edit under **Manage → Grounding**, attach via the problem form's select) for additional reference material.
 - [ ] Review/set **Soft turn cap** and **Hard turn cap** (defaults 10/15) if the default pacing doesn't fit the topic.
 - [ ] Review/set **Daily start limit** — blank for the site default (currently 3/day), a positive number for a custom limit, or `0` to make the viva contest-only.
-- [ ] *(Bulk authoring)* A course-prep kit (a directory with `manifest.yml` + one scenario `.md` + one briefing `.md` per problem + an optional shared conduct `.md`) can be created/updated in one command: `bin/rails viva:import DIR=/path/to/kit` (report only) then `APPLY=1` to write. Idempotent by problem `name` and conduct-tag name; `available` is applied on create only; every touched problem is post-checked with `viva_setup_errors`. See `Viva::KitImporter` and `course-prep/README.md`.
+- [ ] *(Bulk authoring)* A course-prep kit (a directory with `manifest.yml` + one scenario `.md` + one briefing `.md` per problem + an optional shared conduct `.md` + optional shared grounding `.md` files declared under `grounding:`) can be created/updated in one command: `bin/rails viva:import DIR=/path/to/kit` (report only) then `APPLY=1` to write. Idempotent by problem `name`, conduct-tag name, and grounding `title`; `available` is applied on create only; grounding links are add-only (a hand-attached `-sol` PDF survives re-import); every touched problem is post-checked with `viva_setup_errors`. See `Viva::KitImporter` and `course-prep/README.md`.
 - [ ] Confirm a `Language` named `viva` is seeded — the system requires it to create viva submissions.
 - [ ] Confirm `viva_turn_service` and `viva_grade_service` are configured in `config/llm.yml` for the deployment (on chula_cp they're `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist`; on master they're blank, intentionally — the abstract bases raise `NotImplementedError` to signal "no provider configured for this deployment").
 - [ ] Have a colleague (or yourself, as an editor) run a viva end-to-end before exposing it to students. Read the transcript and the rubric breakdown. If the grader returned prose, escalate to `gemini-2.5-pro` via the Re-run grading model picker.
