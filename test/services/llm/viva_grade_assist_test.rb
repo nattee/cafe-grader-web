@@ -74,4 +74,33 @@ class Llm::VivaGradeAssistTest < ActiveSupport::TestCase
     refute_includes transcript, '(interview start)'
     refute_includes transcript, 'timeout'
   end
+
+  # --- handle_response write path ---
+  #
+  # The narrative belongs to viva_grades.narrative only. grader_comment is the
+  # compact verdict string the main list, stat tables, Submission report and
+  # API print inline, so the success path writes a short marker there
+  # (backlog "Viva grade display", resolved 2026-08-28).
+  def grader_response(narrative:, total: 87)
+    json    = {total_points: total, narrative: narrative, rubric: {'Concept understanding' => total}}.to_json
+    content = "```json\n#{json}\n```"
+    Struct.new(:body).new({model: 'test-model', choices: [{message: {content: content}}], usage: {}}.to_json)
+  end
+
+  test "handle_response keeps the narrative on viva_grade and writes the compact marker to grader_comment" do
+    narrative = 'Your performance in this viva was outstanding. ' * 6
+    @assist.send(:handle_response, grader_response(narrative: narrative))
+    @submission.reload
+    assert_equal 'done', @submission.status
+    assert_equal 87, @submission.points
+    assert_equal narrative, @submission.viva_grade.narrative
+    assert_equal Submission::VIVA_RESULT_MARKER, @submission.grader_comment
+    refute_includes @submission.grader_comment, narrative
+  end
+
+  test "handle_response marks a terminated viva as viva:terminated" do
+    @submission.update_columns(viva_terminated_at: Time.zone.now)
+    @assist.send(:handle_response, grader_response(narrative: 'This interview was terminated.'))
+    assert_equal Submission::VIVA_RESULT_TERMINATED_MARKER, @submission.reload.grader_comment
+  end
 end

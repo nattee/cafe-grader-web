@@ -15,3 +15,11 @@ namespace :viva do
     exit(1) unless ok
   end
 end
+
+namespace :viva do
+  desc 'Rewrite done viva submissions whose grader_comment holds a copy of the LLM narrative (pre-marker grading path) to the compact viva marker. Report-only unless APPLY=1. Usage: bin/rails viva:clean_grader_comments [APPLY=1]'
+  task clean_grader_comments: :environment do
+    Current.actor_note = 'Rake: viva:clean_grader_comments'
+    Viva::GraderCommentCleaner.new(apply: ENV['APPLY'] == '1').run
+  end
+end
