@@ -12,6 +12,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **Markdown editor with preview for the long prompt fields** — the viva
+  Examiner briefing and Scenario (problem form), the `viva_conduct` / AI-helper
+  tag prompt, and the grounding-material body are now edited in an Ace editor
+  with markdown highlighting and soft wrap, with an Edit / Preview toggle. The
+  preview is rendered server-side (`POST /markdown/preview`, editors only)
+  through the app's own markdown renderer, tables included, so rubric tables
+  and headings can be checked without saving. The plain textarea remains the
+  form field underneath — saving, validation errors and the grounding "Copy
+  draft into Body" button behave as before. (rev 2030)
+
 - **"Score report" button on the problem statistics page** — `/problems/:id/stat`
   now links straight into the Best Score report with the problem preselected
   and a user group pre-picked, so the table loads with that section's scores

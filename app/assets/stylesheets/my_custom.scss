@@ -159,6 +159,34 @@ pre code {
   }
 }
 
+// markdown-editor Stimulus controller (Ace + server-rendered preview) — see
+// app/javascript/controllers/markdown_editor_controller.js
+.markdown-editor {
+  .markdown-editor__bar .nav-link {
+    padding: 0.1rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  .markdown-editor__ace {
+    // Ace sizes itself via minLines/maxLines; keep its background flush with the frame
+    border-radius: 0 0 var(--bs-border-radius) var(--bs-border-radius);
+  }
+  .markdown-editor__preview {
+    max-height: 70vh;
+    overflow: auto;
+    font-size: 0.9rem;
+    // page-level heading sizes are far too big inside a form pane
+    h1 { font-size: 1.4rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1.1rem; }
+    h4, h5, h6 { font-size: 1rem; }
+    h1, h2, h3, h4, h5, h6 { margin-top: 1rem; margin-bottom: 0.4rem; }
+    h1:first-child, h2:first-child, h3:first-child { margin-top: 0; }
+    table { border-collapse: collapse; margin-bottom: 0.75rem; }
+    th, td { border: 1px solid var(--bs-border-color); padding: 0.2rem 0.5rem; vertical-align: top; }
+    th { background: var(--bs-tertiary-bg); }
+    pre { background: var(--bs-tertiary-bg); padding: 0.5rem 0.75rem; border-radius: var(--bs-border-radius); }
+    :last-child { margin-bottom: 0; }
+  }
+}
+
 
 
 // --------------- below here are legacy from aj.Jittat ---------------
