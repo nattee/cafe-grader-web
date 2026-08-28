@@ -700,6 +700,34 @@ completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
 reports that read `grader_comment`. Backlogged per dae: "requires full design
 change".
 
+**Re-raised 2026-08-28 (confirmed, still unfixed).**
+- Write site: `app/services/llm/viva_grade_assist.rb:176-181` —
+  `@submission.update!(…, grader_comment: data['narrative'])`, immediately
+  after the same text is saved to `viva_grades.narrative` (`:170-174`). The
+  copy is redundant: the grade card (`submissions/_viva_grade`) already
+  reads from `viva_grade`.
+- Main-list render site: `app/views/application/_submission_short.html.haml:50-51`
+  — `%span.grader-comment.text-break = " [#{submission.grader_comment}]"`
+  beside the score whenever `ui.show_score` is on. Dev-DB narratives are
+  316–417 chars ("Your performance in this viva was outstanding. You
+  demonstrated…") in a span designed for a 10–50-char `P-Tx…` string;
+  `text-break` wraps it into a paragraph inside the "last submission" cell.
+- The same string also surfaces in `problems/stat.html.haml:61`,
+  `user_admin/stat.html.haml:96`, `report/submission_query.json.jbuilder:8`
+  (Result column), `graders/index.html.haml:183,217`,
+  `comments/_llm_assist_header.html.haml:10`.
+- Keep the *error* path: `viva_sessions/_viva_session.html.haml:19`,
+  `viva_grade_assist.rb#handle_error`, and `viva_grade_assist_job.rb:20`
+  legitimately use `grader_comment` for the short "Grader error: …" text —
+  only the success-path narrative copy should go.
+- Minimal shape if the full redesign keeps waiting: on success write a
+  compact marker (e.g. `viva` / `viva:terminated`) or nil instead of the
+  narrative; one-off cleanup `Submission.joins(:viva_grade).where(status:
+  :done)` → rewrite `grader_comment`; `_submission_short` branches on
+  `submission.problem.viva_exam?` to show a "View grade" link to the viva
+  page instead of the bracketed string.
+
+
 ## OpenRouter LLM provider — MOSTLY SUPERSEDED by Llm::AiGatewayTransport (rev 2018)
 
 The generic bearer-key OpenAI-compatible gateway provider this sketch called
@@ -891,3 +919,169 @@ No code changes yet.
 
 **Size.** Small-medium — watchdog duplicate-kill + flock with a test, plus
 a one-line change in the automation repo.
+
+---
+
+## Viva/tag markdown fields are bare textareas — add highlighting + preview
+
+**Why it matters.** The viva authoring surface is markdown-heavy and long.
+On the dev DB the Examiner briefing (`Problem#viva_prompt`) runs ~4.7–5.5k
+chars, the Scenario (`Problem#description`) ~1.4–2.5k, the shared
+`viva_conduct` tag prompt (`Tag#params`) ~4.9k, and a grounding body
+(`GroundingMaterial#body`) ~20k. All four are edited as plain `<textarea>`s
+(monospace at best) with no syntax highlighting, no preview, and no rendered
+read-only view anywhere in the admin UI — checking that the `# Rubric`
+heading or a nested list is well-formed means eyeballing raw text through a
+14–20-row box. Raised by dae 2026-08-28.
+
+**Current state (confirmed 2026-08-28).**
+- `app/views/problems/_form.html.haml` — `viva_prompt` (`as: :text, rows:
+  14, font-monospace`, General tab) and `description` (`rows: 20,
+  font-monospace`, Description tab, labelled "Scenario (markdown)" for viva).
+- `app/views/tags/_form.html.haml:15` — `params` (`height: 20rem`, plain).
+- `app/views/grounding_materials/_form.html.haml:5` — `body` ("Grounding
+  text (markdown)", `rows: 12`).
+- Server-side renderers already exist: `ApplicationHelper#markdown`
+  (Redcarpet, trusted input) and `#safe_markdown` (`filter_html`, for LLM
+  output). No client-side markdown library is vendored.
+- Ace is already vendored and wired for code (`editor_controller.js`;
+  `config/importmap.rb` pins `ace-builds` @1.42 plus per-mode files).
+  `vendor/javascript/ace-noconflict/mode-markdown.js` **is on disk but not
+  pinned or imported** — markdown highlighting is one pin + one import away.
+
+**Direction (two tiers, choose per field).**
+1. *Cheap, all four fields:* a small `markdown-editor` Stimulus controller
+   that swaps the textarea for Ace in `ace/mode/markdown` (soft-wrap on, a
+   light theme — these are prose, the merbivore dark theme used for
+   submissions is wrong here) and mirrors edits back into the hidden
+   textarea for submit. Pin `ace-mode-markdown` in importmap. One controller
+   reused on all four forms.
+2. *Preview where it earns it:* a "Preview" toggle/tab beside the editor
+   rendering through the existing `markdown` helper via a tiny
+   `POST /markdown/preview` turbo endpoint (server-side keeps one renderer of
+   truth and matches what the LLM receives; client-side would need a new JS
+   lib). Most valuable on `viva_prompt` (rubric structure) and
+   `GroundingMaterial#body`. A collapsed rendered view on
+   `grounding_materials/edit` and in the viva card on `problems/edit` covers
+   the "even just for viewing" case.
+
+**Cautions.** Not WYSIWYG (Trix etc.) — these are prompts consumed verbatim
+by the LLM; the source text stays the primary artifact.
+`grounding_draft_controller.js` writes the PDF→markdown extraction draft into
+`body` via `grounding_draft_target: 'body'` — an Ace swap must keep that
+working (write into the Ace session, not only the hidden textarea). Pairs
+with the viva edit-page layout entry below (wider column → taller/wider
+editors).
+
+**Size.** Small for tier 1 (controller + pin + 4 view edits); small-medium
+for tier 2 (endpoint + toggle).
+
+---
+
+## Problem stat page — per-group breakdown + deep link to the max-score report
+
+**Why it matters.** On `/problems/:id/stat` an instructor wants "how did each
+group (section) do on this problem?". The page has a submission-history
+chart, Subs count, Solved/Attempted, and a flat per-submission DataTable
+(`app/views/problems/stat.html.haml`, `ProblemsController#stat`) — nothing
+group-aware, and no link to the report that could answer it. Today the path
+is Reports → Max score → find the problem in a Select2 → pick ONE group →
+run → repeat per group. Raised by dae 2026-08-28.
+
+**Current state (confirmed 2026-08-28).**
+- Stat toolbar links are Edit | Stat only (`stat.html.haml:20-22`);
+  `_problem_head` has no report link either. `ReportController#problem_hof_view`
+  is per-problem but aggregates by language, not by group.
+- Max-score report (`ReportController#max_score` → `report/_problem_select`,
+  `report/_user_select`) filters problems by `probs[use]=ids&probs[ids][]=…`
+  and users by `users[use]=group&users[group_ids]=…`. The group select is
+  **single** (no `multiple`), so it is one group per run; rows are per-user
+  with no per-group aggregate.
+- **The URL-prefill hooks in the filter partials are dead code.**
+  `_problem_select.html.haml:15` reads `params[:'probs[ids][]']` — a literal
+  key; Rack parses `probs[ids][]=5` into `params[:probs][:ids]`, so it is
+  always nil (verified with `Rack::Utils.parse_nested_query`). Lines `:22`,
+  `:29` and `_user_select.html.haml:16` read `params[:prob_group_id]`,
+  `params[:prob_tag_id]`, `params[:group_id]`, which nothing sends. So
+  `GET /report/max_score?probs[ids][]=123` renders an empty form. The same
+  partials back `report/submission`, `activity` and `ai` — fixing the prefill
+  once fixes all four reports.
+
+**Direction.**
+1. *Deep link (cheap):* make `_problem_select`/`_user_select` read
+   `params.dig(:probs, :ids)` etc. and tick the matching `probs[use]` /
+   `users[use]` radio; add a "Report" pill (Admin-Controls pattern, e.g.
+   `table_view` icon + tooltip) to the stat toolbar →
+   `max_score_report_path(probs: {use: 'ids', ids: [@problem.id]})`.
+   Optionally auto-submit the filter form on arrival when prefilled (Stimulus
+   `connect()` → `requestSubmit()`) so the table is populated, not just the
+   form.
+2. *Answer the question directly (medium):* a "By group" card on the stat
+   page — one row per group the problem belongs to (or per group of the
+   submitting users): users, attempted, solved, mean best score. Data:
+   `Submission.regular.where(problem:)` → best points per user, joined to
+   `groups_users` (honour `enabled`, drop editor/reporter roles like the
+   report's "Exclude editors and reporters"). Scope to
+   `@current_user.groups_for_action(:report)`. Each row links to the
+   max-score report prefilled with problem + group via (1).
+- Ship (1) even if (2) lands — the report keeps the per-user drill-down.
+
+**Size.** (1) small. (2) medium — query, view, auth scoping, test.
+
+---
+
+## Viva problem edit page — right column is empty, left column crammed
+
+**Why it matters.** `/problems/:id/edit` is a fixed two-column layout
+(`app/views/problems/edit.html.haml`): left `.col-md-6` = Detail card holding
+the whole problem form, right `.col-md-6` = Dataset card. For `viva_exam?`
+problems the right card degenerates to a heading plus one explanatory
+paragraph ("Test-case datasets do not apply"), while everything
+viva-specific is stacked in the left half at horizontal-form width:
+grounding-materials select + attached list, Examiner briefing (`rows: 14`,
+~5k chars), Conduct profile, soft/hard cap, daily limit (all in
+`_form.html.haml:71-99`, General tab), plus the Scenario editor (`rows: 20`,
+~2k chars) on the Description tab. Half the viewport is blank; the other half
+is a long scroll of narrow textareas. Raised by dae 2026-08-28.
+
+**Current state (confirmed 2026-08-28) — constraints that shape any fix.**
+- The form is **one `simple_form_for` inside `turbo_frame_tag :problem`**
+  (`_form.html.haml:2,11`) and lives entirely in the left column; the right
+  card is a separate turbo frame (`:dataset`) with its own controllers
+  (`bs-tab dataset-mode-toggle`). Inputs cannot simply be moved to the right
+  column — they would fall outside the `<form>`.
+- `viva_exam_toggle_controller.js` (show/hide `showForViva` / `hideForViva`
+  targets) is scoped to the `:problem` frame; it already broadcasts
+  `mode:compilation-type-changed` on `window` for the right card, so
+  cross-column reactivity has a precedent.
+- Scenario sits under the **Description** tab and the briefing under
+  **General** — authors flip tabs between "exam paper" and "marking scheme"
+  even though the hints say they are written together.
+- The HTML5 `form="…"` attribute trick is already used on this page (PDF
+  Delete button, `_form.html.haml` ≈`:133-146`) to place a control outside
+  its `<form>` element.
+
+**Options.**
+- (A) *Viva-specific layout of the same form (preferred).* When
+  `@problem.viva_exam?`, let `edit.html.haml` render the `:problem` frame
+  across the full `.row` and have `_form` lay out a two-column grid *inside*
+  the form: left = Identity / Statement & Files / Access / Compilation (the
+  existing General tab), right = a "Viva Exam" card with grounding +
+  briefing + conduct + caps + daily limit, and the Scenario editor pulled
+  out of the Description tab into that column (or a second right-column
+  card) so briefing and scenario sit side by side. The dataset frame is
+  already not rendered for viva. Cleanest DOM; touches only the viva branch.
+- (B) *`form=` attribute.* Leave the form in place and render the viva
+  inputs in the right card with `form: 'edit_problem_<id>'` on each input.
+  Works, but simple_form wrappers and `viva-exam-toggle` targets need
+  per-input `form=` plus a widened controller scope — fiddlier than (A).
+- Not an option: a second `<form>` on the right posting separately (split
+  save/validation).
+
+**While there.** With the wider column, switch briefing/scenario to
+`wrapper: :vertical_form` (full width, as `description` already is) and pair
+with the markdown-editor entry above. Non-viva layout stays unchanged.
+
+**Size.** Medium — `edit.html.haml` + `_form.html.haml` restructuring,
+`viva-exam-toggle` scope check, system-test update (`test/system/problem*`),
+rendered before/after screenshots for dae's approval (per convention).
