@@ -437,6 +437,18 @@ class User < ApplicationRecord
     return problems_for_action(:edit).where(id: problem).any?
   end
 
+  # THE IP-whitelist gate: may this user use the system from this address?
+  # Admins and problem editors are exempt; everyone else must come from a
+  # whitelisted IP while the whitelist is active (right.whitelist_ignore off).
+  # Enforced per-request on both the web (check_valid_login) and the API
+  # (authenticate_api_user!), so leaving the whitelisted network cuts
+  # existing sessions and bearer tokens immediately.
+  def allowed_from_ip?(remote_ip)
+    return true if admin?
+    return true if GraderConfiguration.whitelisted_ip?(remote_ip)
+    problems_for_action(:edit).any?
+  end
+
   # Whether the user can download the problem's statement PDF / external
   # URL. Mirrors can_view_problem? except that students don't see the
   # PDF for problem modes where it shouldn't be revealed (viva, today —

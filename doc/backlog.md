@@ -13,26 +13,19 @@ Conventions:
 
 ---
 
-## API ↔ web parity: IP whitelist not enforced on `/api/v1`
+## API ↔ web parity: IP whitelist not enforced on `/api/v1` — RESOLVED 2026-08-28
 
-**Why it matters.** The 2026-08-19 single-user-mode bypass (fixed rev 1992)
-showed the API layer silently skipping web-side gates. One known gate is
-still missing: `check_valid_login` blocks non-admin logins from IPs outside
-`right.whitelist_ip` (unless `right.whitelist_ignore`), but
-`Api::V1::BaseController#authenticate_api_user!` never consults it — during
-an on-site exam that locks logins to lab IPs, a student's JWT keeps working
-from anywhere.
-
-**Current state.** Deliberately deferred from the rev-1992 fix: whitelist
-semantics for stateless API clients need a decision (enforce per-request like
-the new single-user gate? only at `auth/login`? exempt editors the way the
-web path does?). The authorization sweep spec
-(`spec/requests/api/v1/authorization_sweep_spec.rb`) is the natural home for
-the regression test once decided.
-
-**Size.** Small once the policy is chosen — one gate in
-`authenticate_api_user!` mirroring `is_request_ip_allowed?`
-(`app/controllers/application_controller.rb`), plus sweep coverage.
+**RESOLVED (rev 2026).** Policy chosen: full web parity — the web re-checks
+the whitelist on every request (`check_valid_login`), so the API does too,
+with the same exemptions (admin, `right.whitelist_ignore`,
+editor-of-any-problem). One predicate, `User#allowed_from_ip?`, now backs
+the web gate, a per-request 403 in
+`Api::V1::BaseController#authenticate_api_user!`, and a token-issuance
+refusal in `auth/login` (mirroring the single-user-mode precedent); the CIDR
+matching moved to `GraderConfiguration.whitelisted_ip?`. Regression tests:
+whitelist sweep over every `/api/v1` route in `authorization_sweep_spec.rb`,
+login-door tests in `authorization_spec.rb`, CIDR unit tests in
+`test/models/grader_configuration_test.rb`.
 
 ---
 

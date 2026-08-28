@@ -46,6 +46,15 @@ class Api::V1::BaseController < ActionController::API
         render json: { error: "Token was issued before the last system lockdown; please log in again" },
                status: :unauthorized and return
       end
+
+      # IP whitelist parity with the web (check_valid_login): the whitelist is
+      # re-checked on every request, so a JWT obtained inside the lab must
+      # stop working the moment requests come from outside it.
+      unless @current_user.allowed_from_ip?(request.remote_ip)
+        @current_user = nil
+        render json: { error: "Your IP is not allowed to use the system at this time" },
+               status: :forbidden and return
+      end
     end
 
     # Actor for AuditLog rows created during this request (Auditable reads

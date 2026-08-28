@@ -38,6 +38,14 @@ class Api::V1::AuthController < Api::V1::BaseController
              status: :forbidden and return
     end
 
+    # IP whitelist: the web lets the login succeed and then blocks every
+    # request from a non-whitelisted IP (check_valid_login); issuing no token
+    # is the API equivalent. BaseController re-checks on every request.
+    unless user.allowed_from_ip?(request.remote_ip)
+      render json: { error: "Your IP is not allowed to log in at this time" },
+             status: :forbidden and return
+    end
+
     expires_at = TOKEN_TTL.from_now
     token = JWT.encode(
       { user_id: user.id, exp: expires_at.to_i, iat: Time.now.to_i },

@@ -230,6 +230,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Security
 
+- **API now enforces the login IP whitelist** (rev 2026) — `right.whitelist_ip`
+  restricted web sessions but not the JSON API: a JWT obtained inside the
+  whitelisted network (or before the whitelist was switched on) kept working
+  from anywhere, e.g. from home during an on-site lab exam. The whitelist is
+  now re-checked on every `/api/v1` request and enforced at `auth/login`
+  (no token issued), with the same exemptions as the web gate: admins,
+  `right.whitelist_ignore`, and users with edit rights on any problem. Both
+  doors share one predicate, `User#allowed_from_ip?`, backed by
+  `GraderConfiguration.whitelisted_ip?` for the CIDR matching; the
+  route-enumerating sweep spec asserts the gate on every endpoint.
 - **Login brute-force throttling, pooled across the web form and the API** —
   failed password attempts are counted per client IP and per attempted
   account (30 failures within a sliding 3-minute window, sized well above
