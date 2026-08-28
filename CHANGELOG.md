@@ -12,6 +12,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Added
 
+- **Viva kit importer carries grounding materials** — `manifest.yml` accepts a
+  `grounding:` list (title, markdown file, optional description, attach list);
+  `bin/rails viva:import` upserts each `GroundingMaterial` by title and attaches
+  it to the named problems (add-only — hand-attached materials survive
+  re-import; naming a problem outside the manifest fails the import). Shared
+  reference text now deploys with the kit instead of being pasted into
+  Manage → Grounding per server. (rev 2027)
+
 - **Hosted AI-gateway LLM provider** — a new generic provider family
   (`Llm::AiGatewayTransport` + per-role `*AiGatewayAssist` subclasses for
   comment assist, viva turns, viva grading, grounding extraction, and

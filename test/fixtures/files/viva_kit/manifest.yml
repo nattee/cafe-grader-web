@@ -19,3 +19,8 @@ problems:
     scenario: beta.scenario.md
     briefing: beta.briefing.md
     available: true
+grounding:
+  - title: fixture-grounding
+    file: _grounding.md
+    description: Fixture reference text
+    problems: [vk_alpha]
