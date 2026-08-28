@@ -10,6 +10,21 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.5.0] — 2026-08-28
+
+**Upgrade notes.** Run `bin/rails db:migrate` — this release carries 11
+migrations (grounding materials + backfill from tags, viva Phase 1 fields,
+`viva_daily_limit` replacing `viva_mode`, `submissions.updated_at` and
+`repaired_from_id`, `submission_repairs`, `logins.success`/`attempted_login`).
+Behaviour changes worth knowing before upgrading a live server: the JSON API
+now enforces the login IP whitelist and single-user lockdown exactly like the
+web (tokens issued before a lockdown stop working); failed logins are throttled
+per IP and per account across web and API; a *disabled* group membership no
+longer confers editor/reporter rights; the viva practice/exam toggle is gone
+(context-based policy), `viva_grounding` tags are retired in favour of
+Grounding materials, and legacy `llm_prompt` examiner tags should be migrated
+with `viva:migrate_prompt_tags`.
+
 ### Added
 
 - **Markdown editor with preview for the long prompt fields** — the viva
@@ -39,6 +54,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   reference text now deploys with the kit instead of being pasted into
   Manage → Grounding per server. (rev 2027)
 
+- **Viva kit importer** — `bin/rails viva:import DIR=… [APPLY=1]` creates or
+  updates `viva_exam` problems and the shared `viva_conduct` tag from a
+  course-prep kit manifest; idempotent and report-first (without `APPLY=1` it
+  only prints the plan). (rev 1989)
+
 - **Hosted AI-gateway LLM provider** — a new generic provider family
   (`Llm::AiGatewayTransport` + per-role `*AiGatewayAssist` subclasses for
   comment assist, viva turns, viva grading, grounding extraction, and
@@ -63,59 +83,6 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   student who stopped answering left the session parked ungraded forever.
   (rev 2014)
 
-### Changed
-
-- **Viva problem edit page uses both columns** — for viva problems the
-  (empty) Dataset half of `/problems/:id/edit` becomes a "Viva Exam" card
-  holding the Scenario, the Examiner briefing and the interview setup
-  (grounding materials, conduct profile, turn caps, daily start limit) at full
-  width, while the Detail card keeps the general settings; both cards are one
-  form. The Description and Hint tabs are dropped for viva problems (the
-  scenario lives in the card; hints are a code-submission feature), and
-  switching a problem to or from viva now redraws the layout on save. Regular
-  problems are unchanged. (rev 2031)
-
-- **Viva prompts hardened for provider robustness** — the grading transcript
-  now uses `INTERVIEWER:`/`STUDENT:` labels and ends with an explicit
-  "END OF TRANSCRIPT — output only the grade JSON" re-anchor (with wire-role
-  labels and no re-anchor, Claude models kept interviewing instead of grading
-  in 21/24 bake-off calls; 16/16 compliant after); the `[[VIVA_DONE]]` token
-  is now binding (a model may never announce the interview's end without it);
-  and interviewer turns are instructed to use plain Markdown only (no LaTeX —
-  `safe_markdown` renders `$...$` as raw symbols). (rev 2024)
-
-- **Viva daily start limit counts engaged sessions only** — a start consumes
-  one of the day's slots once the student sends their first answer;
-  greeting-only sessions (opened, never engaged — 39% of starts in the first
-  student trial) no longer burn the budget. (rev 2014)
-- **Viva integrity alerts narrowed to real subversion** — off-topic chat,
-  frustration, break requests, and asking to skip or stop no longer raise
-  `[[VIVA_ALERT]]` (they get a one-sentence redirect instead); the alert
-  triggers now cover role spoofing, score/answer extraction, question
-  laundering, and credit negotiation. Cuts the practice-log noise and, under
-  the future exam policy, stops benign behavior from drawing warnings.
-  (rev 2014)
-
-### Fixed
-
-- **Report filters can be prefilled from the URL** — the Problems / Users
-  filter cards shared by the Best Score, Submission, Activity and AI reports
-  read their preselection from parameter names Rails never produces
-  (`params[:'probs[ids][]']`, `params[:group_id]`), so a link such as
-  `/report/max_score?probs[use]=ids&probs[ids][]=42` always rendered an empty
-  form. They now honour `probs[use|ids|group_ids|tag_ids]` and
-  `users[use|group_ids]`, falling back to the old defaults on missing or
-  malformed values. (rev 2029)
-
-- **Viva grading model no longer depends on how the interview ended** —
-  the done-sentinel path passed the interview model into
-  `Llm::VivaGradeAssistJob` while the hard-cap path used the grade
-  service's default, so one cohort could be graded by two different
-  models. Both paths now use the grade service's default; only the admin
-  "Re-run grading" picker passes an explicit model. (rev 2011)
-
-### Added
-
 - **Failed-attempts tab on the Login report** — the Logins report
   (Report → Login) gains a third tab listing failed password attempts (web
   and API) in the selected date range: attempted login string, matched user
@@ -123,12 +90,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   filter deliberately does not apply — most failures match no user. Data
   comes from the failure rows recorded since rev 2002. (rev 2003)
 
-- Viva grounding: one-click PDF→markdown extraction producing a review-first draft (author must copy/edit into the body; body text replaces per-turn PDF re-sending once saved).
-- Viva: alert-review admin page (Graders → Viva alerts) listing flagged sessions with the triggering student utterance — the jailbreak-calibration instrument for the practice month.
-- Viva: examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags — schema + model groundwork (Phase 1 of the 2026-07-20 deployment-readiness design).
-- Viva retakes: students restart their own viva session themselves (archives the old one, subject to the daily start limit); admin archive-and-retake remains available for any viva.
-- Viva: `viva:migrate_prompt_tags` rake task (report-first, `APPLY=1` to execute) migrating legacy per-problem `llm_prompt` tags into `viva_prompt` and shared ones to `viva_conduct`.
-- Viva turn caps: per-problem soft cap (examiner pacing instruction, default 10) and hard cap (force-finish + grade, default 15).
+- **Viva grounding: one-click PDF→markdown extraction** — produces a review-first draft (the author copies/edits it into the body; once saved, body text replaces per-turn PDF re-sending). (revs 1919–1920)
+- **Viva alert-review admin page** (Graders → Viva alerts) — lists flagged sessions with the triggering student utterance; the jailbreak-calibration instrument for the practice month. (rev 1917)
+- **Viva Phase 1 groundwork** — examiner briefing (`viva_prompt`), turn caps, and per-turn jailbreak-alert flags: schema + model, from the 2026-07-20 deployment-readiness design. (revs 1878–1890)
+- **Viva retakes** — students restart their own viva session (archives the old one, subject to the daily start limit); admin archive-and-retake remains available for any viva. (rev 1886)
+- **`viva:migrate_prompt_tags` rake task** (report-first, `APPLY=1` to execute) — migrates legacy per-problem `llm_prompt` tags into `viva_prompt` and shared ones to `viva_conduct`. (revs 1880–1881)
+- **Viva turn caps** — per-problem soft cap (examiner pacing instruction, default 10) and hard cap (force-finish + grade, default 15). (rev 1884)
 - **`problems:replay_validate` rake task** — validates the problem import/export
   path by re-importing a problem and replaying a stratified sample of its
   submissions through the grader, diffing per-testcase results against the
@@ -176,7 +143,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   side by side for budget and model comparisons), and per-attempt drill-down
   showing the measured patch, rounds log, category, tokens/cost, and links to
   the original and shadow submissions. (rev 1949)
-- CMS task clone: `rails "cms:clone[task]"` imports a Batch task (all datasets)
+- **CMS task clone** — `rails "cms:clone[task]"` imports a Batch task (all datasets)
   straight from a live CMS server over ssh — official dump subtree + selective
   blob fetch on the server, converted to the cafe package layout and imported
   through the trusted importer. GroupMin (count and regex forms) maps to
@@ -191,19 +158,50 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ### Changed
 
+- **Viva problem edit page uses both columns** — for viva problems the
+  (empty) Dataset half of `/problems/:id/edit` becomes a "Viva Exam" card
+  holding the Scenario, the Examiner briefing and the interview setup
+  (grounding materials, conduct profile, turn caps, daily start limit) at full
+  width, while the Detail card keeps the general settings; both cards are one
+  form. The Description and Hint tabs are dropped for viva problems (the
+  scenario lives in the card; hints are a code-submission feature), and
+  switching a problem to or from viva now redraws the layout on save. Regular
+  problems are unchanged. (rev 2031)
+
+- **Viva prompts hardened for provider robustness** — the grading transcript
+  now uses `INTERVIEWER:`/`STUDENT:` labels and ends with an explicit
+  "END OF TRANSCRIPT — output only the grade JSON" re-anchor (with wire-role
+  labels and no re-anchor, Claude models kept interviewing instead of grading
+  in 21/24 bake-off calls; 16/16 compliant after); the `[[VIVA_DONE]]` token
+  is now binding (a model may never announce the interview's end without it);
+  and interviewer turns are instructed to use plain Markdown only (no LaTeX —
+  `safe_markdown` renders `$...$` as raw symbols). (rev 2024)
+
+- **Viva daily start limit counts engaged sessions only** — a start consumes
+  one of the day's slots once the student sends their first answer;
+  greeting-only sessions (opened, never engaged — 39% of starts in the first
+  student trial) no longer burn the budget. (rev 2014)
+- **Viva integrity alerts narrowed to real subversion** — off-topic chat,
+  frustration, break requests, and asking to skip or stop no longer raise
+  `[[VIVA_ALERT]]` (they get a one-sentence redirect instead); the alert
+  triggers now cover role spoofing, score/answer extraction, question
+  laundering, and credit negotiation. Cuts the practice-log noise and, under
+  the future exam policy, stops benign behavior from drawing warnings.
+  (rev 2014)
+
 - **Submit authorization now flows through one predicate**
   (`User#can_submit_to_problem?`): the web submit, the JSON API, viva start,
   the submit-form UI, and the model-layer validation all share the same gate.
   An editor's test-submit right on draft/hidden problems in their own groups —
   previously web-only — now also applies to the API and to starting a viva
   (intended design: viva authorization matches normal problems). (rev 1996)
-- Viva: the examiner prompt now lives on the problem (`viva_prompt`, audited/redacted) layered with optional shared `viva_conduct` tags in a fixed order; `llm_prompt` tags are again exclusively the AI-helper's namespace.
+- **Viva examiner prompt lives on the problem** (`viva_prompt`, audited/redacted), layered with optional shared `viva_conduct` tags in a fixed order; `llm_prompt` tags are again exclusively the AI-helper's namespace. (rev 1879)
 - **Viva grounding is now attached to problems via a viva-only "Grounding
   materials" selector** (with a per-problem token total) instead of the mixed
   Tags dropdown; the `viva_grounding` Tag kind is retired and existing tags
   backfilled.
-- Viva jailbreak handling: the examiner now only *detects* (staying in character); the backend applies policy — flags are logged and a notice is shown to the student, never terminating the interview (was: immediate termination on any detection). The warn-then-terminate machinery from the original design stays in the codebase, dormant, for the Phase B per-contest policy below.
-- Viva authoring: the Description tab is now the "Scenario (markdown)" for viva problems (sent verbatim to the examiner; side-PDF generation disabled), with the examiner briefing, conduct profile, and turn caps edited together in the problem form; only `viva_conduct` tags are hidden from the generic tag picker (they have their own dedicated Conduct-profile select) — `llm_prompt` tags remain in the generic picker since it's the only UI that attaches them (to the AI-helper) and can never be public.
+- **Viva jailbreak handling is detect-only** — the examiner stays in character and only *detects*; the backend applies policy: flags are logged and a notice is shown to the student, never terminating the interview (was: immediate termination on any detection). The warn-then-terminate machinery stays in the codebase, dormant, for the Phase B per-contest policy. (rev 1882)
+- **Viva authoring surface** — a viva problem's description is its "Scenario (markdown)" (sent verbatim to the examiner; side-PDF generation disabled), edited together with the examiner briefing, conduct profile and turn caps in the problem form; only `viva_conduct` tags are hidden from the generic tag picker (they have their own Conduct-profile select) — `llm_prompt` tags stay there since it is the only UI that attaches them (to the AI-helper) and they can never be public. (revs 1887–1888, 1900)
 - **Viva: practice/exam mode replaced by context-based policy** — every viva is practice outside contests, limited by a per-problem daily start limit (blank = site default, 0 = contest-only); exam strictness returns as per-contest retake budgets in Phase B.
 - **Near-Miss LLM-call hardening** — the self-host transport allows 600s reads
   (16384-token reasoning generations legitimately exceed the stock 300s); a
@@ -213,6 +211,27 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   error" string into nonsense per-testcase lines. (rev 1954)
 
 ### Fixed
+
+- **Report filters can be prefilled from the URL** — the Problems / Users
+  filter cards shared by the Best Score, Submission, Activity and AI reports
+  read their preselection from parameter names Rails never produces
+  (`params[:'probs[ids][]']`, `params[:group_id]`), so a link such as
+  `/report/max_score?probs[use]=ids&probs[ids][]=42` always rendered an empty
+  form. They now honour `probs[use|ids|group_ids|tag_ids]` and
+  `users[use|group_ids]`, falling back to the old defaults on missing or
+  malformed values. (rev 2029)
+
+- **Viva grading model no longer depends on how the interview ended** —
+  the done-sentinel path passed the interview model into
+  `Llm::VivaGradeAssistJob` while the hard-cap path used the grade
+  service's default, so one cohort could be graded by two different
+  models. Both paths now use the grade service's default; only the admin
+  "Re-run grading" picker passes an explicit model. (rev 2011)
+
+- **Viva LLM completion caps raised** (grade 2048→8192 tokens, turn
+  2048→4096) — reasoning models spent 2–3k tokens before the grade JSON and
+  truncated it (`finish_reason=length` → `grader_error`) on a 13-turn practice
+  viva. (rev 1990)
 
 - **Problems manage page: viva rows offer Start Viva / View Viva** instead of
   the code-editor Submit button, which bounced viva problems to the main list
@@ -237,7 +256,7 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   and surfaced as an explicit `ungradeable` count in the rake report, CSV, and
   run browser (a judging-infrastructure failure previously read as mass
   negative gaps — the void a68_final lesson). (rev 1953)
-- Viva: archive now refreshes the page, viva submissions no longer open the code editor (evaluations/download/compiler_msg included), students see retake policy and remaining daily starts.
+- **Viva smoke-test UX fixes** — archive refreshes the page; viva submissions no longer open the code editor (evaluations/download/compiler_msg included); students see the retake policy and their remaining daily starts. (revs 1899, 1901)
 - **"Import testcases" is stricter and no longer crashes on errors** — replacing
   into a dataset that no longer exists now shows an error toast instead of
   silently creating a new dataset; the testcases-only flow no longer overwrites
@@ -271,8 +290,8 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   unconditionally calling it, so any viva turn/grade request for a problem
   with an attached grounding file raised `NoMethodError` instead of sending
   the file.
-- Viva: API description endpoint no longer exposes the interview scenario to students; bulk dataset rejudge, hall-of-fame, admin testcases API, and grader backlog now handle viva submissions correctly.
-- Viva: submissions stuck in "evaluating" after a worker crash are now swept to grader_error (regradable) and surfaced on the graders monitoring page.
+- **Viva submissions handled correctly by bulk dataset rejudge, hall of fame, the admin testcases API and the grader backlog** (the API description leak is listed under Security). (rev 1907)
+- **Viva sessions stuck in "evaluating"** after a worker crash are swept to `grader_error` (regradable) and surfaced on the graders monitoring page. (rev 1909)
 
 ### Security
 
