@@ -922,7 +922,14 @@ a one-line change in the automation repo.
 
 ---
 
-## Viva/tag markdown fields are bare textareas — add highlighting + preview
+## Viva/tag markdown fields are bare textareas — add highlighting + preview — RESOLVED 2026-08-28
+
+**Resolution (rev 2030).** Tier 1 + tier 2 shipped together: `markdown_editor_controller.js`
+(Ace `mode-markdown`, `github` theme, soft wrap) wraps all four textareas via
+`ApplicationHelper#markdown_editor_data`, with an Edit / Preview toggle that
+posts to `MarkdownController#preview` (`safe_markdown`, editors only).
+`grounding-draft` dispatches `change` so "Copy draft into Body" still works.
+Not done (by design): side-by-side edit+preview, client-side renderer.
 
 **Why it matters.** The viva authoring surface is markdown-heavy and long.
 On the dev DB the Examiner briefing (`Problem#viva_prompt`) runs ~4.7–5.5k
@@ -978,7 +985,16 @@ for tier 2 (endpoint + toggle).
 
 ---
 
-## Problem stat page — per-group breakdown + deep link to the max-score report
+## Problem stat page — per-group breakdown + deep link to the max-score report — MOSTLY RESOLVED 2026-08-28
+
+**Resolution (rev 2029).** Direction (1) shipped, plus a group pre-pick: the
+stat page's "Score report" pill opens the Best Score report with the problem
+*and* a section preselected (`Problem#report_group_for` — live group with
+submissions > most-submitted group incl. archived > newest live), and the
+shared filter partials now honour `probs[…]` / `users[…]` URL params (the dead
+prefill hooks are fixed for all four reports). **Still open:** direction (2),
+a per-group summary card on the stat page itself — only worth it if switching
+groups in the report proves too slow in practice.
 
 **Why it matters.** On `/problems/:id/stat` an instructor wants "how did each
 group (section) do on this problem?". The page has a submission-history
@@ -1030,7 +1046,15 @@ run → repeat per group. Raised by dae 2026-08-28.
 
 ---
 
-## Viva problem edit page — right column is empty, left column crammed
+## Viva problem edit page — right column is empty, left column crammed — RESOLVED 2026-08-28
+
+**Resolution (rev 2031).** Option (A), one form over both columns: Detail card
+left, Viva Exam card right (Scenario + briefing full width, then interview
+setup). The Hint and Description tabs are dropped for viva problems (hints are a
+code-submission feature; their frames were what kept the form from spanning the
+row — `form=` was rejected because Rails does not propagate it to a multiple
+select's hidden input). Type switches redraw the whole `#problem-edit` body on
+save; a dataset-less problem now gets an "Add dataset" empty state.
 
 **Why it matters.** `/problems/:id/edit` is a fixed two-column layout
 (`app/views/problems/edit.html.haml`): left `.col-md-6` = Detail card holding
