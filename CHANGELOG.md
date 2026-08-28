@@ -23,7 +23,9 @@ per IP and per account across web and API; a *disabled* group membership no
 longer confers editor/reporter rights; the viva practice/exam toggle is gone
 (context-based policy), `viva_grounding` tags are retired in favour of
 Grounding materials, and legacy `llm_prompt` examiner tags should be migrated
-with `viva:migrate_prompt_tags`.
+with `viva:migrate_prompt_tags`. Viva submissions graded before this release carry
+the LLM narrative in `grader_comment`; rewrite them with
+`viva:clean_grader_comments` (report first, then `APPLY=1`).
 
 ### Added
 
@@ -158,6 +160,18 @@ with `viva:migrate_prompt_tags`.
 
 ### Changed
 
+- **Viva grading no longer copies the LLM narrative into `grader_comment`**
+  (rev 2036). A graded viva now carries the compact marker `viva` — or
+  `viva:terminated` when the interview was force-ended — in
+  `submissions.grader_comment`, the per-testcase verdict field that the stat
+  tables, the Submission report's Result column, the grader monitor and the
+  API's `last_result` / `grader_comment` print inline. The narrative itself
+  is unchanged and still lives on `viva_grades.narrative`, rendered by the
+  grade card on the viva page. Existing rows: `bin/rails
+  viva:clean_grader_comments` (report-only; `APPLY=1` to rewrite) — only
+  `done` rows whose `grader_comment` contains their narrative are touched;
+  error text is left alone.
+
 - **Viva problem edit page uses both columns** — for viva problems the
   (empty) Dataset half of `/problems/:id/edit` becomes a "Viva Exam" card
   holding the Scenario, the Examiner briefing and the interview setup
@@ -211,6 +225,17 @@ with `viva:migrate_prompt_tags`.
   error" string into nonsense per-testcase lines. (rev 1954)
 
 ### Fixed
+
+- **Student main list rendered the whole viva narrative as a paragraph**
+  (rev 2036) inside the "Latest Results" cell — the `[…]` verdict span, built
+  for a 10–50-char `P-Tx…` string, wrapped 300–450 chars of feedback. Viva
+  rows now show the score plus a badge (`viva`, or red `terminated`) that
+  links to the viva page, without the per-testcase evaluations icon and
+  compiler-message link that don't apply to a viva. Ungraded viva rows say
+  "Interview in progress" / "Grading in progress…" instead of "Waiting to be
+  graded…", and a failed grading (`grader_error`, which never sets
+  `graded_at`) shows a red "Grader error" badge linking to the viva page
+  instead of waiting forever.
 
 - **Report filters can be prefilled from the URL** — the Problems / Users
   filter cards shared by the Best Score, Submission, Activity and AI reports

@@ -173,11 +173,14 @@ module Llm
         narrative:    data['narrative']
       )
 
+      # The narrative stays on viva_grade only. grader_comment is the compact
+      # verdict string the main list / stat tables / Submission report / API
+      # print inline, so it gets a short marker (see Submission#viva_result_marker).
       @submission.update!(
         points:         data['total_points'],
         status:         :done,
         graded_at:      Time.zone.now,
-        grader_comment: data['narrative']
+        grader_comment: @submission.viva_result_marker
       )
 
       {ok: true}

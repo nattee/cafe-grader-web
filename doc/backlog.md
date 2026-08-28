@@ -681,7 +681,28 @@ site so none are missed.
 
 ---
 
-## Viva grade display — narrative doesn't belong in `grader_comment` / main list
+## Viva grade display — narrative doesn't belong in `grader_comment` / main list — RESOLVED 2026-08-28
+
+**RESOLVED (rev 2036).** Shape chosen after a per-reader-site design pass
+(dae, 2026-08-28): the success path writes `Submission#viva_result_marker`
+(`viva` / `viva:terminated`, derived from `viva_terminated_at`, never from
+the narrative text) into `grader_comment`; the narrative stays on
+`viva_grades.narrative` only. `_submission_short` branches on
+`problem.viva_exam?` (the problem is passed in / read from `@problem` to
+avoid a per-row query): graded rows show the score plus a badge that *is*
+the link to the viva page (grey `viva`, red `terminated`), no evaluations
+icon and no compiler-msg link; ungraded rows say "Interview in progress" /
+"Grading in progress…", and `grader_error` rows (which never get
+`graded_at`) show a red "Grader error" badge instead of "Waiting to be
+graded…" forever. Every other reader (stat tables, Submission report,
+graders/index, API `last_result`) prints the marker automatically and needed
+no view change — their ID links already redirect vivas to the viva page.
+One-off cleanup: `bin/rails viva:clean_grader_comments [APPLY=1]`
+(`Viva::GraderCommentCleaner`, report-first; rewrites only `done` rows whose
+`grader_comment` contains the narrative). Tests: service write path,
+main-list integration (6 cases), cleaner report/apply/idempotence.
+
+Original write-up kept below for the record.
 
 **Context (dae, 2026-07-21 smoke test).** The viva grading pass stores its
 output on the submission like a normal grading run, and the long narrative

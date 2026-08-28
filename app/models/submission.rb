@@ -37,6 +37,15 @@ class Submission < ApplicationRecord
   # VivaTurn::STALE_AFTER (10 min) as a round-number floor.
   STALE_EVALUATING_AFTER = 20.minutes
 
+  # What a successful viva grading run writes into grader_comment. The LLM
+  # narrative lives only in viva_grades.narrative (rendered by the grade card
+  # on the viva page); grader_comment is a compact verdict field everywhere
+  # else (main list, stat tables, Submission report, API last_result), so a
+  # viva gets one of these short markers instead. Read viva_terminated_at?
+  # for the flag itself — never parse this string.
+  VIVA_RESULT_MARKER            = 'viva'.freeze
+  VIVA_RESULT_TERMINATED_MARKER = 'viva:terminated'.freeze
+
   # Viva sessions with no turn activity for this long, still :submitted,
   # are finalized by reap_abandoned_vivas! (recurring, production only).
   ABANDONED_VIVA_REAP_AFTER = 24.hours
@@ -166,6 +175,12 @@ class Submission < ApplicationRecord
   # viva problems.
   def viva_archived?
     viva_archived_at.present?
+  end
+
+  # See VIVA_RESULT_MARKER. Shared by Llm::VivaGradeAssist (success path)
+  # and Viva::GraderCommentCleaner (one-off rewrite of pre-marker rows).
+  def viva_result_marker
+    viva_terminated_at? ? VIVA_RESULT_TERMINATED_MARKER : VIVA_RESULT_MARKER
   end
 
 
