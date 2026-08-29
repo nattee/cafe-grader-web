@@ -72,7 +72,9 @@
     - if GraderConfiguration['ui.show_score']
       .row
         //.col-lg-3.text-secondary=t 'main.score'
-        .col-12.d-flex.align-items-center
+        -# top-aligned (not centred): the verdict strip can be several rows
+        -# tall and the score should sit beside its first row
+        .col-12.d-flex.align-items-start
           %span.me-1.mi.mr-2.text-secondary speed
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points
@@ -89,8 +91,7 @@
                 = mdi('grading', 'md-18')
                 viva
           - else
-            %span.grader-comment.text-break
-              = " [#{submission.grader_comment}]"
+            = grader_comment_strip(submission.grader_comment)
             = link_to mdi('ballot'), evaluations_submission_path(submission), data: {turbo: true, turbo_method: :post}
   - if local_assigns[:show_button]
     -# show links

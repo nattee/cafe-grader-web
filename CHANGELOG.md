@@ -10,6 +10,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Changed
+- Main list "Latest Results": the per-testcase verdict string (`PP-T`,
+  `[PPPP][PP-]`) is now drawn as a strip of colour-coded tiles — one per
+  testcase, `[…]` groups boxed and never split across lines — inside a
+  fixed-width block, so problems with 40–80 testcases no longer widen the
+  column and squeeze the problem name. A labelled `legend` pill in the column
+  header explains the tiles and boxes; every tile and box carries hover
+  details ("Test 7 of 40: Wrong Answer", "Group 2 of 5: 3/5 passed…"), and the
+  Evaluation Details modal gains a one-line key for grouped tests. Free-text
+  comments ("No testcase", checker messages) keep the plain rendering,
+  width-capped. The per-problem submission list shares the partial and gets
+  the same strip. (rev 2039)
+
 ## [4.5.0] — 2026-08-28
 
 **Upgrade notes.** Run `bin/rails db:migrate` — this release carries 11
