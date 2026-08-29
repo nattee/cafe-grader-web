@@ -21,7 +21,9 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   Evaluation Details modal gains a one-line key for grouped tests. Free-text
   comments ("No testcase", checker messages) keep the plain rendering,
   width-capped. The per-problem submission list shares the partial and gets
-  the same strip. (rev 2039)
+  the same strip (rev 2039). The submission detail page, problem and user
+  statistics, the grader monitor, the near-miss repair view and the
+  submission report (client-side, same tiles) use it too (rev 2041).
 
 ## [4.5.0] — 2026-08-28
 

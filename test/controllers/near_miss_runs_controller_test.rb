@@ -121,6 +121,8 @@ class NearMissRunsControllerTest < ActionDispatch::IntegrationTest
     assert_match 'added missing include', response.body
     assert_match submission_path(@original.id), response.body
     assert_match submission_path(@shadow.id), response.body
+    assert_select ".verdict-strip[data-comment='PP--']", count: 1, message: "original verdict strip"
+    assert_select ".verdict-strip[data-comment='PPPP']", count: 1, message: "repaired verdict strip"
     assert_match 'syntax', response.body
   end
 

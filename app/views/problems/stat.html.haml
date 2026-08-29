@@ -71,7 +71,7 @@
           %td{data: {order: sub.submitted_at}}
             #{sub.submitted_at.strftime('%Y-%m-%d %H:%M')}
             %span.text-secondary (#{time_ago_in_words(sub.submitted_at)} ago)
-          %td.grader-comment= sub.grader_comment
+          %td{data: {order: sub.grader_comment.to_s, search: sub.grader_comment.to_s}}= grader_comment_strip(sub.grader_comment)
           %td.text-end= sub.points
           %td= sub.ip_address
 - else

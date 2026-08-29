@@ -53,6 +53,14 @@ module GraderCommentHelper
     t(result, scope: "activerecord.attributes.evaluation.results", default: result.to_s.humanize)
   end
 
+  # Letter map + group hint for the client-side twin (app/javascript/verdict_strip.js),
+  # used where DataTables renders cells from JSON (report/submission). Keeps the
+  # letter → result/word table in one place. Safe to interpolate into a <script>.
+  def verdict_strip_config_json
+    codes = VERDICT_RESULTS.to_h { |code, result| [code, { result: result, word: verdict_word(code) }] }
+    ERB::Util.json_escape({ codes: codes, group_hint: GROUP_HINT }.to_json).html_safe
+  end
+
   def grader_comment_plain(comment)
     content_tag(:span, " [#{comment}]", class: "grader-comment grader-comment-capped")
   end

@@ -30,7 +30,7 @@
             = "— #{near_miss_score(@original)}"
             - if @original.grader_comment.present?
               %div
-                %span.grader-comment.text-break.small.text-secondary= @original.grader_comment
+                = grader_comment_strip(@original.grader_comment)
           %dt.col-sm-4 Repaired
           %dd.col-sm-8
             - if @shadow
@@ -41,7 +41,7 @@
                 %span.text-secondary= "— #{@shadow.status.humanize.downcase}, no judge outcome (score not counted)"
               - if @shadow.grader_comment.present?
                 %div
-                  %span.grader-comment.text-break.small.text-secondary= @shadow.grader_comment
+                  = grader_comment_strip(@shadow.grader_comment)
             - else
               %span.text-secondary — no shadow (gate never accepted a patch)
           %dt.col-sm-4 Gap
