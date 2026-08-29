@@ -848,33 +848,55 @@ page `Users-Roles-and-Access-Control` pointing at
 
 ---
 
-## Viva grading: harden against transcript-continuation failures
+## Viva grading: harden against transcript-continuation failures — RESOLVED 2026-08-29
 
-**Why it matters.** `Llm::VivaGradeAssist` sends the interview transcript as
-a user message; the grader model can get absorbed into it and answer as the
-*interviewer's next turn* instead of emitting the grade JSON. Observed
-2026-08-23 on a real practice viva (prod sub 937805): gemini-2.5-flash did
-this reproducibly (the stored grading AND a fresh rerun, 2/2). The result is
-a `VivaGrade` row with `total_points: nil`, empty rubric/narrative — a
-student-visible zero with no retry and no admin alert.
+**Resolution.** Three pieces, three different mechanisms:
 
-**Current state.** Mitigated, not fixed: the chula_cp deployment moved the
-default grader to gemini-3.1-pro (chula_cp rev 2008), which graded the same
-transcript cleanly. The engine-side gap in `handle_response`
-(`app/services/llm/viva_grade_assist.rb`) remains: a non-JSON response is
-persisted as a nil-score grade and dropped on the floor.
+- **(a) Prompt hardening — master rev 2024** (bake-off 2026-08-27). Transcript
+  labels `INTERVIEWER:`/`STUDENT:` plus a trailing `=== END OF TRANSCRIPT ===`
+  re-anchor in `VivaGradeAssist#transcript_payload`. Claude-model compliance
+  went 3/24 → 16/16; Gemini unaffected.
+- **(b) Silent nil-score grades — master rev 2043.** The root cause was *not*
+  "no JSON" (that has raised `ResponseError` since rev 1667) but
+  `extract_json_object` returning the first balanced `{…}` and
+  `handle_response` trusting it: any parseable object without `total_points`
+  reached the write path as `points: nil, status: :done`. Now
+  `grade_schema_error` (numeric `total_points` in 0..100, non-empty `rubric`)
+  and unparseable brace blocks raise `ResponseError`;
+  `VivaGradeAssist#respond` (a new `Llm::Request#respond` template method)
+  re-asks the model **once** — not for `finish_reason=length` — and then the
+  existing `grader_error` path takes over (red admin alert,
+  `llm_response_raw` = last body, first bad reply at WARN in the log, Re-run
+  picker). Both attempts' cost is folded into the grade row. Tests:
+  `test/services/llm/viva_grade_assist_test.rb`.
+- **(c) Interview / narrative language — a conduct concern, not code.** The DS
+  kit's `_conduct.md` §Language (course-prep, policy since 2026-08-25) pins
+  it: examiner writes English only (one-line Thai orientation allowed in the
+  opener), students may answer Thai/English/mixed with no comment on their
+  choice, translation requests → restate in simpler English, narrative in the
+  language the student used. Deployed on prod as `viva_conduct` tag 38
+  "DS-viva-conduct-2569" on all 9 practice problems (text verified identical
+  to the kit on 2026-08-29). The 08-23 language drift predates that tag.
+  Deliberately **no** platform-level language default in code — that would
+  bake one deployment's pedagogy into master; `doc/Viva-Exam.md` §2 records
+  the convention.
 
-**Proposed direction.** (a) Detect a parse/schema failure and retry once,
-optionally reinforcing "output ONLY the JSON object" in the retry prompt;
-(b) surface still-failed gradings to admins (viva alert or grading-error
-state) instead of storing a silent nil-score row; (c) consider pinning the
-narrative language in the grading prompt — today it's model-mood-dependent
-(gemini-3.1-pro answered one session in Thai, another in English, while
-2.5-flash always wrote English).
+**Grader model history, for context.** gemini-2.5-flash → **gemini-3.1-pro**
+(chula_cp rev 2008; 12-session read-only comparison on 10.0.5.50,
+`~/viva_compare_results.jsonl`: 2.5-flash's own rerun noise sd 6.7 / ±10,
+3.1-pro within that noise on 9/11, the 937805 role-slip reproduced 2/2 on
+2.5-flash and graded 38 by 3.1-pro) → **gemini-3.7-flash via the Chula AI
+Gateway** (chula_cp `llm.yml`, 2026-08-27 bake-off,
+`~/cafe-grader/bakeoff-2026-08-27/report.html`: the only grader compliant
+12/12 with the pre-hardening prompt; median |Δ| 5 vs 3.1-pro, systematically
++5.4 kinder, rerun spread 2, $0.008/grading). Rev 2011 made both end paths
+(sentinel and hard cap) use the grade service's default model.
 
-**Size.** Small-medium — retry + error surfacing in one service class plus a
-test with a canned non-JSON response; the language pin is a one-line prompt
-edit but needs a policy decision (Thai? match the student?).
+**Still open (policy, not code).** Re-test `claude-opus-4-5` as grader with the
+hardened prompt on the full 12 sessions (~$1): in the 4-session probe opus was
+the strictest and most consistent grader (spread ≤4, docks uncovered rubric
+items) while flash matches 3.1-pro's generosity. Strict-vs-generous on
+uncovered items is an instructor call to make before any exam-graded viva.
 
 ---
 

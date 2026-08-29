@@ -25,6 +25,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   statistics, the grader monitor, the near-miss repair view and the
   submission report (client-side, same tiles) use it too (rev 2041).
 
+### Fixed
+- Viva grading: a grader reply that is not a grade — prose, an unparseable
+  brace block, or JSON without a numeric `total_points` / non-empty `rubric` —
+  can no longer land as a silent zero (`points: nil`, status *done*). The
+  grader now re-asks the model once, then the submission goes to *Grader
+  error* with the raw reply preserved for the admin and the Re-run picker
+  (rev 2043).
+
 ## [4.5.0] — 2026-08-28
 
 **Upgrade notes.** Run `bin/rails db:migrate` — this release carries 11
