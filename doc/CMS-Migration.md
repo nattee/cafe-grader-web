@@ -341,12 +341,15 @@ Recommendation: option 2 for the migration itself (students will submit fresh
 code), and option 1 only if you want historical-submission fidelity or intend
 to rejudge archives.
 
-### 5.3 `custom_cms` argv order on production — see the 🔴 entry in `doc/backlog.md`
+### 5.3 `custom_cms` argv order on production — ✅ verified safe 2026-08-29
 
-Four pre-existing problems use the legacy `custom_cms` type whose argument
-order is testlib's, not CMS's. If any of their checkers was written to the CMS
-convention, that problem is mis-grading students today. Their blobs are not on
-the dev box, so this must be checked against production.
+The pre-existing problems on the legacy `custom_cms` / `custom_cms_raw` types
+(10 in production: 570, 606, 656, 659 and Rubik's Race 649–654) were all
+written to cafe's documented `(input, user, correct)` order; none is mis-graded
+and none is switched to `cms_comparator`. Method and evidence:
+`doc/decisions.md` 2026-08-29 and the `## Resolved` ledger in `doc/backlog.md`.
+The `strings`-for-`translate:` heuristic proposed at the time is *not* a valid
+classifier — every cafe-authored checker prints `translate:*` too.
 
 ---
 

@@ -3,6 +3,45 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-08-29 — `custom_cms` argv order is testlib's by design; verified safe on production
+
+**Decision.** The `custom_cms` / `custom_cms_raw` evaluation types keep their
+argv order `(input, USER output, correct answer)` — the testlib/Codeforces
+convention — and the CMS-native order `(input, correct, USER)` stays a separate
+type, `cms_comparator` (enum 7, added 2026-08-02 for `cms:clone`). No live
+problem is switched. The name `custom_cms` is a known trap — it describes the
+*result protocol* (score on stdout, `translate:*` on stderr), not the argv
+order — and is now documented as such at every point of use; a rename to
+`custom_testlib` is left open in `doc/backlog.md` (Resolved ledger, residual).
+
+**Why.** The 2026-08-02 CMS-migration work found the order mismatch and
+suspected the pre-existing `custom_cms` problems might be mis-graded.
+Verified against production on 2026-08-29 (dae@10.0.5.50): all 10 problems on
+the legacy order — `custom_cms` 570/606/656/659 and `custom_cms_raw` 649–654
+(Rubik's Race, one shared binary) — were written to cafe's documented order.
+Evidence, per distinct checker (5): run locally on the real testcase blobs with
+crafted content in slot 2 vs slot 3, every checker's verdict tracks slot 2 only
+and ignores slot 3 even when it holds garbage (659 accepted a valid `1L 2L`
+solution in slot 2 with `1.0` and rejected it in slot 3; 656's Python source
+reads `argv[2]` as the student grid; 659's `main` never reads the `argv[3]`
+ifstream it constructs). Corroboration from production data: students hold
+full-score `PPPP…` runs on all ten, although the stored reference answers are
+placeholders (570 a fixed token, 659 and 650–654 a byte-copy of the input) that
+a CMS-order checker would have graded *as the student's output* and failed
+universally.
+
+**Lesson recorded.** "Prints `translate:*`" does **not** mean "expects CMS argv
+order" — cafe's own checker guide teaches the CMS result protocol with testlib
+argv order, so every cafe-authored checker looks CMS-style to a `strings` grep.
+Classify a checker by running it with asymmetric slot contents, never by its
+output vocabulary.
+
+**Guard rails.** Warning blocks in `doc/Checker-and-Auxiliary-Files.md`
+(`custom_cms` section, plus a `cms_comparator` section that was missing),
+`doc/dataset-scoring-and-evaluation.md`, and the `app/models/dataset.rb` /
+`app/engine/checker.rb` comments; `Converters::CmsDumpConverter` maps CMS
+`comparator` → `cms_comparator`, never `custom_cms`.
+
 ## 2026-08-22 — Submit authorization: one gate, web behavior is authoritative
 
 **Decision.** Whether a user may create a submission is decided by exactly one

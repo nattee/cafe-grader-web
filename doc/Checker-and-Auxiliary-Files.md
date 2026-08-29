@@ -22,9 +22,10 @@ Every dataset carries an `evaluation_type` that selects how the contestant's out
 | `custom_cms`       | **Yes**                    | Runs the attached checker in CMS-style (score 0.0–1.0).                                                       |
 | `custom_cms_raw`   | **Yes**                    | Runs the attached checker in CMS-style but the score is stored verbatim (not clamped to 0–1). Allows negative scores, subject to the DB column's precision. |
 | `custom_cafe`      | **Yes**                    | Runs the attached checker in cafe-grader style.                                                               |
+| `cms_comparator`   | **Yes**                    | Runs the attached checker in CMS-style with **CMS's own argv order** (`input, expected, contestant`) — for checkers taken unmodified from a CMS task package. |
 | `no_check`         | No                         | No comparison is performed; the evaluation is recorded as `partial` with score 0. Useful for manual grading. |
 
-The three `custom_*` types require a **Checker** file to be attached to the dataset; validation fails otherwise.
+The `custom_*` types and `cms_comparator` require a **Checker** file to be attached to the dataset; validation fails otherwise.
 
 ---
 
@@ -34,7 +35,7 @@ A **checker** is an executable file that scores the output of a contestant's sub
 
 The checker is executed **only after the submission finishes successfully** — i.e., it does not crash, exceed the time limit, or blow the memory limit. Input file paths, expected outputs, and contestant outputs are passed as arguments.
 
-cafe-grader supports three checker invocation styles: **CMS**, **CMS raw**, and **cafe-grader**. They differ in argument order and in how STDOUT is interpreted.
+cafe-grader supports four checker invocation styles: **CMS**, **CMS raw**, **CMS comparator**, and **cafe-grader**. They differ in argument order and in how STDOUT is interpreted.
 
 A checker must exit with status `0`. A non-zero exit status is treated as a **grader error**, and the stderr output is captured in the evaluation comment for diagnosis.
 
@@ -47,6 +48,8 @@ The checker receives:
 - `ARGV[1]` — Full path to the testcase input file
 - `ARGV[2]` — Full path to the contestant's output
 - `ARGV[3]` — Full path to the expected answer file
+
+> **⚠️ Naming trap — the argv order is *not* CMS's.** Despite the name, `custom_cms` passes `(input, contestant output, expected answer)` — the testlib/Codeforces order — whereas CMS itself calls its comparator as `(input, expected answer, contestant output)`. Only the *result protocol* (score on `STDOUT`, `translate:*` on `STDERR`) is CMS's. A checker copied unmodified from a CMS task package must use **`cms_comparator`** (below); under `custom_cms` it would receive the expected answer where it expects the contestant's output and grade every submission wrong. Checkers written against this page — including every production problem on this type, verified 2026-08-29 (`doc/decisions.md`) — are correct as they are; do not switch them.
 
 The checker must print a single line to `STDOUT` containing a floating-point number between `0.0` and `1.0`, representing the score for the testcase (`1.0` = full score). Testcase weights are applied by the system; the checker only judges correctness of the specific testcase.
 
@@ -63,6 +66,20 @@ Arguments are **identical to `custom_cms`**. The difference is in how the score 
 - The evaluation is always recorded as `partial` — it will never be marked `correct` or `wrong` by the comparator alone. Final pass/fail status depends on the dataset's `score_type` and any downstream scoring logic.
 
 Use this mode for problems where you want to award a continuous, possibly negative score (e.g., penalty-based heuristic problems, regression-style grading).
+
+---
+
+## CMS Comparator Style (`cms_comparator`)
+
+The checker receives **CMS's own argument order** — the only difference from `custom_cms`:
+
+- `ARGV[1]` — Full path to the testcase input file
+- `ARGV[2]` — Full path to the **expected answer** file
+- `ARGV[3]` — Full path to the **contestant's output**
+
+Output protocol is identical to `custom_cms`: a `0.0`–`1.0` score on `STDOUT`, an optional comment on `STDERR` (`translate:success` / `translate:wrong` are stripped). This is what CMS passes to a task's comparator (`cms/grading/steps/trusted.py`: `["./checker", input.txt, correct_output.txt, <user output>]`), so use it for any checker taken unmodified from a CMS task package. The CMS importer (`rails "cms:clone[task]"`) selects it automatically; it is not yet offered in the dataset settings dropdown.
+
+Choosing between the two: a checker you (or a colleague) wrote for cafe-grader following this page → `custom_cms`; a checker that came out of a CMS task → `cms_comparator`. When in doubt, run the checker by hand on one testcase with an empty file in each slot in turn — the slot whose emptiness makes it report *wrong* is the one it treats as the contestant's output.
 
 ---
 
