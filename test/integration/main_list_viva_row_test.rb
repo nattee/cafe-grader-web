@@ -69,12 +69,13 @@ class MainListVivaRowTest < ActionDispatch::IntegrationTest
     refute_includes row.to_s, 'Waiting to be graded'
   end
 
-  test "a code submission row keeps the bracketed verdict string and the evaluations link" do
+  test "a code submission row shows the verdict strip and the evaluations link" do
     code = submissions(:add1_by_john)
     code.update_columns(status: Submission.statuses[:done], graded_at: 1.hour.ago, points: 50, grader_comment: 'P-P-')
     sign_in_as("john", "hello")
     get list_main_path
-    assert_includes response.body, '[P-P-]'
+    assert_select ".verdict-strip[data-comment='P-P-'] .verdict-tile", count: 4
+    assert_select ".verdict-legend-btn[data-bs-toggle=popover]", count: 1
     assert_select "a[href=?]", evaluations_submission_path(code)
   end
 end
