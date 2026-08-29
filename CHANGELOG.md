@@ -32,6 +32,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   grader now re-asks the model once, then the submission goes to *Grader
   error* with the raw reply preserved for the admin and the Re-run picker
   (rev 2043).
+- Judge workers: `Grader.watchdog` no longer lets duplicate graders live on
+  one isolate box. It now runs under a host-wide lock (a second watchdog in
+  the same minute skips instead of racing), detects more than one grader per
+  box and TERMs every extra but the oldest, and stops *all* processes of a
+  disabled box instead of only the first. Duplicates came from two orphaned
+  `whenever` crontab blocks and turned every concurrent evaluation into a
+  `!` grader error (2026-08-27 incident); the deploy pipeline now gives
+  whenever a stable identifier so a path rename cannot orphan a block again
+  (rev 2045; automation repo rev 58).
+- Judge workers: a rejudge landing on a different isolate box than the run
+  that died there no longer fails with `open("/output/stdout.txt")` — the
+  evaluator removes the previous run's `stdout.txt` before each testcase
+  (rev 2045).
 
 ## [4.5.0] — 2026-08-28
 

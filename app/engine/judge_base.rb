@@ -346,6 +346,14 @@ module JudgeBase
       @sub_testcase_path.mkpath
       @output_path.mkpath
       @output_path.chmod(0777)
+      # A run that died mid-way (box collision, killed grader) leaves stdout.txt
+      # owned by that box's uid at 0644; a rerun landing on a different box then
+      # cannot truncate-open it and isolate fails with open("/output/stdout.txt")
+      # -> grader_error (14 of 142 rejudged submissions, 2026-08-27). We own the
+      # 0777 directory, so unlinking works whoever owns the file. rm_f, not
+      # unlink: main_loop only rescues GraderError, and an EACCES raised here
+      # would take the whole grader down with the job left in :process.
+      FileUtils.rm_f(@output_file)
     end
   end
 
