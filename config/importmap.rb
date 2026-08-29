@@ -40,6 +40,7 @@ pin "cafe", to: "cafe.js"
 pin "cafe_event", to: "cafe_event.js"
 pin "cafe_datatable", to: 'cafe_datatable.js'
 pin "cafe_turbo", to: "cafe_turbo.js"
+pin "verdict_strip", to: "verdict_strip.js"
 pin "setup_jquery"
 pin "setup_bootstrap"
 pin "setup_select2"

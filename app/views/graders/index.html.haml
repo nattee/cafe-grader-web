@@ -179,8 +179,7 @@
                   %td= ("" unless sub.problem) || link_to(sub.try(:problem).try(:full_name), stat_problem_path(sub.problem.id), class: 'text-decoration-none')
                   %td.text-secondary.small= "#{time_ago_in_words(sub.submitted_at)} ago"
                   %td.text-secondary.small= sub.graded_at ? "#{time_ago_in_words(sub.graded_at)} ago" : ""
-                  %td
-                    %span.font-monospace.small= sub.grader_comment
+                  %td= grader_comment_strip(sub.grader_comment)
 
       -# Ungraded Submissions Card
       - if @backlog_submission.any?
@@ -213,5 +212,4 @@
                     %td= ("" unless sub.problem) || link_to(sub.try(:problem).try(:full_name), stat_problem_path(sub.problem.id), class: 'text-decoration-none')
                     %td.text-secondary.small= "#{time_ago_in_words(sub.submitted_at)} ago"
                     %td.text-secondary.small= sub.graded_at ? "#{time_ago_in_words(sub.graded_at)} ago" : ""
-                    %td
-                      %span.font-monospace.small= sub.grader_comment
+                    %td= grader_comment_strip(sub.grader_comment)
