@@ -65,7 +65,7 @@ class ProblemEditDatasetFormTest < ApplicationSystemTestCase
     # The evaluation_type select lives in the Settings tab (default
     # active), so it's reachable without switching tabs. Labels were
     # reworded to "[BRACKET] description" form; pick the TESTLIB option.
-    select '[TESTLIB] custom_testlib — checker gets (input, user output, correct answer); score 0–1 on stdout. Was custom_cms', from: "dataset_evaluation_type"
+    select '[TESTLIB] custom_testlib — checker gets (input, user output, correct answer); score 0–1 on stdout (was "custom_cms")', from: "dataset_evaluation_type"
     assert_no_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
                        visible: :all, wait: 5
   end
