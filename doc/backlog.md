@@ -484,6 +484,33 @@ place: it is not a tracked file, so it never conflicts on a sync. E.g. upstream
 
 ---
 
+## Deploy has no automatic post-deploy grading check
+
+**Noticed 2026-08-30, after the outage that `engine:smoke` was built for.** The
+`deploy_production` pipeline proves the app boots (Passenger restart) and that
+`Grader.restart` spawned processes, but nothing proves the *grading engine*
+still grades. That gap is exactly how rev 2045 reached nine servers: the unit
+suite cannot cross the Evaluator→Checker path without isolate, and CI has none.
+`bin/rails engine:smoke SUB=<id> [BOX=99]` (rev 2063) closes it, but it is a
+manual step someone has to remember.
+
+**The shape of the fix.** A final deploy step that runs `engine:smoke` on the
+host and fails the job on a non-zero exit. What blocks it is choosing the
+submission: it must exist on that server, be `done`, and have a live dataset
+whose testcase blobs are still on disk — and each server's ids differ, so a
+hardcoded `SUB=` is wrong everywhere but one host. Options, none costed yet:
+a per-host id in `inventory.yml`; a `--pick` mode that queries for a suitable
+recent submission itself (roughly the picker used to verify the fleet on
+2026-08-30, which needed widening on toi where every dataset is grouped and on
+hosts whose older blobs are gone); or a dedicated never-deleted smoke problem
+seeded on each server, which is the most predictable and the most setup.
+
+**Worth noting** the check is cheap — the fleet runs took 2–20 s per host — and
+it caught nothing on 2026-08-30 only because it was written after the fix. Its
+value is entirely in the next 2045.
+
+---
+
 ## `jobs.status` has no index, and the judge polls it at 5 Hz per grader
 
 **Noticed 2026-08-30 while building the reclaim sweep (rev 2060).** The `jobs`

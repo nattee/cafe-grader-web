@@ -3,6 +3,43 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-08-30 — `prepare_testcase_directory` is create-only; the writer owns cleanup
+
+**Decision.** The shared `JudgeBase#prepare_testcase_directory` computes paths
+and creates directories. It never deletes, moves or truncates a file. Clearing
+a stale `stdout.txt` before a run belongs to `Evaluator#clear_stale_output`,
+called once from `Evaluator#execute` immediately before isolate runs. The same
+rule binds any future side effect added to a `JudgeBase` helper: put it in the
+class whose lifecycle it belongs to, not in the shared helper.
+
+**Why.** Rev 2045 put `FileUtils.rm_f(@output_file)` in the shared helper to fix
+a genuine bug — a run that died mid-way left `stdout.txt` owned by another
+isolate box's uid at 0644, and a rerun on a different box could not
+truncate-open it (14 of 142 rejudges failed that way on 2026-08-27). The unlink
+was right; its placement was not. `Checker#process` re-runs the same helper to
+compute *its* `@output_file`, and it does so **after** the program has written
+the output — so the compare step deleted the file it was about to read.
+`check_for_required_file` then raised `Output file [...] does not exists` on
+every testcase. Deployed 2026-08-30 14:37; every submission on all five active
+servers ended in `grader_error` until rev 2061, and 1,759 needed a rejudge.
+
+**Lesson recorded.** A helper shared by two classes is called at *their*
+moments, not at one moment. `Evaluator` calls this one before the run,
+`Checker` after it; anything destructive in the shared path is therefore
+guaranteed to run at the wrong time for one of them. Read the call sites, not
+just the helper, before adding a side effect to shared code — `grep -rn` for
+the method name is a five-second check that would have caught this.
+
+**Guard rails.** `test/engine/testcase_output_lifecycle_test.rb` asserts the
+helper preserves an existing output for both classes and that
+`clear_stale_output` removes it. `test/engine/evaluator_checker_flow_test.rb`
+runs the real `Evaluator#execute` into the real `Checker#process` with only the
+sandbox and downloads faked — it fails with the production error on rev 2045
+and needs no isolate, so CI can run it. `bin/rails engine:smoke SUB=<id>` grades
+a real submission with real isolate on a host and restores it, for post-deploy
+verification the test suite structurally cannot provide. Comments at both sites
+name this incident.
+
 ## 2026-08-29 — `custom_cms` argv order is testlib's by design; verified safe on production
 
 **Decision.** The `custom_cms` / `custom_cms_raw` evaluation types keep their
