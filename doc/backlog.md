@@ -475,6 +475,13 @@ now satisfied, so the ask is live.
 
 **Size.** Minutes once the switch is flipped. Nothing else is blocked on it.
 
+**Related, not blocked (idea, 2026-08-30).** README.md ships byte-identical to
+both repos, so it deliberately says nothing about which is newer (rev 2051). If
+per-repo wording is ever wanted, GitHub's **About / description field** is the
+place: it is not a tracked file, so it never conflicts on a sync. E.g. upstream
+"periodic stable cuts — development at nattee/cafe-grader-web" vs the fork
+"active development line". Two minutes, no code, nobody has asked for it yet.
+
 ---
 
 ## Jobs stuck in `:process` forever when a grader dies mid-job (no reclaim)
