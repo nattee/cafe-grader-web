@@ -32,6 +32,7 @@ class Evaluator
     prepare_dataset_directory(@working_dataset)
     prepare_worker_dataset(@working_dataset, :all)
     prepare_testcase_directory(@sub, @testcase)
+    clear_stale_output
     prepare_executable
 
     # prepare params for running sandbox
@@ -71,6 +72,21 @@ class Evaluator
     # call evaluate to check the result
     result = evaluate(out, meta, err)
     return result
+  end
+
+  # A run that died mid-way (box collision, killed grader) leaves stdout.txt
+  # owned by that box's uid at 0644; a rerun landing on a different box then
+  # cannot truncate-open it and isolate fails with open("/output/stdout.txt")
+  # -> grader_error (14 of 142 rejudged submissions, 2026-08-27). We own the
+  # 0777 directory, so unlinking works whoever owns the file. rm_f, not
+  # unlink: main_loop only rescues GraderError, and an EACCES raised here
+  # would take the whole grader down with the job left in :process.
+  #
+  # Lives here, not in the shared prepare_testcase_directory: the Checker
+  # re-prepares the same directory after the run, and an unlink there deletes
+  # the output it is about to compare (2026-08-30 fleet outage).
+  def clear_stale_output
+    FileUtils.rm_f(@output_file)
   end
 
   # this should be called after execute, it will runs the comparator

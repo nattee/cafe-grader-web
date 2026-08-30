@@ -54,6 +54,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Every submission failed with an internal grading error on servers running
+  rev 2045 or later** (all chula_cp deploy hosts, 2026-08-30 14:37 local onward). Rev 2045
+  cleared a stale `stdout.txt` inside the shared `prepare_testcase_directory`
+  helper, which the checker re-runs *after* the program has produced its
+  output — so the output was deleted between the run and the compare and every
+  testcase ended in `grader_error`. The stale-output cleanup now lives in
+  `Evaluator#clear_stale_output`, called once immediately before the run; the
+  shared helper is create-only again. Submissions graded during the window
+  carry `grader_error` and need a rejudge. (rev 2061)
 - **Grading jobs stranded forever when a grader died mid-job.** A judge job
   moves to `:process` when a grader claims it and leaves that state only when
   the grader reports back, so a grader killed in between — OOM, `kill -9`, a
