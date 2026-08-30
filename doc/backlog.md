@@ -442,27 +442,38 @@ out of the audited attrs (derived, bulky).
 
 ---
 
-## Upstream GitHub Pages for docs/ + wiki visual-companion links
+## Upstream GitHub Pages for docs/ — blocked on an org admin (jittat)
 
-**Why it matters.** The user-facing authorization guide
-(`docs/guide/authorization.html`) and the audit report are published only on
-the fork's Pages site (`nattee.github.io/cafe-grader-web`) — the upstream wiki
-can't link them canonically yet, and the fork wiki pointer references the
-temporary URL.
+**Why it matters.** The rendered guides (`docs/guide/authorization.html`, the
+audit report) are served only from the fork's Pages site
+(`nattee.github.io/cafe-grader-web`), so every pointer to them names a personal
+fork rather than the project.
 
-**Current state.** The code alignment this entry originally tracked shipped at
-rev 1996 (`User#can_submit_to_problem?` everywhere; disabled memberships grant
-no role; resurrected model lock). Fork Pages serves master:/docs and works.
+**Current state (2026-08-30) — everything under our control is done.**
+- `docs/` is now **on upstream master** (fork rev 2051 batch-synced via upstream
+  PR #46), so the Pages source directory exists there. This was the half the old
+  entry was waiting on `/upstream-sync` for.
+- The upstream wiki page `Users-Roles-and-Access-Control` **now carries the
+  visual-companion link block**, pointing at the live fork URL instead of
+  waiting for canonical hosting — the reader value is delivered today, and
+  re-pointing it later is a one-word edit. (The old entry had this backwards:
+  it treated a canonical URL as a precondition for the link existing at all.)
+- Fork Pages (`master:/docs`) serves fine and remains the live copy.
 
-**What remains.** After the next /upstream-sync carries `docs/` to
-cafe-grader-team: an org **admin** (dae's token is WRITE, not admin) must
-enable GitHub Pages there (Settings → Pages → Deploy from a branch →
-master + /docs), then (1) add the visual-companion link block to the wiki
-page `Users-Roles-and-Access-Control` pointing at
-`https://cafe-grader-team.github.io/cafe-grader-web/guide/authorization.html`,
-(2) swap the temporary fork URLs in the fork-wiki pointer page.
+**The one blocker.** `has_pages=false` on cafe-grader-team, and dae's token is
+WRITE, not admin (org role: member; the org's members are `jittat` and
+`nattee`). So **jittat** must do it: Settings → Pages → Deploy from a branch →
+`master` + `/docs`. Do not ask before `docs/` is upstream — that precondition is
+now satisfied, so the ask is live.
 
-**Size.** Trivial once the admin flips the Pages switch.
+**After the switch is flipped**, three fork URLs become swappable to
+`https://cafe-grader-team.github.io/cafe-grader-web/…`:
+1. upstream wiki `Users-Roles-and-Access-Control` — the companion link block;
+2. `README.md` → Documentation → "Guides site" (added rev 2051);
+3. fork wiki `Home.md` — the "temporarily published at … until the upstream
+   GitHub Pages site is enabled" sentence, which becomes untrue.
+
+**Size.** Minutes once the switch is flipped. Nothing else is blocked on it.
 
 ---
 
