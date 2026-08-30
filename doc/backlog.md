@@ -531,11 +531,12 @@ testlib argv order; output vocabulary says nothing about argv order. Durable
 record: `doc/decisions.md` 2026-08-29; loud naming-trap warnings now sit in
 `doc/Checker-and-Auxiliary-Files.md` (plus a `cms_comparator` section that was
 missing), `doc/dataset-scoring-and-evaluation.md`, `doc/CMS-Migration.md` §5.3.
-**Residual (undecided — dae's call):** (a) rename `custom_cms` → `custom_testlib`
-(enum value stays 4; data migration, importer/exporter alias so old packages
-still load, UI label); (b) expose `cms_comparator` in the dataset
-evaluation-type dropdown (`app/views/datasets/_settings.html.haml`) — today it
-is reachable only through `cms:clone`.
+**Residual — DONE rev 2047 (2026-08-30):** (a) renamed `custom_cms` →
+`custom_testlib`, `custom_cms_raw` → `custom_testlib_raw` (integers unchanged;
+`Dataset::LEGACY_EVALUATION_TYPES` aliases the old names on assignment); (b)
+`cms_comparator` exposed in the dataset dropdown as **[CMS]**. Fleet census
+(8 servers) in `doc/decisions.md` 2026-08-29 update; TOI-box `may2025_abcd` was
+the one true CMS-order checker → `cms_comparator` + rejudge.
 
 ### Grader.watchdog duplicate-spawn → isolate box collisions (`!` results) — RESOLVED 2026-08-29
 

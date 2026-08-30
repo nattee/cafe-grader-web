@@ -79,7 +79,7 @@
       %li <strong>First number is a weight, not points.</strong> cafe normalizes (Σ min·weight / Σ weight × 100); CMS points are absolute — same result only when they sum to 100.
       %li <strong>The regex T matches <code>code_name</code>, start-anchored</strong> — mirrors CMS <code>re.match</code>.
       %li <strong>The value is stored per testcase</strong> (CMS keeps it once per subtask) — which is why a group can drift into mixed weights, and why the editor and importer warn about it.
-      %li No CMS package import/export yet; only the runtime checker protocol (Custom CMS) is CMS-compatible.
+      %li CMS tasks arrive via <code>rails "cms:clone[task]"</code>. A checker taken from a CMS package needs the <strong>[CMS]</strong> evaluator (<code>cms_comparator</code>, argv <code>input, correct, user</code>); the <strong>[TESTLIB]</strong> type passes <code>input, user, correct</code>.
 
   %section
     %h6.fw-bold.text-secondary.text-uppercase.small.ls-1.mb-2 More

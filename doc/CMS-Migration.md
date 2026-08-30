@@ -350,6 +350,12 @@ and none is switched to `cms_comparator`. Method and evidence:
 `doc/decisions.md` 2026-08-29 and the `## Resolved` ledger in `doc/backlog.md`.
 The `strings`-for-`translate:` heuristic proposed at the time is *not* a valid
 classifier — every cafe-authored checker prints `translate:*` too.
+Rev 2047 (2026-08-30) then renamed the types `custom_testlib` /
+`custom_testlib_raw` (integers unchanged, old names aliased on assignment) and
+put `cms_comparator` in the dataset dropdown as **[CMS]**. Fleet census the same
+day: comprog (4, Python, testlib-order), compas (1, ICPC validator,
+testlib-order), and the TOI box (16 CMS-package tasks — one, `may2025_abcd`,
+was genuinely CMS-order and is being switched to `cms_comparator`).
 
 ---
 

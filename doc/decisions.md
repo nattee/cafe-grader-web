@@ -42,6 +42,20 @@ output vocabulary.
 `app/engine/checker.rb` comments; `Converters::CmsDumpConverter` maps CMS
 `comparator` → `cms_comparator`, never `custom_cms`.
 
+**Update 2026-08-30 (rev 2047) — renamed.** `custom_cms` → `custom_testlib`,
+`custom_cms_raw` → `custom_testlib_raw`; enum integers 4/6 unchanged, so no
+server needs a migration. `Dataset::LEGACY_EVALUATION_TYPES` normalizes the old
+names on assignment (form, API, import packages) indefinitely; exports now
+write the new names, so upgrade a fleet before moving packages from a new box
+to an old one. `cms_comparator` became selectable in the dataset form
+(**[CMS]**). Fleet census the same day (all 8 web servers): 25 `custom_cms` + 7
+`custom_cms_raw` datasets, none `cms_comparator`; every checker on grader-2023,
+comprog and compas is testlib-order. On the TOI box (16 CMS-package tasks) one
+checker — `may2025_abcd` — is genuinely CMS-order (its verdict follows argv[3];
+five different students scored an identical 54.0112 = the reference file's own
+score) and is switched to `cms_comparator` + rejudged; the wiki
+(`Checker-and-Auxiliary-Files`) carries the rename notice.
+
 ## 2026-08-22 — Submit authorization: one gate, web behavior is authoritative
 
 **Decision.** Whether a user may create a submission is decided by exactly one

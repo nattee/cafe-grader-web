@@ -11,6 +11,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Changed
+- **Evaluation types renamed**: `custom_cms` → `custom_testlib` and
+  `custom_cms_raw` → `custom_testlib_raw`. The old names described the *result
+  protocol* (score on stdout, `translate:*` on stderr) but not the argument
+  order, which is testlib/Codeforces's `(input, user, correct)` — not CMS's
+  `(input, correct, user)`; that order is `cms_comparator`. Stored values are
+  unchanged (no migration, nothing to re-save); the old names remain accepted
+  in the dataset form, the JSON API and import packages
+  (`Dataset::LEGACY_EVALUATION_TYPES`), while exported packages now carry the
+  new names. The dataset settings dropdown also offers `cms_comparator` as
+  **[CMS]** (previously reachable only through `cms:clone`), and the Checker
+  section now appears for it. Every deployed problem on the renamed types was
+  verified beforehand to expect the testlib order (`doc/decisions.md`
+  2026-08-29). (rev 2047)
 - Main list "Latest Results": the per-testcase verdict string (`PP-T`,
   `[PPPP][PP-]`) is now drawn as a strip of colour-coded tiles — one per
   testcase, `[…]` groups boxed and never split across lines — inside a

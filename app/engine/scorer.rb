@@ -76,7 +76,7 @@ class Scorer
   end
 
   # score_type :raw_sum — literal Σ of per-testcase scores. No weighting,
-  # no scaling. Designed to pair with evaluation_type :custom_cms_raw,
+  # no scaling. Designed to pair with evaluation_type :custom_testlib_raw,
   # where the custom checker emits the score it wants summed directly.
   def raw_sum
     sum_user_score = 0.to_d

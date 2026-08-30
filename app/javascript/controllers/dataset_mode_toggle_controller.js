@@ -9,7 +9,7 @@ import { Controller } from "@hotwired/stimulus"
 //     (compiler.rb:87 / python.rb:24 gate the usage).
 //   * hideUnlessCustomEval — Checker section.
 //     Checker is only consulted when evaluation_type is one of
-//     custom_cafe / custom_cms / custom_cms_raw.
+//     custom_cafe / custom_testlib / custom_testlib_raw / cms_comparator.
 //
 // The Checker section is now ALWAYS rendered (no `if` in the partial)
 // so the upload input exists in the DOM regardless of evaluation_type.
@@ -60,7 +60,7 @@ export default class extends Controller {
   refresh() {
     const isSelfContained = this.compilationTypeValue === "self_contained"
     const evalType = this.hasEvaluationTypeTarget ? this.evaluationTypeTarget.value : null
-    const needsChecker = ["custom_cafe", "custom_cms", "custom_cms_raw"].includes(evalType)
+    const needsChecker = ["custom_cafe", "custom_testlib", "custom_testlib_raw", "cms_comparator"].includes(evalType)
 
     this.hideForSelfContainedTargets.forEach(el =>
       el.classList.toggle("d-none", isSelfContained))

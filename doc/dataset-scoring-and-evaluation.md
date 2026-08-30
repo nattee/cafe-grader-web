@@ -15,7 +15,7 @@ Sources: `app/engine/scorer.rb`, `app/engine/checker.rb`,
 |---|---|---|
 | `sum` | `Σ (testcase_score × weight) / Σ weights × 100` | Default. Weighted sum of testcase scores, normalized to 100. |
 | `group_min` | Per group, take the *minimum* score in that group × the group's weight (the *minimum* weight found in the group — by convention all testcases in a group share one weight); then `Σ / total weight × 100`. | **IOI/ICPC subtask style.** A group only earns points if *every* testcase in it passes — one failure drags the whole group to its minimum. The importer warns when a package declares mixed weights inside a group. |
-| `raw_sum` | `Σ testcase_score`. No weighting, no normalization. | When a custom checker emits per-testcase point values you want summed literally. **Pair with `custom_cms_raw` evaluation_type.** |
+| `raw_sum` | `Σ testcase_score`. No weighting, no normalization. | When a custom checker emits per-testcase point values you want summed literally. **Pair with `custom_testlib_raw` evaluation_type.** |
 
 Source: `scorer.rb:14-74` (`sum_of_all_testcases`, `group_min`, `raw_sum`).
 
@@ -52,7 +52,7 @@ assigns per-testcase `weight` (and, in CMS mode, `group`) in bulk. Input is
 > There is **no CMS package import/export** today (Italian/TPS ⇄ cafe is
 > designed in `doc/problem-import-export-design-2026-07-14.md` Package 2 but not
 > built). What is CMS-compatible at *runtime* is the checker protocol
-> (`custom_cms` / `custom_cms_raw` below).
+> (`custom_testlib` / `custom_testlib_raw` below).
 
 Source: `Dataset#set_by_array` / `set_by_hash`, `DatasetsController#set_weight`.
 
@@ -65,20 +65,20 @@ Source: `Dataset#set_by_array` / `set_by_hash`, `DatasetsController#set_weight`.
 | `relative` | `lib/checker/relative.rb` | Tokenizes on whitespace. Numeric tokens are compared with `EPSILON = 1e-6`; non-numeric tokens must match exactly. Use for floating-point output. |
 | `postgres` | `lib/checker/postgres_checker.rb` | Strips `CREATE VIEW` / `DROP VIEW` lines, then compares as CMS-style with score on stdout. Used by the DB course. |
 | `custom_cafe` | Runs the dataset's `checker` file. | Receives args: `<language> <testcase_num> <input> <output> <answer> 10`. Output is two lines: line 1 = `CORRECT` / `INCORRECT` / `COMMENT: <text>`; line 2 = score (integer or decimal). **The score is divided by 10** (`checker.rb:51`: `arr[1].to_d / 10`) — so a checker outputting `100` yields a score of `10`. Non-obvious legacy quirk. |
-| `custom_cms` | Runs the dataset's `checker` file as `checker <input> <user_output> <correct_answer>`. | CMS / Codeforces convention: exit 0, score on stdout, comment on stderr. The CMS framework's `translate:success` and `translate:wrong` markers on stderr are stripped automatically (`checker.rb:34`). **Argv order note:** despite the name, this follows the legacy testlib/Codeforces convention (2nd arg = the submission's output, 3rd = the correct answer) — kept unchanged for backwards compatibility with existing cafe problems. It does **not** match what CMS itself invokes; see `cms_comparator` below. Verified on production 2026-08-29: all ten live problems on this order (four `custom_cms`, six `custom_cms_raw`) were written to it and grade correctly — `doc/decisions.md` 2026-08-29. |
-| `custom_cms_raw` | Runs the dataset's `checker` file. | Stdout is a raw decimal score. **Designed to pair with `raw_sum` score_type** so the per-testcase numbers add up directly without renormalization. Same legacy `(input, user, correct)` argv order as `custom_cms`. |
-| `cms_comparator` | Runs the dataset's `checker` file as `checker <input> <correct_answer> <user_output>` — CMS's own argv order. | Same result protocol as `custom_cms`: exit 0, score on stdout, comment on stderr (`process_result_cms`). Exists **specifically** because CMS invokes its comparator as `["./checker", input, correct_output, user_output]` (CMS 1.4.dev3, `cms/grading/steps/trusted.py:237-240`) — arguments 2 and 3 are swapped relative to `custom_cms`. A checker binary imported unmodified from a CMS task package expects THIS order; feeding it `custom_cms`'s order silently hands it the wrong file in the "correct answer" slot (e.g. an empty file, for checker-only tasks with zero-byte reference outputs) and every submission scores wrong. `Converters::CmsDumpConverter` maps CMS's `comparator` evaluation mode to `cms_comparator`, never to `custom_cms`. |
+| `custom_testlib` | Runs the dataset's `checker` file as `checker <input> <user_output> <correct_answer>`. | CMS / Codeforces convention: exit 0, score on stdout, comment on stderr. The CMS framework's `translate:success` and `translate:wrong` markers on stderr are stripped automatically (`checker.rb:34`). **Argv order note:** this is the testlib/Codeforces convention (2nd arg = the submission's output, 3rd = the correct answer). It does **not** match what CMS itself invokes; see `cms_comparator` below. Named `custom_cms` until rev 2047 (likewise `custom_cms_raw` → `custom_testlib_raw`): the old names are still accepted on assignment via `Dataset::LEGACY_EVALUATION_TYPES`, so older export packages and API clients keep working, and reads return the new names. Verified on production 2026-08-29: all ten live problems on this order (four `custom_testlib`, six `custom_testlib_raw`) were written to it and grade correctly — `doc/decisions.md` 2026-08-29. |
+| `custom_testlib_raw` | Runs the dataset's `checker` file. | Stdout is a raw decimal score. **Designed to pair with `raw_sum` score_type** so the per-testcase numbers add up directly without renormalization. Same legacy `(input, user, correct)` argv order as `custom_testlib`. |
+| `cms_comparator` | Runs the dataset's `checker` file as `checker <input> <correct_answer> <user_output>` — CMS's own argv order. | Same result protocol as `custom_testlib`: exit 0, score on stdout, comment on stderr (`process_result_cms`). Exists **specifically** because CMS invokes its comparator as `["./checker", input, correct_output, user_output]` (CMS 1.4.dev3, `cms/grading/steps/trusted.py:237-240`) — arguments 2 and 3 are swapped relative to `custom_testlib`. A checker binary imported unmodified from a CMS task package expects THIS order; feeding it `custom_testlib`'s order silently hands it the wrong file in the "correct answer" slot (e.g. an empty file, for checker-only tasks with zero-byte reference outputs) and every submission scores wrong. `Converters::CmsDumpConverter` maps CMS's `comparator` evaluation mode to `cms_comparator`, never to `custom_testlib`. |
 
 There is also a `'no_check'` branch in `checker.rb` (`check_command` returns
 `""`, `process_result` returns a partial score of 0). It is **not in the
 enum** (`Dataset#evaluation_type` values: 0=default, 1=exact, 2=relative,
-3=custom_cafe, 4=custom_cms, 5=postgres, 6=custom_cms_raw, 7=cms_comparator),
+3=custom_cafe, 4=custom_testlib, 5=postgres, 6=custom_testlib_raw, 7=cms_comparator),
 so it's unreachable from the UI today. If you want a "skip judging" mode for
 data-collection problems, surface it via the enum first.
 
 ## Compatibility cross-rules (not enforced; documented here)
 
-- `raw_sum` + `custom_cms_raw` is the intended pairing. Other combinations
+- `raw_sum` + `custom_testlib_raw` is the intended pairing. Other combinations
   with `raw_sum` will produce strange totals because the score for
   non-custom evaluators is just 0 or 100 per testcase.
 - `custom_*` evaluators, plus `cms_comparator`, all require a `checker` file

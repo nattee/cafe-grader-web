@@ -7,7 +7,7 @@ require "application_system_test_case"
 #     compilation_type is :self_contained (compiler.rb:87 never
 #     reaches those code paths in that mode).
 #   * Checker section — hidden when dataset's evaluation_type is
-#     NOT in {custom_cafe, custom_cms, custom_cms_raw}.
+#     NOT in {custom_cafe, custom_testlib, custom_testlib_raw, cms_comparator}.
 #
 # These wrappers carry data-dataset-mode-toggle-target attributes;
 # the controller toggles d-none on them. We assert via class-presence
@@ -57,21 +57,31 @@ class ProblemEditDatasetFormTest < ApplicationSystemTestCase
                     visible: :all, wait: 5
   end
 
-  test "switching evaluation_type to custom_cms reveals the Checker section" do
+  test "switching evaluation_type to custom_testlib reveals the Checker section" do
     login "admin", "admin"
     visit edit_problem_path(problems(:prob_add))
     assert_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
                     visible: :all, wait: 5
     # The evaluation_type select lives in the Settings tab (default
     # active), so it's reachable without switching tabs. Labels were
-    # reworded to "[BRACKET] description" form; pick the CMS option.
-    select "[CMS] CMS/Codeforces protocol (score on stdout)", from: "dataset_evaluation_type"
+    # reworded to "[BRACKET] description" form; pick the TESTLIB option.
+    select '[TESTLIB] Checker gets (input, user output, correct answer); score 0–1 on stdout — formerly "CMS"', from: "dataset_evaluation_type"
     assert_no_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
                        visible: :all, wait: 5
   end
 
-  test "saved custom_cms dataset shows Checker section on initial paint" do
-    problems(:prob_add).live_dataset.update!(evaluation_type: :custom_cms)
+  test "switching evaluation_type to cms_comparator reveals the Checker section" do
+    login "admin", "admin"
+    visit edit_problem_path(problems(:prob_add))
+    assert_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
+                    visible: :all, wait: 5
+    select "[CMS] Checker gets (input, correct answer, user output) — CMS's own order, for checkers from CMS task packages", from: "dataset_evaluation_type"
+    assert_no_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
+                       visible: :all, wait: 5
+  end
+
+  test "saved custom_testlib dataset shows Checker section on initial paint" do
+    problems(:prob_add).live_dataset.update!(evaluation_type: :custom_testlib)
     login "admin", "admin"
     visit edit_problem_path(problems(:prob_add))
     # Initial connect() should read the (now non-empty) value and
