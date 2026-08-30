@@ -54,6 +54,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- Problem statistics page: a problem with no submissions rendered the literal
+  `0/0 (NaN%)` in the General Info card — the solved percentage divided by a
+  zero attempt count, and Ruby yields NaN there rather than raising
+  (`NaN.round(1)` returns NaN, so nothing surfaced it). It now reads
+  "No submissions yet". (rev 2056)
 - Viva grading: a grader reply that is not a grade — prose, an unparseable
   brace block, or JSON without a numeric `total_points` / non-empty `rubric` —
   can no longer land as a silent zero (`points: nil`, status *done*). The

@@ -71,6 +71,22 @@ class ProblemsStatControllerTest < ActionDispatch::IntegrationTest
     assert_report_link problems(:prob_add)
   end
 
+  # A problem nobody has submitted to divides 0 by 0 when computing the solved
+  # percentage. Float 0.0/0 is NaN and NaN.round(1) returns NaN rather than
+  # raising, so the bug is silent: the page renders the literal "NaN%".
+  test "a problem with no submissions shows no NaN in the solved/attempted summary" do
+    sign_in_as("admin", "admin")
+    prob = problems(:easy)
+    assert_empty Submission.where(problem: prob), "fixture precondition: :easy has no submissions"
+
+    get stat_problem_path(prob)
+    assert_response :success
+    # Match "NaN%" specifically, not bare /NaN/ -- the layout's go-to-submission
+    # widget legitimately calls isNaN() and would match a looser pattern.
+    assert_no_match(/NaN%/, response.body, "solved/attempted summary must not render NaN%")
+    assert_select ".card-body", text: /No submissions yet/
+  end
+
   # The stat page sits behind group_editor_authorization (ProblemsController),
   # so besides admins only group editors reach it — and every editor can report
   # on their own group's problems, hence the link is shown unconditionally.

@@ -475,6 +475,13 @@ now satisfied, so the ask is live.
 
 **Size.** Minutes once the switch is flipped. Nothing else is blocked on it.
 
+**Related, not blocked (idea, 2026-08-30).** README.md ships byte-identical to
+both repos, so it deliberately says nothing about which is newer (rev 2051). If
+per-repo wording is ever wanted, GitHub's **About / description field** is the
+place: it is not a tracked file, so it never conflicts on a sync. E.g. upstream
+"periodic stable cuts — development at nattee/cafe-grader-web" vs the fork
+"active development line". Two minutes, no code, nobody has asked for it yet.
+
 ---
 
 ## Jobs stuck in `:process` forever when a grader dies mid-job (no reclaim)
@@ -501,20 +508,59 @@ picked up again.
 
 ---
 
-## Problem stat page — per-group breakdown + deep link to the max-score report — MOSTLY RESOLVED 2026-08-28
+## Problem stat page — the page is slow, and the "By group" card is still wanted
 
-**Shipped (rev 2029).** The stat page's "Score report" pill opens the Best Score
-report with the problem *and* a section preselected (`Problem#report_group_for`:
-live group with submissions > most-submitted incl. archived > newest live); the
-shared report filter partials now honour `probs[…]` / `users[…]` URL params (the
-dead prefill hooks fixed for all four reports).
+**Shipped (rev 2029).** The "Score report" pill opens the Best Score report with
+the problem *and* a section preselected (`Problem#report_group_for`: live group
+with submissions > most-submitted incl. archived > newest live); the shared
+report filter partials honour `probs[…]` / `users[…]` URL params.
 
-**Still open — direction (2), only if switching groups in the report proves too
-slow in practice:** a "By group" card on the stat page itself — one row per group
-(users, attempted, solved, mean best score) from `Submission.regular.where(problem:)`
-best-per-user joined to `groups_users` (honour `enabled`, drop editor/reporter
-roles as the report does), scoped to `groups_for_action(:report)`, each row
-deep-linking into the report via the shipped prefill. Size: medium.
+### The "By group" card — wanted, deferred by dae 2026-08-30
+
+One row per group (users, attempted, solved, mean best score) from
+`Submission.regular.where(problem:)` best-per-user joined to `groups_users`
+(honour `enabled`, drop editor/reporter roles as the report does at
+`report_controller.rb:681-683`), scoped to `groups_for_action(:report)`, each row
+deep-linking via the shipped prefill.
+
+**Delete the old trigger condition** ("only if switching groups in the report
+proves too slow"). That was the wrong test and would never have fired: the value
+is *comparison* — seeing section 3 at 40% while 1/2/4 sit at 85% — which the
+report cannot show at any speed, because it shows one group at a time. dae
+confirmed the comparison is wanted, just not now.
+
+**Watch out:** a user can be in several groups, so per-group rows sum to more
+than the distinct-user total. The overall summary needs its own distinct-user
+aggregate or the two numbers on the same page will disagree.
+
+### The page underneath is slow (measured 2026-08-30, dev DB: 937k submissions)
+
+`ProblemsController#stat` (`:243-257`) loads every submission for the problem and
+loops in Ruby to produce two scalars and a 65-day histogram; `stat.html.haml:48`
+then renders every row unpaginated and DataTables sorts them client-side
+(`paging: false`). On problem 2 `ex00e2` (7,825 submissions, 1,437 users):
+
+| step | cost |
+|---|---|
+| `find_each` summary pass | 829 ms |
+| `.count` (view calls it twice) | 91 ms each |
+| full `.to_a` load (eager user+language) | 176 ms |
+| **server-side total** | **~1,198 ms**, then 7,825 `<tr>` to the browser |
+
+Both halves are independently fixable: the summary + histogram are single
+`GROUP BY` queries, and the table has an established server-side DataTables AJAX
+pattern to copy (`application_controller.rb:234` plus the `ajax:` configs in
+`datatables/configs.js`). Doing the summary as a grouped query is also *most of
+the card's query*, so the two jobs share their work — build them together.
+
+### ~~Bug: `0/0 (NaN%)` on problems with no submissions~~ — FIXED rev 2056
+
+`stat.html.haml` divided the solved percentage by a zero attempt count; Float
+`0.0/0` is NaN and `NaN.round(1)` returns NaN rather than raising, so the page
+rendered the literal `0/0 (NaN%)`. Now reads "No submissions yet". Regression
+test in `test/controllers/problems_stat_controller_test.rb` — it asserts `NaN%`
+specifically, since the layout's go-to-submission widget matches a bare `/NaN/`
+via `isNaN()`.
 
 ---
 
