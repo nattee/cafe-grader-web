@@ -61,3 +61,5 @@
   -# hidden column
   %td
     = problem.public_tags.pluck(:name).join ','
+  -# hidden status column (drives the status filter on list.html.haml)
+  %td= @prob_submissions[problem.id][:submission] ? (score >= 100 ? 'solved' : 'inprogress') : 'untried'

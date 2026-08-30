@@ -22,6 +22,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   Alongside it, a CI-runnable Evaluator→Checker flow test with only the
   sandbox and downloads faked (`test/engine/evaluator_checker_flow_test.rb`)
   now fails on the rev-2045 bug. (rev 2063)
+- **Problem-list status filter** ([#29](https://github.com/nattee/cafe-grader-web/issues/29)) —
+  the student main list gains a segmented **All | Unsolved | In progress |
+  Solved** filter and a **Random** button that jumps to (and flash-highlights)
+  a random untried problem; the chosen filter is remembered per browser. The
+  constant "Showing 1 to N of N entries" line is replaced by a compact counter
+  ("42 of 199 problems") that follows every filter, including topic and text
+  search. (rev 2067)
 
 ### Changed
 - **LLM gateway cost accounting no longer assumes LiteLLM.** A hosted gateway's
