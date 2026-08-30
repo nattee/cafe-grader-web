@@ -32,6 +32,11 @@ class User < ApplicationRecord
 
   belongs_to :default_language, class_name: 'Language', foreign_key: 'default_language_id', optional: true
 
+  # How grader_comment verdicts are rendered for this user everywhere they
+  # appear: colour-tile strip (default) or the pre-4.5 plain monospace text.
+  # Read via Current.user in GraderCommentHelper#grader_comment_strip.
+  enum :verdict_display, { tiles: 0, plain: 1 }, prefix: :verdict
+
   # contest
   has_many :contests_users, class_name: 'ContestUser'
   has_many :contests, through: :contests_users
