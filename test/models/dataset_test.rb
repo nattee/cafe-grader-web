@@ -8,7 +8,32 @@ class DatasetTest < ActiveSupport::TestCase
     assert ds.respond_to?(:default?)
     assert ds.respond_to?(:exact?)
     assert ds.respond_to?(:custom_cafe?)
-    assert ds.respond_to?(:custom_cms_raw?)
+    assert ds.respond_to?(:custom_testlib?)
+    assert ds.respond_to?(:custom_testlib_raw?)
+    assert ds.respond_to?(:cms_comparator?)
+  end
+
+  # rev 2047 renamed custom_cms -> custom_testlib and custom_cms_raw ->
+  # custom_testlib_raw without touching the stored integers. Old names must
+  # keep working on assignment (older export packages, API clients).
+  test "legacy evaluation_type names are accepted and normalized on assignment" do
+    ds = datasets(:ds_add)
+    ds.evaluation_type = 'custom_cms'
+    assert_equal 'custom_testlib', ds.evaluation_type
+    ds.evaluation_type = :custom_cms_raw
+    assert_equal 'custom_testlib_raw', ds.evaluation_type
+    ds.evaluation_type = 'cms_comparator'
+    assert_equal 'cms_comparator', ds.evaluation_type
+    ds.assign_attributes(evaluation_type: 'custom_cms')
+    assert_equal 'custom_testlib', ds.evaluation_type
+    assert_raises(ArgumentError) { ds.evaluation_type = 'bogus' }
+  end
+
+  test "renamed evaluation types keep their integer values (no data migration)" do
+    assert_equal 4, Dataset.evaluation_types['custom_testlib']
+    assert_equal 6, Dataset.evaluation_types['custom_testlib_raw']
+    assert_equal 7, Dataset.evaluation_types['cms_comparator']
+    assert_nil Dataset.evaluation_types['custom_cms']
   end
 
   test "score_type enum" do

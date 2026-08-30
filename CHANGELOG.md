@@ -11,6 +11,34 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Changed
+- **LLM gateway cost accounting no longer assumes LiteLLM.** A hosted gateway's
+  per-call cost is now resolved from the `x-litellm-response-cost` header
+  first, then `usage.cost` in the response body; a call with neither logs a
+  WARN naming the model instead of silently recording $0.00. The old behaviour
+  quietly zeroed cost reporting whenever cost tracking was off on the proxy, a
+  model was missing from its price map, or a proxy upgrade dropped the header —
+  invisible until the totals were already wrong. A genuine `0` in the header
+  stays authoritative. New optional `ai_gateway.usage_in_body` key in
+  `config/llm.yml` sends `usage: {include: true}` for gateways that report cost
+  in the response body (OpenRouter-style aggregators); leave it unset for
+  LiteLLM. `config/llm.yml` also gains a worked — and explicitly unverified —
+  OpenRouter example; mind the `base_url`/`completion_path` split it documents,
+  since an absolute path replaces `base_url`'s own path. (rev 2050)
+- **Evaluation types renamed**: `custom_cms` → `custom_testlib` and
+  `custom_cms_raw` → `custom_testlib_raw`. The old names described the *result
+  protocol* (score on stdout, `translate:*` on stderr) but not the argument
+  order, which is testlib/Codeforces's `(input, user, correct)` — not CMS's
+  `(input, correct, user)`; that order is `cms_comparator`. Stored values are
+  unchanged (no migration, nothing to re-save); the old names remain accepted
+  in the dataset form, the JSON API and import packages
+  (`Dataset::LEGACY_EVALUATION_TYPES`), while exported packages now carry the
+  new names. The dataset settings dropdown also offers `cms_comparator` as
+  **[CMS-NATIVE]** (previously reachable only through `cms:clone`), and the
+  Checker section now appears for it; every dropdown label now shows its enum
+  key (`[TESTLIB] custom_testlib — …`), the name used by packages and the API
+  (rev 2048). Every deployed problem on the renamed types was
+  verified beforehand to expect the testlib order (`doc/decisions.md`
+  2026-08-29). (rev 2047)
 - Main list "Latest Results": the per-testcase verdict string (`PP-T`,
   `[PPPP][PP-]`) is now drawn as a strip of colour-coded tiles — one per
   testcase, `[…]` groups boxed and never split across lines — inside a
@@ -24,6 +52,36 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   the same strip (rev 2039). The submission detail page, problem and user
   statistics, the grader monitor, the near-miss repair view and the
   submission report (client-side, same tiles) use it too (rev 2041).
+
+### Fixed
+- Viva grading: a grader reply that is not a grade — prose, an unparseable
+  brace block, or JSON without a numeric `total_points` / non-empty `rubric` —
+  can no longer land as a silent zero (`points: nil`, status *done*). The
+  grader now re-asks the model once, then the submission goes to *Grader
+  error* with the raw reply preserved for the admin and the Re-run picker
+  (rev 2043).
+- Judge workers: `Grader.watchdog` no longer lets duplicate graders live on
+  one isolate box. It now runs under a host-wide lock (a second watchdog in
+  the same minute skips instead of racing), detects more than one grader per
+  box and TERMs every extra but the oldest, and stops *all* processes of a
+  disabled box instead of only the first. Duplicates came from two orphaned
+  `whenever` crontab blocks and turned every concurrent evaluation into a
+  `!` grader error (2026-08-27 incident); the deploy pipeline now gives
+  whenever a stable identifier so a path rename cannot orphan a block again
+  (rev 2045; automation repo rev 58).
+- Judge workers: a rejudge landing on a different isolate box than the run
+  that died there no longer fails with `open("/output/stdout.txt")` — the
+  evaluator removes the previous run's `stdout.txt` before each testcase
+  (rev 2045).
+- Judge workers / deploy: graders spawned by `Grader.watchdog` (and so by
+  `Grader.restart`) no longer inherit stray file descriptors from the process
+  that spawned them — they now get `/dev/null` on stdin, the per-box log on
+  stdout/stderr and nothing else (`close_others`). Previously they inherited
+  the spawner's non-CLOEXEC mysql2 socket and fd 6, which RVM's login-shell
+  profile leaves open as a copy of stderr. Under the deploy pipeline that fd
+  is sshd's stderr pipe, so every `deploy_production` job hung after
+  "Successfully deployed" until the job timeout while the graders held the
+  channel open (2026-08-30, all hosts) (rev 2053).
 
 ## [4.5.0] — 2026-08-28
 

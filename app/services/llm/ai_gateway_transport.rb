@@ -20,14 +20,28 @@ module Llm
   #   provider image blocks, which Anthropic rejects for PDFs (400, verified
   #   live 2026-08-26) while Gemini happens to accept. Both accept the OpenAI
   #   `file` part, so every PDF part is rewritten to that shape before POST.
-  # * compute_cost — the gateway reports authoritative per-call USD in the
-  #   x-litellm-response-cost response header; no hand-kept rate tables.
+  # * compute_cost — per-call USD from the gateway itself, never a hand-kept
+  #   rate table: the LiteLLM x-litellm-response-cost response header first,
+  #   then usage.cost in the response body (what OpenRouter-style aggregators
+  #   report, and only when `usage_in_body:` opted the request in). Neither
+  #   present is logged at WARN rather than silently recorded as $0.00.
+  #
+  # Pointing this at a non-LiteLLM gateway is configuration, not code — but
+  # mind the base_url/path split. execute_call POSTs an absolute path, and
+  # Faraday resolves that against url_prefix with URI-join semantics, so an
+  # absolute path REPLACES the prefix's path: base_url "https://openrouter.ai/api"
+  # + "/v1/chat/completions" silently becomes ".../v1/chat/completions" (404),
+  # not ".../api/v1/...". Put the whole path in completion_path instead. See
+  # the worked example in config/llm.yml.
   module AiGatewayTransport
     class ConfigError < StandardError; end
 
     # The gateway itself gives up at 10 minutes; match it rather than cutting
     # long reasoning generations off at the stock 300s.
     READ_TIMEOUT = 600
+
+    # LiteLLM's per-call cost header. Absent on other gateways — see compute_cost.
+    COST_HEADER = 'x-litellm-response-cost'.freeze
 
     def self.included(base) = base.extend(ClassMethods)
 
@@ -108,20 +122,48 @@ module Llm
       payload = data.is_a?(String) ? JSON.parse(data, symbolize_names: true) : data
       AiGatewayTransport.convert_pdf_parts(payload)
       cfg  = self.class.gateway_config
+      # Gateways that report cost in the response body only do so when the
+      # request opts in (OpenRouter: `usage: {include: true}`). LiteLLM has no
+      # such key and would forward an unknown top-level field upstream, so this
+      # stays off unless the deployment asks for it.
+      payload[:usage] ||= {include: true} if cfg[:usage_in_body] && payload.is_a?(Hash)
       conn = Llm::Request.connection(cfg[:base_url], read_timeout: READ_TIMEOUT)
       response = conn.post(cfg[:completion_path] || '/v1/chat/completions') do |req|
         req.headers['Authorization'] = "Bearer #{self.class.gateway_api_key}"
         req.body = payload
       end
-      @gateway_response_cost = response.headers['x-litellm-response-cost'].to_f if response.respond_to?(:headers)
+      # Keep the raw value: `.to_f` here would turn an absent header into a
+      # perfectly plausible 0.0 and hide the fallback below.
+      @gateway_response_cost = response.headers[COST_HEADER] if response.respond_to?(:headers)
       response
     end
 
-    # The gateway's own accounting for the most recent call (0.0 when the
-    # header is absent). Repair calls this once per round, right after each
-    # execute_chat, so last-call semantics are exactly right there too.
-    def compute_cost(_usage)
-      @gateway_response_cost.to_f
+    # The gateway's own accounting for the most recent call. Repair calls this
+    # once per round, right after each execute_chat, so last-call semantics are
+    # exactly right there too. Resolution order:
+    #
+    #   1. the LiteLLM COST_HEADER response header (authoritative when present,
+    #      including a genuine "0")
+    #   2. usage.cost in the response body — OpenRouter-style aggregators; the
+    #      `usage` hash handed to us is the parsed body's own (string keys)
+    #   3. 0.0, at WARN. A silent zero is the dangerous case: it corrupts cost
+    #      reporting (Comment.cost_summary_for, the near-miss lifeline budget)
+    #      in a way nobody notices until the totals are already wrong, and it
+    #      happens for mundane reasons — cost tracking off on the proxy, a model
+    #      missing from its price map, a proxy upgrade that drops the header.
+    def compute_cost(usage)
+      return @gateway_response_cost.to_f if @gateway_response_cost.present?
+
+      body_cost = usage.is_a?(Hash) ? (usage['cost'] || usage[:cost]) : nil
+      return body_cost.to_f if body_cost.present?
+
+      Rails.logger.warn(
+        "[#{provider_name}] no per-call cost reported for model=#{@model.inspect}: " \
+        "neither the #{COST_HEADER} header nor usage.cost was present - recording " \
+        '$0.00. Check cost tracking on the gateway, or set ai_gateway.usage_in_body ' \
+        'for a gateway that reports cost in the response body.'
+      )
+      0.0
     end
   end
 end

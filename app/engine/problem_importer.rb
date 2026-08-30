@@ -135,7 +135,10 @@ class ProblemImporter
     d_options.each do |opt|
       if @options.has_key? opt
         @log << "dataset.#{opt} is set to '#{@options[opt]}' by options file"
-        @dataset.write_attribute(opt, @options[opt]) if @options.has_key? opt
+        # Through the writer, not write_attribute: Dataset#evaluation_type=
+        # normalizes the pre-rev-2047 names (custom_cms, custom_cms_raw) that
+        # packages exported by older versions still carry.
+        @dataset.public_send("#{opt}=", @options[opt])
       end
     end
 

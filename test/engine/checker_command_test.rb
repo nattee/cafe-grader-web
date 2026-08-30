@@ -1,11 +1,12 @@
 require 'test_helper'
 
-# Regression guard for the argv-order bug: CMS invokes its checker as
+# Regression guard for the argv-order trap: CMS invokes its checker as
 # (input, correct, USER) (cms/grading/steps/trusted.py), while cafe's
-# original custom_cms evaluator follows the legacy testlib/Codeforces
-# order (input, USER, correct). cms_comparator exists specifically to
-# match CMS's own order for tasks imported from CMS, without disturbing
-# custom_cms for existing cafe problems that depend on its order.
+# custom_testlib evaluator (named custom_cms until rev 2047) follows the
+# testlib/Codeforces order (input, USER, correct). cms_comparator exists
+# specifically to match CMS's own order for tasks imported from CMS,
+# without disturbing custom_testlib for the cafe problems that depend on
+# its order (every deployed one, verified 2026-08-29/30).
 #
 # Checker#check_command only needs the ivars JudgeBase#initialize sets
 # (@worker_id, @box_id) plus @prob_checker_file, which is normally filled
@@ -27,8 +28,13 @@ class CheckerCommandTest < ActiveSupport::TestCase
     assert_equal 'CHECKER INPUT ANS OUTPUT', cmd
   end
 
-  test 'custom_cms keeps its legacy argv order: input, user, correct' do
-    cmd = @checker.check_command('custom_cms', 'INPUT', 'OUTPUT', 'ANS')
+  test 'custom_testlib keeps the testlib argv order: input, user, correct' do
+    cmd = @checker.check_command('custom_testlib', 'INPUT', 'OUTPUT', 'ANS')
+    assert_equal 'CHECKER INPUT OUTPUT ANS', cmd
+  end
+
+  test 'custom_testlib_raw uses the same argv order as custom_testlib' do
+    cmd = @checker.check_command('custom_testlib_raw', 'INPUT', 'OUTPUT', 'ANS')
     assert_equal 'CHECKER INPUT OUTPUT ANS', cmd
   end
 end

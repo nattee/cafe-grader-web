@@ -85,8 +85,7 @@ module Llm
 
     def call
       data = prepare_data
-      response = execute_call(data)
-      handle_response(response)
+      respond(data)
     rescue *RETRYABLE
       raise
     rescue StandardError, NotImplementedError => e
@@ -97,6 +96,15 @@ module Llm
         Rails.logger.error("handle_error failed for #{self.class}: #{he.class}: #{he.message}")
       end
       raise
+    end
+
+    # One request/response round. A service that can cheaply re-ask the
+    # model when the body comes back unusable overrides this (see
+    # Llm::VivaGradeAssist#respond — one re-ask on ResponseError); everything
+    # else gets a single shot. Transport errors (RETRYABLE) are the worker's
+    # business and never handled here.
+    def respond(data)
+      handle_response(execute_call(data))
     end
 
     # Faraday factory used by all concrete subclasses' execute_call.

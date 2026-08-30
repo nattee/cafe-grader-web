@@ -8,7 +8,7 @@ permitted_lang: cpp python
 time_limit: 2.5
 memory_limit: 256
 score_type: group_min
-evaluation_type: custom_cms
+evaluation_type: custom_cms   # legacy name (pre-rev-2047), kept on purpose: exercises Dataset::LEGACY_EVALUATION_TYPES on import
 score_param: 'p=1'
 main_filename: grader.cpp
 initializer_filename: init.sql

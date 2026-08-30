@@ -17,30 +17,45 @@ class Dataset < ApplicationRecord
   #   exact          diff -q (strict)
   #   relative       lib/checker/relative.rb (numbers compared with 1e-6)
   #   custom_cafe    user's checker; line1=CORRECT/INCORRECT/COMMENT, line2=score/10
-  #   custom_cms     user's checker; CMS/Codeforces — score on stdout, comment on
-  #                  stderr. Legacy testlib/Codeforces-style argv order (input,
-  #                  user, correct) — kept as-is for backwards compatibility with
-  #                  existing cafe problems; do NOT change this behaviour.
+  #   custom_testlib user's checker; testlib/Codeforces argv order (input, USER,
+  #                  correct); CMS result protocol — score 0..1 on stdout,
+  #                  comment on stderr. Named custom_cms until rev 2047; the
+  #                  order is NOT what CMS itself passes — see cms_comparator.
   #   postgres       lib/checker/postgres_checker.rb (CMS-style, strips CREATE/DROP VIEW)
-  #   custom_cms_raw user's checker; raw decimal stdout. Pair with score_type :raw_sum.
-  #   cms_comparator user's checker, CMS-native argv order (input, correct, user);
-  #                  score on stdout, comment on stderr. Use this (not custom_cms)
-  #                  for tasks imported from CMS, whose checkers expect this order.
+  #   custom_testlib_raw
+  #                  as custom_testlib, but stdout is a raw decimal score stored
+  #                  verbatim (not clamped). Pair with score_type :raw_sum.
+  #                  Named custom_cms_raw until rev 2047.
+  #   cms_comparator user's checker, CMS-native argv order (input, correct, USER);
+  #                  score on stdout, comment on stderr. Use this (not
+  #                  custom_testlib) for checkers taken from CMS task packages.
   enum :evaluation_type, { default: 0,
                            exact: 1,
                            relative: 2,
                            custom_cafe: 3,
-                           custom_cms: 4,
+                           custom_testlib: 4,
                            postgres: 5,
-                           custom_cms_raw: 6,
+                           custom_testlib_raw: 6,
                            cms_comparator: 7}
+
+  # Names used before rev 2047 (2026-08-30). The integer values are unchanged,
+  # so stored rows need no migration; this alias keeps the old strings working
+  # wherever a name is *assigned* — import packages exported by older versions,
+  # API clients, the dataset form. Keep it indefinitely: old zips keep turning
+  # up. Reads always return the new names.
+  LEGACY_EVALUATION_TYPES = { 'custom_cms'     => 'custom_testlib',
+                              'custom_cms_raw' => 'custom_testlib_raw' }.freeze
+
+  def evaluation_type=(value)
+    super(LEGACY_EVALUATION_TYPES.fetch(value.to_s, value))
+  end
 
   # How per-testcase scores aggregate into the submission's final grade.
   # Computed in app/engine/scorer.rb (sum_of_all_testcases, group_min, raw_sum).
   # Quick reference:
   #   sum         weighted sum / total weight × 100 (default)
   #   group_min   IOI/ICPC subtask style — a group earns only as much as its weakest case
-  #   raw_sum     literal Σ of testcase scores. Pair with evaluation_type :custom_cms_raw.
+  #   raw_sum     literal Σ of testcase scores. Pair with evaluation_type :custom_testlib_raw.
   enum :score_type,      { sum: 0,
                            group_min: 1,
                            raw_sum: 2,
@@ -73,7 +88,7 @@ class Dataset < ApplicationRecord
 
   def set_default
     self.compilation_type ||= 'self_contained'
-    self.evaluation_type ||= 'wdiff'
+    self.evaluation_type ||= 'default'   # was 'wdiff', not a valid enum value (never reached: column default is 0)
     self.score_type ||= 'sum'
     self.time_limit ||= 1
     self.memory_limit ||= 512

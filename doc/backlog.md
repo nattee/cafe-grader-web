@@ -10,100 +10,10 @@ Conventions:
 - Cite file paths so the next reader (or Claude) can jump in cold.
 - Don't put per-commit TODOs here — those go inline as `# TODO(scope): …`.
 - Don't put scheduled or assigned work here — that goes on GitHub.
-
----
-
-## API ↔ web parity: IP whitelist not enforced on `/api/v1` — RESOLVED 2026-08-28
-
-**RESOLVED (rev 2026).** Policy chosen: full web parity — the web re-checks
-the whitelist on every request (`check_valid_login`), so the API does too,
-with the same exemptions (admin, `right.whitelist_ignore`,
-editor-of-any-problem). One predicate, `User#allowed_from_ip?`, now backs
-the web gate, a per-request 403 in
-`Api::V1::BaseController#authenticate_api_user!`, and a token-issuance
-refusal in `auth/login` (mirroring the single-user-mode precedent); the CIDR
-matching moved to `GraderConfiguration.whitelisted_ip?`. Regression tests:
-whitelist sweep over every `/api/v1` route in `authorization_sweep_spec.rb`,
-login-door tests in `authorization_spec.rb`, CIDR unit tests in
-`test/models/grader_configuration_test.rb`.
-
----
-
-## 🔴 URGENT — `custom_cms` checker argv order may be mis-grading LIVE problems
-
-**Severity: high. Verify on production before the next exam that uses a custom
-checker.** Found 2026-08-02 while validating the CMS migration.
-
-**The defect.** Cafe's `custom_cms` evaluation type invokes a checker as
-
-```ruby
-# app/engine/checker.rb  (check_command)
-"#{@prob_checker_file} #{input_file} #{output_file} #{ans_file}"   # input, USER, correct
-```
-
-but CMS — whose name and whose "CMS/Codeforces convention" comment this type
-claims to follow — invokes it the other way round:
-
-```python
-# CMS 1.4.dev3, cms/grading/steps/trusted.py:237-240
-command = ["./checker", CHECKER_INPUT_FILENAME,           # input.txt
-                        CHECKER_CORRECT_OUTPUT_FILENAME,  # correct_output.txt
-                        output_filename]                  # USER output
-```
-
-**Arguments 2 and 3 are swapped.** Cafe's order matches testlib/Codeforces
-(`input, participant, jury`), not CMS.
-
-**Why it matters beyond the migration.** A checker written to the CMS
-convention receives the *correct answer* where it expects the *student's
-output*, and vice versa. Measured on a real imported task
-(`oct2022_spectrophotometer`): submissions CMS scored **100 graded 0** — every
-testcase "wrong", with no error anywhere. On tasks whose correct-output files
-are empty (checker-only tasks, judged from the input alone) it fails
-universally; on others it can fail subtly or pass by luck if the checker's
-comparison happens to be symmetric.
-
-**Live exposure — needs checking.** Four PRE-EXISTING problems use
-`custom_cms` (dev DB, 2026-08-02):
-
-| problem id | name | checker size |
-|---|---|---|
-| 570 | `d68_q3a_jobqueue` | 2,409,096 B |
-| 606 | `a68_q1a_horse` | 2,345,736 B |
-| 656 | `a68_q4z_guitar_array3` | 3,095 B |
-| 659 | `a68_q4a_normal_puzzle` | 2,408,448 B |
-
-Three are multi-megabyte compiled binaries — the same size profile as the CMS
-checkers we imported. **If any of those checkers follows the CMS convention,
-that problem has been grading students incorrectly.** Their blobs are not
-present on the dev box, so this could not be settled locally; it must be
-checked against production.
-
-**How to check (per problem, ~10 minutes each).** Pull the checker, run it by
-hand on one testcase in both argument orders against a known-correct output,
-and see which order returns "correct":
-
-```
-checker <input> <correct> <user>     # CMS order
-checker <input> <user> <correct>     # cafe's current order
-```
-
-Faster proxy: `strings <checker> | grep -iE 'wrong answer|quitf|testlib'` —
-testlib-derived checkers are cafe-order-correct; a checker printing a bare
-score plus `translate:` text is CMS-style and therefore mis-invoked today.
-
-**Resolution options.**
-1. If all four are testlib-style → nothing is broken; document the naming trap
-   loudly (the type is *named* `custom_cms` but is **not** CMS-compatible) and
-   consider renaming it to `custom_testlib` with a data migration.
-2. If any is CMS-style → that problem's grades are wrong. Switch it to the new
-   `cms_comparator` type (added 2026-08-02, enum 7, CMS-native order) and
-   rejudge affected submissions.
-
-**Already done:** `cms_comparator` exists and the CMS importer targets it, so
-newly imported CMS tasks are correct. `custom_cms` was deliberately left
-unchanged to avoid breaking whatever currently depends on it — which is
-exactly the thing that needs verifying.
+- When an entry is resolved, cut it to a pointer block (what shipped, rev, where
+  the durable record lives, any residual) and move it to the `## Resolved` ledger
+  at the bottom, newest first. The full write-up stays in `hg log`, the CHANGELOG
+  and the linked docs.
 
 ---
 
@@ -315,239 +225,16 @@ button is a future enhancement using the existing cookie-based
 the visible label alone is enough.
 
 **Open items under this split.**
-- **Shared offcanvas helper.** ✅ DONE 2026-07-01. `app/views/shared/_help_drawer.html.haml`
-  now provides the offcanvas chrome (header icon/title/subtitle + close + body),
-  used as a layout: `= render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:} do … end`.
-  Both drawers migrated onto it: `problems/_edit_help` and the report scope help
-  (`report/_report_help`). New drawers should use it instead of hand-rolling the chrome.
-- **Edit-drawer content density.** ✅ DONE 2026-07-19. `problems/_edit_help.html.haml`
-  is now a Bootstrap accordion (5 items, one open at a time, "Detail card fields"
-  open by default) so the drawer opens short instead of one long scroll. Chose the
-  accordion over tabs/walkthrough after a rendered side-by-side comparison of all
-  three (accordion won: native to the narrow vertical drawer, keeps direct lookup,
-  shortest initial scroll). Folded in two structural fixes visible in the old
-  version: pulled **Compilation type** out of the Detail `dl` into its own section
-  (it carried 3 sub-bullets and bloated the list), and moved the toolbar list
-  (Statistics / Download / Change history) out from under *Scoring & evaluation*
-  into a new *Toolbar & more* section next to the wiki link. Wording kept verbatim
-  — the collapse solves density, so no prose rewrite. Collapse is data-API driven
-  (no `init-ui-component` wrapper needed; survives Turbo-frame reloads). Optional
-  future follow-up: trim the prose if it still feels heavy once collapsed.
+- **Shared offcanvas helper.** ✅ DONE 2026-07-01 — `shared/_help_drawer.html.haml`,
+  rendered as a layout (`render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:}`);
+  new drawers use it instead of hand-rolling the chrome.
+- **Edit-drawer content density.** ✅ DONE 2026-07-19 — `problems/_edit_help` is a
+  5-item Bootstrap accordion (data-API driven, survives Turbo-frame reloads).
+  Optional follow-up: trim the prose if it still feels heavy once collapsed.
 
 **Out of scope.** `app/views/main/help.html.haml` is a full-page
 student-facing help with i18n — different concern, not covered by the
 admin help-pattern split.
-
----
-
-## AuditLog destroy test — RESOLVED 2026-06-20
-
-**RESOLVED.** Added `test/models/auditable_test.rb` (4 tests). Covers both
-shapes: own-row destroy writes a `destroy` audit row (Contest), and the
-cascade through `dependent: :destroy` writes destroy rows for the child
-`ContestProblem`/`ContestUser` join models. Also asserts the destroy
-snapshot stores tracked attrs as `[value, nil]`, and that `AuditLog.paused`
-suppresses the row. Confirms `after_destroy_commit` does fire under
-transactional tests (Rails 5+ runs `after_commit` callbacks in tests).
-
-**Original why.** The "Auditable must exist" bug (fixed 2026-05-17 by making
-`belongs_to :auditable` optional) wasn't caught because there was no test
-for the destroy path on any audited model — only an integration test for
-the controller read paths (`test/integration/audit_logs_controller_test.rb`).
-
----
-
-## System-test suite — RESOLVED 2026-06-15
-
-**RESOLVED.** `bin/rails test:system` is fully green — **46 tests, 0 failures, 0 errors, 0 skips** (was 20 failing on 2026-05-21). All six clusters fixed, plus a flaky `tags_test#test_update_tag` (a plain `fill_in` appended to the pre-filled name → `fill_options: {clear: :backspace}`). Two tests were briefly skipped during the cleanup, but **both turned out premature — neither was a real Selenium limitation** (2026-06-16):
-- `UsersTest#test_login_then_change_password` — a normal in-form submit; the `Updated successfully` assert was just timing out under suite load → `wait: 10`.
-- `ProblemsManageTest#test_set_permitted_languages` — a DOM diagnostic proved the `lang_ids` select2 pick **does** register in `#lang_ids`; the failure was the same async-turbo-submit race as Clusters 3 & 4 → wait for `.toast` before the DB read. (My earlier "select2 doesn't register" note was wrong.)
-
-The per-cluster history below is kept as a record. Most are tests that fell behind UI / model changes, NOT broken production behavior — but they need triaging case by case because some may have caught real regressions. None are caused by the 4.3.3 release work itself; they existed before and were noticed only after we wrote a new system test that ran cleanly through `bin/rails test:system`.
-
-**Six root-cause clusters (not 20 independent bugs).** Tackle one cluster per session.
-
-### Cluster 1 — Name-validation rejects spaces — FIXED 2026-06-15
-**Decision (2026-06-15): keep the no-spaces rule.** `Group`/`Contest` `name` is a
-machine-readable identifier validated by `NameFormatValidator`
-(`/\A[a-zA-Z\d\-\_\[\]()]+\z/`, no spaces) — identical to `Problem#name`; the
-human-readable text lives in each model's `description`. So the constraint is
-intentional, not accidental (despite landing in a "wip" commit). The 4 tests were
-using spaced names for `name`; updated them to slug names (`Test_Group`,
-`Updated_Group`, `System_Test_Contest`, `Updated_Contest`). `groups_test` +
-`contests_test` green.
-
-### Cluster 2 — `select2_select` helper ambiguous — FIXED 2026-06-14
-The helper now scopes the search field + results to the just-opened widget
-(`.select2-container--open`) and matches options by `exact_text` (so searching
-"c" picks the `c` option, not `cpp` too). `test_add_tags_to_problem` and
-`test_add_problem_to_group` are green.
-
-`test_set_permitted_languages`: chased 2026-06-14, then fixed 2026-06-16. A
-controller-level test
-(`ProblemsControllerTest#"do_manage set_languages persists permitted_lang"`)
-confirms the logic. The system test was *briefly* skipped on a wrong diagnosis
-("select2 doesn't register") — a DOM diagnostic later proved the `lang_ids`
-select2 pick **does** register in `#lang_ids`; the real failure was the same
-async-turbo-submit race as Clusters 3 & 4. Fixed by waiting for the `.toast`
-before the DB read; un-skipped and back to testing `c` + `cpp`.
-
-### Clusters 3 & 4 — available-toggle / date_added — FIXED 2026-06-15, NOT regressions
-Both verified at the controller level (new `ProblemsControllerTest` tests:
-`do_manage change_enable toggles available`, `do_manage change_date_added sets
-date_added`) — the bulk-action logic is correct, no regression. The system tests
-were just reading the DB *immediately* after "Apply to Selected", racing the async
-turbo_stream submission. Fixed by waiting for the response toast
-(`assert_selector ".toast"`) before the DB assertion. All 5 tests green
-(`set_available_to_yes/no`, `select_all_then_apply_action`,
-`apply_action_to_multiple_individually_selected_problems`, `change_date_added`).
-
-### Cluster 5 — "Go" button gone — FIXED 2026-06-15
-The submissions index replaced the old problem-dropdown + "Go" submit button with a
-select2 problem chooser (`#submission_problems`) that navigates to
-`problem_submissions_path` on pick. The tests now select a problem via the chooser
-(new `choose_submission_problem` helper) instead of clicking "Go". Also repointed
-stale assertions: the redesigned submission show page no longer renders
-"Source Code"/"Task" headings, so the tests assert "Submission Detail" /
-"Grading Task Status". Both `test_admin_view_submissions` and
-`test_user_view_submissions` are green (confirmed stable over two runs).
-
-### Cluster 6 — Users-page UI drift — FIXED 2026-06-15
-Five distinct drifts, all resolved:
-- **DataTable never initialised** (created users never showed): the users-index init
-  did `document.querySelector('meta[name="csrf-token"]').getAttribute(...)`, which
-  *throws* when the CSRF meta tag is absent (forgery protection is off in test) →
-  the whole `DataTable()` call aborted. Made it null-safe (`?.`) in
-  `user_admin/index.html.haml`, matching the null-safe jQuery `.attr()` the problems
-  page already used. (See the new "CSRF meta null-safety" item below — 5 other views
-  share the unguarded lookup.)
-- **Unauthorized redirect** now sends *logged-in* non-admins to `list_main_path`
-  (only nil/logout → `login_main_path`); tests updated.
-- **Grant-admin**: the `login` text field is now a per-role select2 (`#admin_user_id`,
-  options by `login_with_name`); test selects via select2 and scopes the (now
-  duplicated admin/TA) "Grant" button.
-- **Profile change-password button**: simple_form `f.button :submit` renders an
-  `<input type=submit>`, so `button[type=submit]` no longer matched → use `click_on`.
-- **The user-edit form submit** is finicky under Selenium — its prominent "Save
-  Changes" button sits *outside* the form via an HTML5 `form=` association.
-  `user_admin#update` (alias/remark) is covered by a `UsersControllerTest` case, and
-  the system test verifies create + list-membership, leaving the edit to that
-  controller test. Whether the dual-submit-button edit page is worth simplifying is
-  an open UI question. (The *profile* password change — a normal in-form submit — was
-  briefly skipped here but is now un-skipped and passing; see the skip note above.)
-
-### Recommended sequence
-
-1. ~~Clusters 1, 2 & 5~~ done (2026-06-14/15). Cluster 1: kept the no-spaces rule (intentional), updated the test names.
-2. ~~Cluster 5~~ done 2026-06-15.
-3. ~~Cluster 6~~ done 2026-06-15.
-4. ~~Clusters 3 + 4~~ done 2026-06-15 — verified NOT regressions (controller tests pass); the system tests just raced the async turbo_stream submit.
-
-**`bin/rails test` (non-system) is clean** — only one pre-existing failure remains there (`ReportControllerAccessTest#test_admin_can_access_cheat_report`, MySQL collation issue, separate concern).
-
----
-
-## CSRF meta null-safety in DataTable inits — RESOLVED 2026-06-20
-
-**RESOLVED.** Added `?.` to every remaining unguarded
-`document.querySelector('meta[name="csrf-token"]').getAttribute('content')`
-lookup. Fixed the 4 views listed below (5 sites: `groups/show` ×2,
-`languages/index`, `tags/index`, `layouts/_header`) **plus 4 more sites in
-the shared `app/javascript/controllers/datatables/configs.js`** that the
-original scan missed — leaving the shared DataTables config module unguarded
-would have left the same latent breakage in any table built from it.
-Grep for the unguarded form now returns nothing.
-
-**Original why.** The unguarded lookup throws when the meta tag is absent —
-aborting the whole `DataTable()` init (empty table). The meta is always
-present in production (no user impact), but it's absent when forgery
-protection is off (test env), which is how Cluster 6 surfaced it.
-
----
-
-## Reporter role: let it report on finished (unavailable / archived) courses — RESOLVED 2026-07-01
-
-**RESOLVED via option 3b.** Editors are now group-scoped content curators:
-`Problem.group_editable_by_user` dropped the `available` / `groups.enabled`
-filters, and `group_reportable_by_user` = editor-set ∪ reporter-gated-set, so an
-editor sees/edits/reports on archived courses and unavailable/draft problems in
-their groups while reporters stay scoped to live content (`app/models/problem.rb`).
-`Group.reportable_by_user` was made role-aware to match, keeping the report gate,
-the filter dropdowns, and `reportable_users` consistent (`app/models/group.rb`).
-The report filters tag an editor's archived groups; a reporter with no live
-groups is turned away at the gate. Covered by `test/models/problem_scope_authorization_test.rb`
-+ report controller tests. **Operational rule:** to grant a non-admin access to a
-finished course, make them an *editor* of its group. The option-B "scores-only
-split" below was **not** taken (3b delivers the need without decoupling the
-content predicates). Kept for history.
-
----
-
-**Problem (confirmed 2026-06-30 on production).** A non-admin `reporter`/
-`editor` only sees report data for problems that are **`available = TRUE`** in
-an **enabled** group — that's what `Problem.group_actionable_by_user`
-(`app/models/problem.rb:92`) filters on. But reporters are assigned to
-*finished* courses/exams, which are exactly the ones whose problems get set
-unavailable and whose group gets disabled. Result: **every** non-admin reporter
-on production currently sees 0 reportable problems. They can still *reach* the
-report screen, because the gate (`groups_for_action(:report)` →
-`Group.reportable_by_user`, `app/models/group.rb:15`) ignores `group.enabled`
-and the problem-level flags — hence "reaches screen, sees nothing".
-
-The data-hiding itself is **working as intended**: `available` is meant to be
-an absolute, student-exposure kill-switch (admins bypass via `Problem.all`,
-everyone else is blocked across submit / report / edit / PDF / view-submission /
-view-testcase). The 2026-06-30 session fixed the two *surface* defects (scoped
-the user-group dropdown to `@groups`; added an empty-state notice explaining
-hidden problems) but deliberately left the policy unchanged.
-
-**Open design decision — should reporters self-serve finished-course reports?**
-If yes, the clean approach is **option B: split scores from content.** Add a
-scores-only report scope that ignores `available` / `group.enabled`, while the
-problem *content* surfaces (PDF/statement via `User#can_view_problem_pdf?`,
-source via `can_view_submission?`) stay gated by `available`. This honours
-"availability is absolute" for *content* while letting a TA pull aggregate
-scores for a finished exam. The work is the decoupling: today
-`group_reportable_by_user` is reused by those content predicates, so loosening
-it in place would leak PDFs/source to reporters — the scope must be split first.
-
-**Alternative (no code): workflow change.** Stop disabling the group when a
-course ends; rely on `groups_problems.enabled` / `available` for student hiding
-and keep the group enabled so reporters retain access. Cheaper but relies on
-operator discipline.
-
-**Size.** Option B ~ half a day (new scope + audit every caller of
-`group_reportable_by_user` + tests). Decide intent first.
-
-**Leaning (2026-07-01 discussion).** Prefer **option 3b**: make the *Editor*
-role a group-scoped content curator that bypasses **both** `group.enabled` and
-`available` within its groups, while *Reporters* stay gated by both. Editor
-stays a strict superset of Reporter; admin remains the user-management tier.
-Keep `group.enabled = off` meaning "archived for everyone by default", and
-surface archived groups to editors as a **read-only "View archived" area** (no
-re-enable, no student re-exposure, no stateful toggle). This also fixes a
-latent bug — `group_editable_by_user` currently requires `available: true`, so a
-non-admin editor can't even edit a draft/unavailable problem in their own group
-(likely why production has zero functional non-admin editors). Rejected the
-"editor temporarily re-enables the group to read" idea: re-enabling re-exposes
-the course to students, is a shared-state write that destroys the "finished"
-cue, and doesn't even work when problems are `available: false`.
-
----
-
-## Publish "Users, Roles & Access Control" wiki page — RESOLVED 2026-07-01
-
-**RESOLVED.** Published to the upstream wiki:
-https://github.com/cafe-grader-team/cafe-grader-web/wiki/Users-Roles-and-Access-Control
-(wiki commit `54b2c8d`). The `doc/Users-Roles-and-Access-Control.md` in this repo
-is the source draft; it's current with the shipped 3b behavior (editors are
-group-scoped curators, reporters see live courses only, filters tag archived
-groups). If the model changes again, update the draft here and re-push to the
-wiki repo (`git@github.com:cafe-grader-team/cafe-grader-web.wiki.git`, a separate
-repo — clone, copy the page in, commit, push).
-
-**Note:** the wiki's `Home.md` is intentionally minimal (no page TOC); pages
-surface via GitHub's auto-generated sidebar, so no Home edit was needed.
 
 ---
 
@@ -600,37 +287,26 @@ renames it explicitly; the web import path does not.
 - File-I/O task support (or a permanent-rejection decision) for Italian-format tasks with `infile`/`outfile`.
 - Checker protocol adapter so `custom_cafe` checkers can be exported to CMS.
 - C++ relative comparator (CMS-side equivalent of `lib/checker/relative.rb`).
-- ✅ DONE 2026-07-19. Group-weight uniformity validation in the dataset edit UI
-  (import already warns). Shared `Dataset#mixed_weight_groups` now backs both the
-  import warning and a live warning on the Testcases tab (banner + per-row marker,
-  group_min only). Same session also added CMS-style **codename-regex** grouping to
-  the Testcase config tool (`[[weight, "1-.*"], …]`, start-anchored like CMS
-  `re.match`) with inline examples + a "Syntax & CMS notes" drawer, and documented
-  the whole weight/group grammar + the CMS-divergence caveat in
-  `doc/dataset-scoring-and-evaluation.md`.
+- ✅ DONE 2026-07-19 — group-weight uniformity warning in the dataset UI
+  (`Dataset#mixed_weight_groups`, shared with the import warning) and CMS-style
+  codename-regex grouping in the Testcase config tool; the weight/group grammar
+  and the CMS-divergence caveat are documented in `doc/dataset-scoring-and-evaluation.md`.
 - Approach-C IR refactor of import/export — only if supported formats multiply beyond Italian+TPS.
-- **✅ AUDITED 2026-07-19.** Reviewed every single-string shell invocation on the
-  grading path (`isolate_runner.rb:12,36,45`, `checker.rb:155`,
-  `compiler/postgres.rb:69`, plus the ones the original item missed:
-  `judge_base.rb:320`, `grader.rb:206,268`). **Finding: no untrusted (student)
-  input reaches any command string.** Inputs are deployment config, engine-built
-  ID-based paths, the admin-managed `languages` table (compile/run templates),
-  and problem-author files — and authors already have arbitrary code execution
-  by design (custom checkers run *unsandboxed* at `checker.rb:155`), so an author
-  filename is not an escalation. This is unlike the import/export fix, where zip
-  entry / problem names were attacker-influenced. **Action taken:** converted
-  `judge_base.rb:320` (`run_initializer`) to argv `system(*init_cmd)` — its
-  `String#dump` pseudo-quoting was Ruby escaping, not shell escaping (fragile on
-  a space/`$`/backtick, and left one of four args unquoted). **Left as-is with
-  rationale:** `isolate_runner.run_isolate` deliberately relies on `${UID}` shell
-  expansion (line 32) and takes no untrusted input; `checker.rb:155` and the
-  `grader.rb`/`postgres.rb` sites take only config/ID/author-trusted strings.
-  Optional future hardening (not required): make `check_command` return argv, and
-  replace `${UID}` with `Process.uid` so `run_isolate` can drop the shell.
-  **Separate, larger item worth its own backlog entry:** custom checkers execute
-  unsandboxed on the judge host — a deliberate trust choice today, but if we ever
-  accept checkers from less-trusted authors it should move inside isolate.
-- Test-class naming: `test/controllers/` and `test/integration/` must not declare the same class name (Ruby merges them and cross-contaminates `setup`); scope-name new controller test classes (e.g. `ProblemsImportExportControllerTest`). **✅ FIXED 2026-07-19** for the known instance: the integration file was renamed to `test/integration/report_controller_access_test.rb` with `class ReportControllerAccessTest`; `test/controllers/report_controller_test.rb` keeps `ReportControllerTest`. The naming rule stands for future test files.
+- ✅ AUDITED 2026-07-19 — every single-string shell invocation on the grading path
+  (`isolate_runner.rb`, `checker.rb:155`, `compiler/postgres.rb`, `judge_base.rb`,
+  `grader.rb`). **Finding: no untrusted (student) input reaches any command
+  string** — inputs are deployment config, engine-built ID paths, the
+  admin-managed `languages` table, and problem-author files; authors already have
+  arbitrary code execution by design (custom checkers run *unsandboxed* at
+  `checker.rb:155`). Action taken: `judge_base.rb#run_initializer` → argv
+  `system(*init_cmd)`. Optional hardening: `check_command` → argv, `${UID}` →
+  `Process.uid` so `run_isolate` can drop the shell. **Separate larger item:**
+  move custom checkers inside isolate if checkers are ever accepted from
+  less-trusted authors.
+- ✅ FIXED 2026-07-19 — `test/controllers/` and `test/integration/` must not declare
+  the same class name (Ruby merges them and cross-contaminates `setup`); the
+  integration file is now `report_controller_access_test.rb` /
+  `ReportControllerAccessTest`. The rule stands for new test files.
 
 ---
 
@@ -681,90 +357,28 @@ site so none are missed.
 
 ---
 
-## Viva grade display — narrative doesn't belong in `grader_comment` / main list — RESOLVED 2026-08-28
+## `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
 
-**RESOLVED (rev 2036).** Shape chosen after a per-reader-site design pass
-(dae, 2026-08-28): the success path writes `Submission#viva_result_marker`
-(`viva` / `viva:terminated`, derived from `viva_terminated_at`, never from
-the narrative text) into `grader_comment`; the narrative stays on
-`viva_grades.narrative` only. `_submission_short` branches on
-`problem.viva_exam?` (the problem is passed in / read from `@problem` to
-avoid a per-row query): graded rows show the score plus a badge that *is*
-the link to the viva page (grey `viva`, red `terminated`), no evaluations
-icon and no compiler-msg link; ungraded rows say "Interview in progress" /
-"Grading in progress…", and `grader_error` rows (which never get
-`graded_at`) show a red "Grader error" badge instead of "Waiting to be
-graded…" forever. Every other reader (stat tables, Submission report,
-graders/index, API `last_result`) prints the marker automatically and needed
-no view change — their ID links already redirect vivas to the viva page.
-One-off cleanup: `bin/rails viva:clean_grader_comments [APPLY=1]`
-(`Viva::GraderCommentCleaner`, report-first; rewrites only `done` rows whose
-`grader_comment` contains the narrative). Tests: service write path,
-main-list integration (6 cases), cleaner report/apply/idempotence.
+`Llm::AiGatewayTransport.gateway_config` (`app/services/llm/ai_gateway_transport.rb`)
+reads a single `Rails.configuration.llm[:ai_gateway]` block, so a deployment
+runs exactly one bearer-key gateway. Running two concurrently — the Chula AI
+Gateway *and* an OpenRouter-style aggregator held as a fallback for when a
+model retires or the proxy wobbles — needs `ai_gateway:` generalized into a
+keyed registry shaped like `self_hosted_models:`, plus a provider class per
+entry so the admin pickers can tell the two rosters apart.
 
-Original write-up kept below for the record.
+**Deliberately not built (2026-08-30), and this is the YAGNI half of the old
+"OpenRouter LLM provider" entry.** Nobody runs two gateways today, and a
+single-gateway deployment is fully served by the current block — *including* a
+downstream site whose only gateway is OpenRouter, which is what that entry was
+really about. The other half (provider-agnostic cost + a documented recipe)
+shipped at rev 2050; see Resolved. Revisit only when a second concurrent
+gateway is actually wanted.
 
-**Context (dae, 2026-07-21 smoke test).** The viva grading pass stores its
-output on the submission like a normal grading run, and the long narrative
-text ends up rendered inline on the student's main/list page through the same
-path that shows per-testcase verdict strings (`P-Tx-s…`). A paragraph of
-LLM feedback visually clutters the list and abuses a field designed for
-compact per-testcase codes.
+**Size:** medium — config shape, initializer wiring, per-entry provider
+classes, picker plumbing.
 
-**Direction (needs a real design pass, not a quick patch).** Viva grades
-already have a first-class home (`viva_grades` + the grade card on the viva
-page). The main/list view should show only a compact chip for viva
-submissions — score (and maybe a terminated/flagged marker) linking to the
-viva page — and whatever currently copies narrative into `grader_comment`
-should stop, with a data cleanup for existing rows. Touches: grading
-completion path in `Llm::VivaGradeAssist`/job, main list rendering, possibly
-reports that read `grader_comment`. Backlogged per dae: "requires full design
-change".
-
-**Re-raised 2026-08-28 (confirmed, still unfixed).**
-- Write site: `app/services/llm/viva_grade_assist.rb:176-181` —
-  `@submission.update!(…, grader_comment: data['narrative'])`, immediately
-  after the same text is saved to `viva_grades.narrative` (`:170-174`). The
-  copy is redundant: the grade card (`submissions/_viva_grade`) already
-  reads from `viva_grade`.
-- Main-list render site: `app/views/application/_submission_short.html.haml:50-51`
-  — `%span.grader-comment.text-break = " [#{submission.grader_comment}]"`
-  beside the score whenever `ui.show_score` is on. Dev-DB narratives are
-  316–417 chars ("Your performance in this viva was outstanding. You
-  demonstrated…") in a span designed for a 10–50-char `P-Tx…` string;
-  `text-break` wraps it into a paragraph inside the "last submission" cell.
-- The same string also surfaces in `problems/stat.html.haml:61`,
-  `user_admin/stat.html.haml:96`, `report/submission_query.json.jbuilder:8`
-  (Result column), `graders/index.html.haml:183,217`,
-  `comments/_llm_assist_header.html.haml:10`.
-- Keep the *error* path: `viva_sessions/_viva_session.html.haml:19`,
-  `viva_grade_assist.rb#handle_error`, and `viva_grade_assist_job.rb:20`
-  legitimately use `grader_comment` for the short "Grader error: …" text —
-  only the success-path narrative copy should go.
-- Minimal shape if the full redesign keeps waiting: on success write a
-  compact marker (e.g. `viva` / `viva:terminated`) or nil instead of the
-  narrative; one-off cleanup `Submission.joins(:viva_grade).where(status:
-  :done)` → rewrite `grader_comment`; `_submission_short` branches on
-  `submission.problem.viva_exam?` to show a "View grade" link to the viva
-  page instead of the bracketed string.
-
-
-## OpenRouter LLM provider — MOSTLY SUPERSEDED by Llm::AiGatewayTransport (rev 2018)
-
-The generic bearer-key OpenAI-compatible gateway provider this sketch called
-for now exists: `Llm::AiGatewayTransport` + the `*AiGateway*` role subclasses
-(built 2026-08-26 for the Chula AI Gateway, a LiteLLM proxy). Pointing the
-`ai_gateway:` config block at OpenRouter should work as-is — bearer key from
-credentials, per-model picker registration, `file`-block PDF rewrite — with
-two known gaps if OpenRouter is ever actually wanted:
-- `compute_cost` reads LiteLLM's `x-litellm-response-cost` response header;
-  OpenRouter reports cost in the response body (`usage.cost` with
-  `usage: {include: true}`). Cost would silently record 0.0 until a small
-  adapter branch reads the body field.
-- The config block is a **single registry** — one gateway per deployment.
-  Running two bearer-key gateways side by side (e.g. Chula AI Gateway AND
-  OpenRouter) needs `ai_gateway:` generalized into a keyed registry like
-  `self_hosted_models:`, plus per-entry provider classes.
+---
 
 ## Near-Miss: student-facing phase (deliberately deferred)
 
@@ -774,6 +388,8 @@ GraderConfiguration budget keys. Deferred until the batch data is digested —
 the contest-scale evidence now exists; see `doc/Near-Miss-Grading.md`
 (experimental record + the max(original, repaired) policy) and spec
 section 13 (`docs/superpowers/specs/2026-07-30-near-miss-grading-design.md`).
+
+---
 
 ## Near-Miss: `problems.statement_text` — designed 2026-07-31, deferred
 
@@ -796,6 +412,8 @@ clobbering-vs-staleness discussion):
 Plus: `pdf-reader` graduates into the Gemfile; blank extraction (scanned
 PDFs) leaves the field blank and prompts omit the section; leave the column
 out of the audited attrs (derived, bulky).
+
+---
 
 ## CMS clone — deferred hardening batch (from 2026-08-02 final review)
 
@@ -824,309 +442,291 @@ out of the audited attrs (derived, bulky).
 
 ---
 
-## Upstream GitHub Pages for docs/ + wiki visual-companion links
+## Upstream GitHub Pages for docs/ — blocked on an org admin (jittat)
 
-**Why it matters.** The user-facing authorization guide
-(`docs/guide/authorization.html`) and the audit report are published only on
-the fork's Pages site (`nattee.github.io/cafe-grader-web`) — the upstream wiki
-can't link them canonically yet, and the fork wiki pointer references the
-temporary URL.
+**Why it matters.** The rendered guides (`docs/guide/authorization.html`, the
+audit report) are served only from the fork's Pages site
+(`nattee.github.io/cafe-grader-web`), so every pointer to them names a personal
+fork rather than the project.
 
-**Current state.** The code alignment this entry originally tracked shipped at
-rev 1996 (`User#can_submit_to_problem?` everywhere; disabled memberships grant
-no role; resurrected model lock). Fork Pages serves master:/docs and works.
+**Current state (2026-08-30) — everything under our control is done.**
+- `docs/` is now **on upstream master** (fork rev 2051 batch-synced via upstream
+  PR #46), so the Pages source directory exists there. This was the half the old
+  entry was waiting on `/upstream-sync` for.
+- The upstream wiki page `Users-Roles-and-Access-Control` **now carries the
+  visual-companion link block**, pointing at the live fork URL instead of
+  waiting for canonical hosting — the reader value is delivered today, and
+  re-pointing it later is a one-word edit. (The old entry had this backwards:
+  it treated a canonical URL as a precondition for the link existing at all.)
+- Fork Pages (`master:/docs`) serves fine and remains the live copy.
 
-**What remains.** After the next /upstream-sync carries `docs/` to
-cafe-grader-team: an org **admin** (dae's token is WRITE, not admin) must
-enable GitHub Pages there (Settings → Pages → Deploy from a branch →
-master + /docs), then (1) add the visual-companion link block to the wiki
-page `Users-Roles-and-Access-Control` pointing at
-`https://cafe-grader-team.github.io/cafe-grader-web/guide/authorization.html`,
-(2) swap the temporary fork URLs in the fork-wiki pointer page.
+**The one blocker.** `has_pages=false` on cafe-grader-team, and dae's token is
+WRITE, not admin (org role: member; the org's members are `jittat` and
+`nattee`). So **jittat** must do it: Settings → Pages → Deploy from a branch →
+`master` + `/docs`. Do not ask before `docs/` is upstream — that precondition is
+now satisfied, so the ask is live.
 
-**Size.** Trivial once the admin flips the Pages switch.
+**After the switch is flipped**, three fork URLs become swappable to
+`https://cafe-grader-team.github.io/cafe-grader-web/…`:
+1. upstream wiki `Users-Roles-and-Access-Control` — the companion link block;
+2. `README.md` → Documentation → "Guides site" (added rev 2051);
+3. fork wiki `Home.md` — the "temporarily published at … until the upstream
+   GitHub Pages site is enabled" sentence, which becomes untrue.
 
----
-
-## Viva grading: harden against transcript-continuation failures
-
-**Why it matters.** `Llm::VivaGradeAssist` sends the interview transcript as
-a user message; the grader model can get absorbed into it and answer as the
-*interviewer's next turn* instead of emitting the grade JSON. Observed
-2026-08-23 on a real practice viva (prod sub 937805): gemini-2.5-flash did
-this reproducibly (the stored grading AND a fresh rerun, 2/2). The result is
-a `VivaGrade` row with `total_points: nil`, empty rubric/narrative — a
-student-visible zero with no retry and no admin alert.
-
-**Current state.** Mitigated, not fixed: the chula_cp deployment moved the
-default grader to gemini-3.1-pro (chula_cp rev 2008), which graded the same
-transcript cleanly. The engine-side gap in `handle_response`
-(`app/services/llm/viva_grade_assist.rb`) remains: a non-JSON response is
-persisted as a nil-score grade and dropped on the floor.
-
-**Proposed direction.** (a) Detect a parse/schema failure and retry once,
-optionally reinforcing "output ONLY the JSON object" in the retry prompt;
-(b) surface still-failed gradings to admins (viva alert or grading-error
-state) instead of storing a silent nil-score row; (c) consider pinning the
-narrative language in the grading prompt — today it's model-mood-dependent
-(gemini-3.1-pro answered one session in Thai, another in English, while
-2.5-flash always wrote English).
-
-**Size.** Small-medium — retry + error surfacing in one service class plus a
-test with a canned non-JSON response; the language pin is a one-line prompt
-edit but needs a policy decision (Thai? match the student?).
+**Size.** Minutes once the switch is flipped. Nothing else is blocked on it.
 
 ---
 
-## Grader.watchdog duplicate-spawn → isolate box collisions (`!` results)
+## Jobs stuck in `:process` forever when a grader dies mid-job (no reclaim)
 
-**Why it matters.** 2026-08-27 incident on the ISE grader (10.0.5.70): every
-`Grader.start(1..8)` was running **twice**. Whenever both copies of a box
-graded concurrently, isolate refused (`This box is currently in use by
-another process`), the evaluation was stored as `grader_error` (`!` in
-`grader_comment`), and students lost points on testcases that never ran —
-195 error evaluations across ~130 submissions that day alone, with earlier
-bursts Jun 23–29 and Jul 17 (350). Silent score deflation during live
-classes/exams.
+**Why it matters.** `Job.take_oldest_waiting_job` flips a job to `:process` and
+assigns the `grader_process`; nothing ever flips it back. If the grader dies
+before `Job#report` — OOM, `kill -9`, a host reboot, the watchdog's
+stalled-KILL branch (`Grader.plan_box` → `:kill`) — the job stays `:process`,
+its parent chain never completes, and the submission sits in `evaluating`
+forever (`app/models/job.rb`, `app/engine/grader.rb#main_loop`). Surfaced
+2026-08-29 while hardening the watchdog; it is why duplicate graders get
+TERM (graceful — `main_loop` finishes the current job) and never KILL.
 
-**Root cause — two stacked failures.**
-1. *Whenever identifier drift (deploy pipeline).* `whenever
-   --update-crontab` (run by the automation repo's deploy job,
-   `.gitlab-ci.yml` "Syncing crontab" step) identifies "its" crontab block
-   by the schedule.rb absolute path. The app dir was renamed
-   `cafe-grader` → `cafe_grader` on some hosts; the next deploy wrote a
-   fresh block and **orphaned** the old one → two `* * * * *`
-   `Grader.watchdog` lines. On 10.0.5.70 the orphaned block's job lines had
-   been hand-edited to the new path (while its Begin/End identifier
-   comments kept the old path), so both lines were live.
-2. *Watchdog not duplicate-safe.* `Grader.watchdog`
-   (`app/engine/grader.rb`) spawns a grader when `ps` shows none for a
-   box, and treats `lines.count >= 1` as healthy. Two watchdogs firing in
-   the same minute race the ps-check and each spawn a full set; once
-   duplicated, `>= 1` hides the problem forever.
-
-**Proposed hardening.**
-- Watchdog: treat `lines.count > 1` as unhealthy — kill the extras (keep
-  the oldest), log loudly. Optionally wrap the check+spawn in an `flock`
-  so concurrent watchdog invocations serialize.
-- Deploy: pass a stable identifier so path changes can never orphan a
-  block: `bundle exec whenever --update-crontab cafe-grader` in the
-  automation repo (note: the identifier switch itself orphans the current
-  block once per host — pair it with a one-time sweep for stray
-  `# Begin Whenever` blocks).
-- Optional deeper defense: on a box-in-use isolate error, retry the
-  testcase once instead of persisting `grader_error`.
-- Evaluator rerun-idempotency (second defect, found during the incident
-  rejudge): an interrupted evaluation can leave
-  `isolate_submission/<sub>/<tc>/output/stdout.txt` at mode 0644 owned by
-  that box's uid — the post-run `chmod 0666` (`app/engine/evaluator.rb`,
-  the second `run_isolate` call) is itself an isolate run and dies with
-  the box. A later rejudge that lands the testcase on a *different* box
-  uid then can't truncate-open the file and fails with isolate message
-  `open("/output/stdout.txt")` → `grader_error` again (14 of the 142
-  rejudged submissions on 2026-08-27). Fix: host-side
-  `@output_file.unlink if @output_file.exist?` in
-  `prepare_testcase_directory` (`app/engine/judge_base.rb`) so every run
-  starts from a clean redirect target, making reruns independent of how
-  the previous run ended.
-
-**Current state.** One-time cleanup done 2026-08-27: 10.0.5.70 (crontab
-deduped, duplicate graders killed, affected submissions rejudged) and
-10.0.5.105 (stale block removed; it pointed at a deleted checkout, so it
-was inert). Other deploy-matrix hosts swept clean the same day;
-10.24.0.100 (TOI) unreachable from the office network — still unchecked.
-Crontab backups: `~/crontab.backup-2026-08-27.txt` on both fixed hosts.
-No code changes yet.
-
-**Size.** Small-medium — watchdog duplicate-kill + flock with a test, plus
-a one-line change in the automation repo.
-
----
-
-## Viva/tag markdown fields are bare textareas — add highlighting + preview — RESOLVED 2026-08-28
-
-**Resolution (rev 2030).** Tier 1 + tier 2 shipped together: `markdown_editor_controller.js`
-(Ace `mode-markdown`, `github` theme, soft wrap) wraps all four textareas via
-`ApplicationHelper#markdown_editor_data`, with an Edit / Preview toggle that
-posts to `MarkdownController#preview` (`safe_markdown`, editors only).
-`grounding-draft` dispatches `change` so "Copy draft into Body" still works.
-Not done (by design): side-by-side edit+preview, client-side renderer.
-
-**Why it matters.** The viva authoring surface is markdown-heavy and long.
-On the dev DB the Examiner briefing (`Problem#viva_prompt`) runs ~4.7–5.5k
-chars, the Scenario (`Problem#description`) ~1.4–2.5k, the shared
-`viva_conduct` tag prompt (`Tag#params`) ~4.9k, and a grounding body
-(`GroundingMaterial#body`) ~20k. All four are edited as plain `<textarea>`s
-(monospace at best) with no syntax highlighting, no preview, and no rendered
-read-only view anywhere in the admin UI — checking that the `# Rubric`
-heading or a nested list is well-formed means eyeballing raw text through a
-14–20-row box. Raised by dae 2026-08-28.
-
-**Current state (confirmed 2026-08-28).**
-- `app/views/problems/_form.html.haml` — `viva_prompt` (`as: :text, rows:
-  14, font-monospace`, General tab) and `description` (`rows: 20,
-  font-monospace`, Description tab, labelled "Scenario (markdown)" for viva).
-- `app/views/tags/_form.html.haml:15` — `params` (`height: 20rem`, plain).
-- `app/views/grounding_materials/_form.html.haml:5` — `body` ("Grounding
-  text (markdown)", `rows: 12`).
-- Server-side renderers already exist: `ApplicationHelper#markdown`
-  (Redcarpet, trusted input) and `#safe_markdown` (`filter_html`, for LLM
-  output). No client-side markdown library is vendored.
-- Ace is already vendored and wired for code (`editor_controller.js`;
-  `config/importmap.rb` pins `ace-builds` @1.42 plus per-mode files).
-  `vendor/javascript/ace-noconflict/mode-markdown.js` **is on disk but not
-  pinned or imported** — markdown highlighting is one pin + one import away.
-
-**Direction (two tiers, choose per field).**
-1. *Cheap, all four fields:* a small `markdown-editor` Stimulus controller
-   that swaps the textarea for Ace in `ace/mode/markdown` (soft-wrap on, a
-   light theme — these are prose, the merbivore dark theme used for
-   submissions is wrong here) and mirrors edits back into the hidden
-   textarea for submit. Pin `ace-mode-markdown` in importmap. One controller
-   reused on all four forms.
-2. *Preview where it earns it:* a "Preview" toggle/tab beside the editor
-   rendering through the existing `markdown` helper via a tiny
-   `POST /markdown/preview` turbo endpoint (server-side keeps one renderer of
-   truth and matches what the LLM receives; client-side would need a new JS
-   lib). Most valuable on `viva_prompt` (rubric structure) and
-   `GroundingMaterial#body`. A collapsed rendered view on
-   `grounding_materials/edit` and in the viva card on `problems/edit` covers
-   the "even just for viewing" case.
-
-**Cautions.** Not WYSIWYG (Trix etc.) — these are prompts consumed verbatim
-by the LLM; the source text stays the primary artifact.
-`grounding_draft_controller.js` writes the PDF→markdown extraction draft into
-`body` via `grounding_draft_target: 'body'` — an Ace swap must keep that
-working (write into the Ace session, not only the hidden textarea). Pairs
-with the viva edit-page layout entry below (wider column → taller/wider
-editors).
-
-**Size.** Small for tier 1 (controller + pin + 4 view edits); small-medium
-for tier 2 (endpoint + toggle).
+**Direction.** A reclaim sweep: `Job.where(status: :process)` whose
+`grader_process.last_heartbeat` is older than N minutes (or whose recorded pid
+is gone) → back to `:wait`; compile / evaluate / score jobs are all
+re-runnable. Natural home: `Grader.watchdog` (already per-minute, already
+knows which graders are alive) or a Solid Queue recurring task next to
+`viva_turn_failsafe`. Liveness should be pid-based, not only heartbeat-based:
+`grader_processes.pid` exists but `Grader#initialize` never writes it
+(`GraderProcess.register_grader` is legacy and unused). Size: small-medium,
+plus a test that a `:process` job with a dead grader returns to `:wait` and is
+picked up again.
 
 ---
 
 ## Problem stat page — per-group breakdown + deep link to the max-score report — MOSTLY RESOLVED 2026-08-28
 
-**Resolution (rev 2029).** Direction (1) shipped, plus a group pre-pick: the
-stat page's "Score report" pill opens the Best Score report with the problem
-*and* a section preselected (`Problem#report_group_for` — live group with
-submissions > most-submitted group incl. archived > newest live), and the
-shared filter partials now honour `probs[…]` / `users[…]` URL params (the dead
-prefill hooks are fixed for all four reports). **Still open:** direction (2),
-a per-group summary card on the stat page itself — only worth it if switching
-groups in the report proves too slow in practice.
+**Shipped (rev 2029).** The stat page's "Score report" pill opens the Best Score
+report with the problem *and* a section preselected (`Problem#report_group_for`:
+live group with submissions > most-submitted incl. archived > newest live); the
+shared report filter partials now honour `probs[…]` / `users[…]` URL params (the
+dead prefill hooks fixed for all four reports).
 
-**Why it matters.** On `/problems/:id/stat` an instructor wants "how did each
-group (section) do on this problem?". The page has a submission-history
-chart, Subs count, Solved/Attempted, and a flat per-submission DataTable
-(`app/views/problems/stat.html.haml`, `ProblemsController#stat`) — nothing
-group-aware, and no link to the report that could answer it. Today the path
-is Reports → Max score → find the problem in a Select2 → pick ONE group →
-run → repeat per group. Raised by dae 2026-08-28.
-
-**Current state (confirmed 2026-08-28).**
-- Stat toolbar links are Edit | Stat only (`stat.html.haml:20-22`);
-  `_problem_head` has no report link either. `ReportController#problem_hof_view`
-  is per-problem but aggregates by language, not by group.
-- Max-score report (`ReportController#max_score` → `report/_problem_select`,
-  `report/_user_select`) filters problems by `probs[use]=ids&probs[ids][]=…`
-  and users by `users[use]=group&users[group_ids]=…`. The group select is
-  **single** (no `multiple`), so it is one group per run; rows are per-user
-  with no per-group aggregate.
-- **The URL-prefill hooks in the filter partials are dead code.**
-  `_problem_select.html.haml:15` reads `params[:'probs[ids][]']` — a literal
-  key; Rack parses `probs[ids][]=5` into `params[:probs][:ids]`, so it is
-  always nil (verified with `Rack::Utils.parse_nested_query`). Lines `:22`,
-  `:29` and `_user_select.html.haml:16` read `params[:prob_group_id]`,
-  `params[:prob_tag_id]`, `params[:group_id]`, which nothing sends. So
-  `GET /report/max_score?probs[ids][]=123` renders an empty form. The same
-  partials back `report/submission`, `activity` and `ai` — fixing the prefill
-  once fixes all four reports.
-
-**Direction.**
-1. *Deep link (cheap):* make `_problem_select`/`_user_select` read
-   `params.dig(:probs, :ids)` etc. and tick the matching `probs[use]` /
-   `users[use]` radio; add a "Report" pill (Admin-Controls pattern, e.g.
-   `table_view` icon + tooltip) to the stat toolbar →
-   `max_score_report_path(probs: {use: 'ids', ids: [@problem.id]})`.
-   Optionally auto-submit the filter form on arrival when prefilled (Stimulus
-   `connect()` → `requestSubmit()`) so the table is populated, not just the
-   form.
-2. *Answer the question directly (medium):* a "By group" card on the stat
-   page — one row per group the problem belongs to (or per group of the
-   submitting users): users, attempted, solved, mean best score. Data:
-   `Submission.regular.where(problem:)` → best points per user, joined to
-   `groups_users` (honour `enabled`, drop editor/reporter roles like the
-   report's "Exclude editors and reporters"). Scope to
-   `@current_user.groups_for_action(:report)`. Each row links to the
-   max-score report prefilled with problem + group via (1).
-- Ship (1) even if (2) lands — the report keeps the per-user drill-down.
-
-**Size.** (1) small. (2) medium — query, view, auth scoping, test.
+**Still open — direction (2), only if switching groups in the report proves too
+slow in practice:** a "By group" card on the stat page itself — one row per group
+(users, attempted, solved, mean best score) from `Submission.regular.where(problem:)`
+best-per-user joined to `groups_users` (honour `enabled`, drop editor/reporter
+roles as the report does), scoped to `groups_for_action(:report)`, each row
+deep-linking into the report via the shipped prefill. Size: medium.
 
 ---
 
-## Viva problem edit page — right column is empty, left column crammed — RESOLVED 2026-08-28
+## Resolved
 
-**Resolution (rev 2031).** Option (A), one form over both columns: Detail card
-left, Viva Exam card right (Scenario + briefing full width, then interview
-setup). The Hint and Description tabs are dropped for viva problems (hints are a
-code-submission feature; their frames were what kept the form from spanning the
-row — `form=` was rejected because Rails does not propagate it to a multiple
-select's hidden input). Type switches redraw the whole `#problem-edit` body on
-save; a dataset-less problem now gets an "Add dataset" empty state.
+Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
 
-**Why it matters.** `/problems/:id/edit` is a fixed two-column layout
-(`app/views/problems/edit.html.haml`): left `.col-md-6` = Detail card holding
-the whole problem form, right `.col-md-6` = Dataset card. For `viva_exam?`
-problems the right card degenerates to a heading plus one explanatory
-paragraph ("Test-case datasets do not apply"), while everything
-viva-specific is stacked in the left half at horizontal-form width:
-grounding-materials select + attached list, Examiner briefing (`rows: 14`,
-~5k chars), Conduct profile, soft/hard cap, daily limit (all in
-`_form.html.haml:71-99`, General tab), plus the Scenario editor (`rows: 20`,
-~2k chars) on the Description tab. Half the viewport is blank; the other half
-is a long scroll of narrow textareas. Raised by dae 2026-08-28.
+### OpenRouter LLM provider — RESOLVED 2026-08-30 (generic path hardened, recipe documented)
 
-**Current state (confirmed 2026-08-28) — constraints that shape any fix.**
-- The form is **one `simple_form_for` inside `turbo_frame_tag :problem`**
-  (`_form.html.haml:2,11`) and lives entirely in the left column; the right
-  card is a separate turbo frame (`:dataset`) with its own controllers
-  (`bs-tab dataset-mode-toggle`). Inputs cannot simply be moved to the right
-  column — they would fall outside the `<form>`.
-- `viva_exam_toggle_controller.js` (show/hide `showForViva` / `hideForViva`
-  targets) is scoped to the `:problem` frame; it already broadcasts
-  `mode:compilation-type-changed` on `window` for the right card, so
-  cross-column reactivity has a precedent.
-- Scenario sits under the **Description** tab and the briefing under
-  **General** — authors flip tabs between "exam paper" and "marking scheme"
-  even though the hints say they are written together.
-- The HTML5 `form="…"` attribute trick is already used on this page (PDF
-  Delete button, `_form.html.haml` ≈`:133-146`) to place a control outside
-  its `<form>` element.
+**Rev 2050.** The entry asked for an OpenRouter provider; the generic one had
+already landed (`Llm::AiGatewayTransport`, rev 2018), so what was actually
+missing was (a) cost resolution that does not assume LiteLLM and (b) a recipe a
+downstream operator can follow. Both shipped. **No OpenRouter-specific code
+path exists, and none is wanted** — pointing the `ai_gateway:` block at it is
+configuration.
 
-**Options.**
-- (A) *Viva-specific layout of the same form (preferred).* When
-  `@problem.viva_exam?`, let `edit.html.haml` render the `:problem` frame
-  across the full `.row` and have `_form` lay out a two-column grid *inside*
-  the form: left = Identity / Statement & Files / Access / Compilation (the
-  existing General tab), right = a "Viva Exam" card with grounding +
-  briefing + conduct + caps + daily limit, and the Scenario editor pulled
-  out of the Description tab into that column (or a second right-column
-  card) so briefing and scenario sit side by side. The dataset frame is
-  already not rendered for viva. Cleanest DOM; touches only the viva branch.
-- (B) *`form=` attribute.* Leave the form in place and render the viva
-  inputs in the right card with `form: 'edit_problem_<id>'` on each input.
-  Works, but simple_form wrappers and `viva-exam-toggle` targets need
-  per-input `form=` plus a widened controller scope — fiddlier than (A).
-- Not an option: a second `<form>` on the right posting separately (split
-  save/validation).
+- `compute_cost` resolves header → `usage.cost` in the response body → `0.0`
+  **at WARN**. The silent zero was the real defect and was never
+  OpenRouter-specific: cost tracking off on the proxy, a model missing from
+  LiteLLM's price map, or an upgrade dropping the header each recorded $0.00
+  into `Comment.cost_summary_for` and the near-miss lifeline budget with no
+  signal at all. `execute_call` now keeps the raw header string, so a genuine
+  `0` stays authoritative instead of falling through.
+- New optional `ai_gateway.usage_in_body` sends `usage: {include: true}`, which
+  is what makes a body-reporting gateway emit cost. Off by default: LiteLLM has
+  no such key and would forward the unknown field upstream.
+- **The trap worth remembering** (measured, not assumed): `execute_call` POSTs
+  an *absolute* path and Faraday resolves it against `base_url` with URI-join
+  semantics, so an absolute path REPLACES the prefix's path —
+  `https://openrouter.ai/api` + `/v1/chat/completions` silently becomes
+  `https://openrouter.ai/v1/chat/completions` (404). The documented recipe keeps
+  `base_url` bare and puts the whole `/api/v1/...` in `completion_path`. LiteLLM
+  proxies mount at the root and are unaffected.
+- Worked OpenRouter block in `config/llm.yml`, explicitly labelled UNVERIFIED on
+  the two points that need a live account: the exact `usage.cost` opt-in, and
+  whether OpenRouter accepts the OpenAI `file` content part that
+  `convert_pdf_parts` emits for PDFs (built and tested against LiteLLM; only
+  viva grounding and statement PDFs depend on it).
 
-**While there.** With the wider column, switch briefing/scenario to
-`wrapper: :vertical_form` (full width, as `description` already is) and pair
-with the markdown-editor entry above. Non-viva layout stays unchanged.
+Tests: `test/services/llm/ai_gateway_transport_test.rb` — header wins over body,
+a genuine header `0` is authoritative and does not warn, body fallback for
+string *and* symbol keys, the loud zero, and `usage_in_body` off / on /
+caller-supplied. **Residual:** the multi-gateway registry, now its own open
+entry above.
 
-**Size.** Medium — `edit.html.haml` + `_form.html.haml` restructuring,
-`viva-exam-toggle` scope check, system-test update (`test/system/problem*`),
-rendered before/after screenshots for dae's approval (per convention).
+### `custom_cms` checker argv order on LIVE problems — RESOLVED 2026-08-29 (no mis-grading)
+
+**Verified on production (10.0.5.50), rev 2046.** All 10 problems on the legacy
+argv order — `custom_cms` 570 `d68_q3a_jobqueue`, 606 `a68_q1a_horse`, 656
+`a68_q4z_guitar_array3`, 659 `a68_q4a_normal_puzzle`, and `custom_cms_raw`
+649–654 `rubiks_race_1..6` (one shared binary) — expect cafe's
+`(input, USER, correct)` order, so `Checker#check_command` invokes them
+correctly and no submission was mis-graded. Method: pulled each checker and its
+real testcase blobs, ran them locally with crafted content in slot 2 vs slot 3
+(empty / garbage / the reference / a valid solution); in every checker the
+verdict tracks slot 2 only and slot 3 is ignored even when it holds garbage
+(656 is a Python script reading `argv[2]` as the student grid; 659 accepted a
+valid `1L 2L` solution in slot 2 with `1.0` and rejected it in slot 3 — its
+`main` constructs an `ifstream` on `argv[3]` and never reads it). Cross-check
+from production data: students hold full-score `PPPP…` runs on all ten although
+the stored reference answers are placeholders (570 a fixed token; 659 and
+650–654 a byte-copy of the input) that a CMS-order checker would have graded
+*as the student's output* and failed universally. **The `strings` proxy in the
+original entry is wrong** — all five print `translate:*` (CMS *result*
+protocol, exactly as `doc/Checker-and-Auxiliary-Files.md` teaches) yet take
+testlib argv order; output vocabulary says nothing about argv order. Durable
+record: `doc/decisions.md` 2026-08-29; loud naming-trap warnings now sit in
+`doc/Checker-and-Auxiliary-Files.md` (plus a `cms_comparator` section that was
+missing), `doc/dataset-scoring-and-evaluation.md`, `doc/CMS-Migration.md` §5.3.
+**Residual — DONE rev 2047 (2026-08-30):** (a) renamed `custom_cms` →
+`custom_testlib`, `custom_cms_raw` → `custom_testlib_raw` (integers unchanged;
+`Dataset::LEGACY_EVALUATION_TYPES` aliases the old names on assignment); (b)
+`cms_comparator` exposed in the dataset dropdown as **[CMS-NATIVE]**. Fleet census
+(8 servers) in `doc/decisions.md` 2026-08-29 update; TOI-box `may2025_abcd` was
+the one true CMS-order checker → `cms_comparator` + rejudge.
+
+### Grader.watchdog duplicate-spawn → isolate box collisions (`!` results) — RESOLVED 2026-08-29
+
+**Rev 2045 + automation rev 58.** Incident 2026-08-27 on the ISE grader
+(10.0.5.70): two orphaned whenever crontab blocks (identified by the
+schedule.rb path; the app dir had been renamed) ran two watchdogs per minute,
+both spawned per box, and `lines.count >= 1` read the pair as healthy —
+isolate "This box is currently in use" → `!` on ~130 submissions that day
+(bursts Jun 23–29 and Jul 17 too); hosts deduped by hand the same day.
+Code: `Grader.watchdog` takes a host-wide non-blocking flock
+(`Dir.tmpdir/cafe-grader-watchdog-<worker_id>.lock`), parses
+`ps -o pid,ppid,etimes,args` via `Grader.grader_processes` (every grader is
+an `sh -c` → Ruby chain; the wrapper is collapsed and the Ruby leaf signalled),
+and `Grader.plan_box` TERMs every duplicate but the oldest — TERM, never
+KILL, see the stuck-jobs entry — and stops *all* processes of a disabled box
+(was: first pid only); duplicate kills go to `Rails.logger.warn`. Rerun
+idempotency: `JudgeBase#prepare_testcase_directory` `rm_f`s the previous
+`stdout.txt` (a run that died with its box left it 0644/other-uid; a rerun on
+another box could not truncate it — 14 of 142 rejudges on 08-27). Deploy: CI
+runs `whenever --clear-crontab` (drops the legacy path-identified block,
+no-op after) then `whenever --update-crontab cafe-grader`. Tests
+`test/engine/grader_watchdog_test.rb`. Not done: retry on isolate `XX`
+(cause removed). TOI box (10.24.0.100) crontab checked 2026-08-30: a single
+watchdog block (no cleanup jobs). Follow-up rev 2053: the spawn itself leaked
+fds — the spawner's mysql2 socket and RVM's fd 6 (a login-shell copy of
+stderr; sshd's stderr pipe under the deploy pipeline) — so the CI-driven
+`Grader.restart` (automation rev 59) hung every deploy job after
+"Successfully deployed"; graders now spawn with `in: /dev/null` +
+`close_others: true` (`Grader.grader_spawn_options`, tested).
+
+### Viva grading: harden against transcript-continuation failures — RESOLVED 2026-08-29
+
+**Revs 2024 + 2043.** (a) Prompt hardening, rev 2024: `INTERVIEWER:`/`STUDENT:`
+transcript labels + trailing `=== END OF TRANSCRIPT ===` re-anchor (Claude
+compliance 3/24 → 16/16, Gemini unaffected). (b) Silent nil-score grades, rev
+2043: the hole was `extract_json_object` returning the first balanced `{…}` and
+the write path trusting it — not "no JSON", which has raised since rev 1667.
+`grade_schema_error` (numeric `total_points` 0..100, non-empty `rubric`) and
+unparseable brace blocks now raise `ResponseError`; `VivaGradeAssist#respond`
+(new `Llm::Request#respond` template) re-asks once — not on
+`finish_reason=length` — then the existing `grader_error` path (red admin alert,
+`llm_response_raw` = last body, first bad reply at WARN, Re-run picker); both
+attempts' cost on the grade row. Tests `test/services/llm/viva_grade_assist_test.rb`.
+(c) Interview/narrative language is a **conduct-tag** concern, not code: DS kit
+`_conduct.md` §Language (examiner English-only, students Thai/English/mixed,
+translation → simpler English, narrative in the student's language), deployed
+as prod `viva_conduct` tag 38 and verified identical 2026-08-29; convention
+recorded in `doc/Viva-Exam.md` §2.
+Grader model history: gemini-2.5-flash → 3.1-pro (chula_cp rev 2008; 12-session
+comparison on 10.0.5.50 `~/viva_compare_results.jsonl`) → 3.7-flash via the Chula
+AI Gateway (2026-08-27 bake-off, `~/cafe-grader/bakeoff-2026-08-27/report.html`);
+rev 2011 made both end paths use the grade service's default.
+**Residual (policy, ~$1):** re-test `claude-opus-4-5` as grader with the hardened
+prompt on all 12 sessions — strictest and most consistent (spread ≤4) in the
+4-session probe; strict-vs-generous on uncovered rubric items is the instructor's
+call before any exam-graded viva.
+
+### API ↔ web parity: IP whitelist not enforced on `/api/v1` — RESOLVED 2026-08-28
+
+**Rev 2026.** Full web parity: one predicate `User#allowed_from_ip?` backs the web
+gate, a per-request 403 in `Api::V1::BaseController#authenticate_api_user!`, and
+token-issuance refusal in `auth/login`; CIDR matching lives in
+`GraderConfiguration.whitelisted_ip?`. Tests: `authorization_sweep_spec.rb`
+(whitelist sweep over every `/api/v1` route), `authorization_spec.rb`,
+`test/models/grader_configuration_test.rb`. CHANGELOG 4.5.0.
+
+### Viva grade display — narrative doesn't belong in `grader_comment` / main list — RESOLVED 2026-08-28
+
+**Rev 2036 (4.5.0 head).** Success path writes `Submission#viva_result_marker`
+(`viva` / `viva:terminated`, from `viva_terminated_at`) to `grader_comment`; the
+narrative lives on `viva_grades.narrative` only. `_submission_short` shows a
+badge-as-link for viva rows plus "Interview in progress" / "Grading in
+progress…" / red "Grader error" states. One-off cleanup
+`bin/rails viva:clean_grader_comments [APPLY=1]` (`Viva::GraderCommentCleaner`,
+report-first). Record: CHANGELOG 4.5.0, `doc/Viva-Exam.md`.
+
+### Viva/tag markdown fields are bare textareas — add highlighting + preview — RESOLVED 2026-08-28
+
+**Rev 2030.** `markdown_editor_controller.js` (Ace `mode-markdown`, `github`
+theme, soft wrap) wraps all four textareas via
+`ApplicationHelper#markdown_editor_data`, with an Edit / Preview toggle →
+`POST /markdown/preview` (`safe_markdown`, editors only); `grounding-draft`
+dispatches `change` so "Copy draft into Body" still works. Not done by design:
+side-by-side preview, client-side renderer.
+
+### Viva problem edit page — right column is empty, left column crammed — RESOLVED 2026-08-28
+
+**Rev 2031.** One form over both columns: Detail card left, Viva Exam card right
+(Scenario + briefing full width, then interview setup). Hint and Description tabs
+dropped for viva problems; `form=` rejected because Rails does not propagate it
+to a multiple select's hidden input. Type switches redraw `#problem-edit` on
+save; a dataset-less problem gets an "Add dataset" empty state.
+
+### Reporter role: let it report on finished (unavailable / archived) courses — RESOLVED 2026-07-01
+
+**Option 3b.** Editors are group-scoped content curators:
+`Problem.group_editable_by_user` dropped the `available` / `groups.enabled`
+filters, `group_reportable_by_user` = editor-set ∪ reporter-gated-set, and
+`Group.reportable_by_user` is role-aware — an editor sees/edits/reports on
+archived courses and draft problems in their groups; reporters stay scoped to
+live content. **Operational rule:** to give a non-admin access to a finished
+course, make them an *editor* of its group. Option B (scores-only split) not
+taken. Tests `test/models/problem_scope_authorization_test.rb`; the role model is
+documented in `doc/Users-Roles-and-Access-Control.md` / the upstream wiki page
+and superseded in detail by `doc/decisions.md` 2026-08-22.
+
+### Publish "Users, Roles & Access Control" wiki page — RESOLVED 2026-07-01
+
+Live at https://github.com/cafe-grader-team/cafe-grader-web/wiki/Users-Roles-and-Access-Control
+(wiki commit `54b2c8d`). Source draft: `doc/Users-Roles-and-Access-Control.md` —
+edit here, then re-push to the separate wiki repo
+(`git@github.com:cafe-grader-team/cafe-grader-web.wiki.git`). Wiki `Home.md` is
+intentionally minimal (GitHub's auto sidebar lists pages).
+
+### AuditLog destroy test — RESOLVED 2026-06-20
+
+`test/models/auditable_test.rb` (4 tests): own-row destroy writes a `destroy`
+row, the `dependent: :destroy` cascade writes rows for `ContestProblem` /
+`ContestUser`, the snapshot stores `[value, nil]`, `AuditLog.paused` suppresses.
+Confirms `after_destroy_commit` fires under transactional tests.
+
+### CSRF meta null-safety in DataTable inits — RESOLVED 2026-06-20
+
+`?.` on every `meta[name="csrf-token"]` lookup — 5 view sites plus 4 in the
+shared `datatables/configs.js`; a grep for the unguarded form returns nothing.
+Rule codified in CLAUDE.md "Testing Notes" (the unguarded form throws when
+forgery protection is off and silently kills the whole DataTable).
+
+### System-test suite — RESOLVED 2026-06-15
+
+`bin/rails test:system` 46/46 green (was 20 failing on 2026-05-21). Six root-cause
+clusters, none of them production regressions: the no-spaces `name` rule is
+intentional (`NameFormatValidator`, human text goes in `description`) — tests
+fixed, not the rule; `select2_select` helper scoped to the open widget with
+`exact_text`; async turbo_stream submits raced the DB read — wait for `.toast`;
+submissions "Go" button replaced by the select2 chooser; users-page drift
+(unguarded CSRF meta, redirect target, grant-admin select2, `f.button :submit`).
+Two tests skipped on hunches were both wrong diagnoses and are un-skipped. All
+lessons live in CLAUDE.md "Testing Notes". Leftover UI question: the user-edit
+page's second submit button outside the form via `form=`.

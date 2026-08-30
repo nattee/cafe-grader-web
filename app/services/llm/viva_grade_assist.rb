@@ -145,6 +145,26 @@ module Llm
       raise NotImplementedError, "#{self.class} must implement #execute_call — configure a deployment-specific provider subclass"
     end
 
+    # One automatic re-ask when the reply is not a grade — no JSON object,
+    # unparseable JSON, or JSON that fails #grade_schema_error. Such a reply is
+    # cheap to repeat (~USD 0.008 / ~7 s on gemini-3.7-flash) and, when the
+    # failure is stochastic, a second call is all it takes; when it is
+    # deterministic for this transcript (gemini-2.5-flash reproduced the
+    # 937805 role-slip 2/2 on 2026-08-23) the second ResponseError propagates
+    # to Request#call → handle_error → :grader_error, i.e. the red admin
+    # alert + Re-run picker. Truncation (finish_reason=length) is a
+    # completion-budget symptom, not a coin flip, so it is not re-asked.
+    # viva_grade.llm_response_raw keeps the LAST body; the first bad one is
+    # logged here, and #handle_response folds its cost into the grade row.
+    def respond(data)
+      handle_response(execute_call(data))
+    rescue ResponseError => e
+      raise if @re_asked || truncated?(e)
+      @re_asked = true
+      Rails.logger.warn("[viva grade] submission #{@submission.id}: #{e.message} — re-asking once. content=#{content_snippet(e.body)}")
+      handle_response(execute_call(data))
+    end
+
     def handle_response(response)
       parsed = JSON.parse(response.body)
       text   = parsed.dig('choices', 0, 'message', 'content').to_s
@@ -158,14 +178,24 @@ module Llm
       grade.assign_attributes(
         llm_model:        parsed['model'] || @model,
         llm_response_raw: response.body,
-        cost:             compute_cost(usage),
+        cost:             compute_cost(usage) + (@re_asked ? grade.cost.to_f : 0.0),
         graded_at:        Time.zone.now
       )
       grade.save!
 
       json = extract_json_object(text)
       raise ResponseError.new('no JSON object found in grader response', body: response&.body) unless json
-      data = JSON.parse(json)
+      data = begin
+        JSON.parse(json)
+      rescue JSON::ParserError
+        # Message stays generic: it lands in grader_comment, which the student
+        # sees. The offending text is on llm_response_raw for the admin.
+        finish = parsed.dig('choices', 0, 'finish_reason')
+        raise ResponseError.new("grader JSON unparseable (finish_reason=#{finish.inspect})", body: response&.body)
+      end
+      if (problem = grade_schema_error(data))
+        raise ResponseError.new("grader JSON failed schema check: #{problem}", body: response&.body)
+      end
 
       grade.update!(
         score_json:   data['rubric']&.to_json,
@@ -192,6 +222,35 @@ module Llm
 
     def compute_cost(_usage)
       0.0
+    end
+
+    # The grade JSON must carry a numeric total_points in 0..100 and a
+    # non-empty rubric object. #extract_json_object returns the FIRST balanced
+    # {...} in the reply, so a model that slipped into the interviewer role
+    # and wrote any braces (an empty object, a JSON-ish aside) used to reach
+    # the write path with data['total_points'] == nil and leave the submission
+    # at points: nil, status: :done — a silent zero (prod sub 937805,
+    # 2026-08-23). Returns a short, student-safe reason string, or nil when
+    # the object is a grade. A numeric string ("78") is accepted.
+    def grade_schema_error(data)
+      return 'not a JSON object' unless data.is_a?(Hash)
+      pts = data['total_points']
+      pts = Float(pts, exception: false) if pts.is_a?(String)
+      return 'total_points missing or not a number in 0..100' unless pts.is_a?(Numeric) && pts.between?(0, 100)
+      return 'rubric missing or not a non-empty object' unless data['rubric'].is_a?(Hash) && data['rubric'].any?
+      nil
+    end
+
+    def truncated?(error)
+      JSON.parse(error.body.to_s).dig('choices', 0, 'finish_reason') == 'length'
+    rescue JSON::ParserError, TypeError
+      false
+    end
+
+    def content_snippet(body)
+      JSON.parse(body.to_s).dig('choices', 0, 'message', 'content').to_s.truncate(300).inspect
+    rescue JSON::ParserError, TypeError
+      '(unparseable body)'
     end
 
     # Pulls the first balanced top-level JSON object out of model text.
