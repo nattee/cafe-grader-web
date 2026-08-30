@@ -21,7 +21,13 @@ class Grader
     @box_id = box_id
     @worker_id = worker_id
     @grader_process = GraderProcess.find_or_create_by(box_id: box_id, worker_id: worker_id)
-    @grader_process.update(key: key)
+    # pid/host have existed on the table since the legacy GraderProcess
+    # .register_grader (unused — it still names columns this schema dropped),
+    # but nothing wrote them, so a row never said which process was actually
+    # holding the box. Recorded here for operators reading the table after a
+    # crash; Grader.watchdog identifies processes from `ps` by box+key, not
+    # from this, so a stale pid can never mis-target a signal.
+    @grader_process.update(key: key, pid: Process.pid, host: Socket.gethostname)
     @last_job_time = Time.zone.now
     Rainbow.enabled = true
     judge_log "Grader created with key #{key}"
@@ -209,6 +215,16 @@ class Grader
         pids  = procs.map { |p| p[:pid] }
         puts "grader process with box_id #{gp.box_id}: #{procs.size} running#{pids.any? ? " (pid #{pids.join(', ')})" : ''}"
 
+        # No process at all for this box, so anything still :process on it was
+        # claimed by a process that does not exist — the `ps` sweep above is
+        # the proof, so no timing heuristic is needed and a merely-slow grader
+        # can never have its job taken away. Reclaim BEFORE the :spawn below,
+        # so the replacement grader finds the work already back in the queue.
+        if procs.empty?
+          stats = Job.reclaim_orphaned!(grader_process_ids: [gp.id])
+          puts "  reclaimed orphaned jobs: #{stats[:requeued]} requeued, #{stats[:abandoned]} abandoned" if stats.values.sum > 0
+        end
+
         plan_box(gp, procs).each do |action, pid|
           case action
           when :spawn
@@ -273,8 +289,10 @@ class Grader
   #   [:spawn]       enabled, nothing running
   #   [:term, pid]   enabled: a duplicate (every process but the oldest);
   #                  disabled: graceful stop. TERM, never KILL, for a live
-  #                  grader — main_loop finishes its current job first, and a
-  #                  Job left in :process is never reclaimed (doc/backlog.md).
+  #                  grader — main_loop finishes its current job first, where
+  #                  a KILL orphans it. Job.reclaim_orphaned! now returns such
+  #                  a job to the queue on the next tick, so this is a matter
+  #                  of not wasting the work rather than of losing it.
   #   [:kill, pid]   disabled and the heartbeat is stale (> 300 s)
   def self.plan_box(gp, procs)
     if gp.enabled

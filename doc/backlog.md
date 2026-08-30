@@ -484,27 +484,27 @@ place: it is not a tracked file, so it never conflicts on a sync. E.g. upstream
 
 ---
 
-## Jobs stuck in `:process` forever when a grader dies mid-job (no reclaim)
+## `jobs.status` has no index, and the judge polls it at 5 Hz per grader
 
-**Why it matters.** `Job.take_oldest_waiting_job` flips a job to `:process` and
-assigns the `grader_process`; nothing ever flips it back. If the grader dies
-before `Job#report` — OOM, `kill -9`, a host reboot, the watchdog's
-stalled-KILL branch (`Grader.plan_box` → `:kill`) — the job stays `:process`,
-its parent chain never completes, and the submission sits in `evaluating`
-forever (`app/models/job.rb`, `app/engine/grader.rb#main_loop`). Surfaced
-2026-08-29 while hardening the watchdog; it is why duplicate graders get
-TERM (graceful — `main_loop` finishes the current job) and never KILL.
+**Noticed 2026-08-30 while building the reclaim sweep (rev 2060).** The `jobs`
+table is indexed on `parent_job_id` only. `Job.has_waiting_job` and
+`Job.take_oldest_waiting_job` (`app/models/job.rb`) both filter on `status`, and
+`Grader#main_loop` calls them every 0.2 s **per grader** — roughly 50 queries a
+second on a 10-box host, each a full scan. It is survivable today only because
+`Grader.cleanup_web` deletes successful jobs nightly, so the table stays small
+(6.8k rows on the prod-copy dev DB); during a contest, a day's jobs are
+compile + one-per-testcase + score for every submission, and the scan grows with
+it. `Job.reclaim_orphaned!` filters on the same column.
 
-**Direction.** A reclaim sweep: `Job.where(status: :process)` whose
-`grader_process.last_heartbeat` is older than N minutes (or whose recorded pid
-is gone) → back to `:wait`; compile / evaluate / score jobs are all
-re-runnable. Natural home: `Grader.watchdog` (already per-minute, already
-knows which graders are alive) or a Solid Queue recurring task next to
-`viva_turn_failsafe`. Liveness should be pid-based, not only heartbeat-based:
-`grader_processes.pid` exists but `Grader#initialize` never writes it
-(`GraderProcess.register_grader` is legacy and unused). Size: small-medium,
-plus a test that a `:process` job with a dead grader returns to `:wait` and is
-picked up again.
+**Direction.** An index on `(status, grader_process_id)` serves the reclaim
+query and, on its leading column, both poll queries. Small migration; the work
+is measuring the hot path before and after rather than writing it — this is on
+the judge's critical loop, so it deserves its own change and its own numbers,
+which is why it was not folded into rev 2060. Also worth checking whether
+`take_oldest_waiting_job`'s `FOR UPDATE SKIP LOCKED` + `ORDER BY priority DESC,
+id ASC` wants `(status, priority, id)` instead.
+
+**Size:** small, plus a before/after measurement on a realistic queue.
 
 ---
 
@@ -567,6 +567,44 @@ via `isNaN()`.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Jobs stuck in `:process` forever when a grader dies mid-job — RESOLVED 2026-08-30
+
+**Rev 2060.** `Job.reclaim_orphaned!` returns jobs whose grader claimed them and
+never reported back. Two callers, deliberately different in how each proves the
+grader is gone: `Grader.watchdog` passes the ids of boxes its own `ps` sweep
+just found empty — proof, not a timeout, so a merely-slow grader can never have
+its job taken away — and a `grader_job_reclaim` recurring task
+(`config/recurring.yml`, every 10 min, `older_than: 30.minutes`, production
+only) sweeps fleet-wide for the case the ps path structurally cannot cover: a
+host whose watchdog is itself not running.
+
+**The part that needed deciding was not detection but what to do with an old
+one.** Requeueing is safe in the abstract — compile/evaluate/score are all
+re-runnable and `Evaluation` is `find_or_create_by` per (submission, testcase) —
+but the prod-copy dev DB held **126 stranded jobs, the oldest 564 days**, from a
+worker that died 2025-08-04; ten of their eleven submissions had since been
+hand-rejudged to `done`. Blind requeueing would have silently regraded
+year-old submissions and, for those, failed anyway: `Grader.cleanup_web` purges
+the compiled binary `Evaluator#prepare_executable` re-downloads. So a job is
+dead-lettered to `:error` rather than requeued when its submission already
+reached a `Submission::GRADING_FINAL_STATUSES`, when it is older than
+`Job::MAX_RECLAIM_AGE` (24 h), or after `RECLAIM_ATTEMPT_LIMIT` reclaims —
+sharing the `"retry N"` counter `Grader#check_and_run_job` already parses, so a
+job that keeps killing graders cannot loop forever. A still-mid-flight
+submission is marked `grader_error`, which is what stops a student seeing
+"evaluating" forever and puts it on the normal Rejudge path.
+
+Also: `Grader#initialize` now writes `pid`/`host` on the `GraderProcess` row —
+the columns existed but only the dead legacy `register_grader` ever set them.
+Nothing depends on the value; the watchdog still identifies processes from `ps`.
+
+Tests: `test/models/job_reclaim_test.rb` (11). Dry-run against the 126 real rows
+inside a rolled-back transaction: 0 requeued, 126 dead-lettered, **0 submissions
+touched**. **Residual:** the missing `jobs.status` index, now its own open entry
+above. Not covered: the narrow window where a grader dies *after* `Job#report`
+but *before* `add_evaluation_jobs` / `add_scoring_job` — the job is `:success`,
+so no `:process` sweep can see it, and the chain still stalls.
 
 ### OpenRouter LLM provider — RESOLVED 2026-08-30 (generic path hardened, recipe documented)
 

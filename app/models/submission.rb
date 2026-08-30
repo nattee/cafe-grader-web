@@ -2,6 +2,14 @@ class Submission < ApplicationRecord
   enum :tag, {default: 0, model: 1}, prefix: true
   enum :status, {submitted: 0, evaluating: 1, done: 2, compilation_error: 3, compilation_success: 4, grader_error: 5}
 
+  # Statuses from which no further grading job will ever run: the submission
+  # has a grade (or a verdict that it cannot get one) and only an explicit
+  # Rejudge moves it again. compilation_success is NOT here — it means
+  # "compiled, evaluation still to come". Used by Job.reclaim_orphaned! to
+  # tell a live stall apart from a job whose work has already been settled
+  # some other way.
+  GRADING_FINAL_STATUSES = %w[done compilation_error grader_error].freeze
+
 
   belongs_to :language
   belongs_to :problem

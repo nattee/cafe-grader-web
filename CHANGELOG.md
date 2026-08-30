@@ -54,6 +54,29 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Grading jobs stranded forever when a grader died mid-job.** A judge job
+  moves to `:process` when a grader claims it and leaves that state only when
+  the grader reports back, so a grader killed in between — OOM, `kill -9`, a
+  host reboot, the watchdog's stalled-KILL branch — left the job, its parent
+  chain, and the student's submission stuck in "evaluating" with nothing to
+  move them. Nothing reclaimed them: the prod-copy development database held
+  **126 such jobs, the oldest 564 days old**, from a worker that died in one
+  event. `Job.reclaim_orphaned!` now returns them to the queue, from two
+  places: `Grader.watchdog` sweeps the boxes its own `ps` check just proved
+  have no process running (evidence, not a timeout, so a slow grader is never
+  interrupted — reclaimed within a minute), and a new `grader_job_reclaim`
+  recurring task sweeps fleet-wide every 10 minutes for jobs idle over 30
+  minutes, covering the case the first path structurally cannot: a host whose
+  watchdog is not running either. **Operators, note the one-time effect of the
+  first production sweep:** a job is *not* requeued when its submission has
+  already reached a final state, when it has been stuck over 24 hours, or after
+  three reclaims — re-running those would overwrite grades that were settled by
+  hand long ago — so the historical backlog surfaces as error jobs on the
+  Grader Processes page instead, clearable there in one click. A submission
+  still genuinely mid-flight is marked `grader_error`, which stops the endless
+  "evaluating" and puts it on the normal Rejudge path. `GraderProcess` rows now
+  also record the grader's `pid` and `host`, which the columns had always had
+  room for and nothing ever wrote. (rev 2060)
 - Problem statistics page: a problem with no submissions rendered the literal
   `0/0 (NaN%)` in the General Info card — the solved percentage divided by a
   zero attempt count, and Ruby yields NaN there rather than raising
