@@ -357,22 +357,26 @@ site so none are missed.
 
 ---
 
-## OpenRouter LLM provider — MOSTLY SUPERSEDED by Llm::AiGatewayTransport (rev 2018)
+## `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
 
-The generic bearer-key OpenAI-compatible gateway provider this sketch called
-for now exists: `Llm::AiGatewayTransport` + the `*AiGateway*` role subclasses
-(built 2026-08-26 for the Chula AI Gateway, a LiteLLM proxy). Pointing the
-`ai_gateway:` config block at OpenRouter should work as-is — bearer key from
-credentials, per-model picker registration, `file`-block PDF rewrite — with
-two known gaps if OpenRouter is ever actually wanted:
-- `compute_cost` reads LiteLLM's `x-litellm-response-cost` response header;
-  OpenRouter reports cost in the response body (`usage.cost` with
-  `usage: {include: true}`). Cost would silently record 0.0 until a small
-  adapter branch reads the body field.
-- The config block is a **single registry** — one gateway per deployment.
-  Running two bearer-key gateways side by side (e.g. Chula AI Gateway AND
-  OpenRouter) needs `ai_gateway:` generalized into a keyed registry like
-  `self_hosted_models:`, plus per-entry provider classes.
+`Llm::AiGatewayTransport.gateway_config` (`app/services/llm/ai_gateway_transport.rb`)
+reads a single `Rails.configuration.llm[:ai_gateway]` block, so a deployment
+runs exactly one bearer-key gateway. Running two concurrently — the Chula AI
+Gateway *and* an OpenRouter-style aggregator held as a fallback for when a
+model retires or the proxy wobbles — needs `ai_gateway:` generalized into a
+keyed registry shaped like `self_hosted_models:`, plus a provider class per
+entry so the admin pickers can tell the two rosters apart.
+
+**Deliberately not built (2026-08-30), and this is the YAGNI half of the old
+"OpenRouter LLM provider" entry.** Nobody runs two gateways today, and a
+single-gateway deployment is fully served by the current block — *including* a
+downstream site whose only gateway is OpenRouter, which is what that entry was
+really about. The other half (provider-agnostic cost + a documented recipe)
+shipped at rev 2050; see Resolved. Revisit only when a second concurrent
+gateway is actually wanted.
+
+**Size:** medium — config shape, initializer wiring, per-entry provider
+classes, picker plumbing.
 
 ---
 
@@ -506,6 +510,44 @@ deep-linking into the report via the shipped prefill. Size: medium.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### OpenRouter LLM provider — RESOLVED 2026-08-30 (generic path hardened, recipe documented)
+
+**Rev 2050.** The entry asked for an OpenRouter provider; the generic one had
+already landed (`Llm::AiGatewayTransport`, rev 2018), so what was actually
+missing was (a) cost resolution that does not assume LiteLLM and (b) a recipe a
+downstream operator can follow. Both shipped. **No OpenRouter-specific code
+path exists, and none is wanted** — pointing the `ai_gateway:` block at it is
+configuration.
+
+- `compute_cost` resolves header → `usage.cost` in the response body → `0.0`
+  **at WARN**. The silent zero was the real defect and was never
+  OpenRouter-specific: cost tracking off on the proxy, a model missing from
+  LiteLLM's price map, or an upgrade dropping the header each recorded $0.00
+  into `Comment.cost_summary_for` and the near-miss lifeline budget with no
+  signal at all. `execute_call` now keeps the raw header string, so a genuine
+  `0` stays authoritative instead of falling through.
+- New optional `ai_gateway.usage_in_body` sends `usage: {include: true}`, which
+  is what makes a body-reporting gateway emit cost. Off by default: LiteLLM has
+  no such key and would forward the unknown field upstream.
+- **The trap worth remembering** (measured, not assumed): `execute_call` POSTs
+  an *absolute* path and Faraday resolves it against `base_url` with URI-join
+  semantics, so an absolute path REPLACES the prefix's path —
+  `https://openrouter.ai/api` + `/v1/chat/completions` silently becomes
+  `https://openrouter.ai/v1/chat/completions` (404). The documented recipe keeps
+  `base_url` bare and puts the whole `/api/v1/...` in `completion_path`. LiteLLM
+  proxies mount at the root and are unaffected.
+- Worked OpenRouter block in `config/llm.yml`, explicitly labelled UNVERIFIED on
+  the two points that need a live account: the exact `usage.cost` opt-in, and
+  whether OpenRouter accepts the OpenAI `file` content part that
+  `convert_pdf_parts` emits for PDFs (built and tested against LiteLLM; only
+  viva grounding and statement PDFs depend on it).
+
+Tests: `test/services/llm/ai_gateway_transport_test.rb` — header wins over body,
+a genuine header `0` is authoritative and does not warn, body fallback for
+string *and* symbol keys, the loud zero, and `usage_in_body` off / on /
+caller-supplied. **Residual:** the multi-gateway registry, now its own open
+entry above.
 
 ### `custom_cms` checker argv order on LIVE problems — RESOLVED 2026-08-29 (no mis-grading)
 

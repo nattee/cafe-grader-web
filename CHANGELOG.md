@@ -11,6 +11,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Changed
+- **LLM gateway cost accounting no longer assumes LiteLLM.** A hosted gateway's
+  per-call cost is now resolved from the `x-litellm-response-cost` header
+  first, then `usage.cost` in the response body; a call with neither logs a
+  WARN naming the model instead of silently recording $0.00. The old behaviour
+  quietly zeroed cost reporting whenever cost tracking was off on the proxy, a
+  model was missing from its price map, or a proxy upgrade dropped the header —
+  invisible until the totals were already wrong. A genuine `0` in the header
+  stays authoritative. New optional `ai_gateway.usage_in_body` key in
+  `config/llm.yml` sends `usage: {include: true}` for gateways that report cost
+  in the response body (OpenRouter-style aggregators); leave it unset for
+  LiteLLM. `config/llm.yml` also gains a worked — and explicitly unverified —
+  OpenRouter example; mind the `base_url`/`completion_path` split it documents,
+  since an absolute path replaces `base_url`'s own path. (rev 2050)
 - **Evaluation types renamed**: `custom_cms` → `custom_testlib` and
   `custom_cms_raw` → `custom_testlib_raw`. The old names described the *result
   protocol* (score on stdout, `translate:*` on stderr) but not the argument
