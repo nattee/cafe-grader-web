@@ -10,6 +10,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+- **`bin/rails engine:smoke SUB=<id> [BOX=99]`** — grades one existing
+  submission end to end on this host with the real sandbox (compile → every
+  testcase → score, exactly as a grader would), prints each testcase's verdict
+  and the run's grade next to the stored one, then restores the submission
+  and its evaluations as found. Exit 0 identical, 2 differs, 1 engine error.
+  Use it on a worker right after a deploy, on a submission you are happy to
+  see re-evaluated, with a box id no grader owns. Added after the 2026-08-30
+  outage, which no test without isolate could see and this shows in seconds.
+  Alongside it, a CI-runnable Evaluator→Checker flow test with only the
+  sandbox and downloads faked (`test/engine/evaluator_checker_flow_test.rb`)
+  now fails on the rev-2045 bug. (rev 2063)
+
 ### Changed
 - **LLM gateway cost accounting no longer assumes LiteLLM.** A hosted gateway's
   per-call cost is now resolved from the `x-litellm-response-cost` header
