@@ -65,7 +65,7 @@ class ProblemEditDatasetFormTest < ApplicationSystemTestCase
     # The evaluation_type select lives in the Settings tab (default
     # active), so it's reachable without switching tabs. Labels were
     # reworded to "[BRACKET] description" form; pick the TESTLIB option.
-    select '[TESTLIB] Checker gets (input, user output, correct answer); score 0–1 on stdout — formerly "CMS"', from: "dataset_evaluation_type"
+    select '[TESTLIB] custom_testlib — checker gets (input, user output, correct answer); score 0–1 on stdout. Was custom_cms', from: "dataset_evaluation_type"
     assert_no_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
                        visible: :all, wait: 5
   end
@@ -75,7 +75,7 @@ class ProblemEditDatasetFormTest < ApplicationSystemTestCase
     visit edit_problem_path(problems(:prob_add))
     assert_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
                     visible: :all, wait: 5
-    select "[CMS] Checker gets (input, correct answer, user output) — CMS's own order, for checkers from CMS task packages", from: "dataset_evaluation_type"
+    select '[CMS-NATIVE] cms_comparator — checker gets (input, correct answer, user output), the order CMS itself uses; for checkers from CMS task packages', from: "dataset_evaluation_type"
     assert_no_selector "[data-dataset-mode-toggle-target='hideUnlessCustomEval'].d-none",
                        visible: :all, wait: 5
   end

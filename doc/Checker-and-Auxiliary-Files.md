@@ -77,7 +77,7 @@ The checker receives **CMS's own argument order** — the only difference from `
 - `ARGV[2]` — Full path to the **expected answer** file
 - `ARGV[3]` — Full path to the **contestant's output**
 
-Output protocol is identical to `custom_testlib`: a `0.0`–`1.0` score on `STDOUT`, an optional comment on `STDERR` (`translate:success` / `translate:wrong` are stripped). This is what CMS passes to a task's comparator (`cms/grading/steps/trusted.py`: `["./checker", input.txt, correct_output.txt, <user output>]`), so use it for any checker taken unmodified from a CMS task package. The CMS importer (`rails "cms:clone[task]"`) selects it automatically; in the dataset settings dropdown it is the **[CMS]** option.
+Output protocol is identical to `custom_testlib`: a `0.0`–`1.0` score on `STDOUT`, an optional comment on `STDERR` (`translate:success` / `translate:wrong` are stripped). This is what CMS passes to a task's comparator (`cms/grading/steps/trusted.py`: `["./checker", input.txt, correct_output.txt, <user output>]`), so use it for any checker taken unmodified from a CMS task package. The CMS importer (`rails "cms:clone[task]"`) selects it automatically; in the dataset settings dropdown it is the **[CMS-NATIVE] cms_comparator** option (every option there shows its key).
 
 Choosing between the two: a checker you (or a colleague) wrote for cafe-grader following this page → `custom_testlib`; a checker that came out of a CMS task → `cms_comparator`. When in doubt, run the checker by hand on one testcase with an empty file in each slot in turn — the slot whose emptiness makes it report *wrong* is the one it treats as the contestant's output.
 

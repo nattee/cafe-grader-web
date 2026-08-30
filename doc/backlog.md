@@ -534,7 +534,7 @@ missing), `doc/dataset-scoring-and-evaluation.md`, `doc/CMS-Migration.md` §5.3.
 **Residual — DONE rev 2047 (2026-08-30):** (a) renamed `custom_cms` →
 `custom_testlib`, `custom_cms_raw` → `custom_testlib_raw` (integers unchanged;
 `Dataset::LEGACY_EVALUATION_TYPES` aliases the old names on assignment); (b)
-`cms_comparator` exposed in the dataset dropdown as **[CMS]**. Fleet census
+`cms_comparator` exposed in the dataset dropdown as **[CMS-NATIVE]**. Fleet census
 (8 servers) in `doc/decisions.md` 2026-08-29 update; TOI-box `may2025_abcd` was
 the one true CMS-order checker → `cms_comparator` + rejudge.
 

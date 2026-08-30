@@ -20,8 +20,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   in the dataset form, the JSON API and import packages
   (`Dataset::LEGACY_EVALUATION_TYPES`), while exported packages now carry the
   new names. The dataset settings dropdown also offers `cms_comparator` as
-  **[CMS]** (previously reachable only through `cms:clone`), and the Checker
-  section now appears for it. Every deployed problem on the renamed types was
+  **[CMS-NATIVE]** (previously reachable only through `cms:clone`), and the
+  Checker section now appears for it; every dropdown label now shows its enum
+  key (`[TESTLIB] custom_testlib — …`), the name used by packages and the API
+  (rev 2048). Every deployed problem on the renamed types was
   verified beforehand to expect the testlib order (`doc/decisions.md`
   2026-08-29). (rev 2047)
 - Main list "Latest Results": the per-testcase verdict string (`PP-T`,

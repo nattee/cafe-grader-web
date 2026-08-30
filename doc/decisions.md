@@ -48,7 +48,7 @@ server needs a migration. `Dataset::LEGACY_EVALUATION_TYPES` normalizes the old
 names on assignment (form, API, import packages) indefinitely; exports now
 write the new names, so upgrade a fleet before moving packages from a new box
 to an old one. `cms_comparator` became selectable in the dataset form
-(**[CMS]**). Fleet census the same day (all 8 web servers): 25 `custom_cms` + 7
+(**[CMS-NATIVE]**; rev 2048 made every dropdown label show its enum key, since the pre-1738 dropdown showed raw keys and that is the name authors know). Fleet census the same day (all 8 web servers): 25 `custom_cms` + 7
 `custom_cms_raw` datasets, none `cms_comparator`; every checker on grader-2023,
 comprog and compas is testlib-order. On the TOI box (16 CMS-package tasks) one
 checker — `may2025_abcd` — is genuinely CMS-order (its verdict follows argv[3];
