@@ -88,4 +88,101 @@ class Job < ApplicationRecord
   def self.clean_old_job(x = 1.day)
     Job.where(status: :success).where('updated_at < ?', Time.zone.now - x).delete_all
   end
+
+  #
+  # ---- reclaiming orphaned jobs ----
+  #
+
+  # How long a job may sit in :process before requeueing it stops being the
+  # helpful thing to do. Well above the longest legitimate single job — a
+  # compile is capped at 10s (Compiler#compile) and the largest dataset
+  # time_limit in production is 5s — so this is not a race window, it is the
+  # point past which regrading has become a surprise rather than a repair.
+  MAX_RECLAIM_AGE = 24.hours
+
+  # Shared budget with check_and_run_job's rescue, which parses the same
+  # "retry N" prefix out of #result: a job that keeps taking its grader down
+  # with it must not requeue forever. Attempts 1..N-1 requeue, attempt N is
+  # dead-lettered — same arithmetic as the rescue there.
+  RECLAIM_ATTEMPT_LIMIT = 3
+
+  # Return jobs whose grader claimed them and never reported back to the
+  # queue. A job reaches :process in take_oldest_waiting_job and leaves it
+  # only through Job#report; if the grader dies in between — OOM, kill -9, a
+  # host reboot, the watchdog's stalled-KILL branch (Grader.plan_box) —
+  # nothing ever flips it back. Its parent chain never completes and its
+  # submission sits in :evaluating forever.
+  #
+  # Requeueing is safe in principle: compile, evaluate and score are all
+  # re-runnable, Evaluation is find_or_create_by per (submission, testcase),
+  # and Evaluator#prepare_executable re-downloads the compiled binary rather
+  # than trusting whatever the judge box still has on disk. It is only
+  # *meaningful*, though, while the submission is still mid-flight, so two
+  # cases are dead-lettered to :error rather than requeued:
+  #
+  #   * the submission already reached a GRADING_FINAL_STATUS — an admin
+  #     rejudged it, or a sibling chain finished it. Re-running would
+  #     overwrite a settled grade, and Grader.cleanup_web has since purged
+  #     the compiled binary an evaluate job would need anyway.
+  #   * the job has been stuck longer than MAX_RECLAIM_AGE.
+  #
+  # A submission still mid-flight is marked grader_error, so it stops showing
+  # "evaluating" and the ordinary admin Rejudge path applies to it.
+  #
+  # Two callers, deliberately different in how each proves the grader is gone:
+  #   * Grader.watchdog passes grader_process_ids: for the boxes its own `ps`
+  #     sweep just proved have no process running at all. No timing heuristic,
+  #     so it cannot yank a job out from under a grader that is merely slow;
+  #     latency is one watchdog tick. The default older_than: still applies,
+  #     closing the sub-second gap between that ps snapshot and this query in
+  #     which a starting grader could claim a fresh job.
+  #   * a Solid Queue recurring task passes a generous older_than: as a
+  #     fleet-wide backstop, for a host whose watchdog is itself not running
+  #     (that is exactly when the ps-based path cannot fire).
+  #
+  # Returns {requeued:, abandoned:}.
+  def self.reclaim_orphaned!(grader_process_ids: nil, older_than: 1.minute)
+    scope = Job.where(status: :process).where('updated_at < ?', Time.zone.now - older_than)
+    scope = scope.where(grader_process_id: grader_process_ids) if grader_process_ids
+    stats = {requeued: 0, abandoned: 0}
+
+    scope.includes(:grader_process).find_each do |job|
+      sub = Submission.find_by(id: job.arg)
+      mid_flight = sub && !Submission::GRADING_FINAL_STATUSES.include?(sub.status)
+      attempt = (job.result&.match(/retry (\d+)/)&.[](1)&.to_i || 0) + 1
+      reason =
+        if sub.nil?
+          'submission no longer exists'
+        elsif !mid_flight
+          "submission already #{sub.status}"
+        elsif job.updated_at < Time.zone.now - MAX_RECLAIM_AGE
+          "stuck since #{job.updated_at.to_fs(:db)}"
+        elsif attempt >= RECLAIM_ATTEMPT_LIMIT
+          "grader died on it #{attempt} times"
+        end
+
+      if reason
+        job.update(status: :error, result: "reclaim gave up (#{job.grader_label}): #{reason}".truncate(255))
+        sub.set_grading_error('Grading was interrupted and could not be resumed. Please rejudge.') if mid_flight
+        stats[:abandoned] += 1
+      else
+        job.update(status: :wait, result: "retry #{attempt}: reclaimed, #{job.grader_label} died mid-job".truncate(255))
+        stats[:requeued] += 1
+      end
+    end
+
+    if stats.values.sum > 0
+      Rails.logger.warn("[Job.reclaim_orphaned!] requeued #{stats[:requeued]}, abandoned #{stats[:abandoned]}")
+    end
+    stats
+  end
+
+  # Which grader claimed this job, for the reclaim message. The row survives
+  # the process (find_or_create_by per worker/box in Grader#initialize), so
+  # this names the box, not the dead pid.
+  def grader_label
+    gp = grader_process
+    return 'no grader' unless gp
+    "grader worker #{gp.worker_id} box #{gp.box_id}"
+  end
 end
