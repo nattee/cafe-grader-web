@@ -214,7 +214,7 @@ class Grader
           when :spawn
             stdout_file = Rails.configuration.worker[:directory][:grader_stdout_base_file] + gp.box_id.to_s + '.txt'
             cmd = "rails runner \"Grader.start(#{gp.box_id},:#{server_key})\""
-            spawn(cmd, [:out, :err] => [stdout_file, 'a'])
+            spawn(cmd, grader_spawn_options(stdout_file))
             puts "spawning new grader main loop with #{cmd}, redirecting :out,:err to #{stdout_file}"
           when :term
             if gp.enabled
@@ -232,6 +232,21 @@ class Grader
         end
       end
     end
+  end
+
+  # Spawn options for a grader main loop: stdin from /dev/null, stdout+stderr
+  # appended to the per-box log, and every other descriptor closed. Ruby's
+  # spawn inherits all non-CLOEXEC fds by default (close_others: false since
+  # 2.6), and the watchdog runs where two such fds exist: the mysql2 socket of
+  # this very process (libmysqlclient opens it without CLOEXEC) and fd 6, which
+  # RVM's login-shell profile leaves open as a copy of stderr — under `bash -l`
+  # from cron, and under sshd during a deploy. A grader that inherits the deploy
+  # session's stderr pipe holds sshd's channel open for as long as it lives, so
+  # every deploy_production job hung after "Successfully deployed" (2026-08-30,
+  # all hosts; redirecting only stdin was not enough). A fresh grader needs
+  # nothing from this process but the three standard streams.
+  def self.grader_spawn_options(stdout_file)
+    {in: File::NULL, [:out, :err] => [stdout_file, 'a'], close_others: true}
   end
 
   # The grader processes serving one box, parsed from

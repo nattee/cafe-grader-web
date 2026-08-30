@@ -1,4 +1,6 @@
 require 'test_helper'
+require 'tmpdir'
+require 'timeout'
 
 # Grader.watchdog's decision logic, isolated from ps/spawn/kill so it can be
 # exercised on canned process tables. Regression guard for the 2026-08-27
@@ -101,5 +103,33 @@ class GraderWatchdogTest < ActiveSupport::TestCase
     assert_equal true, first
     assert_equal [:first], ran
     assert_equal true, Grader.with_watchdog_lock('test-lock') { ran << :after }, 'lock released on exit'
+  end
+
+  # --- spawn hygiene ------------------------------------------------------
+
+  # Regression guard for the 2026-08-30 deploy hang: a grader spawned with only
+  # :out/:err redirected inherited fd 6 (RVM's login-shell copy of stderr —
+  # sshd's stderr pipe during a deploy) plus the watchdog's own mysql2 socket,
+  # and held the ssh channel open long after the deploy script had finished.
+  test 'a spawned grader gets /dev/null and its log file and nothing else' do
+    skip 'needs /proc' unless File.directory?('/proc/self/fd')
+    leaked_r, leaked_w = IO.pipe
+    leaked_w.close_on_exec = false # stand-in for RVM's fd 6 and mysql2's socket
+    Dir.mktmpdir do |dir|
+      log = File.join(dir, 'grader-1.txt')
+      pid = spawn('sleep 30', Grader.grader_spawn_options(log))
+      begin
+        # until the child has exec'd, /proc still shows the pre-exec fd table
+        Timeout.timeout(5) { sleep 0.02 until File.read("/proc/#{pid}/comm").strip == 'sleep' }
+        fds = Dir.children("/proc/#{pid}/fd").map(&:to_i).sort.to_h { |n| [n, File.readlink("/proc/#{pid}/fd/#{n}")] }
+        assert_equal({0 => File::NULL, 1 => log, 2 => log}, fds, 'leaked into the grader')
+      ensure
+        Process.kill('TERM', pid)
+        Process.wait(pid)
+      end
+    end
+  ensure
+    leaked_r&.close
+    leaked_w&.close
   end
 end

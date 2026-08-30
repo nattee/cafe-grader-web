@@ -612,7 +612,13 @@ another box could not truncate it — 14 of 142 rejudges on 08-27). Deploy: CI
 runs `whenever --clear-crontab` (drops the legacy path-identified block,
 no-op after) then `whenever --update-crontab cafe-grader`. Tests
 `test/engine/grader_watchdog_test.rb`. Not done: retry on isolate `XX`
-(cause removed); the TOI box (10.24.0.100) crontab is still unchecked.
+(cause removed). TOI box (10.24.0.100) crontab checked 2026-08-30: a single
+watchdog block (no cleanup jobs). Follow-up rev 2053: the spawn itself leaked
+fds — the spawner's mysql2 socket and RVM's fd 6 (a login-shell copy of
+stderr; sshd's stderr pipe under the deploy pipeline) — so the CI-driven
+`Grader.restart` (automation rev 59) hung every deploy job after
+"Successfully deployed"; graders now spawn with `in: /dev/null` +
+`close_others: true` (`Grader.grader_spawn_options`, tested).
 
 ### Viva grading: harden against transcript-continuation failures — RESOLVED 2026-08-29
 

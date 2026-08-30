@@ -73,6 +73,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   that died there no longer fails with `open("/output/stdout.txt")` — the
   evaluator removes the previous run's `stdout.txt` before each testcase
   (rev 2045).
+- Judge workers / deploy: graders spawned by `Grader.watchdog` (and so by
+  `Grader.restart`) no longer inherit stray file descriptors from the process
+  that spawned them — they now get `/dev/null` on stdin, the per-box log on
+  stdout/stderr and nothing else (`close_others`). Previously they inherited
+  the spawner's non-CLOEXEC mysql2 socket and fd 6, which RVM's login-shell
+  profile leaves open as a copy of stderr. Under the deploy pipeline that fd
+  is sshd's stderr pipe, so every `deploy_production` job hung after
+  "Successfully deployed" until the job timeout while the graders held the
+  channel open (2026-08-30, all hosts) (rev 2053).
 
 ## [4.5.0] — 2026-08-28
 
