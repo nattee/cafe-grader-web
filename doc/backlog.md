@@ -546,12 +546,14 @@ pattern to copy (`application_controller.rb:234` plus the `ajax:` configs in
 `datatables/configs.js`). Doing the summary as a grouped query is also *most of
 the card's query*, so the two jobs share their work — build them together.
 
-### Bug: `0/0 (NaN%)` on problems with no submissions
+### ~~Bug: `0/0 (NaN%)` on problems with no submissions~~ — FIXED rev 2056
 
-`stat.html.haml:45` computes `@summary[:solve]*100.0/@summary[:attempt]` with no
-zero guard. It does not raise (`NaN.round(1)` returns NaN) — it renders the
-literal text `0/0 (NaN%)`. Live on problems 671 `a68_mv_relay`, 672, and 693
-`d69_v1_buggy_counter`. Two-minute fix, independent of everything above.
+`stat.html.haml` divided the solved percentage by a zero attempt count; Float
+`0.0/0` is NaN and `NaN.round(1)` returns NaN rather than raising, so the page
+rendered the literal `0/0 (NaN%)`. Now reads "No submissions yet". Regression
+test in `test/controllers/problems_stat_controller_test.rb` — it asserts `NaN%`
+specifically, since the layout's go-to-submission widget matches a bare `/NaN/`
+via `isNaN()`.
 
 ---
 
