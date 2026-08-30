@@ -42,7 +42,13 @@
           .col-sm-6.text-end.text-secondary
             Solved/Attempted User
           .col-sm-6
-            #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve]*100.0/@summary[:attempt]).round(1)}%)
+            -# Guard the percentage: with no submissions this is 0.0/0, and Ruby
+            -# yields NaN rather than raising (NaN.round(1) is NaN), so the page
+            -# used to render the literal "0/0 (NaN%)".
+            - if @summary[:attempt].to_i.zero?
+              %span.text-secondary No submissions yet
+            - else
+              #{@summary[:solve]}/#{@summary[:attempt]} (#{(@summary[:solve] * 100.0 / @summary[:attempt]).round(1)}%)
 
 %h2 Submissions
 - if @submissions and @submissions.count > 0
