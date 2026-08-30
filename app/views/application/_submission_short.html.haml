@@ -73,8 +73,10 @@
       .row
         //.col-lg-3.text-secondary=t 'main.score'
         -# top-aligned (not centred): the verdict strip can be several rows
-        -# tall and the score should sit beside its first row
-        .col-12.d-flex.align-items-start
+        -# tall and the score should sit beside its first row. A plain-text
+        -# verdict (User#verdict_display) is single-line, so centre it like
+        -# the pre-4.5 layout did.
+        .col-12.d-flex{class: (Current.user&.verdict_plain? ? 'align-items-center' : 'align-items-start')}
           %span.me-1.mi.mr-2.text-secondary speed
           %span{class: ('text-success' if submission.points >= 100)}
             = submission.points

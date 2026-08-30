@@ -29,6 +29,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   constant "Showing 1 to N of N entries" line is replaced by a compact counter
   ("42 of 199 problems") that follows every filter, including topic and text
   search. (rev 2067)
+- **Per-user test-result display preference** — Profile → Preferences gains a
+  "Test-result display" choice: colour tiles (the default) or the pre-4.5
+  plain-text rendering ("[PP-T]"), applied everywhere grader results are
+  shown (problem list, submission detail, stats pages, reports). Requested by
+  users who preferred the original compact text. (rev 2068)
 
 ### Changed
 - **LLM gateway cost accounting no longer assumes LiteLLM.** A hosted gateway's

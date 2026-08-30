@@ -46,4 +46,21 @@ class MainListStatusTest < ActionDispatch::IntegrationTest
     assert_equal "inprogress", status_of(row_for(list_rows, problems(:prob_add)))
   end
 
+  test "update_self saves the verdict preference and the list renders plain text" do
+    grade!(100, comment: "PPPP")
+    sign_in_as("john", "hello")
+
+    get list_main_path
+    assert_select ".verdict-strip"   # default: tiles
+
+    patch update_self_users_path, params: { user: { verdict_display: "plain" } }
+    assert_redirected_to profile_users_path
+    assert users(:john).reload.verdict_plain?
+
+    get list_main_path
+    assert_select ".verdict-strip", count: 0
+    plain = css_select("span.grader-comment.text-break")
+    assert plain.any? { |span| span.text.include?("[PPPP]") },
+           "expected the plain [PPPP] rendering, got: #{plain.map(&:text).inspect}"
+  end
 end
