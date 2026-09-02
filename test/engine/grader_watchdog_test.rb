@@ -121,7 +121,23 @@ class GraderWatchdogTest < ActiveSupport::TestCase
       begin
         # until the child has exec'd, /proc still shows the pre-exec fd table
         Timeout.timeout(5) { sleep 0.02 until File.read("/proc/#{pid}/comm").strip == 'sleep' }
-        fds = Dir.children("/proc/#{pid}/fd").map(&:to_i).sort.to_h { |n| [n, File.readlink("/proc/#{pid}/fd/#{n}")] }
+        # Right after exec the child can briefly show a loader-transient
+        # descriptor (fd 3) that closes between the directory listing and
+        # readlink -> ENOENT (seen 1 in 5 spawns on WSL2, 2026-09-02). Sample
+        # until the table settles to {0,1,2}; a real leak persists through
+        # every sample and still fails the assertion below.
+        fds = nil
+        deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 1.0
+        loop do
+          begin
+            fds = Dir.children("/proc/#{pid}/fd").map(&:to_i).sort.to_h { |n| [n, File.readlink("/proc/#{pid}/fd/#{n}")] }
+            break if fds.keys.all? { |n| n <= 2 }
+          rescue Errno::ENOENT
+            # an fd vanished mid-snapshot: the child is still settling, sample again
+          end
+          break if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+          sleep 0.01
+        end
         assert_equal({0 => File::NULL, 1 => log, 2 => log}, fds, 'leaked into the grader')
       ensure
         Process.kill('TERM', pid)
