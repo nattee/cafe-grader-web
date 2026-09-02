@@ -14,7 +14,8 @@ Create a problem as usual, and set its type to a viva exam instead of a
 normal coding problem. Two fields matter most. (This section covers the
 fields; for the *craft* — choosing a scenario, writing the interview plan
 and rubric, the conduct profile, piloting, and the pitfalls we have seen on
-real sessions — read the [Authoring Guide](viva-authoring-guide).)
+real sessions — read the [Authoring Guide](Viva-Authoring-Guide). What
+students are told is in the [Student Guide](Viva-Student-Guide).)
 
 **Scenario (the Description tab).** This is the exam paper. Write it in
 plain markdown. It is sent to the AI examiner word for word as the opening

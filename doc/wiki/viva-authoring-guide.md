@@ -6,8 +6,9 @@ grader applies. It is about craft: what makes an interview that actually
 measures understanding, and the mistakes we have watched examiners and
 graders make on real student sessions.
 
-Companion pages: the [Instructor Guide](instructor-viva-guide) covers
-*operating* a viva (fields, limits, alerts, regrading, contests); the
+Companion pages: the [Instructor Guide](Viva-Instructor-Guide) covers
+*operating* a viva (fields, limits, alerts, regrading, contests) and the
+[Student Guide](Viva-Student-Guide) is what students are told; the
 platform reference `doc/Viva-Exam.md` in the repository covers *how the
 prompt is assembled* and the session lifecycle. This page assumes neither.
 

@@ -33,11 +33,17 @@ repo, started 2026-09-02).
 - **Models actually running in prod:** turns gemini-2.5-flash via Genie (08-22 → 08-27 21:46) → gemini-3.7-flash via Chula AI Gateway (08-27 22:57 →). Grades: 2.5-flash → 3.1-pro (08-23 → 08-27) → 3.7-flash (08-27 →). The Claude-Sonnet turn default (chula_cp 2010) never ran in prod.
 - **Pacing (Buggy Counter, completed sessions):** 2.5-flash median 10 student turns, 42% at the hard cap → 3.7-flash median 6, 3% at the cap, 55% inside the 6–9 target. Same prompt.
 - **Retakes:** single attempt + admin archive (05-09) → practice self-restart 3/day, exam single attempt (07-20, lived one day) → per-problem daily limit, everyone restarts (07-21) → engaged sessions only count (08-25) → best-of-N recorded score confirmed as policy; audit shows it invites grinding (09-01).
-- **Still open / never built:** D7 authoring lint + test-drive; red-team regression set; Phase B (per-contest retake budgets, governing-contest snapshot, window-end force-finish); viva in problem export/import; persistent scenario panel; session wall clock; grade-JSON validation against rubric *weights*; wiki publication of the viva guides.
+- **Still open / never built:** D7 authoring lint + test-drive; red-team regression set; Phase B (per-contest retake budgets, governing-contest snapshot, window-end force-finish); viva in problem export/import; persistent scenario panel; session wall clock; grade-JSON validation against rubric *weights*.
 
 ---
 
 ## Entries
+
+### 2026-09-02 — Viva guides published to the upstream wiki
+**docs/tooling** · wiki commit `1f9501f` (cafe-grader-team/cafe-grader-web.wiki); rev 2072 (link targets)
+- **Problem observed:** the instructor and student guides had been drafts in `doc/wiki/` since 2026-07-21 and never reached the wiki; the new authoring guide needed a home problem setters can find.
+- **Change:** pages `Viva-Instructor-Guide`, `Viva-Authoring-Guide`, `Viva-Student-Guide` (verbatim copies of `doc/wiki/*.md`), plus a "Viva exams" section on `Home`. Cross-links in the sources now use the wiki page names so the copies stay verbatim.
+- **Outcome / status:** live. Re-sync rule: when a `doc/wiki/*.md` changes, re-copy it to the wiki page of the same title (dae pushes; see the `cafe-grader-wiki-publishing` memory).
 
 ### 2026-09-02 — `course-prep` becomes a local hg repo; wiki procedure recorded
 **docs/tooling** · `hg -R ~/cafe-grader/course-prep log` revs 0–1; memory `cafe-grader-wiki-publishing`
@@ -166,7 +172,7 @@ repo, started 2026-09-02).
 
 ### 2026-07-21 — Docs wave
 **docs/tooling** · revs 1914–1916; `doc/viva-visibility.md`; `doc/wiki/instructor-viva-guide.md`, `doc/wiki/student-viva-guide.md`
-- **Outcome / status:** the two wiki guides are still unpublished drafts (2026-09-01: upstream wiki has 8 pages, none about viva).
+- **Outcome / status:** the two wiki guides sat unpublished until 2026-09-02 (upstream wiki had 8 pages, none about viva) — see that day's entry.
 
 ### 2026-07-21 — Audit-guard batch for viva submissions
 **platform code (security/robustness)** · revs 1907, 1909
