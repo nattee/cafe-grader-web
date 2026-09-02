@@ -442,48 +442,6 @@ out of the audited attrs (derived, bulky).
 
 ---
 
-## Upstream GitHub Pages for docs/ — blocked on an org admin (jittat)
-
-**Why it matters.** The rendered guides (`docs/guide/authorization.html`, the
-audit report) are served only from the fork's Pages site
-(`nattee.github.io/cafe-grader-web`), so every pointer to them names a personal
-fork rather than the project.
-
-**Current state (2026-08-30) — everything under our control is done.**
-- `docs/` is now **on upstream master** (fork rev 2051 batch-synced via upstream
-  PR #46), so the Pages source directory exists there. This was the half the old
-  entry was waiting on `/upstream-sync` for.
-- The upstream wiki page `Users-Roles-and-Access-Control` **now carries the
-  visual-companion link block**, pointing at the live fork URL instead of
-  waiting for canonical hosting — the reader value is delivered today, and
-  re-pointing it later is a one-word edit. (The old entry had this backwards:
-  it treated a canonical URL as a precondition for the link existing at all.)
-- Fork Pages (`master:/docs`) serves fine and remains the live copy.
-
-**The one blocker.** `has_pages=false` on cafe-grader-team, and dae's token is
-WRITE, not admin (org role: member; the org's members are `jittat` and
-`nattee`). So **jittat** must do it: Settings → Pages → Deploy from a branch →
-`master` + `/docs`. Do not ask before `docs/` is upstream — that precondition is
-now satisfied, so the ask is live.
-
-**After the switch is flipped**, three fork URLs become swappable to
-`https://cafe-grader-team.github.io/cafe-grader-web/…`:
-1. upstream wiki `Users-Roles-and-Access-Control` — the companion link block;
-2. `README.md` → Documentation → "Guides site" (added rev 2051);
-3. fork wiki `Home.md` — the "temporarily published at … until the upstream
-   GitHub Pages site is enabled" sentence, which becomes untrue.
-
-**Size.** Minutes once the switch is flipped. Nothing else is blocked on it.
-
-**Related, not blocked (idea, 2026-08-30).** README.md ships byte-identical to
-both repos, so it deliberately says nothing about which is newer (rev 2051). If
-per-repo wording is ever wanted, GitHub's **About / description field** is the
-place: it is not a tracked file, so it never conflicts on a sync. E.g. upstream
-"periodic stable cuts — development at nattee/cafe-grader-web" vs the fork
-"active development line". Two minutes, no code, nobody has asked for it yet.
-
----
-
 ## Deploy has no automatic post-deploy grading check
 
 **Noticed 2026-08-30, after the outage that `engine:smoke` was built for.** The
@@ -594,6 +552,20 @@ via `isNaN()`.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Upstream GitHub Pages for docs/ — RESOLVED 2026-08-31
+
+**Rev 2070 (pointer swaps; the switch itself was a GitHub setting).** jittat
+enabled Pages on cafe-grader-team (Deploy from a branch, `master` + `/docs`);
+verified `status: built` and both the index and `guide/authorization.html`
+serving 200 over HTTPS. Same day the three pointers moved to
+`https://cafe-grader-team.github.io/cafe-grader-web/…`: the upstream wiki
+`Users-Roles-and-Access-Control` companion block (fork-hosting caveat
+trimmed), `README.md`'s Guides-site link (rev 2070), and the fork wiki
+`Home.md` "temporarily published" sentence. Residuals: upstream's README copy
+catches up at the next `/upstream-sync` batch; "Enforce HTTPS" is unticked
+(cosmetic, jittat's toggle); the per-repo About-field wording idea from the
+old entry stays unasked-for and lives only here.
 
 ### Jobs stuck in `:process` forever when a grader dies mid-job — RESOLVED 2026-08-30
 

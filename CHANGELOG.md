@@ -36,6 +36,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **Viva kit importer: several conduct tags per kit** — `manifest.yml` now takes
+  a `conduct_tags:` list (the legacy single `conduct_tag:` still works); every
+  listed tag is upserted by name and linked, add-only, to every problem in the
+  kit, and the same name listed twice fails the import. Lets a course split its
+  examiner conduct into a mode-invariant profile plus a practice/exam overlay
+  (`Problem#viva_conduct_tags` concatenates them in name order, so overlays
+  are named as suffixes of the profile). (rev 2071)
 - **LLM gateway cost accounting no longer assumes LiteLLM.** A hosted gateway's
   per-call cost is now resolved from the `x-litellm-response-cost` header
   first, then `usage.cost` in the response body; a call with neither logs a

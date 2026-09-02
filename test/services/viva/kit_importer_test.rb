@@ -127,6 +127,68 @@ class Viva::KitImporterTest < ActiveSupport::TestCase
     assert_nil GroundingMaterial.find_by(title: 'fixture-grounding')
   end
 
+  # Rewrites the fixture manifest's single `conduct_tag:` into a
+  # `conduct_tags:` list (course profile + mode overlay) inside tmp.
+  def with_two_conduct_tags(tmp, second_name: 'fixture-viva-conduct-practice')
+    copy_kit_to(tmp)
+    File.write(File.join(tmp, '_conduct_mode.md'), "# Mode: practice\n\nOne hint per topic.\n")
+    manifest = File.join(tmp, 'manifest.yml')
+    File.write(manifest, File.read(manifest).sub(
+      "conduct_tag:\n  name: fixture-viva-conduct\n  file: _conduct.md\n",
+      "conduct_tags:\n  - name: fixture-viva-conduct\n    file: _conduct.md\n" \
+      "  - name: #{second_name}\n    file: _conduct_mode.md\n"
+    ))
+    tmp
+  end
+
+  test 'conduct_tags list creates every tag and links all of them to every problem, in name order' do
+    Dir.mktmpdir do |tmp|
+      with_two_conduct_tags(tmp)
+      assert run_import(tmp, apply: true)
+      report = @out.string
+      assert_match(/CONDUCT\s+create tag 'fixture-viva-conduct'/, report)
+      assert_match(/CONDUCT\s+create tag 'fixture-viva-conduct-practice' \(\d+ chars\)/, report)
+
+      base = Tag.find_by!(name: 'fixture-viva-conduct')
+      mode = Tag.find_by!(name: 'fixture-viva-conduct-practice')
+      assert mode.viva_conduct?
+      assert_equal "# Mode: practice\n\nOne hint per topic.", mode.params
+      %w[vk_alpha vk_beta].each do |name|
+        assert_equal [base, mode], Problem.find_by!(name: name).viva_conduct_tags.to_a,
+                     "#{name} carries both tags, base first (name order)"
+      end
+
+      @out.truncate(0)
+      assert run_import(tmp, apply: true)
+      assert_match(/CONDUCT\s+unchanged tag 'fixture-viva-conduct'/, @out.string)
+      assert_match(/CONDUCT\s+unchanged tag 'fixture-viva-conduct-practice'/, @out.string)
+      assert_match(/UNCHANGED problem 'vk_alpha'/, @out.string)
+      assert_match(/UNCHANGED problem 'vk_beta'/, @out.string)
+    end
+  end
+
+  test 'adding an overlay to an already-imported kit links it and reports which tag' do
+    assert run_import(apply: true)
+    Dir.mktmpdir do |tmp|
+      with_two_conduct_tags(tmp)
+      @out.truncate(0)
+      assert run_import(tmp, apply: true)
+    end
+    assert_match(/UPDATE\s+problem 'vk_alpha' — conduct linked: fixture-viva-conduct-practice$/, @out.string)
+    assert_equal %w[fixture-viva-conduct fixture-viva-conduct-practice],
+                 Problem.find_by!(name: 'vk_alpha').viva_conduct_tags.map(&:name)
+  end
+
+  test 'the same conduct tag named twice in a manifest fails the whole import' do
+    Dir.mktmpdir do |tmp|
+      with_two_conduct_tags(tmp, second_name: 'fixture-viva-conduct')
+      refute run_import(tmp, apply: true)
+    end
+    assert_match(/ERROR\s+conduct tag named more than once in manifest: fixture-viva-conduct/, @out.string)
+    assert_nil Problem.find_by(name: 'vk_alpha'), 'transaction rolled back'
+    assert_nil Tag.find_by(name: 'fixture-viva-conduct')
+  end
+
   test 'refuses to overwrite a non-viva problem with the same name' do
     Problem.create!(name: 'vk_alpha', full_name: 'coding alpha', full_score: 100)
     refute run_import(apply: true)
