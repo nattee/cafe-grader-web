@@ -95,7 +95,7 @@ Each attached material contributes to the LLM call two independent ways:
 
 Grounding is optional. A problem with a clear scenario + clear `viva_prompt` instructions does not need grounding material at all.
 
-Kits can also carry grounding: `manifest.yml` accepts a `grounding:` list (`title`, markdown `file`, optional `description`, `problems:` attach list restricted to the manifest's own problems), and `bin/rails viva:import` upserts each `GroundingMaterial` by title and attaches it add-only — so shared reference text deploys with the kit instead of being pasted into Manage → Grounding on every server (since rev 2027).
+Kits can carry more than one conduct tag: `manifest.yml` accepts a `conduct_tags:` list (each `name` + `file`; the legacy single `conduct_tag:` still works), every entry is upserted by name and linked add-only to every problem in the kit — the intended use is one mode-invariant course profile plus one practice or exam overlay, named as a suffix of the profile so the name-order concatenation reads base → mode → briefing (since rev 2071). Kits can also carry grounding: `manifest.yml` accepts a `grounding:` list (`title`, markdown `file`, optional `description`, `problems:` attach list restricted to the manifest's own problems), and `bin/rails viva:import` upserts each `GroundingMaterial` by title and attaches it add-only — so shared reference text deploys with the kit instead of being pasted into Manage → Grounding on every server (since rev 2027).
 
 ---
 
@@ -357,13 +357,21 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 
 - **Export/import does not support viva problems.** (The `viva:import` rake task covers the *kit → problems* direction for authoring; the general problem export/import round-trip is what remains open.) `app/engine/problem_exporter.rb` and `app/engine/problem_importer.rb` (originally built 2023, well before viva existed — viva shipped 2026-04-19, and the format was substantially redesigned again in `doc/problem-import-export-design-2026-07-14.md` without viva in scope) have no viva-specific handling at all: no `viva_prompt`, `viva_conduct` tags, `viva_daily_limit`/caps, or `GroundingMaterial` attachments are included in a problem export/import round-trip today. This is a known gap, not yet started or formally tracked as its own item in `doc/backlog.md` — closing it is future work.
 - **D7 authoring validation (test-drive + preflight lint) is designed but not implemented.** There is no "take your own viva as a test session excluded from reports/limits" flow and no LLM-based lint pass over the assembled prompt yet. The inoculation incident above is exactly the kind of thing the planned lint would catch pre-emptively.
-- **Alert-review admin page and red-team regression rake task (D3, Phase 2)** are designed but not implemented — see "Jailbreak Detection & Consequence Policy" above.
-- **D4 grounding PDF→text extraction** is designed (a one-shot LLM job drafting `GroundingMaterial#body` from an attached PDF, author-reviewed before save) but not implemented; grounding files are always sent as raw PDF bytes today.
+- **Red-team regression set (D3, Phase 2)** is not built. (The alert-review admin page *did* ship — rev 1917, Graders → Viva alerts; this list wrongly called it unimplemented until 2026-09-02.) The 56 alerts logged during the 2026-08/09 practice month — including ≥14 false positives on explicitly listed non-triggers — are the natural seed corpus; replay them before enabling exam policy, since a false positive under two-strike terminates an honest student. See `doc/Viva-History.md` (2026-09-01 audit).
+- ~~**D4 grounding PDF→text extraction** not implemented.~~ Shipped 2026-07-21 (revs 1919–1920, Genie wiring 1922; CHANGELOG 4.5.0). Stale entry, corrected 2026-09-02.
 - **Phase B of the context-policy design** (per-contest retake budgets, governing-contest snapshot, window-end force-finish) — see "Retake & Access Policy" above; no code exists yet.
+- **No session wall clock.** A session's only time bound is the 24 h abandonment reaper; the 2026-09-01 audit found sessions paused 8–10 h mid-interview and finished across days, which also opens an oracle window for abandon-and-retry. Needed before any exam use; Phase B's window-end force-finish is the natural home.
+- **Grade JSON is not validated against the rubric weights.** Rev 2043 checks `total_points` and a non-empty rubric only; the audit found 2/117 rubrics with a criterion above its weight (one on a 0–100-per-criterion scale, invited by the grading prompt's `<number 0-100>` schema comment). Per-criterion maxima are stated in the conduct tag since 2026-09-01; a code-level check remains open.
 
 ---
 
 # Authoring Checklist
+
+This is the *mechanical* checklist (fields, validation, configuration). The
+craft of writing a scenario, interview plan, rubric and conduct profile —
+with the pitfalls observed on real sessions — is `doc/wiki/viva-authoring-guide.md`;
+the change history of the feature (what we changed, why, how it turned out)
+is `doc/Viva-History.md`.
 
 - [ ] Create a `Problem` with `compilation_type: viva_exam`.
 - [ ] **Write the Scenario** (Description tab) — sent verbatim to the examiner as the interview opener. This is the exam paper; nothing secret belongs here.
@@ -377,7 +385,7 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 - [ ] *(Optional)* Attach **grounding materials** (create/edit under **Manage → Grounding**, attach via the problem form's select) for additional reference material.
 - [ ] Review/set **Soft turn cap** and **Hard turn cap** (defaults 10/15) if the default pacing doesn't fit the topic.
 - [ ] Review/set **Daily start limit** — blank for the site default (currently 3/day), a positive number for a custom limit, or `0` to make the viva contest-only.
-- [ ] *(Bulk authoring)* A course-prep kit (a directory with `manifest.yml` + one scenario `.md` + one briefing `.md` per problem + an optional shared conduct `.md` + optional shared grounding `.md` files declared under `grounding:`) can be created/updated in one command: `bin/rails viva:import DIR=/path/to/kit` (report only) then `APPLY=1` to write. Idempotent by problem `name`, conduct-tag name, and grounding `title`; `available` is applied on create only; grounding links are add-only (a hand-attached `-sol` PDF survives re-import); every touched problem is post-checked with `viva_setup_errors`. See `Viva::KitImporter` and `course-prep/README.md`.
+- [ ] *(Bulk authoring)* A course-prep kit (a directory with `manifest.yml` + one scenario `.md` + one briefing `.md` per problem + optional shared conduct `.md` files declared under `conduct_tags:` (course profile + mode overlay) + optional shared grounding `.md` files declared under `grounding:`) can be created/updated in one command: `bin/rails viva:import DIR=/path/to/kit` (report only) then `APPLY=1` to write. Idempotent by problem `name`, conduct-tag name, and grounding `title`; `available` is applied on create only; grounding links are add-only (a hand-attached `-sol` PDF survives re-import); every touched problem is post-checked with `viva_setup_errors`. See `Viva::KitImporter` and `course-prep/README.md`.
 - [ ] Confirm a `Language` named `viva` is seeded — the system requires it to create viva submissions.
 - [ ] Confirm `viva_turn_service` and `viva_grade_service` are configured in `config/llm.yml` for the deployment (on chula_cp they're `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist`; on master they're blank, intentionally — the abstract bases raise `NotImplementedError` to signal "no provider configured for this deployment").
 - [ ] Have a colleague (or yourself, as an editor) run a viva end-to-end before exposing it to students. Read the transcript and the rubric breakdown. If the grader returned prose, escalate to `gemini-2.5-pro` via the Re-run grading model picker.
