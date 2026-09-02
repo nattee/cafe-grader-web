@@ -86,6 +86,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Viva transcript swallowed C++ template brackets.** A student who typed
+  `vector<int> v;` saw `vector v;` in their own chat history (the stored turn
+  was intact): student, system and error turns went through Rails
+  `simple_format`, whose default sanitizer strips unknown tags such as `<int>`
+  (and turned `a<b && c>d` into a bold element), and interviewer turns went
+  through Redcarpet with `filter_html`, which drops them too. Plain-text turns
+  now escape first and only then get paragraphs and line breaks; markdown
+  turns (and the markdown editor preview) show raw HTML as visible text
+  instead of removing it. `<` and `>` display exactly as typed in every role.
+  (rev 2078)
 - **Every submission failed with an internal grading error on servers running
   rev 2045 or later** (all chula_cp deploy hosts, 2026-08-30 14:37 local onward). Rev 2045
   cleared a stale `stdout.txt` inside the shared `prepare_testcase_directory`
