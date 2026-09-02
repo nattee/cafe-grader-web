@@ -222,7 +222,9 @@ pattern; that earlier plan was rejected.
 not icon-only. Codified in CLAUDE.md. First-visit popover pointing at the
 button is a future enhancement using the existing cookie-based
 `dismiss-announcement` controller pattern — deferred until we see whether
-the visible label alone is enough.
+the visible label alone is enough. **Re-confirmed 2026-09-02 (dae): stays
+parked.** The trigger to build it is evidence that the label is not enough
+(admins asking where help is, drawers that never get opened), not a date.
 
 **Open items under this split.**
 - **Shared offcanvas helper.** ✅ DONE 2026-07-01 — `shared/_help_drawer.html.haml`,
@@ -330,30 +332,6 @@ not a correctness or grade-manipulation bug.
 **Fix direction.** Either `@submission.lock!` around the check-and-transition,
 or a unique-job guard on `Llm::VivaGradeAssistJob` keyed by submission id.
 Small; low priority given the impact is cost only.
-
----
-
-## `datatables/configs.js` render functions interpolate unescaped HTML
-
-**Context (noted 2026-07-21 during viva Phase 1 review).**
-`app/javascript/controllers/datatables/configs.js` builds several DataTables
-column `render` functions with raw template-literal interpolation of
-server-supplied fields — `${data}` (lines 102, 184, 197) and
-`${row.full_name}` (lines 108, 203) — dropped straight into HTML strings with
-no escaping. `data`/`row.full_name` here are problem names / user full names,
-which admins and group editors can set via ordinary edit forms.
-
-**Impact.** These are all admin/editor-only management tables, so this isn't
-a privilege-escalation vector (an admin who can already do arbitrary damage
-would be attacking themselves or other admins). But it's a live class of bug:
-a problem or user name containing HTML/script content would render
-unescaped for the next admin who views that table, which is worth closing.
-
-**Fix direction.** Add a small `escapeHtml` helper in the configs module and
-wrap every user-controlled interpolation (`data`, `row.full_name`, and any
-other free-text row field) with it. Bounded, mechanical change once the
-helper exists — the main work is grepping the file for every interpolation
-site so none are missed.
 
 ---
 
@@ -552,6 +530,22 @@ via `isNaN()`.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### `datatables/configs.js` render functions interpolate unescaped HTML — RESOLVED 2026-09-02
+
+Shipped rev 2079, wider than the entry asked for. The audit showed the entry
+understated it: every plain `{data: 'field'}` column in every JSON-fed
+DataTable rendered markup (DataTables writes cells with innerHTML), a
+self-registered user sets their own full name, and the login-failure report
+shows the raw attempted-login string — stored XSS from a student or an
+anonymous visitor to an admin, not admin-on-admin. Fix:
+`cafe.dt.escape_columns_by_default` (`app/javascript/cafe_datatable.js`) on
+every JSON-fed `columns` array — the `datatables--init` controller plus nine
+inline tables — and `escapeHtml` on the custom renderers' free-text
+interpolations; DOM-sourced tables untouched. Regression: system tests on the
+contest and group user tables (`<b>`, `<img onerror>` in a full name → text,
+no element, handler never runs). Rule for new tables recorded in CLAUDE.md
+(Admin DataTables). Residual: none known.
 
 ### Upstream GitHub Pages for docs/ — RESOLVED 2026-08-31
 

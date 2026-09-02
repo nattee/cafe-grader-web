@@ -1,5 +1,6 @@
 // columns and custom renderers
 import { columns, renderers } from 'controllers/datatables/columns'
+import { escapeHtml } from 'cafe'
 
 const baseConfig = {
   responsive: true,
@@ -99,13 +100,13 @@ export const configs = {
           if (type == 'display') {
             return `
               <div class="d-flex align-items-center">
-                <span>${data}</span>
+                <span>${escapeHtml(data)}</span>
                 <div class="dropdown d-flex align-items-center">
                   <a class="link-flex rounded-1 bg-light ms-2 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     ${cafe.msi('more_horiz', 'md-18')}
                   </a>
                   <ul class="dropdown-menu">
-                    <li><h6 class="dropdown-header">Link for ${row.full_name}</h6></li>
+                    <li><h6 class="dropdown-header">Link for ${escapeHtml(row.full_name)}</h6></li>
                     <li><a class="dropdown-item" href="${AppRoute.editUserAdmin.replace(-123, row.user_id)}">Edit</a></li>
                     <li><a class="dropdown-item" href="${AppRoute.statContestUserAdmin.replace(-123, row.user_id).replace(-456, row.contest_id)}">Contest Stats</a></li>
                     <li><a class="dropdown-item" href="${AppRoute.statUserAdmin.replace(-123, row.user_id)}">Lifetime Stats</a></li>
@@ -181,13 +182,13 @@ export const configs = {
           if (type == 'display') {
             return `
               <div class="d-flex align-items-center justify-content-beteen">
-                <span>${data}</span>
+                <span>${escapeHtml(data)}</span>
                 <div class="dropdown d-inline-flex align-items-center">
                   <a href="#" class="link-flex rounded-1 bg-light ms-2 p-0 text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     ${cafe.msi('more_horiz', 'md-18')}
                   </a>
                   <ul class="dropdown-menu">
-                    <li><h6 class="dropdown-header">${row.full_name}</h6></li>
+                    <li><h6 class="dropdown-header">${escapeHtml(row.full_name)}</h6></li>
                     <li><a class="dropdown-item" href="${AppRoute.editProblem.replace(-123, row.problem_id)}">Edit</a></li>
                     <li><a class="dropdown-item" href="${AppRoute.statProblem.replace(-123, row.problem_id).replace(-456, row.contest_id)}">Stats</a></li>
                   </ul>

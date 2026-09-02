@@ -38,14 +38,14 @@
   function user_link_renderer(data, type, row) {
     if (type == 'export') return `(${row['login']}) ${row['user_full_name']}`;
     if (type == 'display' || type == 'filter') {
-      return `<a href="${user_path.replace("-1234",row['user_id'])}">(${row['login']})</a> ${row['user_full_name']}`;
+      return `<a href="${user_path.replace("-1234",row['user_id'])}">(${cafe.escapeHtml(row['login'])})</a> ${cafe.escapeHtml(row['user_full_name'])}`;
     }
     //for sort, we just return the data which is supposed to be iso8601
     return row['login']
   }
   function problem_link_renderer(data, type, row) {
     if (type == 'export') return `[${row['name']}] ${row['full_name']}`;
-    return `<a href="${problem_path.replace("-1234",row['problem_id'])}">[${row['name']}]</a> ${row['full_name']}`;
+    return `<a href="${problem_path.replace("-1234",row['problem_id'])}">[${cafe.escapeHtml(row['name'])}]</a> ${cafe.escapeHtml(row['full_name'])}`;
   }
   function date_time_renderer( data, type, row) {
     return moment(data).format('YYYY-MM-DD HH:mm:ss')
@@ -86,7 +86,7 @@
           exportOptions: { orthogonal: 'export' }
         }
       ],
-      columns: [
+      columns: cafe.dt.escape_columns_by_default([
         {title: 'Sub ID', data: 'id', render: sub_link_renderer },
         {title: 'User', data: 'login', render: user_link_renderer},
         {title: 'Problem', data: 'full_name', render: problem_link_renderer},
@@ -95,7 +95,7 @@
         {title: 'Result', data: 'grader_comment', render: result_renderer},
         {title: 'Score', data: 'points', className: 'text-end'},
         {title: 'IP', data: 'ip_address', className: 'grader-comment'},
-      ],
+      ]),
       ajax: {
         url: '#{submission_query_report_path}',
         type: 'POST',

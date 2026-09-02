@@ -162,6 +162,23 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   "Successfully deployed" until the job timeout while the graders held the
   channel open (2026-08-30, all hosts) (rev 2053).
 
+### Security
+- **Admin DataTables rendered user-supplied text as HTML (stored XSS).**
+  DataTables writes cell data with innerHTML, and every plain
+  `{data: 'full_name'}` column in the JSON-fed admin tables — contest and
+  group membership, the user list and role lists, the activity, submission,
+  login and hall-of-fame reports, the scoreboard — rendered whatever markup
+  the value carried; several custom renderers interpolated names raw as well.
+  A self-registered user sets their own full name, and the login-failure
+  report shows the raw string an anonymous visitor typed as a login, so an
+  `<img onerror=…>` there ran in the browser of the admin viewing the table
+  (verified on the contest manage page). Every JSON-fed table now passes its
+  columns through `cafe.dt.escape_columns_by_default`, which gives each plain
+  column DataTables' escaping text renderer, and the custom renderers escape
+  their free-text fields; a value like `James <b>Bond</b>` now displays as
+  exactly that text. DOM-sourced tables (main list, submissions, stat pages)
+  are unchanged. (rev 2079)
+
 ## [4.5.0] — 2026-08-28
 
 **Upgrade notes.** Run `bin/rails db:migrate` — this release carries 11
