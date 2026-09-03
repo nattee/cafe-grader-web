@@ -109,6 +109,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **AI assist on a problem without a statement PDF sent a `null` content
+  part**, which the provider rejects (400) and the student saw as "Assistant
+  Error". The part is now omitted. Latent so far: every tagged problem on
+  production has a PDF. (rev 2086)
+- **A failed AI-assist request was marked twice**: the service recorded the
+  failure, then the job relabelled it "Assistant Error (retries exhausted)"
+  and appended a second error block even when nothing had been retried. The
+  job now leaves a comment the service already marked alone. (rev 2086)
 - **Best-score report could show a negative score.** `final_score` was
   `LEAST(max score, 100 − assist cost − hint cost)` with no lower bound, so a
   student who bought more AI assists than a problem is worth went below zero

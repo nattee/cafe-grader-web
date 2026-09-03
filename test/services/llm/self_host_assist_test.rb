@@ -58,4 +58,17 @@ class Llm::SelfHostAssistTest < ActiveSupport::TestCase
   test "job resolves the service class" do
     assert_equal Llm::SelfHostAssist, Llm::SelfHostAssistJob.new.send(:service_class)
   end
+
+  test "non-retryable failure marks the comment once, without retries-exhausted wording" do
+    with_self_host_config do
+      assert_raises(Llm::Request::ResponseError) do
+        Llm::SelfHostAssistJob.perform_now(@submission, model: 'unknown', comment: @comment)
+      end
+      @comment.reload
+      assert_equal 'error', @comment.status
+      assert_equal 'Assistant Error', @comment.title
+      assert_equal 1, @comment.body.scan('Request failed').size
+      refute_includes @comment.body, 'retries exhausted'
+    end
+  end
 end
