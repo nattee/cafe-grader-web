@@ -1,5 +1,11 @@
 # Submission-assist (Codey) corpus evaluation — 2026-09-03
 
+> **Data and scripts for this study are not in this repository.** They contain
+> student code and tutor answers to real students and live in the instructor's
+> local `course-prep` repo, `assist/eval-2026-09-03/` (see "Where the record
+> lives" in `doc/Assist-History.md`). This document holds the method, the
+> numbers and the conclusions only.
+
 How well does the AI helper on coding submissions behave, and what should change
 in its prompt? This is the first systematic read of the answers it has given.
 It is the baseline for judging the prompt edits that follow and the payload

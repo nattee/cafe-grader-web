@@ -20,12 +20,23 @@ observed → Change → Outcome / status**, with refs. Prompt edits cite
   (`doc/assist-corpus-eval-*.md`), the platform code and its CHANGELOG. Nothing
   here may contain student code, tutor answers to real students, or the prompt
   text itself.
-- **`course-prep` (local hg repo, no remote, ever):** `assist/codey-core.md` and
+- **`course-prep` — a Mercurial repo on the instructor's workstation, not
+  published anywhere:** path `~/cafe-grader/course-prep` on `dae-amd-2024`
+  (WSL2 Ubuntu 24.04), started 2026-09-02; it holds exam papers and model
+  answers, so it has no public remote by rule. As of 2026-09-03 it also has
+  **no backup or private mirror** — the only copy of the assist evaluation
+  data is that disk. Contents for this feature: `assist/codey-core.md` and
   `assist/codey-thai.md` (the live prompt tags, versioned), the originals they
-  replaced, and `assist/eval-<date>/` — every evaluation's data and scripts: the
-  answers read, the readers' and judges' scores, the whole-corpus frames, the
-  blind human-read form and its answers, UI screenshots. Cite `course-prep rev N`
-  from entries here.
+  replaced, and `assist/eval-<date>/` — every evaluation's data and scripts:
+  the answers read, the readers' and judges' scores, the whole-corpus frames,
+  the blind human-read form and its answers, UI screenshots. Cite
+  `course-prep rev N` from entries here. Anyone reading this on GitHub or the
+  wiki who needs the underlying data asks the instructor.
+- **Production database (`grader` on 10.0.5.50):** the primary source — every
+  request and answer is a `comments` row (`kind: llm_assist`), with the prompt
+  tags in `tags`. Everything above is derived from it and can be regenerated
+  with the scripts in `assist/eval-<date>/` against a fresh copy (the dump
+  script is `~/dump_grader.sh` on the host).
 
 ## What the feature is
 
