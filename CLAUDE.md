@@ -23,14 +23,15 @@ Local VCS is **Mercurial (hg)**, mirrored to **GitHub** via the **hg-git** exten
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/); the top `[Unreleased]` section accumulates changes between releases. **Maintain it incrementally — don't reconstruct it from the commit log at release time.** When a commit makes a *user- or operator-facing* change (new feature/report/endpoint, behavior change, bug fix, or a config/setup change that affects fresh clones), add a curated `### Added/Changed/Fixed/Security` bullet under `[Unreleased]` in the *same commit*, citing the rev. Skip pure internals — refactors, test-only changes, dependency bumps, and Claude/dev tooling (skills, editor config) that don't change app behavior (e.g. the `/release` and `/upstream-sync` skills are deliberately not in the changelog). Cutting a release is then just renaming `[Unreleased]` → `[X.Y.Z] — YYYY-MM-DD`; the `/release` skill's log-backfill step is a safety net, not the primary path.
 
-## Viva Live Docs
+## Viva & Assist Live Docs
 
-Two documents track the viva feature and must be kept current **in the same commit** as the change they describe, the way `CHANGELOG.md` is:
+Three documents track the two LLM-facing student features and must be kept current **in the same commit** as the change they describe, the way `CHANGELOG.md` is:
 
 - `doc/Viva-History.md` — the change history (newest first): every commit that changes viva behavior, prompt text (conduct tags, briefings, kit files), the model or provider behind turns/grading, or access/alert policy gets an entry — *Problem observed → Change → Outcome/status*, with the rev/spec/kit ref. Prompt and kit edits live in the local `course-prep` hg repo; cite its rev too. When an entry supersedes an earlier one, mark the old one `SUPERSEDED` rather than deleting it.
 - `doc/wiki/viva-authoring-guide.md` — the problem-setter guide. When a lesson from transcripts or an audit changes *how a viva should be written* (a new conduct rule, a rubric convention, a pitfall), update the relevant section and the pitfalls table; it is published to the upstream wiki as a verbatim copy, so keep it deployment-neutral (course-specific material only as examples, never a live problem's model answer).
+- `doc/Assist-History.md` — the same for the submission-assist ("Codey") feature: every commit that changes assist behavior, the payload sent to the model, the prompt text (the `codey-*` tags, versioned in `course-prep/assist/`), the models or providers in the picker, or the price/access policy gets an entry; its "Numbers for reporting" table is refreshed from production when a measurement is redone. Studies go in their own dated doc (e.g. `doc/assist-corpus-eval-2026-09-03.md`) and get a pointer entry.
 
-`doc/Viva-Exam.md` stays the platform reference (prompt assembly, lifecycle, policy) and keeps its own Decision Log for *design rationale*; the History is the *timeline*.
+`doc/Viva-Exam.md` stays the platform reference (prompt assembly, lifecycle, policy) and keeps its own Decision Log for *design rationale*; the Histories are the *timeline*.
 
 ## Tech Stack
 
