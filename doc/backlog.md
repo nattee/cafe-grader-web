@@ -218,18 +218,23 @@ students, 2025-07 → 2026-08.
   visible output — now a single decision: detach `codey-thai` or not.
 - `AI_viva` (#36) is `llm_prompt` on two viva problems and read by nothing —
   re-kind or delete on prod (check whether the D6 migrator ran there).
+- **Prompt edits from the corpus evaluation** (`doc/assist-corpus-eval-2026-09-03.md`,
+  291 answers read against source + evaluations): close the describe-the-algorithm
+  loophole (9% of current answers hand over the algorithm in words; those
+  students regress as often as they improve), majority-failure rule, hard
+  format (≤~250 words, one issue, ≤2 questions — the Claude models default to
+  "Issue 1/2/3" + "Next steps"), trace-must-expose-the-bug, no unverified
+  praise, use the previous-answer block. All are edits to `codey-core`.
+- **Model roster**: gemini-3.1-pro was never wrong in 90 answers and leaked the
+  algorithm in 2%; Claude-Sonnet via Genie was wrong in 20% of 40 and leaked
+  in 15%. Consider dropping it from the picker or putting gemini-3.1-pro first.
 - **Effectiveness metric** (next submission on the same problem): assisted
   improved 36% / same 50% / reached 100 18%, vs an unassisted baseline of
   43% / 44% / 23% on the same problems and period. Selection-biased, but no
-  visible benefit either — treat a prompt revision as an experiment measured
-  with this metric (AL vs DS tags are natural arms), and re-measure after
-  2089 has been live for a term.
-- **Reading the corpus.** 15.2 MB of answers ≈ 3.5–4.5M tokens (Thai inflates)
-  + 5.0 MB source ≈ 1.5M — not a one-session read. Options: a ~100-answer
-  stratified sample (verdict class × model × improved/not) ≈ 120k tokens
-  in-session; a script checking every answer's "first failing subtask" claim
-  against `evaluations`; a DGX judge pass over all 4,577 for solution
-  leakage / named algorithms.
+  visible benefit either. Re-run `frame.rb` (archived in
+  `~/cafe-grader/assist-eval-2026-09-03/`) after a term of the new payload
+  (2089) + edited prompt and compare the read-score columns and outcomes
+  against the 2026-09-03 document.
 
 ### Accounting follow-up
 - `llm_cost` / tokens are recorded (rev 2089) but shown nowhere yet. A per-model
