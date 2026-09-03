@@ -193,6 +193,142 @@ Deployment decisions (not prompt text):
 - **Thai appendix** (`codey-thai`, 239 problems): keep, drop, or switch to a
   Thai-only body. It is a cost and length question, not a quality one.
 
+## Part 2 — outcomes over the whole corpus (same day, evening; no model involved)
+
+The single-next-submission metric above is noisy and the "never-assisted
+students" baseline is confounded (students who never ask are the ones who never
+needed to). This pass recomputes outcomes over all 4,646 answered requests on
+not-yet-full submissions with three better comparisons. Scripts `frame2.rb` /
+`frame3.rb` in the archive; outcome columns: **next↑** = the very next
+submission scored higher; **full≤3** = full score within the next three
+submissions; **full≤24h**; **full-ever** on that problem; **no-later** = the
+student never submitted that problem again.
+
+### The cleanest comparison: same student, same problem, adjacent attempts
+
+For the 1,504 first requests where the student had already submitted that
+problem at least once before asking:
+
+| Step | improved |
+|---|---|
+| the unassisted step just before the assist (previous → assisted submission) | 27% |
+| the assisted step (assisted submission → next) | **38%** |
+
+Eleven points, on the same student and the same problem, with the median gap
+between attempts growing from 3 to 5 minutes. This is the best evidence in the
+data that the hint does something; it does not separate the hint from the extra
+minutes of thinking, and a student who has just failed is likelier to improve
+next time regardless.
+
+### Within-student baseline
+
+The same 316 students' own unassisted, not-full submissions on problems where
+they never asked (4,000 sampled):
+
+| | no-later | next↑ | full≤3 | full-ever |
+|---|---|---|---|---|
+| assisted requests (n=4,646) | 14% | 36% | 37% | 63% |
+| same students, unassisted, other problems (n=4,000) | 4% | 45% | 55% | 87% |
+| students who never asked, same problems and period (n=3,636) | 2% | 76% | 57% | 91% |
+
+Students ask on the problems that are hardest for them, so the lower assisted
+numbers are what selection predicts; the never-asked row is not a valid control
+and should not be quoted as one.
+
+### August 2026: old and new models on the same 22 problems, same weeks
+
+| | n | no-later | next↑ | full≤3 | full≤24h | full-ever |
+|---|---|---|---|---|---|---|
+| gemini-2.5-pro (retired 08-23) | 305 | 16% | 38% | 46% | 52% | 82% |
+| current four models | 105 | 8% | **50%** | **65%** | **72%** | 75%* |
+
+*Current-model requests are more recent, so they have had less time to reach
+"ever"; the 24-hour column is the fair one. Current requests also started from a
+higher score (median 10 vs 0 points). Suggestive, not conclusive: n=105 across
+four models.
+
+### Splits (assisted, not already full)
+
+| Split | n | no-later | next↑ | full≤3 | full-ever |
+|---|---|---|---|---|---|
+| points at request: 0 | 2,198 | 14% | 32% | 29% | 56% |
+| points 1–49 | 1,549 | 13% | 41% | 40% | 63% |
+| points 50–99 | 899 | 15% | 39% | 55% | 79% |
+| Data Structures (`d*`) | 2,363 | 10% | 34% | 37% | 65% |
+| Algorithms (`a*`) | 2,062 | 18% | 38% | 35% | 57% |
+| first request | 2,598 | 11% | 39% | 38% | 65% |
+| repeat request | 2,048 | 16% | 33% | 36% | 59% |
+| semester 1/2568 | 1,880 | 10% | 31% | 33% | 61% |
+| semester 2/2568 | 2,250 | 17% | 39% | 38% | 59% |
+| semester 1/2569 (to Sep 3) | 493 | 12% | 43% | 54% | 81% |
+| verdict: compile error | 282 | 15% | **25%** | 24% | 45% |
+| wrong answer | 1,861 | 10% | 42% | 50% | 74% |
+| time limit | 578 | 19% | 30% | 45% | 69% |
+| runtime error | 643 | 10% | 27% | 26% | 55% |
+| mixed | 1,258 | 18% | 37% | 23% | 50% |
+
+Compile errors are the worst class by every column — the case where the payload
+sent nothing the model could use (no compiler output until rev 2089). Repeat
+requests do worse than first ones on every column, consistent with the same
+answer arriving twice.
+
+### The 14% who never resubmit
+
+652 requests were the student's last action on that problem. 66 of them already
+held a 100 from an earlier submission (asking about an old attempt to learn),
+leaving 586 apparent give-ups; 346 of the 652 were repeat requests; median hour
+of day 11:00. Mixed and wrong-answer verdicts dominate.
+
+### Problems that soak up requests
+
+| Problem | requests | students | repeat | next↑ | full≤3 | full-ever |
+|---|---|---|---|---|---|---|
+| d69_q0_cv_detection | 172 | 78 | 54% | 26% | 46% | 78% |
+| a68_q2a_dividing | 164 | 84 | 48% | 22% | 39% | 67% |
+| a68_q2b_remaining_merge_2 | 154 | 78 | 49% | 19% | **2%** | 18% |
+| a68_q1a_guitar_array | 142 | 67 | 52% | 37% | 47% | 86% |
+| a68_f2_horse_running | 136 | 76 | 44% | 39% | 43% | 58% |
+| d68_q1b_kv_database | 130 | 66 | 49% | 26% | 36% | 65% |
+| d68_q2a_do_stack | 126 | 69 | 45% | 39% | 25% | 71% |
+| d68_f2_skip_list | 123 | 59 | 52% | 17% | **2%** | 13% |
+| d68_q2a_segmented_vector | 121 | 54 | 55% | 12% | 17% | 66% |
+| a68_q4a_normal_puzzle | 115 | 52 | 54% | 28% | 6% | 36% |
+
+Two problems (`remaining_merge_2`, `skip_list`) absorbed 277 requests and almost
+nobody reached full score within three tries afterwards. Those are problem- or
+teaching-level questions, not prompt questions.
+
+### Verdict claims checked mechanically over all answers
+
+"You pass the first N tests" claims: gemini-2.5-pro 246 claims, 75% match the
+real verdict; Claude-3.5-Sonnet 104, 77%. The current models make such claims
+far less often (4–14 each) — they read the verdict differently rather than more
+accurately. "Passing N tests" claims: gemini-2.5-pro 90, 88% match.
+
+### Who uses it, and what it cost
+
+316 students; median 9 requests each, 90th percentile 36, maximum 131; the top
+tenth of students made 38% of all requests. Tokens by semester: 1/2568 —
+gemini-2.5-pro 6.4M prompt / 7.0M completion (avg 5,185 completion tokens per
+answer, a reasoning model), Claude-3.5-Sonnet 5.6M / 0.28M (avg 9,091 prompt
+tokens: the PDF sent as an image); 2/2568 — gemini-2.5-pro 9.4M / 13.1M; 1/2569
+so far — 2.4M / 2.2M across five models. Data Structures problems consumed
+14.5M prompt / 9.7M completion tokens, Algorithms 8.4M / 11.9M. Dollar cost is
+recorded only from 2026-09-03 onward (rev 2089).
+
+### What Part 2 changes in the recommendations
+
+- The effectiveness claim for the report is the paired one: **27% → 38%** on the
+  same student and problem. Do not quote the never-asked baseline.
+- Compile errors and repeat requests are the two worst cells, and both are what
+  rev 2089 targets (compiler output; previous answer + diff). Re-measure these
+  two cells first after deployment.
+- The August head-to-head is the first sign the newer models help more
+  (next↑ 50% vs 38%); the read scores say Claude-Sonnet via Genie is the least
+  accurate of them, so the roster decision stands.
+- `remaining_merge_2` and `skip_list` deserve a look as problems, independent
+  of the tutor.
+
 How to judge the edits: re-run `frame.rb` after a term of the new payload and
 prompt and compare the read-score columns and the next-submission outcomes
 against this document. The scorer prompt and the frame script live in the

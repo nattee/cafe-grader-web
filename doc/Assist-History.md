@@ -59,12 +59,12 @@ admin) may request it (since 2026-09-03).
 | By semester | 1/2568 (Aug–Dec 2025) 2,371 · 2/2568 (Jan–May 2026) 2,349 · summer 24 · 1/2569 (Aug 1 – Sep 3, 2026) 515 |
 | Peak month | April 2026, 856 |
 | By course (problem-name prefix) | `d*` Data Structures 2,341 · `a*` Algorithms 1,989 · `ex*` exercises 235 · `da*` 163 · `ds*` 85 |
-| Repeat requests | 44% of answers were the student's 2nd+ request on that problem; max 46 on one problem |
+| Repeat requests | 44% of answers were the student's 2nd+ request on that problem; max 46 on one problem; 316 students, median 9 requests each, p90 36, max 131; top tenth of students made 38% of requests |
 | Score penalty charged | 47,020 points over 2,699 student–problem pairs |
 | Tokens (gemini-2.5-pro, 4,206 answers) | 18.1M prompt · 23.1M completion (avg 5,500 completion — a reasoning model) |
 | Tokens (Claude-3.5-Sonnet, 699) | 6.7M prompt · 0.33M completion |
 | Contest use | `allow_llm` on in 12 of 39 contests |
-| Effectiveness (pre-2089 payload) | next submission improved 36% · same 50% · reached 100 18%; unassisted baseline on the same problems 43% / 44% / 23% (selection-biased) |
+| Effectiveness (pre-2089 payload) | paired, same student & problem: the step before the first assist improved 27%, the assisted step 38%; 37% reach full score within 3 submissions, 63% ever; 14% never resubmit. Compile errors worst (next↑ 25%), repeat requests worse than first. Aug 2026 head-to-head on 22 shared problems: current models next↑ 50% vs gemini-2.5-pro 38% (n=105). Never-asked students are not a valid baseline. |
 | Quality (291 read) | hard rules hold (1% write code, 3% name a technique); 64% state the fix, 9% describe the algorithm; gemini-3.1-pro 0% wrong diagnoses (n=90), Claude-Sonnet 20% (n=40); details in the evaluation doc |
 
 ---
@@ -77,11 +77,11 @@ admin) may request it (since 2026-09-03).
 - **Change:** dry-run then apply of a re-tag script on prod: `codey-core` (AL text minus the appendix) on all 284, `codey-thai` (one sentence) on the 239 AL problems. `CommentAssist` orders tags by name. Prompt text checked into `course-prep/assist/`.
 - **Outcome / status:** live on prod (per-problem behaviour unchanged; verified by assembling the payload for an AL and a DS problem). Code in master 2093, not yet merged to chula_cp.
 
-### 2026-09-03 — First corpus evaluation
-**study** · `doc/assist-corpus-eval-2026-09-03.md` (rev 2094); raw frame + scores in `~/cafe-grader/assist-eval-2026-09-03/`
+### 2026-09-03 — First corpus evaluation (Part 1 read scores, Part 2 whole-corpus outcomes)
+**study** · `doc/assist-corpus-eval-2026-09-03.md` (revs 2094, 2096); raw frame + scores + `frame2.rb`/`frame3.rb` in `~/cafe-grader/assist-eval-2026-09-03/`
 - **Problem observed:** no one had read what the tutor actually says. The effectiveness metric showed no visible benefit but could not say why.
 - **Change:** frame over all 4,787 answers (verdict class, next-submission outcome, request index, mechanical checks); 291 read against source + evaluations (all 193 current-model answers + 7 per verdict-class × outcome cell of the retired models) and scored on leak / diagnosis / focus / actionable.
-- **Outcome / status:** hard rules hold; the soft rule fails (64% state the fix, 9% hand over the algorithm in words, mostly TLE/RE, and those students regress as often as they improve); wrong diagnoses are model-specific (gemini-3.1-pro 0/90, Claude-Sonnet 8/40); the current models are twice as long and half as focused as gemini-2.5-pro was. Eight prompt edits and two roster/Thai decisions listed in the doc — **pending dae**.
+- **Outcome / status:** Part 2 (evening, database only): paired same-student-same-problem improvement 27% → 38%; compile-error and repeat requests are the worst cells; Aug 2026 same-problem head-to-head favours the current models (next↑ 50% vs 38%); two problems absorbed 277 requests with ~2% success. Part 1: hard rules hold; the soft rule fails (64% state the fix, 9% hand over the algorithm in words, mostly TLE/RE, and those students regress as often as they improve); wrong diagnoses are model-specific (gemini-3.1-pro 0/90, Claude-Sonnet 8/40); the current models are twice as long and half as focused as gemini-2.5-pro was. Eight prompt edits and two roster/Thai decisions listed in the doc — **pending dae**.
 
 ### 2026-09-03 — Picker guards: in-flight, already answered, full score, 100-point spend cap
 **platform code** · rev 2090; `Submission#llm_assist_refusal`, `submissions/_add_assist`, `CommentsController#can_request_llm`
