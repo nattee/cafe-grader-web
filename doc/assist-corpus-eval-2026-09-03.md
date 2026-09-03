@@ -462,8 +462,17 @@ see it, compare old and new prompt on the same inputs, offline:
    rev in `doc/Assist-History.md`, and re-measure outcomes (Part 2's
    `frame2.rb`/`frame3.rb`) after a term.
 
-Repo state at hand-off: master 2089–2100 unmerged/unpushed (payload, guards,
+Repo state at hand-off: master 2089–2105 unmerged/unpushed (payload, guards,
 accounting, tag ordering, price setting, docs); prod runs chula_cp 2088.
+
+**When the offline test is finished, remind dae of three deferred items** (his
+words, 2026-09-03: "remind me of that three things when we finished"):
+1. finish the 30 human reads and save `dae-reads.csv` (then commit it in
+   course-prep);
+2. review master 2089–2105, merge to `chula_cp`, push, deploy to 10.0.5.50,
+   run `bin/rails db:seed` there (creates `system.llm_assist_cost`);
+3. create the private `course-prep` project on gitlab.nattee.net and push
+   (backlog entry).
 
 How to judge the edits: re-run `frame.rb` after a term of the new payload and
 prompt and compare the read-score columns and the next-submission outcomes
