@@ -378,14 +378,45 @@ would say who is calibrated. And the qwen prompt carried no examples; a
 few-shot version anchored on 6 gold answers (two per leak level) is the
 cheapest thing that could move the leak threshold, one more 30-minute run.
 
-**Options from here** (decision pending):
-1. One more free qwen run with few-shot anchors; keep it if leak κ clears
-   ~0.7, otherwise stop trying.
-2. Buy leak + diagnosis from a hosted model on a targeted sample (compile
+### Few-shot retry (option 1, run the same evening)
+
+Six gold answers — two per leak level, chosen where the zero-shot judge had
+disagreed — were added to the system prompt as scored examples, with the two
+threshold rules spelled out (a leading question whose answer is the fix is leak
+1; narrating the algorithm is leak 2 even unnamed). Same 285 non-anchor records.
+
+| Column | zero-shot κ | few-shot κ | few-shot rate vs gold |
+|---|---|---|---|
+| leak (0/1/2) | 0.50 | 0.49 | — |
+| leak any (≥1) | 0.54 | 0.49 | 72% vs 60% (was 39%) |
+| leak = 2 | 0.33 | **0.65** | 13% vs 11% (was 3%); finds 24 of 31, 63% precision |
+| diagnosis wrong | 0.49 | **0.23** | 5% vs 10%; finds 6 of 29 (was 13) |
+| focus | 0.51 | **0.71** | 65% vs 61% |
+| code ≥3 lines | 0.49 | 1.00 | |
+| names a technique | 0.44 | 0.77 | |
+
+The anchors fixed what they were aimed at — algorithm hand-overs are now
+detected (24 of 31) and focus matches the readers — but the leak bias flipped
+rather than vanished: qwen now calls 50 of 115 Socratic answers "states the
+fix" (before: it called 56 of 141 stated fixes Socratic), so three-way leak
+agreement is unchanged at κ 0.49. Diagnosis got worse: the longer prompt
+crowded out the code-reading. Overall leak κ did not clear the 0.7 bar set
+beforehand, so the DGX route for leak/diagnosis stops here.
+
+**What the DGX can do for free, reliably:** few-shot qwen as a *hand-over
+detector* (leak = 2, κ 0.65) and for code lines and named techniques; gemma or
+few-shot qwen for focus (κ 0.71–0.77) and language. **What it cannot:** the
+Socratic-vs-states-the-fix line and wrong-diagnosis detection — those stay
+with a stronger reader (or a human).
+
+**Options remaining** (decision pending):
+1. Buy leak + diagnosis from a hosted model on a targeted sample (compile
    errors, repeat requests, the ten heaviest problems, the Aug-2026 overlap;
-   ~650 records) and let gemma/qwen fill the cheap columns on the census.
-3. Treat the 291 as the study and move to the prompt edits; re-measure with
-   the same 291-record protocol after a term.
+   ~650 records; ~$12–25 on Opus 5) and let the DGX fill hand-over, focus,
+   code, names and language on the full census.
+2. Treat the 291 as the study and move to the prompt edits; re-measure with
+   the same 291-record protocol after a term, using the DGX for the cheap
+   columns and a reader for leak/diagnosis.
 
 How to judge the edits: re-run `frame.rb` after a term of the new payload and
 prompt and compare the read-score columns and the next-submission outcomes
