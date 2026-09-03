@@ -18,6 +18,21 @@ class ProblemStatTest < ApplicationSystemTestCase
     end
   end
 
+  test "archived groups are folded and open on click" do
+    old = Group.create!(name: "Cohort2568", enabled: false)
+    GroupProblem.create!(group: old, problem: problems(:prob_add))
+    GroupUser.create!(group: old, user: users(:jack), role: :user)
+    login("admin", "admin")
+    visit stat_problem_path(problems(:prob_add))
+
+    within("#by-group-card") do
+      assert_link "GroupA"
+      assert_no_link "Cohort2568"                 # folded
+      click_button "1 archived group"
+      assert_link "Cohort2568", wait: 5           # unfolded
+    end
+  end
+
   private
 
   def login(username, password)

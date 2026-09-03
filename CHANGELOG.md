@@ -19,6 +19,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   time. Members are enabled `user`-role rows only, so staff test submissions
   do not move a section's numbers; a student in several groups counts in
   each row, so rows may sum to more than the distinct-user summary. (rev 2081)
+  Archived cohorts stay linked to a problem for good and would add rows every
+  semester, so they fold behind an "N archived groups" toggle while at least
+  one live group is shown; a problem linked only to archived groups shows
+  them open. (rev 2082)
 - **`bin/rails engine:smoke SUB=<id> [BOX=99]`** — grades one existing
   submission end to end on this host with the real sandbox (compile → every
   testcase → score, exactly as a grader would), prints each testcase's verdict

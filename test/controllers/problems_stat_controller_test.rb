@@ -41,6 +41,54 @@ class ProblemsStatControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Archived cohorts stay linked to a problem forever, so the card would grow a
+  # few rows every semester. Live groups stay visible; archived ones fold.
+  def link_archived_cohort(prob)
+    old = Group.create!(name: "Cohort2568", enabled: false)
+    GroupProblem.create!(group: old, problem: prob)
+    GroupUser.create!(group: old, user: users(:jack), role: :user)
+    Submission.create!(user: users(:jack), problem: prob, language: languages(:Language_c),
+                       source: "x", source_filename: "a.c", status: :done, submitted_at: Time.zone.now,
+                       points: 100, number: 1)
+    old
+  end
+
+  test "By group card shows live groups open and folds archived ones behind a toggle" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    link_archived_cohort(prob)
+    get stat_problem_path(prob)
+    assert_response :success
+    assert_select "#by-group-card" do
+      assert_select "tbody:not(.collapse) tr", count: 1              # GroupA, live
+      assert_select "tbody:not(.collapse) tr a", text: "GroupA"
+      assert_select "tbody#by-group-archived.collapse tr", count: 1  # Cohort2568, folded
+      assert_select "tbody#by-group-archived tr a", text: "Cohort2568"
+      assert_select "tbody#by-group-archived tr td", text: "1 / 1"
+      assert_select "button[data-bs-toggle=collapse][data-bs-target='#by-group-archived']", text: /1 archived group\b/
+    end
+  end
+
+  test "By group card shows archived groups open when no live group is linked" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    groups(:group_a).update!(enabled: false)
+    get stat_problem_path(prob)
+    assert_response :success
+    assert_select "#by-group-card tbody:not(.collapse) tr a", text: "GroupA"
+    assert_select "#by-group-card tbody:not(.collapse) tr .badge", text: "archived"
+    assert_select "#by-group-archived", count: 0
+  end
+
+  test "By group card has no archived toggle when every linked group is live" do
+    sign_in_as("admin", "admin")
+    get stat_problem_path(problems(:prob_add))
+    assert_response :success
+    assert_select "#by-group-card tbody tr", count: 1
+    assert_select "#by-group-archived", count: 0
+    assert_select "#by-group-card button[data-bs-toggle=collapse]", count: 0
+  end
+
   test "By group card is absent when the problem is in no group" do
     sign_in_as("admin", "admin")
     get stat_problem_path(problems(:easy))

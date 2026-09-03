@@ -488,7 +488,11 @@ separately after paint, no 7,825-row HTML. Card: members (enabled `user` role
 only), solved / attempted, solved %, mean best over attempted, row links to the
 Best Score report pre-filtered to the group; the distinct-user summary is kept
 separate so multi-group students don't make the page contradict itself.
-Tests: `test/models/problem_group_stats_test.rb`, additions to
+Rev 2082 (dae, 2026-09-03: "we have lots of groups"): prod-copy numbers are
+median 5 / p90 9 / max 13 linked groups per problem, growing by the archived
+cohorts each semester, so archived groups fold behind a toggle while live ones
+stay open; tabs were rejected because they hide the comparison the card exists
+for. Tests: `test/models/problem_group_stats_test.rb`, additions to
 `test/controllers/problems_stat_controller_test.rb`, `test/system/problem_stat_test.rb`.
 Residual: the remaining ~0.4 s is MySQL reading wide `submissions` rows through
 the `problem_id` index; a covering index `(problem_id, repaired_from_id, user_id, points)`
