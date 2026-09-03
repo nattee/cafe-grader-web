@@ -109,6 +109,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Best-score report could show a negative score.** `final_score` was
+  `LEAST(max score, 100 − assist cost − hint cost)` with no lower bound, so a
+  student who bought more AI assists than a problem is worth went below zero
+  (worst case on production: 46 requests on one problem, −360). It is now
+  floored at 0. (rev 2085)
 - **AI-assist picker addressed the model by position.** The "Get" link
   carried the model's index into the provider map, so a reordered or trimmed
   `config/llm.yml` silently repointed every existing link at a different

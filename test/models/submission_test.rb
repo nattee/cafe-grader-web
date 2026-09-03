@@ -260,4 +260,20 @@ class SubmissionTest < ActiveSupport::TestCase
     assert_includes Submission.stale_evaluating, stale
     assert_not_includes Submission.stale_evaluating, fresh
   end
+
+  # --- max_score_report ---
+
+  test "max_score_report floors final_score at zero when assist cost exceeds the full score" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(points: 100)
+    2.times do |i|
+      sub.comments.create!(user: users(:john), kind: 'llm_assist', status: 'ok', cost: 60,
+                           title: "Assistance #{i}", body: 'hint')
+    end
+    records = Submission.where(id: sub.id)
+                        .max_score_report([sub.problem], sub.submitted_at - 1.day, sub.submitted_at + 1.day)
+    row = records.to_a.find { |r| r.sub_id == sub.id }
+    assert_equal 120.0, row.llm_cost.to_f
+    assert_equal 0, row.final_score.to_d
+  end
 end
