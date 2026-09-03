@@ -141,6 +141,7 @@ Rails.application.routes.draw do
       post 'toggle_available'
       post 'toggle_view_testcase'
       get 'stat'
+      post 'stat_query', defaults: { format: :json }
       get 'get_statement(/:filename)', as: 'get_statement', action: 'get_statement'
       get 'get_attachment(/:filename)', as: 'get_attachment', action: 'get_attachment'
       get 'download_archive'

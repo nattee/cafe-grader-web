@@ -24,6 +24,23 @@ class ContestsTest < ApplicationSystemTestCase
     assert_text "Contest was successfully updated."
   end
 
+  # The manage tables are DataTables fed by JSON; DataTables writes cell data
+  # with innerHTML, so a name with markup used to render as markup (and its
+  # onerror handler ran). A self-registered user controls their own full
+  # name, so this was stored XSS aimed at whoever manages the contest.
+  test "markup in a user's full name renders as text in the manage users table" do
+    users(:james).update_columns(full_name: "James <b>Bond</b> <img src=x onerror=\"document.title='xss'\"> & co")
+    login("admin", "admin")
+    visit contest_path(contests(:contest_a))
+
+    within("#tab-contest-user table") do
+      assert_selector "td", text: "James <b>Bond</b> <img src=x onerror=\"document.title='xss'\"> & co", wait: 10
+      assert_no_selector "b", text: "Bond"
+      assert_no_selector "img"
+    end
+    assert_not_equal "xss", page.title
+  end
+
   private
 
   def login(username, password)

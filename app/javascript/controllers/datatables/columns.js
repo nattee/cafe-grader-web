@@ -14,7 +14,7 @@ export const renderers = {
     const start_offset = row['start_offset_second']
     const extra_time = row['extra_time_second']
     return `<span class="d-inline-flex align-items-center">${start_offset} : ${extra_time} ` +
-      `<a class="d-inline-flex align-items-center text-decoration-none" href='#' data-row-id="${row['id']}" data-login="${row['login']}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog">` +
+      `<a class="d-inline-flex align-items-center text-decoration-none" href='#' data-row-id="${row['id']}" data-login="${cafe.escapeHtml(row['login'])}" data-start-offset="${start_offset}" data-extra-time="${extra_time}" data-action="click->contest#showExtraTimeDialog">` +
       `<span class="mi md-18 mx-1">edit</span></a>` +
       `<span>`
   },
@@ -36,7 +36,7 @@ export const renderers = {
             <span class="mi">more_horiz</span>
           </a>
           <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
-            <li><h6 class="dropdown-header">Actions for ${row['login']}</h6></li>
+            <li><h6 class="dropdown-header">Actions for ${cafe.escapeHtml(row['login'])}</h6></li>
             <li>
               <a class="dropdown-item d-flex align-items-center gap-2" href="#" 
                  data-action="click->contest#postUserAction" 
@@ -61,7 +61,7 @@ export const renderers = {
                  data-action="click->contest#postUserAction" 
                  data-row-id="${row['user_id']}" 
                  data-command="remove"
-                 data-form-confirm="Remove ${row['login']} from this contest?">
+                 data-form-confirm="Remove ${cafe.escapeHtml(row['login'])} from this contest?">
                 <span class="mi md-18">person_remove</span>
                 Remove from Contest
               </a>
@@ -92,7 +92,7 @@ export const renderers = {
            data-action="click->contest#postProblemAction" 
            data-row-id="${row['problem_id']}" 
            data-command="remove"
-           data-form-confirm="Remove ${row['name']} from this contest?" title="Remove from Contest">
+           data-form-confirm="Remove ${cafe.escapeHtml(row['name'])} from this contest?" title="Remove from Contest">
           <span class="mi">close</span>
         </button>
       </div>
@@ -138,7 +138,9 @@ export const columns = {
         return data
       }
     },
-    detail: { data: 'detail_html', title: 'Detail' },
+    // Server-built HTML (Llm::RequestJobPresenter#detail_html): opt out of the
+    // escaping default renderer set in cafe_datatable.js.
+    detail: { data: 'detail_html', title: 'Detail', render: (data) => data },
     createdAt: { data: 'created_at', title: 'Created At' }
   },
   // --- contest (index, user, problem) ---

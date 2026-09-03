@@ -299,13 +299,17 @@ TITLEBAR
     # Kramdown::Document.new(text).to_html.html_safe
   end
 
-  # Safe markdown renderer for untrusted/LLM-generated content. Strips raw
-  # HTML in the input (filter_html: true) so a student can't prompt-inject
-  # the model into emitting <script> etc. and have it execute in an admin's
-  # browser. Use this for viva turns, AI-comment bodies, and anything else
-  # where the markdown source isn't authored by a trusted user.
+  # Safe markdown renderer for untrusted/LLM-generated content. Raw HTML in
+  # the input is *escaped* (escape_html: true), never executed, so a student
+  # can't prompt-inject the model into emitting <script> etc. and have it run
+  # in an admin's browser. Escaping rather than stripping (the former
+  # filter_html: true) matters because viva transcripts are full of C++:
+  # stripping read `vector<int>` as a tag and rendered it as `vector`, so the
+  # student saw text they never typed. Use this for viva turns, AI-comment
+  # bodies, and anything else whose markdown source isn't authored by a
+  # trusted user.
   def safe_markdown(text)
-    renderer = Redcarpet::Render::HTML.new(prettify: true, filter_html: true)
+    renderer = Redcarpet::Render::HTML.new(prettify: true, escape_html: true)
     parser   = Redcarpet::Markdown.new(
       renderer,
       fenced_code_blocks: true,
@@ -316,6 +320,15 @@ TITLEBAR
       lax_spacing:        true
     )
     parser.render(text.to_s).html_safe
+  end
+
+  # simple_format for text the user typed verbatim (viva student answers,
+  # error messages). Rails' simple_format *sanitizes* by default, which is an
+  # allow-list tag filter, not an escape: `vector<int>` loses `<int>`, and
+  # `a<b && c>d` turns into a <b> element. Escape first, then let
+  # simple_format do only paragraphs and <br />.
+  def simple_format_escaped(text, html_options = {})
+    simple_format(ERB::Util.html_escape(text.to_s), html_options, sanitize: false)
   end
 
   # Data attributes that mount the markdown-editor Stimulus controller (Ace +

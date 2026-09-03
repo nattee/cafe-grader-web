@@ -11,6 +11,18 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Problem stat page: "By group" card.** One row per section (group) the
+  viewer may report on: members, solved / attempted, solved %, mean best
+  score over students who attempted, each row linking to the Best Score
+  report pre-filtered to that group. Sections can now be compared at a
+  glance, which the report itself cannot show since it lists one group at a
+  time. Members are enabled `user`-role rows only, so staff test submissions
+  do not move a section's numbers; a student in several groups counts in
+  each row, so rows may sum to more than the distinct-user summary. (rev 2081)
+  Archived cohorts stay linked to a problem for good and would add rows every
+  semester, so they fold behind an "N archived groups" toggle while at least
+  one live group is shown; a problem linked only to archived groups shows
+  them open. (rev 2082)
 - **`bin/rails engine:smoke SUB=<id> [BOX=99]`** — grades one existing
   submission end to end on this host with the real sandbox (compile → every
   testcase → score, exactly as a grader would), prints each testcase's verdict
@@ -36,6 +48,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **Problem stat page loads in a fraction of the time on busy problems.** The
+  page used to pull every submission of the problem into Ruby to compute two
+  numbers (plus a histogram nothing displayed), then render every row into
+  the HTML for the browser to sort. The summary is now two grouped queries and
+  the submissions table is filled by an AJAX request, paged 50 at a time with
+  deferred rendering, so the page paints before a single row exists. On the
+  heaviest problem in the production copy (7,825 submissions) the page's own
+  server work drops from about 1.2 s of Ruby to about 0.4 s of SQL; the row
+  list (about 0.2 s) is fetched separately once the page is up, and the
+  browser no longer receives 7,825 table rows to sort. Same columns as
+  before; scores now sort numerically. (rev 2081)
 - **Viva kit importer: several conduct tags per kit** — `manifest.yml` now takes
   a `conduct_tags:` list (the legacy single `conduct_tag:` still works); every
   listed tag is upserted by name and linked, add-only, to every problem in the
@@ -86,6 +109,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Viva transcript swallowed C++ template brackets.** A student who typed
+  `vector<int> v;` saw `vector v;` in their own chat history (the stored turn
+  was intact): student, system and error turns went through Rails
+  `simple_format`, whose default sanitizer strips unknown tags such as `<int>`
+  (and turned `a<b && c>d` into a bold element), and interviewer turns went
+  through Redcarpet with `filter_html`, which drops them too. Plain-text turns
+  now escape first and only then get paragraphs and line breaks; markdown
+  turns (and the markdown editor preview) show raw HTML as visible text
+  instead of removing it. `<` and `>` display exactly as typed in every role.
+  (rev 2078)
 - **Every submission failed with an internal grading error on servers running
   rev 2045 or later** (all chula_cp deploy hosts, 2026-08-30 14:37 local onward). Rev 2045
   cleared a stale `stdout.txt` inside the shared `prepare_testcase_directory`
@@ -151,6 +184,23 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   is sshd's stderr pipe, so every `deploy_production` job hung after
   "Successfully deployed" until the job timeout while the graders held the
   channel open (2026-08-30, all hosts) (rev 2053).
+
+### Security
+- **Admin DataTables rendered user-supplied text as HTML (stored XSS).**
+  DataTables writes cell data with innerHTML, and every plain
+  `{data: 'full_name'}` column in the JSON-fed admin tables — contest and
+  group membership, the user list and role lists, the activity, submission,
+  login and hall-of-fame reports, the scoreboard — rendered whatever markup
+  the value carried; several custom renderers interpolated names raw as well.
+  A self-registered user sets their own full name, and the login-failure
+  report shows the raw string an anonymous visitor typed as a login, so an
+  `<img onerror=…>` there ran in the browser of the admin viewing the table
+  (verified on the contest manage page). Every JSON-fed table now passes its
+  columns through `cafe.dt.escape_columns_by_default`, which gives each plain
+  column DataTables' escaping text renderer, and the custom renderers escape
+  their free-text fields; a value like `James <b>Bond</b>` now displays as
+  exactly that text. DOM-sourced tables (main list, submissions, stat pages)
+  are unchanged. (rev 2079)
 
 ## [4.5.0] — 2026-08-28
 

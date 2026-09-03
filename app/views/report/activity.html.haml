@@ -28,7 +28,7 @@
 
   function user_link_renderer(data, type, row) {
     if (type == 'display' || type == 'filter') {
-      return `<a href="${user_path.replace("-1234",row['user_id'])}">(${row['login']})</a> ${row['full_name']}`;
+      return `<a href="${user_path.replace("-1234",row['user_id'])}">(${cafe.escapeHtml(row['login'])})</a> ${cafe.escapeHtml(row['full_name'])}`;
     }
     return row['login']
   }
@@ -63,7 +63,7 @@
           title: 'User activity'
         }
       ],
-      columns: [
+      columns: cafe.dt.escape_columns_by_default([
         {title: 'User', data: 'login', render: user_link_renderer},
         {title: 'Subs', data: 'sub_count', className: 'text-end'},
         {title: 'Problems tried', data: 'prob_count', className: 'text-end'},
@@ -71,7 +71,7 @@
         {title: 'First sub', data: 'first_sub', render: date_time_renderer},
         {title: 'Last sub', data: 'last_sub', render: date_time_renderer},
         {title: 'IPs', data: 'ip_count', className: 'text-end'},
-      ],
+      ]),
       createdRow: (row, data) => {
         if (data.sub_count == 0) { $(row).addClass('table-danger') }
       },

@@ -155,6 +155,27 @@ function dt_array_badge_render_factory(className = 'text-bg-secondary') {
   return dt_array_render_factory({item_format: item_format,join: ' ' })
 }
 
+// DataTables writes cell data with innerHTML, so a plain `{ data: 'full_name' }`
+// column renders whatever markup the JSON carries — and user full names,
+// remarks, descriptions and even attempted login names all arrive through such
+// columns. A self-registered user controls their own full name, so this was
+// stored XSS aimed at the admin viewing the table. Pass every JSON-fed
+// `columns` array through here: each column whose data is a field name and
+// which has no renderer of its own gets DataTables' escaping text renderer.
+// Columns with `data: null` are left alone (they always carry a renderer), as
+// is any column with an explicit render — so a column that deliberately shows
+// server-built HTML opts out with an identity render (see
+// columns.solidQueueJob.detail). DOM-sourced tables must NOT use this: there
+// the cell's "data" is the server's HTML.
+function dt_escape_columns_by_default(columns) {
+  if (!Array.isArray(columns)) return columns
+  return columns.map(col =>
+    (typeof col.data === 'string' && col.render === undefined)
+      ? { ...col, render: DataTable.render.text() }
+      : col
+  )
+}
+
 const dt = {
   render: {
     button: dt_button_renderer,
@@ -166,6 +187,7 @@ const dt = {
     array: dt_array_render_factory,
     badge: dt_array_badge_render_factory,
   },
+  escape_columns_by_default: dt_escape_columns_by_default,
 }
 
 export { dt }

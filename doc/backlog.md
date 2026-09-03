@@ -14,6 +14,11 @@ Conventions:
   the durable record lives, any residual) and move it to the `## Resolved` ledger
   at the bottom, newest first. The full write-up stays in `hg log`, the CHANGELOG
   and the linked docs.
+- An entry we have decided NOT to do until something specific happens goes under
+  `## Waiting for a signal`, with an explicit **Reopen when:** line. That is a
+  different state from low priority: the work is understood and often designed,
+  but there is no evidence or requirement yet that it is wanted. Don't start one
+  without its signal; do move it back up the moment the signal appears.
 
 ---
 
@@ -209,35 +214,6 @@ a viva-only attach select on the problem form — see
 
 ---
 
-## Help patterns — follow-ups under the context-dependent split
-
-**Decision (2026-05-17).** Two patterns coexist intentionally: inline
-knowledge card (`_xxx_help.html.haml`) on index/overview pages where space
-is available and visibility matters for new admins; offcanvas drawer on
-edit/detail pages where space is at a premium. Convention written into
-CLAUDE.md under "Frontend & UI Conventions". Do NOT unify onto a single
-pattern; that earlier plan was rejected.
-
-**Discoverability.** Offcanvas trigger buttons must be labeled (`? Help`),
-not icon-only. Codified in CLAUDE.md. First-visit popover pointing at the
-button is a future enhancement using the existing cookie-based
-`dismiss-announcement` controller pattern — deferred until we see whether
-the visible label alone is enough.
-
-**Open items under this split.**
-- **Shared offcanvas helper.** ✅ DONE 2026-07-01 — `shared/_help_drawer.html.haml`,
-  rendered as a layout (`render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:}`);
-  new drawers use it instead of hand-rolling the chrome.
-- **Edit-drawer content density.** ✅ DONE 2026-07-19 — `problems/_edit_help` is a
-  5-item Bootstrap accordion (data-API driven, survives Turbo-frame reloads).
-  Optional follow-up: trim the prose if it still feels heavy once collapsed.
-
-**Out of scope.** `app/views/main/help.html.haml` is a full-page
-student-facing help with i18n — different concern, not covered by the
-admin help-pattern split.
-
----
-
 ## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
 
 **Status 2026-08-02.** A *live-server* CMS import path shipped (master revs 1960–1968;
@@ -330,53 +306,6 @@ not a correctness or grade-manipulation bug.
 **Fix direction.** Either `@submission.lock!` around the check-and-transition,
 or a unique-job guard on `Llm::VivaGradeAssistJob` keyed by submission id.
 Small; low priority given the impact is cost only.
-
----
-
-## `datatables/configs.js` render functions interpolate unescaped HTML
-
-**Context (noted 2026-07-21 during viva Phase 1 review).**
-`app/javascript/controllers/datatables/configs.js` builds several DataTables
-column `render` functions with raw template-literal interpolation of
-server-supplied fields — `${data}` (lines 102, 184, 197) and
-`${row.full_name}` (lines 108, 203) — dropped straight into HTML strings with
-no escaping. `data`/`row.full_name` here are problem names / user full names,
-which admins and group editors can set via ordinary edit forms.
-
-**Impact.** These are all admin/editor-only management tables, so this isn't
-a privilege-escalation vector (an admin who can already do arbitrary damage
-would be attacking themselves or other admins). But it's a live class of bug:
-a problem or user name containing HTML/script content would render
-unescaped for the next admin who views that table, which is worth closing.
-
-**Fix direction.** Add a small `escapeHtml` helper in the configs module and
-wrap every user-controlled interpolation (`data`, `row.full_name`, and any
-other free-text row field) with it. Bounded, mechanical change once the
-helper exists — the main work is grepping the file for every interpolation
-site so none are missed.
-
----
-
-## `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
-
-`Llm::AiGatewayTransport.gateway_config` (`app/services/llm/ai_gateway_transport.rb`)
-reads a single `Rails.configuration.llm[:ai_gateway]` block, so a deployment
-runs exactly one bearer-key gateway. Running two concurrently — the Chula AI
-Gateway *and* an OpenRouter-style aggregator held as a fallback for when a
-model retires or the proxy wobbles — needs `ai_gateway:` generalized into a
-keyed registry shaped like `self_hosted_models:`, plus a provider class per
-entry so the admin pickers can tell the two rosters apart.
-
-**Deliberately not built (2026-08-30), and this is the YAGNI half of the old
-"OpenRouter LLM provider" entry.** Nobody runs two gateways today, and a
-single-gateway deployment is fully served by the current block — *including* a
-downstream site whose only gateway is OpenRouter, which is what that entry was
-really about. The other half (provider-agnostic cost + a documented recipe)
-shipped at rev 2050; see Resolved. Revisit only when a second concurrent
-gateway is actually wanted.
-
-**Size:** medium — config shape, initializer wiring, per-entry provider
-classes, picker plumbing.
 
 ---
 
@@ -493,65 +422,98 @@ id ASC` wants `(status, priority, id)` instead.
 
 ---
 
-## Problem stat page — the page is slow, and the "By group" card is still wanted
+## Waiting for a signal
 
-**Shipped (rev 2029).** The "Score report" pill opens the Best Score report with
-the problem *and* a section preselected (`Problem#report_group_for`: live group
-with submissions > most-submitted incl. archived > newest live); the shared
-report filter partials honour `probs[…]` / `users[…]` URL params.
+Decided, not deprioritized: each of these stays closed until its **Reopen
+when** condition is met. Reviewed 2026-09-02 with dae.
 
-### The "By group" card — wanted, deferred by dae 2026-08-30
+### Help drawers — first-visit popover on the `? Help` trigger
 
-One row per group (users, attempted, solved, mean best score) from
-`Submission.regular.where(problem:)` best-per-user joined to `groups_users`
-(honour `enabled`, drop editor/reporter roles as the report does at
-`report_controller.rb:681-683`), scoped to `groups_for_action(:report)`, each row
-deep-linking via the shipped prefill.
+**Settled (2026-05-17, CLAUDE.md "Frontend & UI Conventions"):** two help
+patterns coexist on purpose — inline knowledge card on index/overview pages,
+offcanvas drawer on edit/detail pages — and the drawer trigger is a *labeled*
+`? Help` button, never icon-only. Shared drawer layout
+(`shared/_help_drawer.html.haml`, 2026-07-01) and the accordion edit drawer
+(`problems/_edit_help`, 2026-07-19) are done. `app/views/main/help.html.haml`
+(student-facing, i18n) is a different concern.
 
-**Delete the old trigger condition** ("only if switching groups in the report
-proves too slow"). That was the wrong test and would never have fired: the value
-is *comparison* — seeing section 3 at 40% while 1/2/4 sit at 85% — which the
-report cannot show at any speed, because it shows one group at a time. dae
-confirmed the comparison is wanted, just not now.
+**Not built:** a first-visit popover pointing at the trigger, on the
+cookie-based `dismiss-announcement` controller pattern. The hypothesis is that
+the visible label alone is enough discoverability.
 
-**Watch out:** a user can be in several groups, so per-group rows sum to more
-than the distinct-user total. The overall summary needs its own distinct-user
-aggregate or the two numbers on the same page will disagree.
+**Reopen when:** there is evidence the label is not enough — admins asking
+where the help is, or drawers that measurably never get opened. Not a date.
 
-### The page underneath is slow (measured 2026-08-30, dev DB: 937k submissions)
+### `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
 
-`ProblemsController#stat` (`:243-257`) loads every submission for the problem and
-loops in Ruby to produce two scalars and a 65-day histogram; `stat.html.haml:48`
-then renders every row unpaginated and DataTables sorts them client-side
-(`paging: false`). On problem 2 `ex00e2` (7,825 submissions, 1,437 users):
+`Llm::AiGatewayTransport.gateway_config` (`app/services/llm/ai_gateway_transport.rb`)
+reads a single `Rails.configuration.llm[:ai_gateway]` block, so a deployment
+runs exactly one bearer-key gateway. Running two concurrently — the Chula AI
+Gateway *and* an OpenRouter-style aggregator held as a fallback for when a
+model retires or the proxy wobbles — needs `ai_gateway:` generalized into a
+keyed registry shaped like `self_hosted_models:`, plus a provider class per
+entry so the admin pickers can tell the two rosters apart. Size: medium —
+config shape, initializer wiring, per-entry provider classes, picker plumbing.
 
-| step | cost |
-|---|---|
-| `find_each` summary pass | 829 ms |
-| `.count` (view calls it twice) | 91 ms each |
-| full `.to_a` load (eager user+language) | 176 ms |
-| **server-side total** | **~1,198 ms**, then 7,825 `<tr>` to the browser |
+**Not built (2026-08-30):** this is the YAGNI half of the old "OpenRouter LLM
+provider" entry. Nobody runs two gateways today, and a single-gateway
+deployment is fully served by the current block — *including* a downstream
+site whose only gateway is OpenRouter. The other half (provider-agnostic cost
++ a documented recipe) shipped at rev 2050; see Resolved.
 
-Both halves are independently fixable: the summary + histogram are single
-`GROUP BY` queries, and the table has an established server-side DataTables AJAX
-pattern to copy (`application_controller.rb:234` plus the `ajax:` configs in
-`datatables/configs.js`). Doing the summary as a grouped query is also *most of
-the card's query*, so the two jobs share their work — build them together.
-
-### ~~Bug: `0/0 (NaN%)` on problems with no submissions~~ — FIXED rev 2056
-
-`stat.html.haml` divided the solved percentage by a zero attempt count; Float
-`0.0/0` is NaN and `NaN.round(1)` returns NaN rather than raising, so the page
-rendered the literal `0/0 (NaN%)`. Now reads "No submissions yet". Regression
-test in `test/controllers/problems_stat_controller_test.rb` — it asserts `NaN%`
-specifically, since the layout's go-to-submission widget matches a bare `/NaN/`
-via `isNaN()`.
+**Reopen when:** a second *concurrent* gateway is actually wanted — a
+fallback aggregator to run beside the Chula AI Gateway, a second provider the
+pickers must tell apart, or a deployment that needs two bearer-key gateways.
+Adding a new provider that *replaces* the current one is not a signal; the
+existing block already handles that with a config change.
 
 ---
 
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Problem stat page — slow page + "By group" card — RESOLVED 2026-09-03
+
+Shipped rev 2081, both halves together as the entry proposed. `Problem#attempt_summary`
+and `Problem#group_stats_for(user)` (`app/models/problem.rb`) replace the Ruby
+loop over every submission (the 65-day histogram it also built was displayed
+nowhere and is gone); the submissions table is filled by `problems#stat_query`
+(JSON, jbuilder) and paged client-side with deferred rendering. The
+"established server-side pattern" the entry pointed at (`process_query_record`)
+turned out to have no callers, so the table follows the Submission report's
+pattern instead. Measured on the prod-copy dev DB, heaviest problem (7,825
+subs): page server work ~1.2 s of Ruby → ~0.4 s of SQL, rows (~0.2 s) fetched
+separately after paint, no 7,825-row HTML. Card: members (enabled `user` role
+only), solved / attempted, solved %, mean best over attempted, row links to the
+Best Score report pre-filtered to the group; the distinct-user summary is kept
+separate so multi-group students don't make the page contradict itself.
+Rev 2082 (dae, 2026-09-03: "we have lots of groups"): prod-copy numbers are
+median 5 / p90 9 / max 13 linked groups per problem, growing by the archived
+cohorts each semester, so archived groups fold behind a toggle while live ones
+stay open; tabs were rejected because they hide the comparison the card exists
+for. Tests: `test/models/problem_group_stats_test.rb`, additions to
+`test/controllers/problems_stat_controller_test.rb`, `test/system/problem_stat_test.rb`.
+Residual: the remaining ~0.4 s is MySQL reading wide `submissions` rows through
+the `problem_id` index; a covering index `(problem_id, repaired_from_id, user_id, points)`
+would cut it further if a problem ever feels slow again. True server-side
+paging (`serverSide: true`) stays an option past ~50k submissions.
+
+### `datatables/configs.js` render functions interpolate unescaped HTML — RESOLVED 2026-09-02
+
+Shipped rev 2079, wider than the entry asked for. The audit showed the entry
+understated it: every plain `{data: 'field'}` column in every JSON-fed
+DataTable rendered markup (DataTables writes cells with innerHTML), a
+self-registered user sets their own full name, and the login-failure report
+shows the raw attempted-login string — stored XSS from a student or an
+anonymous visitor to an admin, not admin-on-admin. Fix:
+`cafe.dt.escape_columns_by_default` (`app/javascript/cafe_datatable.js`) on
+every JSON-fed `columns` array — the `datatables--init` controller plus nine
+inline tables — and `escapeHtml` on the custom renderers' free-text
+interpolations; DOM-sourced tables untouched. Regression: system tests on the
+contest and group user tables (`<b>`, `<img onerror>` in a full name → text,
+no element, handler never runs). Rule for new tables recorded in CLAUDE.md
+(Admin DataTables). Residual: none known.
 
 ### Upstream GitHub Pages for docs/ — RESOLVED 2026-08-31
 

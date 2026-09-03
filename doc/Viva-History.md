@@ -39,6 +39,12 @@ repo, started 2026-09-02).
 
 ## Entries
 
+### 2026-09-02 — Transcript renders `<` and `>` literally (C++ templates no longer vanish)
+**platform code** · rev 2078; `app/helpers/application_helper.rb`, `app/views/viva_sessions/_turn.html.haml`, `test/helpers/application_helper_test.rb` (new), `test/integration/viva_sessions_controller_test.rb` (+2)
+- **Problem observed:** students typing `vector<int> v;` saw `vector v;` in their own history and panicked — the stored turn was intact. Student, system and error turns went through Rails `simple_format`, whose default sanitizer strips unknown tags (`a<b && c>d` even became a bold element); interviewer turns went through Redcarpet `filter_html`, which drops raw tags the same way (`vector<vector<int>>` → `vector>`, only backticked code survived).
+- **Change:** `simple_format_escaped` — escape, then paragraphs and `<br>` — for the three plain-text roles; `safe_markdown` switches `filter_html` → `escape_html`, so raw HTML in an interviewer turn shows as text rather than disappearing (autolinks and code spans unchanged). The markdown editor preview shares the helper and now shows `<int>` too.
+- **Outcome / status:** in master rev 2078, not yet merged to chula_cp or deployed. Regression tests cover every role, including an `<img onerror>` / `<script>` probe in both the student and the interviewer path (rendered as text, no element created).
+
 ### 2026-09-02 — Viva guides published to the upstream wiki
 **docs/tooling** · wiki commit `1f9501f` (cafe-grader-team/cafe-grader-web.wiki); rev 2072 (link targets)
 - **Problem observed:** the instructor and student guides had been drafts in `doc/wiki/` since 2026-07-21 and never reached the wiki; the new authoring guide needed a home problem setters can find.

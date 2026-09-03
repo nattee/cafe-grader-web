@@ -30,6 +30,39 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # --- Transcript rendering ---
+  #
+  # Students type C++ in the answer box. Both render paths used to hand the
+  # text to an HTML sanitizer/filter, which read `vector<int>` as a tag and
+  # dropped it — the student saw `vector v;` in their own history and
+  # panicked (the stored turn was fine). Every role must render `<` literally.
+
+  test "transcript renders template brackets literally in every role" do
+    @owner_sub.viva_turns.create!(role: :student,   status: :ok, content: "I used vector<int> v; and map<string, vector<int>> idx;")
+    @owner_sub.viva_turns.create!(role: :assistant, status: :ok, content: "Why vector<pair<int,int>> and not `set<int>`? Note a < b.")
+    @owner_sub.viva_turns.create!(role: :assistant, status: :error, content: "Net::ReadTimeout #<Net::ReadTimeout>")
+    @owner_sub.viva_turns.create!(role: :system,    status: :ok, content: "(cap<hard> reached)")
+    sign_in_as("john", "hello")
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_includes response.body, "vector&lt;int&gt; v; and map&lt;string, vector&lt;int&gt;&gt; idx;"
+    assert_includes response.body, "Why vector&lt;pair&lt;int,int&gt;&gt; and not <code class=\"prettyprint\">set&lt;int&gt;</code>? Note a &lt; b."
+    assert_includes response.body, "Net::ReadTimeout #&lt;Net::ReadTimeout&gt;"
+    assert_includes response.body, "(cap&lt;hard&gt; reached)"
+  end
+
+  test "transcript never executes HTML typed into a turn" do
+    @owner_sub.viva_turns.create!(role: :student,   status: :ok, content: "<img src=x onerror=alert(1)><script>alert(2)</script>")
+    @owner_sub.viva_turns.create!(role: :assistant, status: :ok, content: "<img src=x onerror=alert(3)><script>alert(4)</script>")
+    sign_in_as("john", "hello")
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_select "#viva-session img", count: 0
+    assert_select "#viva-session script", count: 0
+    assert_includes response.body, "&lt;img src=x onerror=alert(1)&gt;&lt;script&gt;alert(2)&lt;/script&gt;"
+    assert_includes response.body, "&lt;img src=x onerror=alert(3)&gt;&lt;script&gt;alert(4)&lt;/script&gt;"
+  end
+
   # --- Authorization on show / refresh (view-authorization gate) ---
   #
   # Before this gate existed, #show/#refresh had no authorization beyond
