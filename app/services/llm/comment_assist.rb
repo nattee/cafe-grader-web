@@ -9,10 +9,18 @@ module Llm
   class CommentAssist < Request
     DEFAULT_MODEL = nil
 
-    # Score-penalty deducted from Submission#points when a student requests LLM help.
-    # This is a pedagogical "cost" (paid in score), not an API/dollar cost.
-    # Subclasses may override per-deployment.
-    ASSIST_COST = 10
+    # Score penalty (points off the problem's full score) a student pays for one
+    # request — a pedagogical price, not the API/dollar cost (that is
+    # `llm_cost`). Set per site in GraderConfiguration['system.llm_assist_cost']
+    # (Manage → Configuration; seeded at 10); this constant is only the fallback
+    # when the key is absent. Read at request time and stored on the comment, so
+    # changing the setting never rewrites past charges. 0 is a valid price.
+    DEFAULT_ASSIST_COST = 10
+
+    def self.assist_cost
+      value = GraderConfiguration['system.llm_assist_cost']
+      value.nil? ? DEFAULT_ASSIST_COST : value.to_i
+    end
 
     def initialize(submission:, comment:, model: nil, **args)
       super(submission: submission, **args)
@@ -42,7 +50,7 @@ module Llm
       # transport reads its cost header; self-host answers 0.0; a provider
       # with no cost source leaves llm_cost nil rather than a fake 0).
       usage = @parsed_body['usage']
-      @record.cost              = self.class::ASSIST_COST
+      @record.cost              = self.class.assist_cost
       @record.prompt_tokens     = usage['prompt_tokens']     if usage.is_a?(Hash)
       @record.completion_tokens = usage['completion_tokens'] if usage.is_a?(Hash)
       @record.llm_cost          = respond_to?(:compute_cost, true) ? compute_cost(usage) : nil

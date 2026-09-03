@@ -8,7 +8,7 @@
 #llm_assist_picker
   - models.each do |model|
     .row
-      - cost = Rails.configuration.llm[:provider][model].constantize::ASSIST_COST
+      - cost = Llm::CommentAssist.assist_cost
       - refusal = @submission.llm_assist_refusal(model)
       - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: cost, model: model}
       - confirmation = {title: "Confirm Submission for AI Help", body: body_text}

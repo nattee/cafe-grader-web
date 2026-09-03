@@ -44,7 +44,7 @@ admin) may request it (since 2026-09-03).
 - **Models actually running in prod:** gemini-2.5-pro + Claude-3.5-Sonnet via ChulaGenie (2025-07-23 →). Claude-3.5-Sonnet: 74 HTTP-400s Feb–Mar 2026 (Anthropic rejects the PDF sent as `image_url`), last answer 2026-03-03. Config renamed it `Claude-Sonnet` on 2026-02-14 (rev 1498) but the class's allowlist still said `Claude-3.5-Sonnet`, so every Claude request was **silently served by gemini-2.5-pro until 2026-08-23** (rev 2006). gemini-2.5-pro last answer 2026-08-23 (dropped from the picker, not from the relay — `Llm::GenieAssist.list_model` still lists it on 2026-09-03; relay retirement expected ~2026-10). Then: gemini-3.1-pro + Claude-Sonnet (Genie, 08-24 →), claude-opus-4-5 (Gateway, 08-27 →), gemini-3.7-flash (Gateway, 08-28 →). Since 2026-08-01 no request has errored.
 - **Prompt storage and text:** hard-coded in `GenieAssist` (06-29) → `llm_prompt` tags per problem (07-17); two full copies `AI-AL` (239 problems) and `AI-DS` (45), identical apart from AL's Thai-translation appendix (present by 2026-03-04 at the latest); text otherwise unchanged for the feature's life → `codey-core` + one-line `codey-thai` (2026-09-03, `course-prep` rev 3). Edits recommended by the evaluation are **pending**.
 - **Payload:** system prompt + statement PDF + source + verdict string (07-17) → + manager files with a do-not-reveal instruction (08-23) → + compiler output on compile errors, per-testcase table (group, verdict, time, memory, score, limits), previous answer + line diff on repeat requests (2026-09-03, rev 2089). The prompt still carries the "How to Map" section that the table makes redundant.
-- **Price and score policy:** 10 points per request, stated in the confirm dialog (07-11); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090).
+- **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090).
 - **Access:** site switch + contest `allow_llm` + tag present (07-10/11) → + owner-or-admin (2026-09-03, rev 2084; 11 historical requests were made by someone other than the owner, who paid).
 - **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089).
 - **Measurement:** none → next-submission outcome metric + mechanical checks + 291-answer read (2026-09-03).
@@ -70,6 +70,18 @@ admin) may request it (since 2026-09-03).
 ---
 
 ## Entries
+
+### 2026-09-03 — The price becomes a site setting
+**platform code** · rev 2100; `Llm::CommentAssist.assist_cost`, `db/seeds.rb`, `submissions/_add_assist`
+- **Problem observed:** the 10-point penalty was `ASSIST_COST = 10` in the service class — changing it meant a deploy, and there was no agreed place to keep the number. Decided with dae 2026-09-03: keep 10 for now (including for answers that name an algorithm, see the naming decision), but make it adjustable.
+- **Change:** `GraderConfiguration['system.llm_assist_cost']` (integer, seeded 10, editable on the Configuration page, audit-logged like every setting); read at request time and stored on the comment; the confirm dialog and the picker quote it; 0 is a valid "free" price. Per-problem or per-contest prices were considered and left for a real need.
+- **Outcome / status:** master 2100. On deploy run `bin/rails db:seed` once to create the key; until then the code uses 10.
+
+### 2026-09-03 — Naming decision: the tutor may name textbook algorithms; the problem-specific insight stays off limits
+**policy (prompt), pending the prompt edit** · discussion 2026-09-03; evaluation Part 1 finding 1
+- **Problem observed:** the "never name an algorithm or data structure" rule was obeyed to the letter and defeated in spirit — 9% of current answers narrate the algorithm step by step unnamed, a fuller leak than the word would be and harder for the student to look up; four property-descriptions of `set::lower_bound` failed to land where the name would have.
+- **Change (agreed with dae):** allow naming standard textbook algorithms and data structures taught in the course; forbid the problem-specific step — the recurrence, the invariant, the reformulation, a worked example on the student's problem, solution code; when the fix is a redesign, tell the student to keep the current solution for the subtasks it passes and add the faster path for the rest. Price stays 10 points for now.
+- **Outcome / status:** to be written into `codey-core` (course-prep) together with the other evaluation edits; not yet live.
 
 ### 2026-09-03 — Prompt tags: two full copies → `codey-core` + `codey-thai`; name-ordered assembly
 **data + platform code** · prod tags #43/#44 (AI-AL #33, AI-DS #34 deleted; backup `~/codey-tag-backup-2026-09-03.txt` on 10.0.5.50); `course-prep` rev 3 (`assist/`); rev 2093

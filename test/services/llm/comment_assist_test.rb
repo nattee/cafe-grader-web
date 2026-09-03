@@ -92,7 +92,7 @@ class Llm::CommentAssistTest < ActiveSupport::TestCase
     assert_equal 3450, comment.prompt_tokens
     assert_equal 5591, comment.completion_tokens
     assert_in_delta 0.0123, comment.llm_cost.to_f, 1e-9
-    assert_equal Llm::CommentAssist::ASSIST_COST, comment.cost, 'score penalty is a separate column'
+    assert_equal Llm::CommentAssist.assist_cost, comment.cost, 'score penalty is a separate column'
   end
 
   test "handle_response leaves llm_cost nil for a provider without a cost source; tokens still recorded" do
@@ -113,5 +113,23 @@ class Llm::CommentAssistTest < ActiveSupport::TestCase
     texts = data[:messages].first[:content].map { |p| p[:text] }
     # ca-prompt < codey-core < codey-thai by name, although codey-thai was attached first
     assert_equal ['You are a tutor.', 'You are Codey.', 'Append a Thai translation.'], texts
+  end
+
+  # --- price ---
+
+  test "the score penalty is the site setting system.llm_assist_cost" do
+    set_grader_config('system.llm_assist_cost', 7)
+    comment = processing_comment
+    body = {choices: [{message: {content: 'hint'}}], usage: {prompt_tokens: 1, completion_tokens: 1}}.to_json
+    UncostedAssist.new(submission: @submission, comment: comment, model: 'm').send(:handle_response, FakeResponse.new(body))
+    assert_equal 7, comment.reload.cost
+  end
+
+  test "a price of 0 is honoured (free assist), and a missing key falls back to 10" do
+    set_grader_config('system.llm_assist_cost', 0)
+    assert_equal 0, Llm::CommentAssist.assist_cost
+    GraderConfiguration.find_by(key: 'system.llm_assist_cost').destroy!
+    reset_grader_config_cache
+    assert_equal 10, Llm::CommentAssist.assist_cost
   end
 end

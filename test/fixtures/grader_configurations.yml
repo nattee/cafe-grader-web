@@ -171,3 +171,9 @@ GraderConfiguration_27:
   value_type: boolean
   value: 'false'
   description: When true, a user can request LLM assist on each submission
+
+GraderConfiguration_28:
+  key: system.llm_assist_cost
+  value_type: integer
+  value: '10'
+  description: Score penalty (points off the problem's full score) charged for each LLM assist request

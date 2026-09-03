@@ -211,4 +211,16 @@ class CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/turbo-stream action="replace" target="llm_assist_picker"/, response.body)
   end
+
+  test "the confirm dialog quotes the configured price" do
+    enable_llm_assist!
+    set_grader_config('system.llm_assist_cost', 7)
+    sign_in_as("john", "hello")
+    get submission_path(@sub)
+    assert_response :success
+    # the confirm text is JSON-encoded inside data-turbo-confirm, so the line
+    # break before the number is a literal backslash-n
+    assert_match(/7 points\. If your final score/, response.body)
+    assert_no_match(/10 points\. If your final score/, response.body)
+  end
 end
