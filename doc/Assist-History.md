@@ -14,6 +14,19 @@ observed → Change → Outcome / status**, with refs. Prompt edits cite
 `SUPERSEDED YYYY-MM-DD by …`; never delete. Rev numbers are local hg revs of
 `~/cafe-grader/web` (master unless marked `chula_cp`).
 
+## Where the record lives
+
+- **This repo (mirrored to GitHub):** the timeline (this file), the studies
+  (`doc/assist-corpus-eval-*.md`), the platform code and its CHANGELOG. Nothing
+  here may contain student code, tutor answers to real students, or the prompt
+  text itself.
+- **`course-prep` (local hg repo, no remote, ever):** `assist/codey-core.md` and
+  `assist/codey-thai.md` (the live prompt tags, versioned), the originals they
+  replaced, and `assist/eval-<date>/` — every evaluation's data and scripts: the
+  answers read, the readers' and judges' scores, the whole-corpus frames, the
+  blind human-read form and its answers, UI screenshots. Cite `course-prep rev N`
+  from entries here.
+
 ## What the feature is
 
 A student who is stuck on a graded submission can press **Get** under "AI help
@@ -71,6 +84,12 @@ admin) may request it (since 2026-09-03).
 
 ## Entries
 
+### 2026-09-03 — Blind human read of 30 answers (the calibration anchor)
+**study** · `course-prep` rev 5 (`assist/eval-2026-09-03/dae-reads.html`, `make_reads_page.py`, `dae-reads-key.json`); rev 2102–2103 (plan + this entry)
+- **Problem observed:** every grade in the study so far was given by a model — the 291 read by Claude, then the DGX judges — and the two disagreed most on the line that the main finding rests on: did the tutor merely ask a leading question, or state the fix? No human had ruled on that line.
+- **Change:** a single-page form with 30 answers from the 291, chosen where the graders disagreed — 12 where the Claude readers said "Socratic" and the few-shot DGX judge said "stated the fix", 12 the other way round, 6 the readers called algorithm hand-overs — shuffled, student code folded under a click, no grader's score visible. Three questions per answer in plain words (how much was given away / diagnosis right / one issue) plus a note; answers autosave in the browser and export as `dae-reads.csv` into the same directory. The selection key with the graders' scores is kept in a separate file. dae started reading 2026-09-03 evening.
+- **Outcome / status:** pending `dae-reads.csv`. Next session joins it to the graders' scores on `comment_id` and reports, per disputed answer, which grader dae sided with — that decides how to read every leak figure in the study and how to calibrate the judge for the offline old-vs-new prompt test.
+
 ### 2026-09-03 — The price becomes a site setting
 **platform code** · rev 2100; `Llm::CommentAssist.assist_cost`, `db/seeds.rb`, `submissions/_add_assist`
 - **Problem observed:** the 10-point penalty was `ASSIST_COST = 10` in the service class — changing it meant a deploy, and there was no agreed place to keep the number. Decided with dae 2026-09-03: keep 10 for now (including for answers that name an algorithm, see the naming decision), but make it adjustable.
@@ -90,7 +109,7 @@ admin) may request it (since 2026-09-03).
 - **Outcome / status:** live on prod (per-problem behaviour unchanged; verified by assembling the payload for an AL and a DS problem). Code in master 2093, not yet merged to chula_cp.
 
 ### 2026-09-03 — First corpus evaluation (Part 1 read scores, Part 2 whole-corpus outcomes, Part 3 DGX judge calibration)
-**study** · `doc/assist-corpus-eval-2026-09-03.md` (revs 2094, 2096, 2097, 2098); raw frame + scores + `frame2.rb`/`frame3.rb` + `judge.py`/`agreement.py`/`judge-*.csv` in `~/cafe-grader/assist-eval-2026-09-03/`
+**study** · `doc/assist-corpus-eval-2026-09-03.md` (revs 2094, 2096, 2097, 2098); raw frame + scores + `frame2.rb`/`frame3.rb` + `judge.py`/`agreement.py`/`judge-*.csv` in `course-prep/assist/eval-2026-09-03/` (local-only repo; `~/cafe-grader/assist-eval-2026-09-03` is a symlink to it)
 - **Problem observed:** no one had read what the tutor actually says. The effectiveness metric showed no visible benefit but could not say why.
 - **Change:** frame over all 4,787 answers (verdict class, next-submission outcome, request index, mechanical checks); 291 read against source + evaluations (all 193 current-model answers + 7 per verdict-class × outcome cell of the retired models) and scored on leak / diagnosis / focus / actionable.
 - **Outcome / status:** Part 3 (evening): the self-hosted models were calibrated as judges against the 291 read answers — gemma-4-31b matches on focus (κ 0.77) and language only; qwen3.5 reaches κ ≈ 0.5 on leak and wrong-diagnosis but is systematically lenient (calls 38% leaks vs the readers' 60%), so a free census would understate the study's main finding; a few-shot retry with six gold anchors fixed hand-over detection (leak-2 κ 0.65) and focus (0.71) but flipped rather than removed the leak bias (three-way κ 0.49) and hurt diagnosis (0.23) — DGX route for leak/diagnosis stopped; paid targeted sample vs stop-at-291 pending. Part 2 (evening, database only): paired same-student-same-problem improvement 27% → 38%; compile-error and repeat requests are the worst cells; Aug 2026 same-problem head-to-head favours the current models (next↑ 50% vs 38%); two problems absorbed 277 requests with ~2% success. Part 1: hard rules hold; the soft rule fails (64% state the fix, 9% hand over the algorithm in words, mostly TLE/RE, and those students regress as often as they improve); wrong diagnoses are model-specific (gemini-3.1-pro 0/90, Claude-Sonnet 8/40); the current models are twice as long and half as focused as gemini-2.5-pro was. Eight prompt edits and two roster/Thai decisions listed in the doc — **pending dae**.

@@ -443,7 +443,7 @@ see it, compare old and new prompt on the same inputs, offline:
    rest for free.
 4. **Human anchor:** dae reads 30 answers from Part 1's 291 (may run in
    parallel with the judging; the comparison happens afterwards). Page:
-   `~/cafe-grader/assist-eval-2026-09-03/dae-reads.html` — 12 where the
+   `course-prep/assist/eval-2026-09-03/dae-reads.html` — 12 where the
    readers said Socratic and the few-shot DGX judge said "stated the fix", 12
    the other way round, 6 the readers called hand-overs; shuffled, no judge
    scores shown. Three questions each (gave away how much / diagnosis right /
@@ -462,6 +462,6 @@ accounting, tag ordering, price setting, docs); prod runs chula_cp 2088.
 How to judge the edits: re-run `frame.rb` after a term of the new payload and
 prompt and compare the read-score columns and the next-submission outcomes
 against this document. The scorer prompt and the frame script live in the
-session scratchpad and in `~/cafe-grader/assist-eval-2026-09-03/` (frame CSV,
+session scratchpad and in `course-prep/assist/eval-2026-09-03/` (local-only repo; `~/cafe-grader/assist-eval-2026-09-03` is a symlink to it) (frame CSV,
 per-chunk scores, aggregation script); the raw answers are in production
 `comments` and are not copied into the repo.
