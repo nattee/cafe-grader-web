@@ -179,6 +179,85 @@ decision and the verification are the work.
 
 ---
 
+## Submission assist (Codey) — deferred improvements from the 2026-09-03 review
+
+**Context.** Code review + prod-copy data pass over `Llm::CommentAssist` /
+`CommentsController#llm_assist` on 2026-09-03. The defects found were fixed at
+master 2084–2086 (owner-or-admin gate, model by name + `button_to`, sanitized
+answer body, `final_score` floored at 0, nil PDF part, double error marker).
+Everything below was deliberately left for a follow-up. Numbers are from the
+local dev DB (prod copy): 5,054 requests, 4,577 answered, 309 students,
+2025-07 → 2026-08.
+
+### Payload — the model is asked to guess what the grader already knows
+- **Compiler output is never sent.** 166 assisted submissions had the verdict
+  `Compilation error` (281 carried a `compiler_message`); the prompt's Step 1
+  asks the model to find the syntax error blind. `SubmissionRepairAssist`
+  already sends `compiler_message.truncate(4000)` (`app/services/llm/submission_repair_assist.rb`
+  ~line 251) — lift the same block into `CommentAssist#user_source_code`.
+- **Per-testcase truth instead of "How to Map".** The `AI-AL`/`AI-DS` tag
+  text teaches the model to infer subtask boundaries from PDF percentages
+  ("the first 4 verdicts correspond to…"). `evaluations` × `testcases` hold
+  the real `group`/`group_name`, per-test `result_text`, `time`, `memory`,
+  `score`. Send a compact table (no input/sol) and delete that prompt
+  section. Removes a whole class of confidently wrong diagnoses.
+- **No memory across requests.** 40% of (user, problem) pairs asked more than
+  once (661 twice, 278 three times, max 46); 190 submissions had the same
+  model asked twice. The payload has no previous answer and no diff against
+  the prior submission, so the model repeats itself. Include the last assist
+  body (or a summary) + the diff.
+
+### Product guards
+- Disable **Get** while a request for that submission is `processing`, when a
+  (submission, model) answer already exists, and when `points == 100` (126
+  paid-for-nothing requests). Cap total assist cost per (user, problem) —
+  the score floor (rev 2085) stops the negative number, not the spend.
+- **Policy: staff-initiated requests charge the student.** 11 prod requests
+  had requester ≠ owner (rev 2084 now limits that to admins). Decide whether
+  an admin's request should carry `cost: 0`.
+
+### Accounting
+- **No USD/token record for assists.** `CommentAssist#handle_response` sets
+  `cost` to the *score* penalty and never calls `compute_cost`
+  (`AiGatewayTransport` has it); token usage survives only inside the stored
+  `llm_response` JSON (present in 4,492 / 4,577 rows — backfillable).
+  Historic spend: 22.7M prompt + 22.0M completion tokens (gemini-2.5-pro
+  ~4.9k completion/answer, mostly reasoning). Add a `llm_cost`/tokens column
+  or reuse `viva_turns`-style accounting.
+- **397 comments stuck `processing`** (Aug–Sep 2025, before the
+  retries-exhausted fix): eternal spinner + 5 s polling on those pages. Prod
+  one-off:
+  `Comment.where(kind: :llm_assist, status: :processing).where(created_at: ..1.day.ago).update_all(status: :error, title: 'Assistant Error (abandoned)')`.
+- **Claude-3.5-Sonnet 400s.** 74 of the 75 HTTP-400 errors are that model
+  (Feb–Mar 2026) — the PDF-as-`image_url` rejection `AiGatewayTransport`
+  converts around; chula_cp's `GenieAssist` likely still sends it. Check the
+  picker on chula_cp actually serves working models before the term.
+
+### Prompt / data (the "should the prompt change?" question)
+- `AI-AL` (#33, 239 problems) and `AI-DS` (#34, 45) are the same 9.4 KB text
+  except AL appends a Thai translation (2,342 / 4,577 answers carry one,
+  roughly doubling visible output). `AI_viva` (#36) is `llm_prompt` on two
+  viva problems and read by nothing — re-kind or delete on prod (check
+  whether the D6 migrator ran there). Since `CommentAssist` concatenates
+  every attached `llm_prompt` tag, a shared core tag + a tiny per-course tag
+  would stop the two copies drifting without any schema work.
+- **Effectiveness metric** (next submission on the same problem): assisted
+  improved 36% / same 50% / reached 100 18%, vs an unassisted baseline of
+  43% / 44% / 23% on the same problems and period. Selection-biased, but no
+  visible benefit either — treat a prompt revision as an experiment measured
+  with this metric (AL vs DS tags are natural arms).
+- **Reading the corpus.** 15.2 MB of answers ≈ 3.5–4.5M tokens (Thai inflates)
+  + 5.0 MB source ≈ 1.5M — not a one-session read. Options: a ~100-answer
+  stratified sample (verdict class × model × improved/not) ≈ 120k tokens
+  in-session; a script checking every answer's "first failing subtask" claim
+  against `evaluations`; a DGX judge pass over all 4,577 for solution
+  leakage / named algorithms.
+
+**Size:** payload items ~half a day each with tests; guards a few hours;
+accounting needs a migration; prompt work is mostly authoring in the tags.
+
+---
+
 ## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
 
 **Context.** Viva grounding was extracted off `Tag` into a dedicated
@@ -190,10 +269,14 @@ a viva-only attach select on the problem form — see
 - **Unify `llm_prompt` into a shared `LlmAsset` model** (deferred alternative
   C from the spec). `llm_prompt` stays on `Tag` for now — small, always text,
   and working. Unifying it with `GroundingMaterial` into one LLM-asset model
-  would let `Tag` become a pure label table, but rewrites the working
-  rubric-injection path (`viva_turn_assist.rb`, `viva_grade_assist.rb`) for
-  marginal benefit today; revisit if `llm_prompt` ever grows document-native
-  needs (files, per-item token budgeting) the way grounding did.
+  would let `Tag` become a pure label table, for marginal benefit today;
+  revisit if `llm_prompt` ever grows document-native needs (files, per-item
+  token budgeting) the way grounding did. *(2026-09-03: the original cost
+  estimate — "rewrites the rubric-injection path in `viva_turn_assist.rb` /
+  `viva_grade_assist.rb`" — is stale since D6 (2026-07-20) moved viva onto
+  `problems.viva_prompt` + `viva_conduct`; `llm_prompt` now has exactly one
+  consumer, `comment_assist.rb`. The 2026-07-20 decision reaffirmed NOT
+  unifying the schema, only the UI grammar.)*
 - **Accurate page-count token estimate for grounding files.** `GroundingMaterial#compute_estimated_tokens`
   (`app/models/grounding_material.rb`) uses a byte-size proxy
   (`BYTES_PER_PROXY_TOKEN = 400`, i.e. ~1 token per 400 bytes) for attached

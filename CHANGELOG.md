@@ -109,6 +109,26 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **AI assist on a problem without a statement PDF sent a `null` content
+  part**, which the provider rejects (400) and the student saw as "Assistant
+  Error". The part is now omitted. Latent so far: every tagged problem on
+  production has a PDF. (rev 2086)
+- **A failed AI-assist request was marked twice**: the service recorded the
+  failure, then the job relabelled it "Assistant Error (retries exhausted)"
+  and appended a second error block even when nothing had been retried. The
+  job now leaves a comment the service already marked alone. (rev 2086)
+- **Best-score report could show a negative score.** `final_score` was
+  `LEAST(max score, 100 − assist cost − hint cost)` with no lower bound, so a
+  student who bought more AI assists than a problem is worth went below zero
+  (worst case on production: 46 requests on one problem, −360). It is now
+  floored at 0. (rev 2085)
+- **AI-assist picker addressed the model by position.** The "Get" link
+  carried the model's index into the provider map, so a reordered or trimmed
+  `config/llm.yml` silently repointed every existing link at a different
+  model, and a stale index raised a 500. The picker is now a form that POSTs
+  the model by name; an unregistered name is refused with a toast (422). The
+  penalty quoted in the confirmation dialog comes from the serving class's
+  `ASSIST_COST` instead of a hard-coded 10. (rev 2084)
 - **Viva transcript swallowed C++ template brackets.** A student who typed
   `vector<int> v;` saw `vector v;` in their own chat history (the stored turn
   was intact): student, system and error turns went through Rails
@@ -186,6 +206,23 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   channel open (2026-08-30, all hosts) (rev 2053).
 
 ### Security
+- **Anyone logged in could buy AI assistance on any submission, charging its
+  owner.** The submission-assist request checked the site switch, the
+  contest `allow_llm` flag and the `llm_prompt` tag, but never who was
+  asking: any logged-in user could POST it against any submission id (they
+  are sequential), creating the request under their own name while the
+  10-point penalty landed on the submission's owner and the model call was
+  billed to the deployment — on a submission the requester could not even
+  open. The request is now accepted only from the submission's owner (who
+  must also be able to view it) or an admin; anyone else gets a "your own
+  submissions only" toast and a 403. Production history holds 11 requests
+  whose requester was not the owner. (rev 2084)
+- **AI-assist answers were rendered as raw HTML.** The model-written body
+  went through the markdown renderer with HTML passthrough, so markup the
+  model echoed from student code (a comment, a string literal) ran in the
+  browser of whoever opened the comment — staff included. The body is now
+  sanitized after rendering; headings, lists, code blocks and the
+  server-written error block display as before. (rev 2084)
 - **Admin DataTables rendered user-supplied text as HTML (stored XSS).**
   DataTables writes cell data with innerHTML, and every plain
   `{data: 'full_name'}` column in the JSON-fed admin tables — contest and

@@ -159,7 +159,9 @@ class Submission < ApplicationRecord
       .select('submissions.user_id,users.login,users.full_name,users.remark')
       .select('problems.name')
       .select('max_score')
-      .select('LEAST(max_score,100.0-IFNULL(LLM_ASSIST.llm_cost,0.0)-IFNULL(HINT_REVEAL.hint_cost,0.0)) as final_score')
+      # floored at 0: a student who bought more assists than the problem is worth
+      # (observed: 46 requests = 460 points on one problem) must not go negative
+      .select('GREATEST(0, LEAST(max_score,100.0-IFNULL(LLM_ASSIST.llm_cost,0.0)-IFNULL(HINT_REVEAL.hint_cost,0.0))) as final_score')
       .select('submitted_at')
       .select('submissions.id as sub_id')
       .select('submissions.problem_id,submissions.user_id')

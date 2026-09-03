@@ -117,7 +117,9 @@ module Llm
       end
 
       result << user_source_code
-      result
+      # pdf_attachment is nil without a statement PDF; a nil here serializes as
+      # `null` in the content array and the provider rejects the request (400)
+      result.compact
     end
 
     def user_source_code

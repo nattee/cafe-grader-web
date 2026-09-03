@@ -165,3 +165,9 @@ GraderConfiguration_26:
     day (practice mode only; admins exempt).
 
 
+
+GraderConfiguration_27:
+  key: system.llm_assist
+  value_type: boolean
+  value: 'false'
+  description: When true, a user can request LLM assist on each submission

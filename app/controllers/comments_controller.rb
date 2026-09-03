@@ -108,8 +108,13 @@ class CommentsController < ApplicationController
   def show_for_submission
     @header_msg = "Comment: #{@comment.title}".html_safe
     if @comment.kind == 'llm_assist'
-      @body_msg = render_to_string(partial: 'llm_assist_header') + "\n" +
-                  (@comment.body.html_safe || '-- blank --')
+      # The body is model-written and can echo student-controlled markup (a
+      # code comment, a string literal), and staff open these modals — so it
+      # is rendered here (markdown → HTML → sanitize) rather than handed to
+      # the view's raw markdown() like a staff-authored hint. The header
+      # partial is ours and keeps its <script>.
+      body_html = helpers.sanitize(helpers.markdown(@comment.body.presence || '-- blank --'))
+      @body_html = helpers.safe_join([render_to_string(partial: 'llm_assist_header').html_safe, body_html])
     else
       @body_msg = (@comment.body.html_safe || '-- blank --')
     end
@@ -157,11 +162,9 @@ class CommentsController < ApplicationController
 
   # request the llm assist via job
   def llm_assist
-    # get the service class that responsible for the model
-    model_id = params[:model].to_i
-    model_name = Rails.configuration.llm[:provider].keys[model_id]
-    llm_assist_job_class = (Rails.configuration.llm[:provider][model_name] + 'Job').constantize
-
+    # @llm_model / @llm_service_class were resolved and validated by can_request_llm
+    model_name = @llm_model
+    llm_assist_job_class = (@llm_service_class + 'Job').constantize
 
     @record = @submission.comments.create!({
       user: @current_user,
@@ -202,6 +205,17 @@ class CommentsController < ApplicationController
     end
 
     def can_request_llm
+      # The request is charged to the submission's OWNER (max_score_report joins
+      # the penalty by submission, not by requester), so only the owner — or an
+      # admin — may make it. Submission ids are sequential; without this gate
+      # any logged-in user could spend another student's points and the API
+      # budget on a submission they cannot even view.
+      unless @current_user.admin? ||
+             (@submission.user_id == @current_user.id && @current_user.can_view_submission?(@submission))
+        @toast = {title: 'LLM Assist Error', body: 'AI assistance can only be requested on your own submissions', type: 'alert' }
+        render 'submission_and_toast', status: :forbidden and return
+      end
+
       # check global allow llm
       unless GraderConfiguration['system.llm_assist']
         @toast = {title: 'LLM Assist Error', body: "The system does not allow LLM Assist at the moment", type: 'alert' }
@@ -218,6 +232,16 @@ class CommentsController < ApplicationController
       unless @submission.problem.tags.where(kind: 'llm_prompt').any?
         @toast = {title: 'LLM Assist Error', body: "There is no <code>llm_prompt</code> tag associated with this problem.".html_safe, errors: ['Please notify the staff'], type: 'alert' }
         render 'submission_and_toast' and return
+      end
+
+      # The model is addressed by NAME — a key of the provider map built from
+      # llm.yml (see config/initializers/cafe_grader.rb). An unknown name is a
+      # 422, never a 500; the name is also what the placeholder title shows.
+      @llm_model = params[:model].to_s
+      @llm_service_class = Rails.configuration.llm[:provider][@llm_model]
+      if @llm_service_class.blank?
+        @toast = {title: 'LLM Assist Error', body: "Unknown AI model #{@llm_model.inspect}", type: 'alert' }
+        render 'submission_and_toast', status: :unprocessable_entity and return
       end
     end
 end
