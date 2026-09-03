@@ -329,6 +329,64 @@ recorded only from 2026-09-03 onward (rev 2089).
 - `remaining_merge_2` and `skip_list` deserve a look as problems, independent
   of the tutor.
 
+## Part 3 — can the department's own models do the reading? (DGX calibration)
+
+Same rubric, same 291 records, run as one call per record (temperature 0,
+JSON output) on the two self-hosted models, then compared column by column with
+the Claude read scores (`judge.py`, `agreement.py`, `judge-*.csv` in the
+archive). Kappa is chance-corrected agreement; 0.4–0.6 is "moderate", 0.8+ is
+what a census needs.
+
+| Column | gemma-4-31b agree / κ | qwen3.5 agree / κ | gold rate | qwen rate |
+|---|---|---|---|---|
+| leak (0/1/2) | 63% / 0.31 | 70% / **0.48** | | |
+| leak any (≥1) | 71% / 0.38 | 75% / 0.51 | 60% | **38%** |
+| leak = 2 (algorithm handed over) | 90% / 0.15 | 91% / 0.31 | 11% | 3% |
+| diagnosis wrong | 90% / 0.26 | 92% / **0.49** | 10% | 7% |
+| focus | 89% / **0.77** | 75% / 0.52 | 62% | 39% |
+| actionable | 95% / 0.49 | 87% / 0.25 | 92% | 88% |
+| code ≥3 lines | 79% / 0.04 | 98% / 0.49 | 1% | 3% |
+| names a technique | 92% / 0.21 | 95% / 0.44 | 3% | 5% |
+| language ok | 100% / 1.00 | 100% / 0.67 | 99% | 100% |
+| cost per record | 4 s, ~90 tokens | 55 s, ~5,800 tokens | | |
+
+Confusions that matter (rows = gold, columns = judge):
+
+- **qwen on leak:** of 141 answers the readers scored "states the fix", qwen
+  called 56 Socratic; of 33 "hands over the algorithm", it called 12 Socratic
+  and 14 "states the fix", recognising 7. It is lenient in exactly the place
+  the study's main finding lives — a census on qwen would report leaks at
+  ~38% instead of ~60% and algorithm hand-overs at 3% instead of 11%. When it
+  does say 2, it is right 7 times in 8.
+- **qwen on diagnosis:** finds 13 of the 29 wrong diagnoses (4 false alarms).
+  Gemma finds 6.
+- **gemma on leak:** the opposite bias — pulls everything to "states the fix"
+  (57 of 117 Socratic answers) and almost never sees a hand-over (3 of 33).
+- **gemma on code lines:** counts quoted student code as tutor-written (21%
+  vs 1%).
+
+**Verdict.** Neither model can replace the reader for *leak* or *diagnosis*,
+which are the columns the recommendations rest on. Gemma is a good free judge
+for *focus* (κ 0.77) and *language*; qwen is a usable screen for *code lines*
+and *named techniques*. The disagreement is systematic (direction, not
+noise), so it will not average out over a census.
+
+Two caveats. The gold set is itself one LLM reader per chunk, so part of the
+gap is gold noise; the 85 leak disagreements between qwen and the readers are
+the right place for a human to arbitrate — 30 of them read by the instructor
+would say who is calibrated. And the qwen prompt carried no examples; a
+few-shot version anchored on 6 gold answers (two per leak level) is the
+cheapest thing that could move the leak threshold, one more 30-minute run.
+
+**Options from here** (decision pending):
+1. One more free qwen run with few-shot anchors; keep it if leak κ clears
+   ~0.7, otherwise stop trying.
+2. Buy leak + diagnosis from a hosted model on a targeted sample (compile
+   errors, repeat requests, the ten heaviest problems, the Aug-2026 overlap;
+   ~650 records) and let gemma/qwen fill the cheap columns on the census.
+3. Treat the 291 as the study and move to the prompt edits; re-measure with
+   the same 291-record protocol after a term.
+
 How to judge the edits: re-run `frame.rb` after a term of the new payload and
 prompt and compare the read-score columns and the next-submission outcomes
 against this document. The scorer prompt and the frame script live in the
