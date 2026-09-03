@@ -441,10 +441,15 @@ see it, compare old and new prompt on the same inputs, offline:
    window per 300 answers; the DGX (few-shot qwen, `judge.py --anchors`) can
    grade the cheap columns (hand-over, focus, code, names, language) on the
    rest for free.
-4. **Human anchor first:** dae reads 30 answers from Part 1's 291 against the
-   rubric before the judging run — drawn from the answers where qwen and the
-   readers disagreed on Socratic-vs-states-the-fix — so the judge's lean on
-   that line is known.
+4. **Human anchor:** dae reads 30 answers from Part 1's 291 (may run in
+   parallel with the judging; the comparison happens afterwards). Page:
+   `~/cafe-grader/assist-eval-2026-09-03/dae-reads.html` — 12 where the
+   readers said Socratic and the few-shot DGX judge said "stated the fix", 12
+   the other way round, 6 the readers called hand-overs; shuffled, no judge
+   scores shown. Three questions each (gave away how much / diagnosis right /
+   one issue) plus a note. Output: `dae-reads.csv` in the same directory; the
+   selection key with the graders' scores is `dae-reads-key.json` there. Join
+   on `comment_id` to say which judge dae agrees with on each disputed line.
 5. **Success:** on arm (c) vs (a), fewer stated fixes and hand-overs, fewer
    wrong diagnoses, more single-focus answers, no rise in code written; then
    apply the prompt to tag `codey-core` (#43) on prod, cite the course-prep
