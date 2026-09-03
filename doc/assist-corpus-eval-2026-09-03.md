@@ -14,8 +14,8 @@ submission that still exists.
 
 | Model generation | Answers | Share | Still in the picker |
 |---|---|---|---|
-| gemini-2.5-pro | 3,973 | 83% | no |
-| Claude-3.5-Sonnet | 621 | 13% | no |
+| gemini-2.5-pro | 3,973 | 83% | no (removed from the picker 2026-08-23; the Genie relay still serves it, planned retirement ~2026-10) |
+| Claude-3.5-Sonnet | 621 | 13% | no (renamed `Claude-Sonnet` on the relay) |
 | gemini-3.1-pro (ChulaGenie) | 90 | 2% | yes |
 | Claude-Sonnet (ChulaGenie) | 40 | 1% | yes |
 | claude-opus-4-5 (AI Gateway) | 37 | 1% | yes |
