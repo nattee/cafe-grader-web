@@ -441,9 +441,7 @@ class Problem < ApplicationRecord
   #
   # Returns nil when there is no candidate at all.
   def report_group_for(user)
-    candidates = user.groups_for_action(:report)
-                     .where(id: groups.where(groups_problems: { enabled: true }).select(:id))
-                     .to_a
+    candidates = reportable_groups_for(user).to_a
     return nil if candidates.empty?
 
     sub_counts = Submission.regular.where(problem_id: id)
@@ -457,7 +455,60 @@ class Problem < ApplicationRecord
     end
   end
 
+  # ---- stat page aggregates -------------------------------------------------
+  #
+  # Both work from "best score per user" over the problem's regular
+  # submissions (shadow/repaired runs excluded), so a user with ten attempts
+  # counts once. `points` is nil until graded: such a user is attempted but
+  # contributes to neither solved nor the mean.
+
+  GroupStat = Struct.new(:group, :users, :attempted, :solved, :mean_best)
+
+  # One GroupStat per group this problem is in that +user+ may report on,
+  # ordered by group name. Members are enabled `user`-role rows only —
+  # editors and reporters are staff, and their test submissions must not
+  # move a section's numbers. A user in several groups appears in each, so
+  # the rows sum to more than #attempt_summary's distinct count by design.
+  def group_stats_for(user)
+    candidates = reportable_groups_for(user).order(:name).to_a
+    return [] if candidates.empty?
+
+    ids     = candidates.map(&:id)
+    members = GroupUser.where(group_id: ids, enabled: true, role: :user)
+    users   = members.group(:group_id).count
+    stats   = members
+                .joins("INNER JOIN (#{best_points_per_user.to_sql}) b ON b.user_id = groups_users.user_id")
+                .group(:group_id)
+                .pluck(Arel.sql('groups_users.group_id, COUNT(*), COALESCE(SUM(b.best >= 100), 0), AVG(b.best)'))
+                .to_h { |gid, attempted, solved, mean| [gid, [attempted, solved.to_i, mean&.to_f&.round(1)]] }
+
+    candidates.map do |g|
+      attempted, solved, mean = stats.fetch(g.id, [0, 0, nil])
+      GroupStat.new(g, users.fetch(g.id, 0), attempted, solved, mean)
+    end
+  end
+
+  # { attempted:, solved: } over every user who has a regular submission on
+  # this problem, whatever their group — the page's headline numbers.
+  def attempt_summary
+    row = Submission.connection.select_one(
+      "SELECT COUNT(*) AS attempted, COALESCE(SUM(best >= 100), 0) AS solved FROM (#{best_points_per_user.to_sql}) b"
+    )
+    { attempted: row['attempted'].to_i, solved: row['solved'].to_i }
+  end
+
   private
+
+  # Groups this problem is in (enabled link) that +user+ may report on.
+  def reportable_groups_for(user)
+    user.groups_for_action(:report)
+        .where(id: groups.where(groups_problems: { enabled: true }).select(:id))
+  end
+
+  # user_id, best  — MAX(points) per user over the problem's regular submissions.
+  def best_points_per_user
+    Submission.regular.where(problem_id: id).group(:user_id).select('user_id, MAX(points) AS best')
+  end
 
   def should_generate_pdf?
     return false if viva_exam?   # D5: the description IS the scenario; no side-PDF for vivas

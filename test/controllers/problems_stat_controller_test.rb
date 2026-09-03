@@ -15,6 +15,72 @@ class ProblemsStatControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href=?]", report_link(prob, group), text: /Score report/
   end
 
+  # --- summary, By-group card, and the AJAX-loaded submissions table ---
+
+  test "summary is a distinct-user count with a percentage" do
+    submissions(:add1_by_john).update_columns(points: 100)
+    sign_in_as("admin", "admin")
+    get stat_problem_path(problems(:prob_add))
+    assert_response :success
+    assert_match %r{1/3 \(33\.3%\)}, response.body    # admin, john, james attempted; john solved
+  end
+
+  test "By group card lists each reportable group with counts and a report link" do
+    submissions(:add1_by_john).update_columns(points: 100)
+    submissions(:add1_by_james).update_columns(points: 40)
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    get stat_problem_path(prob)
+    assert_response :success
+    assert_select "#by-group-card" do
+      assert_select "tbody tr", count: 1
+      assert_select "tbody tr a[href=?]", report_link(prob, groups(:group_a)), text: "GroupA"
+      assert_select "tbody tr td", text: "2"      # members
+      assert_select "tbody tr td", text: "1 / 2"  # solved / attempted
+      assert_select "tbody tr td", text: "70.0"   # mean best
+    end
+  end
+
+  test "By group card is absent when the problem is in no group" do
+    sign_in_as("admin", "admin")
+    get stat_problem_path(problems(:easy))
+    assert_response :success
+    assert_select "#by-group-card", count: 0
+  end
+
+  test "submission rows are no longer rendered inline; the table loads them by AJAX" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    get stat_problem_path(prob)
+    assert_response :success
+    assert_select "#main_table tbody tr", count: 0
+    assert_match stat_query_problem_path(prob), response.body
+  end
+
+  test "stat_query returns one JSON row per regular submission with the table's fields" do
+    submissions(:add1_by_john).update_columns(points: 100, ip_address: "10.0.0.7", grader_comment: "PP")
+    sign_in_as("admin", "admin")
+    post stat_query_problem_path(problems(:prob_add))
+    assert_response :success
+    rows = JSON.parse(response.body)["data"]
+    assert_equal 3, rows.size
+    john = rows.find { |r| r["login"] == "john" }
+    assert_equal submissions(:add1_by_john).id, john["id"]
+    assert_equal users(:john).id, john["user_id"]
+    assert_equal "john", john["full_name"]
+    assert_equal "C", john["pretty_name"]
+    assert_equal 100, john["points"]
+    assert_equal "PP", john["grader_comment"]
+    assert_equal "10.0.0.7", john["ip_address"]
+    assert_match %r{2019-10-22}, john["submitted_at"]
+  end
+
+  test "stat_query is refused for a user who cannot report on the problem" do
+    sign_in_as("jack", "jack")   # in no group
+    post stat_query_problem_path(problems(:prob_add))
+    assert_response :redirect
+  end
+
   test "stat page links to the Best Score report with the problem and its group pre-picked" do
     sign_in_as("admin", "admin")
     assert_report_link problems(:prob_add), groups(:group_a)   # prob_add is in group_a only

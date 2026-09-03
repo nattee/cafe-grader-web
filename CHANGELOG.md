@@ -11,6 +11,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Problem stat page: "By group" card.** One row per section (group) the
+  viewer may report on: members, solved / attempted, solved %, mean best
+  score over students who attempted, each row linking to the Best Score
+  report pre-filtered to that group. Sections can now be compared at a
+  glance, which the report itself cannot show since it lists one group at a
+  time. Members are enabled `user`-role rows only, so staff test submissions
+  do not move a section's numbers; a student in several groups counts in
+  each row, so rows may sum to more than the distinct-user summary. (rev 2081)
 - **`bin/rails engine:smoke SUB=<id> [BOX=99]`** — grades one existing
   submission end to end on this host with the real sandbox (compile → every
   testcase → score, exactly as a grader would), prints each testcase's verdict
@@ -36,6 +44,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **Problem stat page loads in a fraction of the time on busy problems.** The
+  page used to pull every submission of the problem into Ruby to compute two
+  numbers (plus a histogram nothing displayed), then render every row into
+  the HTML for the browser to sort. The summary is now two grouped queries and
+  the submissions table is filled by an AJAX request, paged 50 at a time with
+  deferred rendering, so the page paints before a single row exists. On the
+  heaviest problem in the production copy (7,825 submissions) the page's own
+  server work drops from about 1.2 s of Ruby to about 0.4 s of SQL; the row
+  list (about 0.2 s) is fetched separately once the page is up, and the
+  browser no longer receives 7,825 table rows to sort. Same columns as
+  before; scores now sort numerically. (rev 2081)
 - **Viva kit importer: several conduct tags per kit** — `manifest.yml` now takes
   a `conduct_tags:` list (the legacy single `conduct_tag:` still works); every
   listed tag is upserted by name and linked, add-only, to every problem in the

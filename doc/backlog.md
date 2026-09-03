@@ -422,62 +422,6 @@ id ASC` wants `(status, priority, id)` instead.
 
 ---
 
-## Problem stat page — the page is slow, and the "By group" card is still wanted
-
-**Shipped (rev 2029).** The "Score report" pill opens the Best Score report with
-the problem *and* a section preselected (`Problem#report_group_for`: live group
-with submissions > most-submitted incl. archived > newest live); the shared
-report filter partials honour `probs[…]` / `users[…]` URL params.
-
-### The "By group" card — wanted, deferred by dae 2026-08-30
-
-One row per group (users, attempted, solved, mean best score) from
-`Submission.regular.where(problem:)` best-per-user joined to `groups_users`
-(honour `enabled`, drop editor/reporter roles as the report does at
-`report_controller.rb:681-683`), scoped to `groups_for_action(:report)`, each row
-deep-linking via the shipped prefill.
-
-**Delete the old trigger condition** ("only if switching groups in the report
-proves too slow"). That was the wrong test and would never have fired: the value
-is *comparison* — seeing section 3 at 40% while 1/2/4 sit at 85% — which the
-report cannot show at any speed, because it shows one group at a time. dae
-confirmed the comparison is wanted, just not now.
-
-**Watch out:** a user can be in several groups, so per-group rows sum to more
-than the distinct-user total. The overall summary needs its own distinct-user
-aggregate or the two numbers on the same page will disagree.
-
-### The page underneath is slow (measured 2026-08-30, dev DB: 937k submissions)
-
-`ProblemsController#stat` (`:243-257`) loads every submission for the problem and
-loops in Ruby to produce two scalars and a 65-day histogram; `stat.html.haml:48`
-then renders every row unpaginated and DataTables sorts them client-side
-(`paging: false`). On problem 2 `ex00e2` (7,825 submissions, 1,437 users):
-
-| step | cost |
-|---|---|
-| `find_each` summary pass | 829 ms |
-| `.count` (view calls it twice) | 91 ms each |
-| full `.to_a` load (eager user+language) | 176 ms |
-| **server-side total** | **~1,198 ms**, then 7,825 `<tr>` to the browser |
-
-Both halves are independently fixable: the summary + histogram are single
-`GROUP BY` queries, and the table has an established server-side DataTables AJAX
-pattern to copy (`application_controller.rb:234` plus the `ajax:` configs in
-`datatables/configs.js`). Doing the summary as a grouped query is also *most of
-the card's query*, so the two jobs share their work — build them together.
-
-### ~~Bug: `0/0 (NaN%)` on problems with no submissions~~ — FIXED rev 2056
-
-`stat.html.haml` divided the solved percentage by a zero attempt count; Float
-`0.0/0` is NaN and `NaN.round(1)` returns NaN rather than raising, so the page
-rendered the literal `0/0 (NaN%)`. Now reads "No submissions yet". Regression
-test in `test/controllers/problems_stat_controller_test.rb` — it asserts `NaN%`
-specifically, since the layout's go-to-submission widget matches a bare `/NaN/`
-via `isNaN()`.
-
----
-
 ## Waiting for a signal
 
 Decided, not deprioritized: each of these stays closed until its **Reopen
@@ -528,6 +472,28 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Problem stat page — slow page + "By group" card — RESOLVED 2026-09-03
+
+Shipped rev 2081, both halves together as the entry proposed. `Problem#attempt_summary`
+and `Problem#group_stats_for(user)` (`app/models/problem.rb`) replace the Ruby
+loop over every submission (the 65-day histogram it also built was displayed
+nowhere and is gone); the submissions table is filled by `problems#stat_query`
+(JSON, jbuilder) and paged client-side with deferred rendering. The
+"established server-side pattern" the entry pointed at (`process_query_record`)
+turned out to have no callers, so the table follows the Submission report's
+pattern instead. Measured on the prod-copy dev DB, heaviest problem (7,825
+subs): page server work ~1.2 s of Ruby → ~0.4 s of SQL, rows (~0.2 s) fetched
+separately after paint, no 7,825-row HTML. Card: members (enabled `user` role
+only), solved / attempted, solved %, mean best over attempted, row links to the
+Best Score report pre-filtered to the group; the distinct-user summary is kept
+separate so multi-group students don't make the page contradict itself.
+Tests: `test/models/problem_group_stats_test.rb`, additions to
+`test/controllers/problems_stat_controller_test.rb`, `test/system/problem_stat_test.rb`.
+Residual: the remaining ~0.4 s is MySQL reading wide `submissions` rows through
+the `problem_id` index; a covering index `(problem_id, repaired_from_id, user_id, points)`
+would cut it further if a problem ever feels slow again. True server-side
+paging (`serverSide: true`) stays an option past ~50k submissions.
 
 ### `datatables/configs.js` render functions interpolate unescaped HTML — RESOLVED 2026-09-02
 
