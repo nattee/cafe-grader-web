@@ -298,7 +298,9 @@ Rails.application.routes.draw do
       get 'get_latest_submission_status/:uid/:pid', to: 'submissions#get_latest_submission_status', as: 'get_latest_submission_status'
     end
     resources :comments, only: [] do
-      post 'llm_assist/:model', on: :collection, as: 'llm_assist', action: 'llm_assist'
+      # model is a POST param (a provider-map key), not a URL segment: model
+      # names contain dots, and an index into the map moved when llm.yml changed
+      post 'llm_assist', on: :collection, as: 'llm_assist', action: 'llm_assist'
       get '', to: 'index_partial', as: '', on: :collection
       post '', action: 'create_for_submission', on: :collection
       member do
