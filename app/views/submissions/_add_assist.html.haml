@@ -1,16 +1,26 @@
 -# requires *models*
   which is an array of llm names, e.g., ["gemini-2.5-pro", "Claude-3.5-Sonnet"] —
   the keys of Rails.configuration.llm[:provider]. The model is POSTed by name;
-  CommentsController#can_request_llm validates it against that map.
-- models.each do |model|
-  .row
-    - cost = Rails.configuration.llm[:provider][model].constantize::ASSIST_COST
-    - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: cost, model: model}
-    - confirmation = {title: "Confirm Submission for AI Help", body: body_text}
-    .col
-      AI help by
-      %code #{model}
-    .col-auto.pb-0.text-end
-      = button_to "Get", llm_assist_submission_comments_path(@submission), params: {model: model},
-        class: 'btn btn-link p-0 align-baseline',
-        form: {class: 'd-inline', data: {turbo: true, turbo_confirm: confirmation.to_json}}
+  CommentsController#can_request_llm validates it against that map and applies
+  the same Submission#llm_assist_refusal guard that disables Get here.
+  The #llm_assist_picker wrapper is the turbo_stream.replace target used by
+  CommentsController#index_partial to refresh this block with the comments.
+#llm_assist_picker
+  - models.each do |model|
+    .row
+      - cost = Rails.configuration.llm[:provider][model].constantize::ASSIST_COST
+      - refusal = @submission.llm_assist_refusal(model)
+      - body_text = render partial: 'comments/acquire_llm_assist_confirm', locals: {cost: cost, model: model}
+      - confirmation = {title: "Confirm Submission for AI Help", body: body_text}
+      .col
+        AI help by
+        %code #{model}
+      .col-auto.pb-0.text-end
+        - if refusal
+          %span.small.text-secondary.me-2= refusal
+          = button_to "Get", llm_assist_submission_comments_path(@submission), params: {model: model},
+            disabled: true, class: 'btn btn-link p-0 align-baseline', form: {class: 'd-inline'}
+        - else
+          = button_to "Get", llm_assist_submission_comments_path(@submission), params: {model: model},
+            class: 'btn btn-link p-0 align-baseline',
+            form: {class: 'd-inline', data: {turbo: true, turbo_confirm: confirmation.to_json}}

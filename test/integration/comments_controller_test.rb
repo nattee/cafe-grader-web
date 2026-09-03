@@ -165,4 +165,50 @@ class CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_match(%r{<script>\s*hljs\.highlightAll}, response.body)  # trusted header keeps its script, unescaped
     assert_match(%r{<div class='alert alert-info'>}, response.body)
   end
+
+  # ------------------------------------------------------------
+  # LLM assist — picker guards
+  # ------------------------------------------------------------
+
+  test "llm_assist is refused while an earlier request on the submission is still processing" do
+    enable_llm_assist!
+    @sub.comments.create!(user: users(:john), kind: 'llm_assist', status: 'processing', llm_model: 'stub-model',
+                          title: 't', body: 'b', cost: 0)
+    sign_in_as("john", "hello")
+    assert_no_difference "Comment.count" do
+      post llm_assist_submission_comments_path(submission_id: @sub.id), params: { model: "stub-model" }, as: :turbo_stream
+    end
+    assert_response :unprocessable_entity
+    assert_match(/still running/i, response.body)
+  end
+
+  test "llm_assist is refused on a submission that already has full score" do
+    enable_llm_assist!
+    @sub.update_columns(points: 100)
+    sign_in_as("john", "hello")
+    assert_no_difference "Comment.count" do
+      post llm_assist_submission_comments_path(submission_id: @sub.id), params: { model: "stub-model" }, as: :turbo_stream
+    end
+    assert_response :unprocessable_entity
+    assert_match(/full score/i, response.body)
+  end
+
+  test "the picker shows the refusal and a disabled Get instead of an active button" do
+    enable_llm_assist!
+    @sub.comments.create!(user: users(:john), kind: 'llm_assist', status: 'processing', llm_model: 'stub-model',
+                          title: 't', body: 'b', cost: 0)
+    sign_in_as("john", "hello")
+    get submission_path(@sub)
+    assert_response :success
+    assert_select "form button[disabled]", text: "Get"
+    assert_match(/still running/i, response.body)
+  end
+
+  test "refreshing the comments also refreshes the picker so a finished request re-enables Get" do
+    enable_llm_assist!
+    sign_in_as("john", "hello")
+    get submission_comments_path(@sub), as: :turbo_stream
+    assert_response :success
+    assert_match(/turbo-stream action="replace" target="llm_assist_picker"/, response.body)
+  end
 end

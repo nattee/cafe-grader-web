@@ -276,4 +276,48 @@ class SubmissionTest < ActiveSupport::TestCase
     assert_equal 120.0, row.llm_cost.to_f
     assert_equal 0, row.final_score.to_d
   end
+
+  # --- llm_assist_refusal (picker guards) ---
+
+  def assist_comment(sub, status:, model: 'm', cost: 10)
+    sub.comments.create!(user: sub.user, kind: 'llm_assist', status: status, llm_model: model, cost: cost, title: 't', body: 'b')
+  end
+
+  test "llm_assist_refusal is nil for a fresh, partially scored submission" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(points: 40)
+    assert_nil sub.llm_assist_refusal('m')
+  end
+
+  test "llm_assist_refusal while an earlier request is still processing" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(points: 40)
+    assist_comment(sub, status: 'processing', cost: 0)
+    assert_match(/still running/i, sub.llm_assist_refusal('other'))
+  end
+
+  test "llm_assist_refusal when the same model already answered this submission" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(points: 40)
+    assist_comment(sub, status: 'ok', model: 'm')
+    assert_match(/already answered/i, sub.llm_assist_refusal('m'))
+    assert_nil sub.llm_assist_refusal('other')
+  end
+
+  test "llm_assist_refusal at full score" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(points: 100)
+    assert_match(/full score/i, sub.llm_assist_refusal('m'))
+  end
+
+  test "llm_assist_refusal once the user's assist spend on the problem reaches the full score" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(points: 40)
+    earlier = Submission.new(user: sub.user, problem: sub.problem, language: sub.language, source: 'x',
+                             submitted_at: sub.submitted_at - 1.hour)
+    earlier.save!(validate: false)
+    assist_comment(earlier, status: 'ok', model: 'a', cost: 60)
+    assist_comment(earlier, status: 'ok', model: 'b', cost: 40)
+    assert_match(/spent/i, sub.llm_assist_refusal('m'))
+  end
 end
