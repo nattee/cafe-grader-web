@@ -67,6 +67,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **AI-assist picker refuses requests that cannot help.** "Get" is disabled,
+  with the reason beside it, while a request on that submission is still
+  running, when that model has already answered the submission, when the
+  submission already has full score, and once the student has spent the full
+  score of the problem on AI help; the server applies the same rule, so a
+  replayed form gets the same refusal. The picker refreshes together with
+  the comments, so a finished request re-enables Get without a reload.
+  Production history before this: 190 submissions had the same model asked
+  twice, 126 requests were made on full-score submissions, and 10
+  student–problem pairs had spent more than the problem was worth. (rev 2090)
 - **Problem stat page loads in a fraction of the time on busy problems.** The
   page used to pull every submission of the problem into Ruby to compute two
   numbers (plus a histogram nothing displayed), then render every row into
