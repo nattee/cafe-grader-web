@@ -418,6 +418,42 @@ with a stronger reader (or a human).
    the same 291-record protocol after a term, using the DGX for the cheap
    columns and a reader for leak/diagnosis.
 
+## Next: offline test of the new prompt (agreed 2026-09-03, not yet run)
+
+The revised prompt is `course-prep` rev 4 (`assist/codey-core.md`), reviewed
+and accepted by dae on 2026-09-03; it is **not** on production. Before students
+see it, compare old and new prompt on the same inputs, offline:
+
+1. **Inputs:** submissions that carry a past assist request (known moments of
+   real need), not already at full score; include compile errors and repeat
+   requests deliberately since those are the worst cells. The generated
+   answers are throwaway — no comment rows, no charge, no student sees them.
+2. **Arms, same model for every arm** (the picker's gemini-3.1-pro; optionally
+   also gemini-2.5-pro, which the Genie relay still serves):
+   (a) old prompt + old payload, (b) old prompt + new payload, (c) new prompt +
+   new payload. (a)→(b) is what the code changed; (b)→(c) is what the prompt
+   changed. Build the payload with `Llm::CommentAssist.preview`-style assembly
+   against the tag texts in `course-prep/assist/` rather than the live tags.
+3. **Judge:** the same rubric as Part 1 (leak / diagnosis / focus /
+   actionable / code / names / language), one reader per chunk, **blind** —
+   the judge must not see which arm an answer came from; shuffle and strip
+   labels before grading. Grade via this Claude Code account, ~one usage
+   window per 300 answers; the DGX (few-shot qwen, `judge.py --anchors`) can
+   grade the cheap columns (hand-over, focus, code, names, language) on the
+   rest for free.
+4. **Human anchor first:** dae reads 30 answers from Part 1's 291 against the
+   rubric before the judging run — drawn from the answers where qwen and the
+   readers disagreed on Socratic-vs-states-the-fix — so the judge's lean on
+   that line is known.
+5. **Success:** on arm (c) vs (a), fewer stated fixes and hand-overs, fewer
+   wrong diagnoses, more single-focus answers, no rise in code written; then
+   apply the prompt to tag `codey-core` (#43) on prod, cite the course-prep
+   rev in `doc/Assist-History.md`, and re-measure outcomes (Part 2's
+   `frame2.rb`/`frame3.rb`) after a term.
+
+Repo state at hand-off: master 2089–2100 unmerged/unpushed (payload, guards,
+accounting, tag ordering, price setting, docs); prod runs chula_cp 2088.
+
 How to judge the edits: re-run `frame.rb` after a term of the new payload and
 prompt and compare the read-score columns and the next-submission outcomes
 against this document. The scorer prompt and the frame script live in the
