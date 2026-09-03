@@ -11,6 +11,25 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **AI assist sends the model what the grader already knows.** The payload
+  now carries the compiler output when the submission did not compile (166
+  assisted compile errors in production history got a prompt asking the model
+  to spot the syntax error blind), the per-testcase table from the stored
+  evaluations — group, verdict, time, memory, score, plus the dataset's
+  limits — instead of leaving the model to infer subtask boundaries from
+  percentages in the statement PDF, and, on a repeat request for the same
+  problem, the previous answer with a line diff of what the student changed
+  since, so the model builds on its last hint instead of repeating it (40% of
+  student–problem pairs asked more than once; the model saw none of it).
+  Nothing in the table reveals test data. The `llm_prompt` tags' "How to
+  Map" section is now redundant and can be deleted. (rev 2089)
+- **AI assist records the provider's own accounting.** New `comments`
+  columns `llm_cost` (dollars, from the gateway's cost header; nil where the
+  provider reports none, 0.0 for self-hosted models), `prompt_tokens` and
+  `completion_tokens`. `cost` stays the score penalty. `rake
+  comments:backfill_llm_usage` recovers the token counts for earlier rows from
+  the stored response (present on 4,492 of 4,577 production answers); the
+  dollar figure cannot be recovered. (rev 2089)
 - **Problem stat page: "By group" card.** One row per section (group) the
   viewer may report on: members, solved / attempted, solved %, mean best
   score over students who attempted, each row linking to the Best Score

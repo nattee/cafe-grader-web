@@ -54,6 +54,21 @@ class Comment < ApplicationRecord
     commentable.comment_reveal_prerequisite_satisfied?(self, user)
   end
 
+  # Token counts live inside the raw provider response we already store
+  # (`llm_response`); copy them onto the columns. Used by
+  # `rake comments:backfill_llm_usage` for rows written before the columns
+  # existed. The dollar figure came from a response header and is not
+  # recoverable, so `llm_cost` is left alone. Returns true when written.
+  def backfill_llm_usage!
+    parsed = JSON.parse(llm_response.to_s)
+    usage = parsed.is_a?(Hash) ? parsed['usage'] : nil
+    return false unless usage.is_a?(Hash)
+    update_columns(prompt_tokens: usage['prompt_tokens'], completion_tokens: usage['completion_tokens'])
+    true
+  rescue JSON::ParserError
+    false
+  end
+
   def self.cost_summary_for(user, contest)
     comments = chargeable_for(user, (contest.start)..(contest.stop))
     {
