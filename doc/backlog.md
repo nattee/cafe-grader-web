@@ -14,6 +14,11 @@ Conventions:
   the durable record lives, any residual) and move it to the `## Resolved` ledger
   at the bottom, newest first. The full write-up stays in `hg log`, the CHANGELOG
   and the linked docs.
+- An entry we have decided NOT to do until something specific happens goes under
+  `## Waiting for a signal`, with an explicit **Reopen when:** line. That is a
+  different state from low priority: the work is understood and often designed,
+  but there is no evidence or requirement yet that it is wanted. Don't start one
+  without its signal; do move it back up the moment the signal appears.
 
 ---
 
@@ -209,37 +214,6 @@ a viva-only attach select on the problem form — see
 
 ---
 
-## Help patterns — follow-ups under the context-dependent split
-
-**Decision (2026-05-17).** Two patterns coexist intentionally: inline
-knowledge card (`_xxx_help.html.haml`) on index/overview pages where space
-is available and visibility matters for new admins; offcanvas drawer on
-edit/detail pages where space is at a premium. Convention written into
-CLAUDE.md under "Frontend & UI Conventions". Do NOT unify onto a single
-pattern; that earlier plan was rejected.
-
-**Discoverability.** Offcanvas trigger buttons must be labeled (`? Help`),
-not icon-only. Codified in CLAUDE.md. First-visit popover pointing at the
-button is a future enhancement using the existing cookie-based
-`dismiss-announcement` controller pattern — deferred until we see whether
-the visible label alone is enough. **Re-confirmed 2026-09-02 (dae): stays
-parked.** The trigger to build it is evidence that the label is not enough
-(admins asking where help is, drawers that never get opened), not a date.
-
-**Open items under this split.**
-- **Shared offcanvas helper.** ✅ DONE 2026-07-01 — `shared/_help_drawer.html.haml`,
-  rendered as a layout (`render layout: 'shared/help_drawer', locals: {id:, title:, subtitle:}`);
-  new drawers use it instead of hand-rolling the chrome.
-- **Edit-drawer content density.** ✅ DONE 2026-07-19 — `problems/_edit_help` is a
-  5-item Bootstrap accordion (data-API driven, survives Turbo-frame reloads).
-  Optional follow-up: trim the prose if it still feels heavy once collapsed.
-
-**Out of scope.** `app/views/main/help.html.haml` is a full-page
-student-facing help with i18n — different concern, not covered by the
-admin help-pattern split.
-
----
-
 ## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
 
 **Status 2026-08-02.** A *live-server* CMS import path shipped (master revs 1960–1968;
@@ -332,29 +306,6 @@ not a correctness or grade-manipulation bug.
 **Fix direction.** Either `@submission.lock!` around the check-and-transition,
 or a unique-job guard on `Llm::VivaGradeAssistJob` keyed by submission id.
 Small; low priority given the impact is cost only.
-
----
-
-## `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
-
-`Llm::AiGatewayTransport.gateway_config` (`app/services/llm/ai_gateway_transport.rb`)
-reads a single `Rails.configuration.llm[:ai_gateway]` block, so a deployment
-runs exactly one bearer-key gateway. Running two concurrently — the Chula AI
-Gateway *and* an OpenRouter-style aggregator held as a fallback for when a
-model retires or the proxy wobbles — needs `ai_gateway:` generalized into a
-keyed registry shaped like `self_hosted_models:`, plus a provider class per
-entry so the admin pickers can tell the two rosters apart.
-
-**Deliberately not built (2026-08-30), and this is the YAGNI half of the old
-"OpenRouter LLM provider" entry.** Nobody runs two gateways today, and a
-single-gateway deployment is fully served by the current block — *including* a
-downstream site whose only gateway is OpenRouter, which is what that entry was
-really about. The other half (provider-agnostic cost + a documented recipe)
-shipped at rev 2050; see Resolved. Revisit only when a second concurrent
-gateway is actually wanted.
-
-**Size:** medium — config shape, initializer wiring, per-entry provider
-classes, picker plumbing.
 
 ---
 
@@ -524,6 +475,53 @@ rendered the literal `0/0 (NaN%)`. Now reads "No submissions yet". Regression
 test in `test/controllers/problems_stat_controller_test.rb` — it asserts `NaN%`
 specifically, since the layout's go-to-submission widget matches a bare `/NaN/`
 via `isNaN()`.
+
+---
+
+## Waiting for a signal
+
+Decided, not deprioritized: each of these stays closed until its **Reopen
+when** condition is met. Reviewed 2026-09-02 with dae.
+
+### Help drawers — first-visit popover on the `? Help` trigger
+
+**Settled (2026-05-17, CLAUDE.md "Frontend & UI Conventions"):** two help
+patterns coexist on purpose — inline knowledge card on index/overview pages,
+offcanvas drawer on edit/detail pages — and the drawer trigger is a *labeled*
+`? Help` button, never icon-only. Shared drawer layout
+(`shared/_help_drawer.html.haml`, 2026-07-01) and the accordion edit drawer
+(`problems/_edit_help`, 2026-07-19) are done. `app/views/main/help.html.haml`
+(student-facing, i18n) is a different concern.
+
+**Not built:** a first-visit popover pointing at the trigger, on the
+cookie-based `dismiss-announcement` controller pattern. The hypothesis is that
+the visible label alone is enough discoverability.
+
+**Reopen when:** there is evidence the label is not enough — admins asking
+where the help is, or drawers that measurably never get opened. Not a date.
+
+### `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
+
+`Llm::AiGatewayTransport.gateway_config` (`app/services/llm/ai_gateway_transport.rb`)
+reads a single `Rails.configuration.llm[:ai_gateway]` block, so a deployment
+runs exactly one bearer-key gateway. Running two concurrently — the Chula AI
+Gateway *and* an OpenRouter-style aggregator held as a fallback for when a
+model retires or the proxy wobbles — needs `ai_gateway:` generalized into a
+keyed registry shaped like `self_hosted_models:`, plus a provider class per
+entry so the admin pickers can tell the two rosters apart. Size: medium —
+config shape, initializer wiring, per-entry provider classes, picker plumbing.
+
+**Not built (2026-08-30):** this is the YAGNI half of the old "OpenRouter LLM
+provider" entry. Nobody runs two gateways today, and a single-gateway
+deployment is fully served by the current block — *including* a downstream
+site whose only gateway is OpenRouter. The other half (provider-agnostic cost
++ a documented recipe) shipped at rev 2050; see Resolved.
+
+**Reopen when:** a second *concurrent* gateway is actually wanted — a
+fallback aggregator to run beside the Chula AI Gateway, a second provider the
+pickers must tell apart, or a deployment that needs two bearer-key gateways.
+Adding a new provider that *replaces* the current one is not a signal; the
+existing block already handles that with a config change.
 
 ---
 
