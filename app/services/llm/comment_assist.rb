@@ -275,8 +275,12 @@ module Llm
       }
     end
 
+    # Every attached llm_prompt tag becomes its own system part, in tag-name
+    # order so a shared core tag plus a per-course addendum (codey-core +
+    # codey-thai) assemble the same way on every problem, whatever order they
+    # were attached in. Same convention as viva's conduct tags.
     def get_prompts_from_problem_tags
-      @submission.problem.tags.where(kind: 'llm_prompt').map { |tag| tag.params }
+      @submission.problem.tags.where(kind: 'llm_prompt').order(:name).map { |tag| tag.params }
     end
   end
 end

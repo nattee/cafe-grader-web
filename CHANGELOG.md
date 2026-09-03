@@ -67,6 +67,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **AI-assist prompt tags assemble in name order.** A problem with several
+  `llm_prompt` tags sends each as its own system part; they now go in tag-name
+  order instead of attach order, so a shared core tag plus a small per-course
+  addendum (the Chula deployment now uses `codey-core` + `codey-thai` instead
+  of two full copies of the prompt) reads the same on every problem. (rev 2093)
 - **AI-assist picker refuses requests that cannot help.** "Get" is disabled,
   with the reason beside it, while a request on that submission is still
   running, when that model has already answered the submission, when the

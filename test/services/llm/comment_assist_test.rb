@@ -103,4 +103,15 @@ class Llm::CommentAssistTest < ActiveSupport::TestCase
     assert_nil comment.llm_cost
     assert_equal 3450, comment.prompt_tokens
   end
+
+  # --- system prompt assembly from tags ---
+
+  test "several llm_prompt tags become separate system parts in name order" do
+    @submission.problem.tags.create!(name: 'codey-thai', kind: 'llm_prompt', params: 'Append a Thai translation.')
+    @submission.problem.tags.create!(name: 'codey-core', kind: 'llm_prompt', params: 'You are Codey.')
+    data = Llm::CommentAssist.preview(submission: @submission, comment: Comment.new, model: 'x')
+    texts = data[:messages].first[:content].map { |p| p[:text] }
+    # ca-prompt < codey-core < codey-thai by name, although codey-thai was attached first
+    assert_equal ['You are a tutor.', 'You are Codey.', 'Append a Thai translation.'], texts
+  end
 end

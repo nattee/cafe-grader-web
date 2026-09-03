@@ -204,19 +204,20 @@ students, 2025-07 → 2026-08.
   an admin's request should carry `cost: 0`.
 
 ### Prompt / data (the "should the prompt change?" question)
-- **Delete the "How to Map" section** from the `AI-AL` / `AI-DS` tags — the
-  payload now carries the real per-testcase table (rev 2089) and the section
-  teaches the model to guess what it is told. Replace with one line: "Use the
+- **Delete the "How to Map" section** from `codey-core` — the payload now
+  carries the real per-testcase table (rev 2089) and the section teaches the
+  model to guess what it is told. Replace with one line: "Use the
   per-testcase table in the message; do not infer subtasks from the
   statement's percentages." Likewise the Step 1 compile-error triage can point
-  at the compiler output block.
-- `AI-AL` (#33, 239 problems) and `AI-DS` (#34, 45) are the same 9.4 KB text
-  except AL appends a Thai translation (2,342 / 4,577 answers carry one,
-  roughly doubling visible output). `AI_viva` (#36) is `llm_prompt` on two
-  viva problems and read by nothing — re-kind or delete on prod (check
-  whether the D6 migrator ran there). Since `CommentAssist` concatenates
-  every attached `llm_prompt` tag, a shared core tag + a tiny per-course tag
-  would stop the two copies drifting without any schema work.
+  at the compiler output block. One edit now: on 2026-09-03 the two full
+  copies `AI-AL` (239 problems) / `AI-DS` (45) were re-shaped on prod into
+  `codey-core` (#43, all 284) + the one-line `codey-thai` addendum (#44, the
+  239 AL problems); originals backed up at `~/codey-tag-backup-2026-09-03.txt`
+  on 10.0.5.50. Tags assemble in name order since rev 2093.
+- **Thai translation**: 2,342 / 4,577 answers carry one, roughly doubling
+  visible output — now a single decision: detach `codey-thai` or not.
+- `AI_viva` (#36) is `llm_prompt` on two viva problems and read by nothing —
+  re-kind or delete on prod (check whether the D6 migrator ran there).
 - **Effectiveness metric** (next submission on the same problem): assisted
   improved 36% / same 50% / reached 100 18%, vs an unassisted baseline of
   43% / 44% / 23% on the same problems and period. Selection-biased, but no
