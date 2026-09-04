@@ -11,6 +11,25 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **AI assist sends the model what the grader already knows.** The payload
+  now carries the compiler output when the submission did not compile (166
+  assisted compile errors in production history got a prompt asking the model
+  to spot the syntax error blind), the per-testcase table from the stored
+  evaluations — group, verdict, time, memory, score, plus the dataset's
+  limits — instead of leaving the model to infer subtask boundaries from
+  percentages in the statement PDF, and, on a repeat request for the same
+  problem, the previous answer with a line diff of what the student changed
+  since, so the model builds on its last hint instead of repeating it (40% of
+  student–problem pairs asked more than once; the model saw none of it).
+  Nothing in the table reveals test data. The `llm_prompt` tags' "How to
+  Map" section is now redundant and can be deleted. (rev 2089)
+- **AI assist records the provider's own accounting.** New `comments`
+  columns `llm_cost` (dollars, from the gateway's cost header; nil where the
+  provider reports none, 0.0 for self-hosted models), `prompt_tokens` and
+  `completion_tokens`. `cost` stays the score penalty. `rake
+  comments:backfill_llm_usage` recovers the token counts for earlier rows from
+  the stored response (present on 4,492 of 4,577 production answers); the
+  dollar figure cannot be recovered. (rev 2089)
 - **Problem stat page: "By group" card.** One row per section (group) the
   viewer may report on: members, solved / attempted, solved %, mean best
   score over students who attempted, each row linking to the Best Score
@@ -48,6 +67,27 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **AI-assist price is a site setting.** The points a request costs were a
+  constant in code (10). They are now `system.llm_assist_cost` on the
+  Configuration page (seeded at 10 by `bin/rails db:seed`; the code falls back
+  to 10 while the key is absent). The value is read when the request is made
+  and recorded on it, so changing it never rewrites past charges; 0 makes
+  assistance free. The confirm dialog quotes the current value. (rev 2100)
+- **AI-assist prompt tags assemble in name order.** A problem with several
+  `llm_prompt` tags sends each as its own system part; they now go in tag-name
+  order instead of attach order, so a shared core tag plus a small per-course
+  addendum (the Chula deployment now uses `codey-core` + `codey-thai` instead
+  of two full copies of the prompt) reads the same on every problem. (rev 2093)
+- **AI-assist picker refuses requests that cannot help.** "Get" is disabled,
+  with the reason beside it, while a request on that submission is still
+  running, when that model has already answered the submission, when the
+  submission already has full score, and once the student has spent the full
+  score of the problem on AI help; the server applies the same rule, so a
+  replayed form gets the same refusal. The picker refreshes together with
+  the comments, so a finished request re-enables Get without a reload.
+  Production history before this: 190 submissions had the same model asked
+  twice, 126 requests were made on full-score submissions, and 10
+  student–problem pairs had spent more than the problem was worth. (rev 2090)
 - **Problem stat page loads in a fraction of the time on busy problems.** The
   page used to pull every submission of the problem into Ruby to compute two
   numbers (plus a histogram nothing displayed), then render every row into

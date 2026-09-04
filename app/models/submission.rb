@@ -321,6 +321,33 @@ class Submission < ApplicationRecord
     comments.where(status: 'processing').any?
   end
 
+  # Full score on the 0–100 points scale. It is also the most a student can
+  # lose to assist penalties (max_score_report floors final_score at 0), so
+  # assists bought past it cost the student nothing and the deployment an API
+  # call each — the spend cap below.
+  LLM_ASSIST_FULL_SCORE = 100
+
+  # Why the assist picker should not offer `model` for this submission, or nil
+  # when it may. Shared by the picker (submissions/_add_assist) and
+  # CommentsController#can_request_llm, so the UI never shows a button the
+  # controller would refuse. Prod copy before this existed: 190 submissions had
+  # the same model asked twice, 126 requests were made on full-score
+  # submissions, 10 (user, problem) pairs had spent more than the full score.
+  def llm_assist_refusal(model)
+    assists = comments.where(kind: 'llm_assist')
+    return 'a request is still running' if assists.where(status: 'processing').exists?
+    return "#{model} already answered" if assists.where(status: 'ok', llm_model: model).exists?
+    return 'already full score' if points.to_f >= LLM_ASSIST_FULL_SCORE
+
+    spent = Comment.where(kind: 'llm_assist', status: 'ok', commentable_type: 'Submission')
+                   .where(commentable_id: Submission.where(user_id: user_id, problem_id: problem_id).select(:id))
+                   .sum(:cost)
+    if spent >= LLM_ASSIST_FULL_SCORE
+      return "already spent #{spent.to_i} points on AI help for this problem"
+    end
+    nil
+  end
+
   #
   # ---- service ----
   #

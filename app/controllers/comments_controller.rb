@@ -30,16 +30,21 @@ class CommentsController < ApplicationController
 
   # render comments partial
   def index_partial
-    if params[:for] == 'edit'
-      # this one renders for the submission edit page
-      render turbo_stream: [
-        turbo_stream.update(:problem_hints, partial: 'problems/hints', locals: {problem: @submission.problem}),
-        turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: false, has_processing: @submission.has_processing_comments?})
-      ]
-    else
-      # this one renders for the submission view pages
-      render turbo_stream: turbo_stream.update(:submission_comments, partial: 'submissions/comments', locals: {submission: @submission, show_edit: true, has_processing: @submission.has_processing_comments?})
+    for_edit = params[:for] == 'edit'
+    streams = []
+    # the edit page also carries the problem hints
+    streams << turbo_stream.update(:problem_hints, partial: 'problems/hints', locals: {problem: @submission.problem}) if for_edit
+    # show pages get edit controls on comments; the edit page does not
+    streams << turbo_stream.update(:submission_comments, partial: 'submissions/comments',
+                                   locals: {submission: @submission, show_edit: !for_edit, has_processing: @submission.has_processing_comments?})
+    # The assist picker sits outside the comments frame; refresh it too so a
+    # finished request re-enables Get (and a new one disables it) without a
+    # page reload. A page without the picker ignores the replace.
+    models = Rails.configuration.llm[:provider].keys
+    if models.any? && GraderConfiguration['system.llm_assist']
+      streams << turbo_stream.replace(:llm_assist_picker, partial: 'submissions/add_assist', locals: {models: models})
     end
+    render turbo_stream: streams
   end
 
   # -- problem comment section --
@@ -241,6 +246,13 @@ class CommentsController < ApplicationController
       @llm_service_class = Rails.configuration.llm[:provider][@llm_model]
       if @llm_service_class.blank?
         @toast = {title: 'LLM Assist Error', body: "Unknown AI model #{@llm_model.inspect}", type: 'alert' }
+        render 'submission_and_toast', status: :unprocessable_entity and return
+      end
+
+      # Same predicate the picker uses to disable Get (request in flight, model
+      # already answered, full score, spend cap) — the form can be replayed.
+      if (reason = @submission.llm_assist_refusal(@llm_model))
+        @toast = {title: 'LLM Assist Error', body: "Request refused: #{reason}", type: 'alert' }
         render 'submission_and_toast', status: :unprocessable_entity and return
       end
     end

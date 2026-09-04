@@ -50,8 +50,10 @@ class Llm::SelfHostAssistTest < ActiveSupport::TestCase
       @comment.reload
       assert_equal 'ok', @comment.status
       assert_equal 'Here is a hint.', @comment.body
-      assert_equal Llm::CommentAssist::ASSIST_COST, @comment.cost
+      assert_equal Llm::CommentAssist.assist_cost, @comment.cost
       assert_includes @comment.remark, 'self-host'
+      assert_equal 0.0, @comment.llm_cost.to_f
+      assert_equal [10, 5], [@comment.prompt_tokens, @comment.completion_tokens]
     end
   end
 

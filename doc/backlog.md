@@ -179,82 +179,90 @@ decision and the verification are the work.
 
 ---
 
-## Submission assist (Codey) — deferred improvements from the 2026-09-03 review
+## `course-prep` has no backup — give it a private remote
+
+**Noticed 2026-09-03** while moving the assist evaluation data into it. The
+`course-prep` hg repo (`~/cafe-grader/course-prep`, started 2026-09-02) holds
+the viva kits, exam papers and model answers, the live prompt tags, and now
+`assist/eval-*/` with student code and tutor answers. `hg paths` is empty: no
+remote, no mirror, one WSL disk, 52 MB. The "no remote, ever" rule was about
+public hosts.
+
+**Direction (dae, 2026-09-03):** a private project on `gitlab.nattee.net`, the
+self-hosted GitLab that already holds the `automation` repo — internal, access
+controlled, and the deploy runner already trusts it. Push via hg-git like the
+web repo. Confirm the project is private and not indexed before the first
+push; then `hg push` becomes part of the routine after every course-prep
+commit (note it in the Viva/Assist history conventions).
+
+**Size:** half an hour. Blocked only on creating the GitLab project.
+
+---
+
+## Submission assist (Codey) — what is still open after the 2026-09-03 review
 
 **Context.** Code review + prod-copy data pass over `Llm::CommentAssist` /
-`CommentsController#llm_assist` on 2026-09-03. The defects found were fixed at
+`CommentsController#llm_assist` on 2026-09-03. Shipped from it: the defects at
 master 2084–2086 (owner-or-admin gate, model by name + `button_to`, sanitized
-answer body, `final_score` floored at 0, nil PDF part, double error marker).
-Everything below was deliberately left for a follow-up. Numbers are from the
-local dev DB (prod copy): 5,054 requests, 4,577 answered, 309 students,
-2025-07 → 2026-08.
+answer body, `final_score` floored at 0, nil PDF part, double error marker) and
+the improvements at 2089–2090 (compiler output, per-testcase table, previous
+answer + diff on repeat requests, picker guards with a spend cap,
+`llm_cost`/token columns + `rake comments:backfill_llm_usage`). Numbers below
+are from the local dev DB (prod copy): 5,054 requests, 4,577 answered, 309
+students, 2025-07 → 2026-08.
 
-### Payload — the model is asked to guess what the grader already knows
-- **Compiler output is never sent.** 166 assisted submissions had the verdict
-  `Compilation error` (281 carried a `compiler_message`); the prompt's Step 1
-  asks the model to find the syntax error blind. `SubmissionRepairAssist`
-  already sends `compiler_message.truncate(4000)` (`app/services/llm/submission_repair_assist.rb`
-  ~line 251) — lift the same block into `CommentAssist#user_source_code`.
-- **Per-testcase truth instead of "How to Map".** The `AI-AL`/`AI-DS` tag
-  text teaches the model to infer subtask boundaries from PDF percentages
-  ("the first 4 verdicts correspond to…"). `evaluations` × `testcases` hold
-  the real `group`/`group_name`, per-test `result_text`, `time`, `memory`,
-  `score`. Send a compact table (no input/sol) and delete that prompt
-  section. Removes a whole class of confidently wrong diagnoses.
-- **No memory across requests.** 40% of (user, problem) pairs asked more than
-  once (661 twice, 278 three times, max 46); 190 submissions had the same
-  model asked twice. The payload has no previous answer and no diff against
-  the prior submission, so the model repeats itself. Include the last assist
-  body (or a summary) + the diff.
-
-### Product guards
-- Disable **Get** while a request for that submission is `processing`, when a
-  (submission, model) answer already exists, and when `points == 100` (126
-  paid-for-nothing requests). Cap total assist cost per (user, problem) —
-  the score floor (rev 2085) stops the negative number, not the spend.
+### Operational (prod, dae)
+- **397 comments stuck `processing`** (Aug–Sep 2025, before the
+  retries-exhausted fix): eternal spinner + 5 s polling on those pages, and the
+  new picker guard now also refuses further requests on those submissions.
+  One-off:
+  `Comment.where(kind: :llm_assist, status: :processing).where(created_at: ..1.day.ago).update_all(status: :error, title: 'Assistant Error (abandoned)')`.
+- **Run `rake comments:backfill_llm_usage`** once after deploying 2089 to
+  recover token counts on the historical rows.
 - **Policy: staff-initiated requests charge the student.** 11 prod requests
   had requester ≠ owner (rev 2084 now limits that to admins). Decide whether
   an admin's request should carry `cost: 0`.
 
-### Accounting
-- **No USD/token record for assists.** `CommentAssist#handle_response` sets
-  `cost` to the *score* penalty and never calls `compute_cost`
-  (`AiGatewayTransport` has it); token usage survives only inside the stored
-  `llm_response` JSON (present in 4,492 / 4,577 rows — backfillable).
-  Historic spend: 22.7M prompt + 22.0M completion tokens (gemini-2.5-pro
-  ~4.9k completion/answer, mostly reasoning). Add a `llm_cost`/tokens column
-  or reuse `viva_turns`-style accounting.
-- **397 comments stuck `processing`** (Aug–Sep 2025, before the
-  retries-exhausted fix): eternal spinner + 5 s polling on those pages. Prod
-  one-off:
-  `Comment.where(kind: :llm_assist, status: :processing).where(created_at: ..1.day.ago).update_all(status: :error, title: 'Assistant Error (abandoned)')`.
-- **Claude-3.5-Sonnet 400s.** 74 of the 75 HTTP-400 errors are that model
-  (Feb–Mar 2026) — the PDF-as-`image_url` rejection `AiGatewayTransport`
-  converts around; chula_cp's `GenieAssist` likely still sends it. Check the
-  picker on chula_cp actually serves working models before the term.
-
 ### Prompt / data (the "should the prompt change?" question)
-- `AI-AL` (#33, 239 problems) and `AI-DS` (#34, 45) are the same 9.4 KB text
-  except AL appends a Thai translation (2,342 / 4,577 answers carry one,
-  roughly doubling visible output). `AI_viva` (#36) is `llm_prompt` on two
-  viva problems and read by nothing — re-kind or delete on prod (check
-  whether the D6 migrator ran there). Since `CommentAssist` concatenates
-  every attached `llm_prompt` tag, a shared core tag + a tiny per-course tag
-  would stop the two copies drifting without any schema work.
+- **Delete the "How to Map" section** from `codey-core` — the payload now
+  carries the real per-testcase table (rev 2089) and the section teaches the
+  model to guess what it is told. Replace with one line: "Use the
+  per-testcase table in the message; do not infer subtasks from the
+  statement's percentages." Likewise the Step 1 compile-error triage can point
+  at the compiler output block. One edit now: on 2026-09-03 the two full
+  copies `AI-AL` (239 problems) / `AI-DS` (45) were re-shaped on prod into
+  `codey-core` (#43, all 284) + the one-line `codey-thai` addendum (#44, the
+  239 AL problems); originals backed up at `~/codey-tag-backup-2026-09-03.txt`
+  on 10.0.5.50. Tags assemble in name order since rev 2093.
+- **Thai translation**: 2,342 / 4,577 answers carry one, roughly doubling
+  visible output — now a single decision: detach `codey-thai` or not.
+- `AI_viva` (#36) is `llm_prompt` on two viva problems and read by nothing —
+  re-kind or delete on prod (check whether the D6 migrator ran there).
+- **Prompt edits from the corpus evaluation** (`doc/assist-corpus-eval-2026-09-03.md`,
+  291 answers read against source + evaluations): close the describe-the-algorithm
+  loophole (9% of current answers hand over the algorithm in words; those
+  students regress as often as they improve), majority-failure rule, hard
+  format (≤~250 words, one issue, ≤2 questions — the Claude models default to
+  "Issue 1/2/3" + "Next steps"), trace-must-expose-the-bug, no unverified
+  praise, use the previous-answer block. All are edits to `codey-core`.
+- **Model roster**: gemini-3.1-pro was never wrong in 90 answers and leaked the
+  algorithm in 2%; Claude-Sonnet via Genie was wrong in 20% of 40 and leaked
+  in 15%. Consider dropping it from the picker or putting gemini-3.1-pro first.
 - **Effectiveness metric** (next submission on the same problem): assisted
   improved 36% / same 50% / reached 100 18%, vs an unassisted baseline of
   43% / 44% / 23% on the same problems and period. Selection-biased, but no
-  visible benefit either — treat a prompt revision as an experiment measured
-  with this metric (AL vs DS tags are natural arms).
-- **Reading the corpus.** 15.2 MB of answers ≈ 3.5–4.5M tokens (Thai inflates)
-  + 5.0 MB source ≈ 1.5M — not a one-session read. Options: a ~100-answer
-  stratified sample (verdict class × model × improved/not) ≈ 120k tokens
-  in-session; a script checking every answer's "first failing subtask" claim
-  against `evaluations`; a DGX judge pass over all 4,577 for solution
-  leakage / named algorithms.
+  visible benefit either. Re-run `frame.rb` (archived in
+  `~/cafe-grader/assist-eval-2026-09-03/`) after a term of the new payload
+  (2089) + edited prompt and compare the read-score columns and outcomes
+  against the 2026-09-03 document.
 
-**Size:** payload items ~half a day each with tests; guards a few hours;
-accounting needs a migration; prompt work is mostly authoring in the tags.
+### Accounting follow-up
+- `llm_cost` / tokens are recorded (rev 2089) but shown nowhere yet. A per-model
+  dollar total next to the score-penalty totals on `user_admin/stat` and the
+  problem stat page is the natural first surface.
+
+**Size:** prompt edits are authoring in the tags; the stat surface is an
+afternoon; the corpus evaluation is a session with the DGX.
 
 ---
 

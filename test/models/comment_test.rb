@@ -57,4 +57,16 @@ class CommentTest < ActiveSupport::TestCase
     assert_equal problems(:prob_add), comment.commentable
     assert_equal users(:admin), comment.user
   end
+
+  test "backfill_llm_usage! reads token counts out of the stored provider response" do
+    c = submissions(:add1_by_john).comments.create!(
+      user: users(:john), kind: 'llm_assist', status: 'ok', title: 't', body: 'b', cost: 10,
+      llm_response: {choices: [], usage: {prompt_tokens: 11, completion_tokens: 7}}.to_json)
+    assert c.backfill_llm_usage!
+    c.reload
+    assert_equal [11, 7], [c.prompt_tokens, c.completion_tokens]
+    c.update_columns(llm_response: 'not json', prompt_tokens: nil)
+    refute c.backfill_llm_usage!
+    assert_nil c.reload.prompt_tokens
+  end
 end

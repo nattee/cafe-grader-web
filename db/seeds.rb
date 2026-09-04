@@ -211,6 +211,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'system.llm_assist_cost',
+     value_type: 'integer',
+     default_value: '10',
+     description: "Score penalty, in points off the problem's full score, charged for each LLM assist request. Read when the request is made and recorded on it, so changing this never alters past charges. 0 makes assistance free."
+   },
+
+   {
      key: 'viva.practice_daily_start_limit',
      value_type: 'integer',
      default_value: '3',
