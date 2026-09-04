@@ -424,7 +424,7 @@ with a stronger reader (or a human).
    the same 291-record protocol after a term, using the DGX for the cheap
    columns and a reader for leak/diagnosis.
 
-## Next: offline test of the new prompt (agreed 2026-09-03, not yet run)
+## Offline test of the new prompt — the plan (agreed 2026-09-03; run 2026-09-04, results in Part 4 below)
 
 The revised prompt is `course-prep` rev 4 (`assist/codey-core.md`), reviewed
 and accepted by dae on 2026-09-03; it is **not** on production. Before students
@@ -480,3 +480,138 @@ against this document. The scorer prompt and the frame script live in the
 session scratchpad and in `course-prep/assist/eval-2026-09-03/` (local-only repo; `~/cafe-grader/assist-eval-2026-09-03` is a symlink to it) (frame CSV,
 per-chunk scores, aggregation script); the raw answers are in production
 `comments` and are not copied into the repo.
+
+## Part 4 — offline old-vs-new prompt test (run 2026-09-04)
+
+The plan above, executed. Data, scripts and every answer are in
+`course-prep/assist/eval-2026-09-03/offline-prompt-test/` (revs 6–10; `README.md` there is
+the file-level guide). Nothing here touched production or any student.
+
+**Setup.** 100 real stuck moments — answered assist requests on not-full submissions from the
+production copy — chosen so that the two worst cells are over-weighted: 20 compile errors and
+45 repeat requests (by class: CE 20, WA 25, TLE 18, RE 14, mixed 23; at most 3 per problem,
+43 problems). For each one the same model, gemini-3.1-pro via the Genie relay, wrote three
+answers:
+
+| Arm | Prompt | What the platform sent with it |
+|---|---|---|
+| a | old (`course-prep` rev 3, live on prod) | old payload (web rev 2088): statement PDF, managers, source + verdict string |
+| b | old | new payload (web rev 2089+): + compiler output or per-testcase table, + previous answer and diff on repeats |
+| c | new (`course-prep` rev 4) | new payload |
+
+300 answers, 0 failures; the `codey-thai` addendum was kept where the problem carries it (91 of
+100), identically in every arm. Genie quota used: ~1.5M input, ~1.3M output tokens (the model
+reasons; ~2,600–3,800 of each answer's completion tokens are thinking). On a repeat request the
+"previous answer" is the one the student had actually received before that request, never a
+later one.
+
+**Grading.** The 300 answers were shuffled, given random ids, split into 12 chunks of 25 with
+the three arms of one input never in the same chunk, the Thai appendix stripped, and read by
+12 Claude readers (one per chunk, Part 1's rubric verbatim) who could not see which arm an
+answer came from. The free DGX judge (few-shot qwen, Part 3) also scored all 300, for the
+cheaper-grader question. Two operational notes for next time: the first reader pass hit the
+account's 5-hour limit after 2 of 12 chunks (12 readers × ~105k tokens is more than one window
+when the session has prior usage — run 6 + 6), and the Thai-stripping heuristic cut 33
+English bodies short at a quoted Thai phrase; it was fixed (a line must be mostly Thai *and*
+followed by mostly-Thai text) and the chunks regenerated with identical ids before the second
+pass. Three records already graded from a cut body were re-graded.
+
+### What the readers found
+
+| Arm | states the fix or worse | hands over the algorithm | wrong diagnosis | one issue only | ends with a step | writes ≥3 lines of code | names a technique |
+|---|---|---|---|---|---|---|---|
+| a: old prompt, old payload | 89 of 100 | 11 | 3 | 46 | 96 | 0 | 5 |
+| b: old prompt, new payload | 90 of 100 | 13 | 0 | 51 | 96 | 1 | 7 |
+| c: new prompt, new payload | 87 of 100 | 8 | 1 | **89** | 92 | 0 | 13 |
+
+Same input, arm against arm (100 pairs each):
+
+| | gives away less / same / more | focus gained / lost | diagnosis fixed / broken |
+|---|---|---|---|
+| a → b (the code change) | 7 / 83 / 10 | 17 / 12 | 3 / 0 |
+| b → c (the prompt change) | 14 / 79 / 7 | **42 / 4** | 0 / 1 |
+| a → c (both) | 14 / 79 / 7 | **45 / 2** | 3 / 1 |
+
+Shape, measured mechanically on the English body of every answer:
+
+| | a | b | c |
+|---|---|---|---|
+| English words (median) | 238 | 230 | **152** |
+| has a numbered list | 48 | 37 | **5** |
+| has section headings | 2 | 4 | 0 |
+| code block of ≥3 lines (regex) | 12 | 19 | **2** |
+| question marks (median) | 3 | 3 | 2 |
+| completion tokens (median) | 3,848 | 3,742 | 3,064 |
+
+By verdict class, the rows that matter:
+
+| Class (n per arm) | hands over: a / b / c | one issue: a / b / c | notes |
+|---|---|---|---|
+| compile error (20) | 0 / 1 / 0 | 14 / 14 / 18 | arm c "ends with a step" fell to 15 of 20: the new Step 1 says "ask one question" and five answers ended on the question with no explicit next action |
+| wrong answer (25) | 2 / 3 / **0** | 11 / 17 / **22** | the clearest win |
+| time limit (18) | 7 / 6 / **6** | 5 / 8 / 16 | hand-overs did **not** fall; arm c names a tool in 10 of 18 (allowed) and then lays out the redesign anyway |
+| runtime error (14) | 2 / 0 / 1 | 8 / 5 / 11 | |
+| mixed (23) | 0 / 3 / 1 | 8 / 7 / 22 | |
+| first request (55) | 7 / 6 / 3 | 19 / 21 / 46 | |
+| repeat request (45) | 4 / 7 / 5 | 27 / 30 / **43** | the "previous answer" block plus the repeat rule ends the same-hint-twice pattern |
+
+### Reading the result
+
+1. **The prompt change fixes the shape completely.** One issue, at most two questions, no
+   checklist, ~150 words: 89 of 100 against 46, gained on 45 inputs and lost on 2, with no
+   loss of correctness (wrong diagnoses 3 → 1 across the two changes). The code change alone
+   (a → b) did little for focus; the prompt text did it.
+2. **It does not move the "states the fix" line.** 87–90 of 100 in every arm. Two things to
+   know about that number: these readers were instructed strictly (a leading question whose
+   answer is the fix counts as stating it; when unsure, score the worse), and the inputs are
+   the hard cells, so the level is not comparable with Part 1's 63% for the same model on
+   real answers. What is comparable is arm against arm, and there the new prompt is flat.
+   Asking the model to be "Socratic" does not make gemini-3.1-pro withhold the fix; if that
+   line matters, it needs a mechanism (e.g. an explicit "do not name the bug; name the place
+   and ask" instruction with an example of the difference), not a principle.
+3. **Hand-overs of the algorithm fall a little (11 → 8) but not on time-limit verdicts (7 → 6
+   of 18).** The new TLE section allows naming the textbook tool and forbids laying out the
+   redesign; the model does the first and then does the second anyway ("names binary search
+   and two pointers, then lays out the per-query complement search"). Six of the eight arm-c
+   hand-overs are TLE. The "one conceptual hint, then stop" sentence is not strong enough on
+   its own; a concrete stop rule ("after naming the tool, ask one question and end") is the
+   next edit to try.
+4. **Naming textbook tools went up as intended** (5 → 13 of 100: sort, binary search, two
+   pointers, path compression), and no arm wrote code (0 / 1 / 0 answers with a ≥3-line
+   block by the readers' count).
+5. **Small costs.** "Ends with a concrete step" slipped 96 → 92, almost entirely compile
+   errors (Step 1 now says "ask one question"). Add "and tell them what to do next" to Step 1.
+6. **The payload change alone (a → b) is neutral-to-slightly-positive on quality** (focus
+   +5, wrong diagnoses 3 → 0, hand-overs +2) and is what makes the repeat-request rule
+   possible. It is not what changes the answers' shape.
+
+### Decision (pending dae)
+
+Against the success criterion set beforehand — fewer stated fixes and hand-overs, fewer wrong
+diagnoses, more single-focus answers, no rise in code — the new prompt clears "more
+single-focus" decisively, "no rise in code" and "fewer wrong diagnoses" narrowly, "fewer
+hand-overs" only marginally, and misses "fewer stated fixes". Recommendation: **deploy rev 4
+now** (the focus gain is large and nothing got worse in a way students would feel), with two
+small edits first — the Step 1 next-action sentence and a concrete stop rule after naming a
+tool in the TLE section — then re-run only the TLE and CE cells of this same test (38 inputs,
+~115 calls) to check those two edits before the term's outcome re-measurement.
+
+### Part 4 as evidence for Question 2 (cheaper grader)
+
+The DGX few-shot judge scored the same 300 blind answers. Agreement with the readers
+(kappa = agreement corrected for chance; 1 is perfect, 0 is guessing):
+
+| Column | agree | kappa | readers say yes | judge says yes |
+|---|---|---|---|---|
+| gave the fix away or worse | 248 of 300 | 0.28 | 266 | 250 |
+| handed over the algorithm | 266 of 300 | 0.55 | 32 | 56 |
+| wrong diagnosis | 296 of 300 | 0.33 | 4 | 2 |
+| one issue only | 224 of 300 | 0.42 | 186 | 232 |
+| writes ≥3 lines of code | 300 of 300 | 1.00 | 1 | 1 |
+| names a technique | 284 of 300 | 0.59 | 25 | 17 |
+
+The judge reproduces the *focus* ordering of the arms (68 / 70 / 94 against the readers'
+46 / 51 / 89) and the flat "states the fix" line, but **inverts the hand-over verdict** (it
+calls arm c the worst at 20 of 100; the readers call it the best at 8). Same conclusion as
+Part 3: usable as a free screen for shape and focus, not for the leak line that the
+recommendations rest on.

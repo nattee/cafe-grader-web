@@ -71,7 +71,7 @@ admin) may request it (since 2026-09-03).
 - **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090).
 - **Access:** site switch + contest `allow_llm` + tag present (07-10/11) → + owner-or-admin (2026-09-03, rev 2084; 11 historical requests were made by someone other than the owner, who paid).
 - **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089).
-- **Measurement:** none → next-submission outcome metric + mechanical checks + 291-answer read (2026-09-03).
+- **Measurement:** none → next-submission outcome metric + mechanical checks + 291-answer read (2026-09-03) → offline old-vs-new prompt test, 100 inputs × 3 arms, blind-read (2026-09-04, Part 4 of the evaluation doc).
 
 ## Numbers for reporting (production, as of 2026-09-03 11:44)
 
@@ -94,6 +94,12 @@ admin) may request it (since 2026-09-03).
 ---
 
 ## Entries
+
+### 2026-09-04 — Offline old-vs-new prompt test: rev 4 fixes focus, not the "states the fix" line
+**study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4; data + scripts `course-prep/assist/eval-2026-09-03/offline-prompt-test/` (course-prep revs 6–10)
+- **Problem observed:** the eight prompt edits from the 2026-09-03 evaluation (`codey-core` v2, course-prep rev 4) had been accepted on reasoning alone; nothing showed what they do to real answers before students see them.
+- **Change:** 100 past stuck moments (20 compile errors, 45 repeat requests, at most 3 per problem) answered three times each by gemini-3.1-pro: old prompt + old payload, old prompt + new payload (rev 2089), new prompt + new payload. 300 throwaway answers, no comment rows, no charge. Graded blind by 12 Claude readers on Part 1's rubric; the DGX few-shot judge scored the same 300 for the cheaper-grader question.
+- **Outcome / status:** one-issue answers 46 → 89 of 100 (gained on 45 inputs, lost on 2); hand-overs 11 → 8; wrong diagnoses 3 → 1; no code written; median 152 English words vs 238; numbered checklists 48 → 5. "States the fix" flat at 87–90 of 100 in every arm — the Socratic wording does not make the model withhold the fix. TLE hand-overs unchanged (7 → 6 of 18): the model names the allowed tool, then lays out the redesign anyway. Recommendation in the doc: deploy rev 4 after two small edits (Step 1 next-action sentence; a concrete stop rule after naming a tool in the TLE section), re-run the TLE + CE cells to check them. **Pending dae.** Operational: 12 readers ≈ two 5-hour windows, not one — run 6 + 6; the Thai-strip heuristic needed a fix before grading (33 bodies cut short, re-blinded, 3 re-graded).
 
 ### 2026-09-03 — Blind human read of 30 answers (the calibration anchor)
 **study** · `course-prep` rev 5 (`assist/eval-2026-09-03/dae-reads.html`, `make_reads_page.py`, `dae-reads-key.json`); rev 2102–2103 (plan + this entry)
