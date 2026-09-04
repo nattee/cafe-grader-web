@@ -23,9 +23,10 @@ observed → Change → Outcome / status**, with refs. Prompt edits cite
 - **`course-prep` — a Mercurial repo on the instructor's workstation, not
   published anywhere:** path `~/cafe-grader/course-prep` on `dae-amd-2024`
   (WSL2 Ubuntu 24.04), started 2026-09-02; it holds exam papers and model
-  answers, so it has no public remote by rule. As of 2026-09-03 it also has
-  **no backup or private mirror** — the only copy of the assist evaluation
-  data is that disk. Contents for this feature: `assist/codey-core.md` and
+  answers, so it has no public remote by rule. Since 2026-09-04 it is mirrored
+  to a **private** GitLab project (`gitlab.nattee.net/nattee/course-prep`, via
+  hg-git; `hg push gitlab` after every commit there); before that the only copy
+  was that disk. Contents for this feature: `assist/codey-core.md` and
   `assist/codey-thai.md` (the live prompt tags, versioned), the originals they
   replaced, and `assist/eval-<date>/` — every evaluation's data and scripts:
   the answers read, the readers' and judges' scores, the whole-corpus frames,
