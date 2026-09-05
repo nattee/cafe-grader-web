@@ -179,26 +179,6 @@ decision and the verification are the work.
 
 ---
 
-## `course-prep` has no backup — give it a private remote
-
-**Noticed 2026-09-03** while moving the assist evaluation data into it. The
-`course-prep` hg repo (`~/cafe-grader/course-prep`, started 2026-09-02) holds
-the viva kits, exam papers and model answers, the live prompt tags, and now
-`assist/eval-*/` with student code and tutor answers. `hg paths` is empty: no
-remote, no mirror, one WSL disk, 52 MB. The "no remote, ever" rule was about
-public hosts.
-
-**Direction (dae, 2026-09-03):** a private project on `gitlab.nattee.net`, the
-self-hosted GitLab that already holds the `automation` repo — internal, access
-controlled, and the deploy runner already trusts it. Push via hg-git like the
-web repo. Confirm the project is private and not indexed before the first
-push; then `hg push` becomes part of the routine after every course-prep
-commit (note it in the Viva/Assist history conventions).
-
-**Size:** half an hour. Blocked only on creating the GitLab project.
-
----
-
 ## Submission assist (Codey) — what is still open after the 2026-09-03 review
 
 **Context.** Code review + prod-copy data pass over `Llm::CommentAssist` /

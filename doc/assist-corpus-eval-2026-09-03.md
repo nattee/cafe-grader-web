@@ -470,7 +470,8 @@ words, 2026-09-03: "remind me of that three things when we finished"):
 1. finish the 30 human reads and save `dae-reads.csv` (then commit it in
    course-prep);
 2. review master 2089–2105, merge to `chula_cp`, push, deploy to 10.0.5.50,
-   run `bin/rails db:seed` there (creates `system.llm_assist_cost`);
+   run `bin/rails db:seed` there (creates `system.llm_assist_cost`) — superseded 2026-09-05: the key is
+   created by a data migration (master 2111), no seed needed;
 3. create the private `course-prep` project on gitlab.nattee.net and push
    (backlog entry).
 
@@ -615,3 +616,39 @@ The judge reproduces the *focus* ordering of the arms (68 / 70 / 94 against the 
 calls arm c the worst at 20 of 100; the readers call it the best at 8). Same conclusion as
 Part 3: usable as a free screen for shape and focus, not for the leak line that the
 recommendations rest on.
+
+### Follow-up (2026-09-05): the two small edits, tested on the CE and TLE cells
+
+`course-prep` rev 11 (`codey-core` v2.1) = rev 4 plus (1) Step 1 ends with "fix that line,
+recompile, and resubmit" and (2) a hard stop in the TLE section ("if you name a tool, ask one
+question about how it fits the student's current loop and end there; do not describe the steps
+of the new approach, not even in outline"). Same 20 compile-error and 18 time-limit inputs, same
+model, one new arm (d); the rev 4 answers (arm c) for those inputs were re-graded in the same
+blind chunks by the same three readers, so the two arms are on one footing (these readers were
+told an answer is "actionable" only if it ends with an instruction, not a question, so their
+absolute numbers are stricter than Part 4's).
+
+| Cell (n) | | rev 4 | v2.1 | same input, rev 4 → v2.1 |
+|---|---|---|---|---|
+| compile error (20) | ends with a next step | 7 | **20** | gained 13, lost 0 |
+| | states the fix or worse | 15 | 16 | |
+| | one issue only | 17 | 15 | |
+| time limit (18) | hands over the algorithm | 7 | **9** | removed 2, introduced 4 |
+| | names a technique | 9 | 12 | |
+| | ends with a next step | 7 | 7 | |
+| both (38) | wrong diagnosis | 0 | 0 | |
+
+**Edit 1 works and costs nothing**: every compile-error answer now ends with what to do. **Edit 2
+does not work**: told to name the tool and stop, gemini-3.1-pro names the tool *and* outlines the
+algorithm in nine of eighteen answers instead of seven ("names binary search and lower_bound;
+sort-then-search algorithm handed over"). A stronger prohibition in the same sentence made the
+behaviour slightly worse, which matches Part 4's finding that "Socratic" wording does not move
+this model's leak line. The next attempt, if any, should change the *shape* of the TLE answer
+rather than add rules — e.g. a fixed three-sentence template (bottleneck, one named tool, one
+question) or a second pass that strikes any sentence describing a step of the new approach —
+and is parked.
+
+**Deployable prompt: `course-prep` rev 12 (`codey-core` v2.2) = rev 4 + edit 1 only.** The
+compile-error section is exactly what arm d ran; the TLE section is exactly what arm c ran, so
+both halves have been read blind. Cost of the follow-up: 38 Genie calls (~0.29M tokens) and
+three Claude readers (~0.33M tokens, about a quarter of a 5-hour window).
