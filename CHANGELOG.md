@@ -69,8 +69,9 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ### Changed
 - **AI-assist price is a site setting.** The points a request costs were a
   constant in code (10). They are now `system.llm_assist_cost` on the
-  Configuration page (seeded at 10 by `bin/rails db:seed`; the code falls back
-  to 10 while the key is absent). The value is read when the request is made
+  Configuration page (created at 10 by a data migration on deploy, rev 2111,
+  and by `bin/rails db:seed` on a fresh install; the code falls back to 10
+  while the key is absent). The value is read when the request is made
   and recorded on it, so changing it never rewrites past charges; 0 makes
   assistance free. The confirm dialog quotes the current value. (rev 2100)
 - **AI-assist prompt tags assemble in name order.** A problem with several

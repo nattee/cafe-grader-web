@@ -100,7 +100,7 @@ admin) may request it (since 2026-09-03).
 **study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4 "Follow-up"; `course-prep` revs 11 (v2.1 tested), 12 (v2.2 = rev 4 + one sentence), 13 (scores)
 - **Problem observed:** Part 4 left two weaknesses in rev 4: compile-error answers that ended on a bare question (15 of 20 had a next step), and time-limit answers that named the allowed tool and then laid out the redesign (6–7 of 18).
 - **Change:** one new arm on the 38 CE + TLE inputs with both edits (v2.1), graded blind against the rev 4 answers for the same inputs by the same three readers.
-- **Outcome / status:** the compile-error sentence works — next step 7 → 20 of 20 on the stricter reading, gained on 13 inputs, lost none, no side effects. The TLE stop rule does not — hand-overs 7 → 9 of 18 (removed 2, introduced 4); reverted. **Deployable text = `course-prep` rev 12 (v2.2)**, both halves of which have been read blind. The TLE hand-over stays an open problem for a shape-level fix (template or second pass), parked. Still **pending dae**: deploy chula_cp 2108, `db:seed`, then paste rev 12 into tag #43.
+- **Outcome / status:** the compile-error sentence works — next step 7 → 20 of 20 on the stricter reading, gained on 13 inputs, lost none, no side effects. The TLE stop rule does not — hand-overs 7 → 9 of 18 (removed 2, introduced 4); reverted. **Deployable text = `course-prep` rev 12 (v2.2)**, both halves of which have been read blind. The TLE hand-over stays an open problem for a shape-level fix (template or second pass), parked. Still **pending dae**: deploy chula_cp (2112, which carries the key migration), then paste rev 12 into tag #43.
 
 ### 2026-09-04 — Offline old-vs-new prompt test: rev 4 fixes focus, not the "states the fix" line
 **study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4; data + scripts `course-prep/assist/eval-2026-09-03/offline-prompt-test/` (course-prep revs 6–10)
@@ -118,7 +118,7 @@ admin) may request it (since 2026-09-03).
 **platform code** · rev 2100; `Llm::CommentAssist.assist_cost`, `db/seeds.rb`, `submissions/_add_assist`
 - **Problem observed:** the 10-point penalty was `ASSIST_COST = 10` in the service class — changing it meant a deploy, and there was no agreed place to keep the number. Decided with dae 2026-09-03: keep 10 for now (including for answers that name an algorithm, see the naming decision), but make it adjustable.
 - **Change:** `GraderConfiguration['system.llm_assist_cost']` (integer, seeded 10, editable on the Configuration page, audit-logged like every setting); read at request time and stored on the comment; the confirm dialog and the picker quote it; 0 is a valid "free" price. Per-problem or per-contest prices were considered and left for a real need.
-- **Outcome / status:** master 2100. On deploy run `bin/rails db:seed` once to create the key; until then the code uses 10.
+- **Outcome / status:** master 2100. Key created on every deployed host by data migration `20260905090000_seed_llm_assist_cost_configuration` (master 2111, 2026-09-05) — runs inside the deploy job's `db:migrate`, idempotent, so no manual `db:seed` is needed anywhere; until a host is deployed the code uses 10.
 
 ### 2026-09-03 — Naming decision: the tutor may name textbook algorithms; the problem-specific insight stays off limits
 **policy (prompt), pending the prompt edit** · discussion 2026-09-03; evaluation Part 1 finding 1
