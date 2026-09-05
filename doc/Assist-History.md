@@ -96,6 +96,12 @@ admin) may request it (since 2026-09-03).
 
 ## Entries
 
+### 2026-09-05 — Follow-up on the two prompt edits: keep the compile-error one, drop the TLE stop rule
+**study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4 "Follow-up"; `course-prep` revs 11 (v2.1 tested), 12 (v2.2 = rev 4 + one sentence), 13 (scores)
+- **Problem observed:** Part 4 left two weaknesses in rev 4: compile-error answers that ended on a bare question (15 of 20 had a next step), and time-limit answers that named the allowed tool and then laid out the redesign (6–7 of 18).
+- **Change:** one new arm on the 38 CE + TLE inputs with both edits (v2.1), graded blind against the rev 4 answers for the same inputs by the same three readers.
+- **Outcome / status:** the compile-error sentence works — next step 7 → 20 of 20 on the stricter reading, gained on 13 inputs, lost none, no side effects. The TLE stop rule does not — hand-overs 7 → 9 of 18 (removed 2, introduced 4); reverted. **Deployable text = `course-prep` rev 12 (v2.2)**, both halves of which have been read blind. The TLE hand-over stays an open problem for a shape-level fix (template or second pass), parked. Still **pending dae**: deploy chula_cp 2108, `db:seed`, then paste rev 12 into tag #43.
+
 ### 2026-09-04 — Offline old-vs-new prompt test: rev 4 fixes focus, not the "states the fix" line
 **study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4; data + scripts `course-prep/assist/eval-2026-09-03/offline-prompt-test/` (course-prep revs 6–10)
 - **Problem observed:** the eight prompt edits from the 2026-09-03 evaluation (`codey-core` v2, course-prep rev 4) had been accepted on reasoning alone; nothing showed what they do to real answers before students see them.
