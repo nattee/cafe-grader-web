@@ -357,29 +357,6 @@ renames it explicitly; the web import path does not.
 
 ---
 
-## Viva `answer` action — concurrent at-cap POSTs can double-enqueue the grade job
-
-**Context (noted 2026-07-21 during viva Phase 1 review).** `VivaSessionsController#answer`
-(`app/controllers/viva_sessions_controller.rb`) hard-caps the interview: when
-`@submission.viva_turns.where(role: :student).count >= @submission.problem.viva_hard_cap`
-it writes a closing system turn, sets `status: :evaluating`, and enqueues
-`Llm::VivaGradeAssistJob.perform_later(@submission)` — all without a row lock.
-Two truly concurrent POSTs at the cap (double-click, two tabs, a retried
-request) can both read the same pre-cap count and both take the force-finish
-branch, enqueuing the grade job twice for one submission. This is a
-pre-existing pattern across the whole controller (no action here takes a row
-lock), not something specific to this branch.
-
-**Impact.** Regrading is idempotent (the grader recomputes from the
-transcript), so a double-enqueue costs an extra LLM grading call — noise/cost,
-not a correctness or grade-manipulation bug.
-
-**Fix direction.** Either `@submission.lock!` around the check-and-transition,
-or a unique-job guard on `Llm::VivaGradeAssistJob` keyed by submission id.
-Small; low priority given the impact is cost only.
-
----
-
 ## Near-Miss: student-facing phase (deliberately deferred)
 
 Interaction model (staged ladder vs one-click AI repair vs mode-split),
@@ -543,6 +520,22 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Viva `answer` action — concurrent at-cap POSTs can double-enqueue the grade job — RESOLVED 2026-09-06
+
+Shipped rev 2114. `#answer` and `#finish` (the same three lines: closing turn,
+`:evaluating`, grade job) now run their check-and-transition inside
+`@submission.with_lock` and enqueue after the block commits; the shared step
+is `#force_finish!`. The same lock closes the below-cap variant too — two
+answers landing together used to record two student turns and two assist
+jobs. Regression tests: the three "concurrent" tests in
+`test/integration/viva_sessions_controller_test.rb`, which play the
+first-committed request through a one-shot hook on `Submission#lock!`.
+Residual: `#retry_turn` and `#restart` are still lock-free — a double-click
+on Retry can run one turn's LLM call twice (the second result overwrites the
+first), and Restart can archive a session just as an answer lands. Cost and
+nuisance only, no grading path; reopen if either shows up in transcripts.
+Timeline entry: `doc/Viva-History.md` 2026-09-06.
 
 ### Problem stat page — slow page + "By group" card — RESOLVED 2026-09-03
 

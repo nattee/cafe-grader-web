@@ -472,4 +472,85 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert sub.viva_turns.where(role: :system).where("content LIKE '%student ended%'").exists?,
            "finish must leave the end-of-interview system turn"
   end
+
+  # --- concurrent POSTs on one session (backlog: viva double-enqueue race) ---
+  #
+  # #answer and #finish take a row lock on the submission and re-read its
+  # state before acting. The hook below fires once, inside that lock, and
+  # plays the part of the concurrent request that committed first — a
+  # double-click on Send, a second tab, a browser retry. Without the lock
+  # both requests read the same pre-cap turn count and both queued a grade
+  # job for one interview. The hook is a no-op (nil) for every other test.
+
+  module SubmissionLockHook
+    mattr_accessor :once # one-shot proc, consumed on the first lock! call
+
+    def lock!(...)
+      if (hook = SubmissionLockHook.once)
+        SubmissionLockHook.once = nil
+        hook.call(self)
+      end
+      super
+    end
+  end
+  Submission.prepend(SubmissionLockHook)
+
+  teardown do
+    SubmissionLockHook.once = nil
+  end
+
+  test "answer at hard cap does not queue a second grade job when a concurrent request finished first" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(viva_hard_cap: 2)
+    2.times { |i| @owner_sub.viva_turns.create!(role: :student, status: :ok, content: "a#{i}") }
+    # The other request force-finished and committed while this one waited for the lock.
+    SubmissionLockHook.once = ->(sub) { Submission.find(sub.id).update_columns(status: :evaluating) }
+
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      assert_no_difference "VivaTurn.count" do
+        post viva_answer_submission_path(@owner_sub), params: { content: "one more" }
+      end
+    end
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_match(/grading in progress/i, flash[:alert])
+    assert_nil SubmissionLockHook.once, "answer must take the row lock (the hook never ran)"
+  end
+
+  test "answer does not double-post when a concurrent answer landed first" do
+    sign_in_as("john", "hello")
+    @owner_sub.problem.update!(viva_hard_cap: 15)
+    # The other request recorded its answer and placeholder while this one waited for the lock.
+    SubmissionLockHook.once = ->(sub) do
+      sub.viva_turns.create!(role: :student,   status: :ok,         content: "the first click")
+      sub.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    end
+
+    assert_no_enqueued_jobs(only: Llm::VivaTurnAssistJob) do
+      post viva_answer_submission_path(@owner_sub), params: { content: "the second click" }
+    end
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_match(/waiting for the previous response/i, flash[:alert])
+    assert_equal 0, @owner_sub.viva_turns.where(content: "the second click").count,
+      "the second click must not be recorded as another student turn"
+    assert_nil SubmissionLockHook.once, "answer must take the row lock (the hook never ran)"
+  end
+
+  test "finish does not queue a second grade job when a concurrent request ended the interview first" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now)
+    sub.viva_turns.create!(role: :student, status: :ok, content: "my answer")
+    SubmissionLockHook.once = ->(s) { Submission.find(s.id).update_columns(status: :evaluating) }
+
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      assert_no_difference "VivaTurn.count" do
+        post viva_finish_submission_path(sub)
+      end
+    end
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/already ended/i, flash[:alert])
+    assert_nil SubmissionLockHook.once, "finish must take the row lock (the hook never ran)"
+  end
 end

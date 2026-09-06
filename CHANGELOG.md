@@ -150,6 +150,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Viva: a double-click on Send or End no longer queues two grade jobs.**
+  The answer and finish actions checked the session's state and then acted
+  on it without a row lock, so two requests arriving together — a
+  double-click, a second tab, a browser retry — could both force-finish one
+  interview: two closing turns in the transcript and two grading calls to
+  the model (same grade, one wasted call). Below the turn cap the same gap
+  could record an answer twice. Both actions now take a row lock on the
+  submission and re-read its state before acting; the late request is
+  refused like any other post after the interview has ended. (rev 2114)
 - **AI assist on a problem without a statement PDF sent a `null` content
   part**, which the provider rejects (400) and the student saw as "Assistant
   Error". The part is now omitted. Latent so far: every tagged problem on
