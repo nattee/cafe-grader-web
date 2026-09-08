@@ -85,8 +85,17 @@ class Job < ApplicationRecord
   end
 
   # delete successful jobs older than x (errors are kept until admin clears them)
-  def self.clean_old_job(x = 1.day)
-    Job.where(status: :success).where('updated_at < ?', Time.zone.now - x).delete_all
+  # Nightly trim, run by Grader.cleanup_web. Finished-OK rows are pure history
+  # once the submission carries its grade, so they go after a day. Error rows
+  # are the debugging trail for reclaim sweeps and outages (the Graders page
+  # lists the latest 50 with Retry All / Clear All), so they stay longer — but
+  # not forever: on 2026-09-08 comprog still carried 4,422 dead rows from the
+  # 2026-08-30 outage and every judge poll scanned them. Returns the number of
+  # rows removed.
+  def self.clean_old_job(x = 1.day, error_after: 30.days)
+    now = Time.zone.now
+    Job.where(status: :success).where('updated_at < ?', now - x).delete_all +
+      Job.where(status: :error).where('updated_at < ?', now - error_after).delete_all
   end
 
   #

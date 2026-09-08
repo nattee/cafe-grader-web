@@ -67,6 +67,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **Nightly job cleanup also purges `error` jobs after 30 days.**
+  `Job.clean_old_job` removed only `success` rows, so failed job rows lived
+  forever and joined every judge poll scan — on 2026-09-08 comprog still
+  carried 4,422 rows from the 2026-08-30 outage. Error rows now stay 30 days
+  as the debugging trail (the Graders page lists the latest 50 with Retry
+  All / Clear All), then go. (rev 2115)
 - **AI-assist price is a site setting.** The points a request costs were a
   constant in code (10). They are now `system.llm_assist_cost` on the
   Configuration page (created at 10 by a data migration on deploy, rev 2111,
@@ -150,6 +156,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **Judge job queue: index on `jobs.status`.** The judge polls the `jobs`
+  table on `status` several times a second per grader and claims work with
+  `FOR UPDATE SKIP LOCKED`, but the table had no index on that column: every
+  poll was a full scan and, under MySQL's default isolation, every claim
+  locked every row it scanned, so a second grader claiming at the same
+  moment got nothing and idled until its next tick, and new job inserts
+  waited behind it. Measured on a 33k-row copy: idle poll 2.3 ms → 0.15 ms,
+  claim 13.9 ms → 2.7 ms, empty concurrent claims 353 of 1,200 → 0; insert
+  and status-update cost unchanged. New index `(status, priority DESC, id)`,
+  an online DDL that took 100 ms at 33k rows and 443 ms at 200k. (rev 2115)
 - **Viva: a double-click on Send or End no longer queues two grade jobs.**
   The answer and finish actions checked the session's state and then acted
   on it without a row lock, so two requests arriving together — a

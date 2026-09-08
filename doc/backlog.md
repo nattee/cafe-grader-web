@@ -446,30 +446,6 @@ value is entirely in the next 2045.
 
 ---
 
-## `jobs.status` has no index, and the judge polls it at 5 Hz per grader
-
-**Noticed 2026-08-30 while building the reclaim sweep (rev 2060).** The `jobs`
-table is indexed on `parent_job_id` only. `Job.has_waiting_job` and
-`Job.take_oldest_waiting_job` (`app/models/job.rb`) both filter on `status`, and
-`Grader#main_loop` calls them every 0.2 s **per grader** — roughly 50 queries a
-second on a 10-box host, each a full scan. It is survivable today only because
-`Grader.cleanup_web` deletes successful jobs nightly, so the table stays small
-(6.8k rows on the prod-copy dev DB); during a contest, a day's jobs are
-compile + one-per-testcase + score for every submission, and the scan grows with
-it. `Job.reclaim_orphaned!` filters on the same column.
-
-**Direction.** An index on `(status, grader_process_id)` serves the reclaim
-query and, on its leading column, both poll queries. Small migration; the work
-is measuring the hot path before and after rather than writing it — this is on
-the judge's critical loop, so it deserves its own change and its own numbers,
-which is why it was not folded into rev 2060. Also worth checking whether
-`take_oldest_waiting_job`'s `FOR UPDATE SKIP LOCKED` + `ORDER BY priority DESC,
-id ASC` wants `(status, priority, id)` instead.
-
-**Size:** small, plus a before/after measurement on a realistic queue.
-
----
-
 ## Waiting for a signal
 
 Decided, not deprioritized: each of these stays closed until its **Reopen
@@ -520,6 +496,41 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### `jobs.status` has no index, and the judge polls it at 5 Hz per grader — RESOLVED 2026-09-08
+
+Shipped rev 2115: migration `AddStatusPriorityIdIndexToJobs` adds
+`(status, priority DESC, id)` — leading column for `Job.has_waiting_job` and
+`Job.reclaim_orphaned!`, full key for `take_oldest_waiting_job`'s sort with
+no filesort — and `Job.clean_old_job` now also purges `error` rows after 30
+days (they were never deleted; on 2026-09-08 comprog carried 4,422 and cedt
+1,301 dead rows from the 2026-08-30 outage, all "Output file … does not
+exists"). Measured first, as the entry asked, on a `CREATE TABLE … LIKE jobs`
+copy in the dev DB (MySQL 8.0.46, 128 MB pool, fsync per commit, like prod),
+1,000 ops each and an 8-grader drain of 1,200 jobs with the real 0.2 s
+empty-claim sleep:
+
+| | 33k no index | 33k index | 200k no index | 200k index |
+|---|---|---|---|---|
+| idle poll | 2.31 ms | 0.15 ms | 13.6 ms | 0.15 ms |
+| claim (select for update + flip) | 13.9 ms | 2.70 ms | 67.0 ms | 2.55 ms |
+| insert / report | 2.2 ms / 2.2 ms | 2.1 ms / 2.4 ms | 2.3 ms / 2.2 ms | 2.1 ms / 2.2 ms |
+| drain, 8 graders | 18.7 s | 5.5 s | 55.0 s | 5.5 s |
+| empty claims of 1,200 | 353 | 0 | 655 | 0 |
+| `ADD INDEX` | — | 100 ms | — | 443 ms |
+
+The decisive finding was not speed but locking: under REPEATABLE READ the
+unindexed `FOR UPDATE SKIP LOCKED` claim locks every row it scans, so a
+concurrent grader's claim returns nothing (it then sleeps 0.2 s) and web-tier
+job inserts wait behind the claim. With the index SKIP LOCKED does what the
+2023 "start new judge" commit added it for. Write cost of the index was not
+measurable — each insert/update is dominated by the commit's log flush.
+Production shape that day: grader-2023 ~27k jobs/day, ~33k rows resident
+after the nightly trim, 8 graders on 10.0.5.81. Same day on prod: duplicate
+crontab cleanup lines removed from .50/.52/.80 (Solid Queue recurring owns
+both cleanups there; the cron `cleanup_judge` on .81 stays — the worker runs
+no Solid Queue). Residual: prod's dead `error` rows go on the first nightly
+run after deploy; toi was unreachable over ssh and unchecked.
 
 ### Viva `answer` action — concurrent at-cap POSTs can double-enqueue the grade job — RESOLVED 2026-09-06
 
