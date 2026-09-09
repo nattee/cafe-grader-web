@@ -383,6 +383,8 @@ Every row is something we observed on real student sessions
 | Perfect LaTeX-formatted essay 81 seconds after "I have no idea what upper_bound is" | External LLM paste | Not a prompt problem: environmental control for exams; for practice, treat scores as formative |
 | Student abandons the moment the examiner corrects them, restarts, scores 94 | Every adaptive interview is an oracle | Exam: single attempt. Practice: accept, or rotate scenario parameters between attempts |
 | Examiner announces "the interview is over" but the session never ends | Model omitted the end-of-interview token | Platform issue; report it — a stronger model fixed it |
+| A correct but *different* design scores low on the container criterion (Quiz 1, 2026-09-09) | Briefing named one design; the grader treated the equivalent alternative as wrong | Name **every** acceptable design in the model answers and in the criterion text; if found after the exam, regrade under a never-lower rule (briefing + operation) |
+| Same transcript regraded: 74 → 63, 31 → 42; SD 4 points over 157 sessions | Grader rerun noise (gemini-3.7-flash), not the rubric | Treat one grade as ±10; never "fix" a cohort with a small rubric edit and a plain regrade — keep the higher record (policy); consider averaging two grading passes for exams |
 
 ---
 
