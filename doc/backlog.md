@@ -182,67 +182,58 @@ decision and the verification are the work.
 ## Submission assist (Codey) — what is still open after the 2026-09-03 review
 
 **Context.** Code review + prod-copy data pass over `Llm::CommentAssist` /
-`CommentsController#llm_assist` on 2026-09-03. Shipped from it: the defects at
-master 2084–2086 (owner-or-admin gate, model by name + `button_to`, sanitized
-answer body, `final_score` floored at 0, nil PDF part, double error marker) and
-the improvements at 2089–2090 (compiler output, per-testcase table, previous
-answer + diff on repeat requests, picker guards with a spend cap,
-`llm_cost`/token columns + `rake comments:backfill_llm_usage`). Numbers below
-are from the local dev DB (prod copy): 5,054 requests, 4,577 answered, 309
-students, 2025-07 → 2026-08.
+`CommentsController#llm_assist` on 2026-09-03; the deliverables (master
+2084–2113, prompt `codey-core` v2.2 = `course-prep` rev 13) went live on
+2026-09-05 — timeline in `doc/Assist-History.md`, study in
+`doc/assist-corpus-eval-2026-09-03.md`. Follow-ups closed 2026-09-09: an
+admin's request is free for the student (2116); per-model requests / points /
+dollars / tokens on the user and problem stat pages (2117); Genie models off
+the picker by default, relay kept as a backup (chula_cp 2118, config);
+`codey-thai` kept as is (decided). Still open:
 
-### Operational (prod, dae)
-- **397 comments stuck `processing`** (Aug–Sep 2025, before the
+### Operational (prod, dae) — script ready
+`~/cafe-grader/assist-cleanup-2026-09-09.rb`: run once in report mode, then
+`STEP=stuck`, `STEP=backfill`, `STEP=ai_viva` one at a time (ssh commands in
+its header; each step re-prints the report).
+- **397 comments stuck `processing`** (2025-08-26 → 09-10, before the
   retries-exhausted fix): eternal spinner + 5 s polling on those pages, and the
-  new picker guard now also refuses further requests on those submissions.
-  One-off:
-  `Comment.where(kind: :llm_assist, status: :processing).where(created_at: ..1.day.ago).update_all(status: :error, title: 'Assistant Error (abandoned)')`.
-- **Run `rake comments:backfill_llm_usage`** once after deploying 2089 to
-  recover token counts on the historical rows.
-- **Policy: staff-initiated requests charge the student.** 11 prod requests
-  had requester ≠ owner (rev 2084 now limits that to admins). Decide whether
-  an admin's request should carry `cost: 0`.
+  picker guard refuses further requests on those submissions → mark failed.
+- **`rake comments:backfill_llm_usage`** once — chula_cp 2112 is deployed but
+  the token columns are still empty on prod's historical rows.
+- **Tag #36 `AI_viva`** is still `llm_prompt` on problems 670 `viva_test`
+  (visible to students) and 671 `a68_mv_relay`: read by nothing since viva
+  left `llm_prompt` (2026-07), but it makes both problems eligible for AI help
+  with a viva prompt as the instructions (no request so far). Delete; the
+  script prints the text first.
 
-### Prompt / data (the "should the prompt change?" question)
-- **Delete the "How to Map" section** from `codey-core` — the payload now
-  carries the real per-testcase table (rev 2089) and the section teaches the
-  model to guess what it is told. Replace with one line: "Use the
-  per-testcase table in the message; do not infer subtasks from the
-  statement's percentages." Likewise the Step 1 compile-error triage can point
-  at the compiler output block. One edit now: on 2026-09-03 the two full
-  copies `AI-AL` (239 problems) / `AI-DS` (45) were re-shaped on prod into
-  `codey-core` (#43, all 284) + the one-line `codey-thai` addendum (#44, the
-  239 AL problems); originals backed up at `~/codey-tag-backup-2026-09-03.txt`
-  on 10.0.5.50. Tags assemble in name order since rev 2093.
-- **Thai translation**: 2,342 / 4,577 answers carry one, roughly doubling
-  visible output — now a single decision: detach `codey-thai` or not.
-- `AI_viva` (#36) is `llm_prompt` on two viva problems and read by nothing —
-  re-kind or delete on prod (check whether the D6 migrator ran there).
-- **Prompt edits from the corpus evaluation** (`doc/assist-corpus-eval-2026-09-03.md`,
-  291 answers read against source + evaluations): close the describe-the-algorithm
-  loophole (9% of current answers hand over the algorithm in words; those
-  students regress as often as they improve), majority-failure rule, hard
-  format (≤~250 words, one issue, ≤2 questions — the Claude models default to
-  "Issue 1/2/3" + "Next steps"), trace-must-expose-the-bug, no unverified
-  praise, use the previous-answer block. All are edits to `codey-core`.
-- **Model roster**: gemini-3.1-pro was never wrong in 90 answers and leaked the
-  algorithm in 2%; Claude-Sonnet via Genie was wrong in 20% of 40 and leaked
-  in 15%. Consider dropping it from the picker or putting gemini-3.1-pro first.
-- **Effectiveness metric** (next submission on the same problem): assisted
-  improved 36% / same 50% / reached 100 18%, vs an unassisted baseline of
-  43% / 44% / 23% on the same problems and period. Selection-biased, but no
-  visible benefit either. Re-run `frame.rb` (archived in
-  `~/cafe-grader/assist-eval-2026-09-03/`) after a term of the new payload
-  (2089) + edited prompt and compare the read-score columns and outcomes
-  against the 2026-09-03 document.
+### Measurement (after a term of the new payload + prompt)
+- **Effectiveness re-measure**: assisted improved 36% / same 50% / reached 100
+  18% before 2089, paired figure 27% → 38% (never quote the never-asked
+  baseline). Re-run `frame.rb` / `frame2.rb` / `frame3.rb` (archived in
+  `~/cafe-grader/assist-eval-2026-09-03/`, copies in `course-prep`) and compare
+  read scores and outcomes against the 2026-09-03 document — compile-error and
+  repeat-request cells first.
+- **Gateway models unread.** claude-opus-4-5 (37 answers by 2026-09-03) and
+  gemini-3.7-flash (26) were never read for quality; with Genie off the picker
+  they are the whole roster. Read a sample once ~50 answers each exist. Ask OIT
+  whether the Gateway can serve a Gemini Pro model — gemini-3.1-pro was 0/90
+  wrong and is the model the v2.2 prompt was tested on.
 
-### Accounting follow-up
-- `llm_cost` / tokens are recorded (rev 2089) but shown nowhere yet. A per-model
-  dollar total next to the score-penalty totals on `user_admin/stat` and the
-  problem stat page is the natural first surface.
+### Prompt
+- **TLE hand-over shape fix** (template or a second pass): the model names the
+  allowed tool, then lays out the redesign anyway (6–7 of 18). The
+  "name the tool then stop" rule made it worse (7 → 9/18, 2026-09-05) and was
+  reverted; parked for a shape-level change plus a blind check.
 
-**Size:** prompt edits are authoring in the tags; the stat surface is an
-afternoon; the corpus evaluation is a session with the DGX.
+### Small bug, adjacent
+- **User stat "Hints" row is blank for students.** `Comment.chargeable_for`
+  counts by `comments.user_id`, which for a hint is its *author*, so the row
+  shows nothing for a student; reveals live in `comment_reveals`. Count reveals
+  instead. (The AI Assist total on the same card is owner-attributed since
+  2117 and correct.)
+
+**Size:** the prod steps are minutes; the Gateway read is a session; the TLE
+fix is prompt authoring plus a blind check.
 
 ---
 
