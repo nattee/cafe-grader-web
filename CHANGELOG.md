@@ -11,6 +11,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Stat pages show what AI assistance cost, per model.** The user stat card
+  (and its per-contest variant) and a new "AI assist" card on the problem stat
+  page list, per model, the requests on the student's or problem's
+  submissions, how many were answered, the points charged, the provider's
+  dollar figure where it reported one (with an "n of m priced" note when only
+  some rows carry it) and the tokens in / out. Requests are attributed to the
+  submission's owner — who is charged — rather than to whoever pressed Get, so
+  the card's "AI Assist" total now follows the same rule. (rev 2117)
 - **AI assist sends the model what the grader already knows.** The payload
   now carries the compiler output when the submission did not compile (166
   assisted compile errors in production history got a prompt asking the model

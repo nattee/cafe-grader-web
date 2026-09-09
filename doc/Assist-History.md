@@ -58,7 +58,7 @@ student nothing (since 2026-09-09).
 
 | # | Era | Dates | Characterization |
 |---|-----|-------|------------------|
-| 6 | Review, hardening, rebuild | 2026-09-03 | Code review found seven defects (any user could charge any student; index-addressed model; negative scores; raw-HTML answers); payload rebuilt around what the grader knows; picker guards + spend cap; dollar/token accounting; two prompt copies collapsed into `codey-core` + `codey-thai`; first corpus evaluation (291 answers read); this document. |
+| 6 | Review, hardening, rebuild | 2026-09-03 → 09-09 | Code review found seven defects (any user could charge any student; index-addressed model; negative scores; raw-HTML answers); payload rebuilt around what the grader knows; picker guards + spend cap; dollar/token accounting; two prompt copies collapsed into `codey-core` + `codey-thai`; first corpus evaluation (291 answers read); this document. Follow-ups 09-09: an admin's request is free for the student; per-model cost on the stat pages; Genie models off the picker by default. |
 | 5 | New providers, new models | 2026-07-30 → 08-30 | Self-hosted DGX provider; Genie roster refresh makes gemini-3.1-pro the default and *un-breaks* Claude-Sonnet (silently downgraded since Feb); Chula AI Gateway family adds claude-opus-4-5 and gemini-3.7-flash to the picker; gateway-reported cost. |
 | 4 | Tag taxonomy | 2026-07-20 → 07-21 | Viva moves off `llm_prompt`; the kind now means exactly "AI-helper system prompt"; the generic tag picker keeps offering it (D6 amendment). |
 | 3 | Refactor | 2026-05-07 → 05-19 | `Llm::Request` hierarchy; comment-assembly lifted from `GenieAssist` into `CommentAssist`; the score-penalty semantics regress and are restored the same day; `preview` tooling; `llm.yml.SAMPLE`. |
@@ -72,7 +72,7 @@ student nothing (since 2026-09-09).
 - **Payload:** system prompt + statement PDF + source + verdict string (07-17) → + manager files with a do-not-reveal instruction (08-23) → + compiler output on compile errors, per-testcase table (group, verdict, time, memory, score, limits), previous answer + line diff on repeat requests (2026-09-03, rev 2089; on prod 2026-09-05 with chula_cp 2112). The prompt's "How to Map" section went with the rev 13 text the same day.
 - **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090) → an admin's request on a student's submission is charged 0 (2026-09-09, rev 2116).
 - **Access:** site switch + contest `allow_llm` + tag present (07-10/11) → + owner-or-admin (2026-09-03, rev 2084; 11 historical requests were made by someone other than the owner, who paid).
-- **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089).
+- **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089) → shown per model on the user and problem stat pages (2026-09-09, rev 2117).
 - **Measurement:** none → next-submission outcome metric + mechanical checks + 291-answer read (2026-09-03) → offline old-vs-new prompt test, 100 inputs × 3 arms, blind-read (2026-09-04, Part 4 of the evaluation doc).
 
 ## Numbers for reporting (production, as of 2026-09-03 11:44)
@@ -96,6 +96,12 @@ student nothing (since 2026-09-09).
 ---
 
 ## Entries
+
+### 2026-09-09 — Stat pages show the per-model cost of AI assistance
+**platform code** · master 2117
+- **Problem observed:** `llm_cost`, `prompt_tokens` and `completion_tokens` have been recorded since rev 2089 (on prod since 2026-09-05) but appeared nowhere; the only visible figure was the score penalty, and the user stat card's "AI Assist" count went by who pressed Get, not by the student charged.
+- **Change:** `Comment.llm_assists_on(submissions)` (attributed to the submission owner) and `Comment.usage_by_model`; one shared table (`comments/_llm_usage_by_model`) on the user stat card, on its per-contest variant (requests inside the window only) and in a new "AI assist" card on the problem stat page, absent when nobody asked. Columns: model, requests (answered), points, cost — "—" when no row of that model carries a dollar figure, "$x (n of m priced)" when only some do — and tokens in / out.
+- **Outcome / status:** on the local prod copy every row shows "—" for cost (the Genie relay reports none, and the column is younger than the rows); real figures accumulate from the Gateway answers since 2026-09-05. Reaches production with the next chula_cp deploy.
 
 ### 2026-09-09 — An admin's request is free for the student
 **platform code** · master 2116

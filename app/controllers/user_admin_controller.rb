@@ -537,11 +537,18 @@ class UserAdminController < ApplicationController
         comment_count = Comment.chargeable_for(@user).group(:kind).count
       end
 
+      # AI-assist requests on this user's submissions, by model — attributed to
+      # the submission owner (who is charged), not to whoever pressed Get; in a
+      # contest, only requests made inside its window.
+      assists = Comment.llm_assists_on(Submission.where(user_id: @user.id))
+      assists = assists.where(created_at: range) if @contest
+      @llm_usage = assists.usage_by_model
+
       # count solve / attempted
       max_score = @submission.group(:problem_id).pluck('problem_id, max(points) as max_point')
       @summary = {count: max_score.count,
                   solve: max_score.select { |x| x[1] == 100 }.count,
                   hint: comment_count["hint"],
-                  llm_assist: comment_count["llm_assist"]}
+                  llm_assist: @llm_usage.sum(&:requests)}
     end
 end

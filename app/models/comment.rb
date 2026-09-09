@@ -38,7 +38,40 @@ class Comment < ApplicationRecord
     Comment.where(commentable: submissions, commentable_type: 'Submission').group(:commentable_id)
   }
 
+  # AI-assist requests made on `submissions` (a relation), attributed to the
+  # submission — i.e. to the student who is charged — not to whoever pressed
+  # Get (an admin may ask on a student's behalf; `chargeable_for` above counts
+  # by requester instead).
+  scope :llm_assists_on, ->(submissions) {
+    where(kind: 'llm_assist', commentable_type: 'Submission', commentable_id: submissions.select(:id))
+  }
+
   validates :title, presence: true
+
+  # One row of `usage_by_model`.
+  UsageRow = Struct.new(:model, :requests, :answered, :points, :dollars, :priced, :prompt_tokens, :completion_tokens,
+                        keyword_init: true)
+
+  # Per-model roll-up over the receiver (an llm_assist scope): requests made,
+  # answers (status ok), points charged, the provider's own dollar figure and
+  # how many rows carried one (providers without a cost source leave llm_cost
+  # nil — the Genie relay, and every row before 2026-09-03), tokens in / out.
+  # Heaviest model first. Rendered by comments/_llm_usage_by_model.
+  def self.usage_by_model
+    unscope(:order).group(:llm_model).order(Arel.sql('COUNT(*) DESC'), :llm_model)
+      .pluck(:llm_model,
+             Arel.sql('COUNT(*)'),
+             Arel.sql("SUM(comments.status = #{statuses[:ok]})"),
+             Arel.sql('COALESCE(SUM(comments.cost), 0)'),
+             Arel.sql('SUM(comments.llm_cost)'),
+             Arel.sql('COUNT(comments.llm_cost)'),
+             Arel.sql('SUM(comments.prompt_tokens)'),
+             Arel.sql('SUM(comments.completion_tokens)'))
+      .map do |model, requests, answered, points, dollars, priced, prompt_tokens, completion_tokens|
+        UsageRow.new(model: model, requests: requests, answered: answered.to_i, points: points.to_f,
+                     dollars: dollars, priced: priced, prompt_tokens: prompt_tokens, completion_tokens: completion_tokens)
+      end
+  end
 
   def to_label
     "#{kind}: #{title}"

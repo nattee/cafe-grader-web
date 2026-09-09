@@ -209,4 +209,24 @@ class ProblemsStatControllerTest < ActionDispatch::IntegrationTest
     sign_in_as("mary", "mary")                             # editor of group_a; prob_add is in group_a
     assert_report_link problems(:prob_add), groups(:group_a)
   end
+
+  # --- AI assist card (right column) ---
+
+  test "AI assist card lists requests on the problem's submissions by model; absent when there are none" do
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    get stat_problem_path(prob)
+    assert_select "#llm-usage-card", count: 0
+
+    Comment.create!(commentable: submissions(:add1_by_john), user: users(:john), kind: 'llm_assist', status: 'ok',
+                    llm_model: 'gemini-x', cost: 10, llm_cost: 0.25, prompt_tokens: 1200, completion_tokens: 300, title: 't')
+    Comment.create!(commentable: submissions(:add1_by_james), user: users(:james), kind: 'llm_assist', status: 'ok',
+                    llm_model: 'gemini-x', cost: 10, title: 't')
+    get stat_problem_path(prob)
+    assert_select "#llm-usage-card tbody tr", count: 1
+    assert_select "#llm-usage-card tbody tr td", text: "2"                          # requests
+    assert_select "#llm-usage-card tbody tr td", text: "20"                         # points charged
+    assert_select "#llm-usage-card tbody tr td", text: /\$0\.25 \(1 of 2 priced\)/  # one row unpriced
+    assert_select "#llm-usage-card tbody tr td", text: "1.2k / 300"                 # tokens in / out
+  end
 end

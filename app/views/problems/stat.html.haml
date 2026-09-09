@@ -91,6 +91,18 @@
             - else
               #{@summary[:solved]}/#{@summary[:attempted]} (#{(@summary[:solved] * 100.0 / @summary[:attempted]).round(1)}%)
 
+    -# AI-assist requests on this problem's submissions, by model. Points are the
+    -# score penalty students paid; Cost is the provider's dollar figure where it
+    -# reported one. Absent when nobody asked.
+    - if @llm_usage.any?
+      .card.mb-4#llm-usage-card
+        .card-body
+          %h2.card-title AI assist
+          %p.text-secondary.small.mb-2
+            Requests on this problem's submissions, by model. Points are what
+            students were charged; cost is what the provider reported.
+          = render partial: 'comments/llm_usage_by_model', locals: {rows: @llm_usage}
+
 %h2 Submissions
 -# Rows arrive as JSON from #stat_query and are paged client-side, so the page
 -# paints before a single row is rendered. Columns go through
