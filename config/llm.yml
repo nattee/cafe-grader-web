@@ -25,7 +25,14 @@
 llm_services: &services
   # Per-model service registrations
   # ChatGPTAssist: ChatGPT-4o,ChatGPT-o3
-  GenieAssist: gemini-3.1-pro,Claude-Sonnet
+  # ChulaGenie relay — kept as a BACKUP, off the student picker by default
+  # since 2026-09-09 (dae: OIT says the relay will rotate out soon; in the
+  # 2026-09-03 read Claude-Sonnet via Genie was the least accurate model,
+  # 8/40 wrong diagnoses, 6/40 hand-overs). The classes stay. To re-enable,
+  # uncomment the line and restart. Note this also withdraws gemini-3.1-pro
+  # (0/90 wrong), the model the 2026-09-05 prompt was tested on — ask OIT
+  # whether the Gateway can serve a Gemini Pro model.
+  # GenieAssist: gemini-3.1-pro,Claude-Sonnet
   AiGatewayAssist: claude-opus-4-5,gemini-3.7-flash
 
   # as of 23 Aug 2026, the list_model method gives
