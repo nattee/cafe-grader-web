@@ -51,7 +51,8 @@ the problem's full score (the "reduced full score" mechanic: final score =
 min(best score, 100 − penalties), floored at 0 since 2026-09-03). It is on
 only when the site switch `system.llm_assist` is on, and in contest mode only
 for contest problems flagged `allow_llm`. Only the submission's owner (or an
-admin) may request it (since 2026-09-03).
+admin) may request it (since 2026-09-03); an admin's request costs the
+student nothing (since 2026-09-09).
 
 ## Eras at a glance
 
@@ -69,7 +70,7 @@ admin) may request it (since 2026-09-03).
 - **Models actually running in prod:** gemini-2.5-pro + Claude-3.5-Sonnet via ChulaGenie (2025-07-23 →). Claude-3.5-Sonnet: 74 HTTP-400s Feb–Mar 2026 (Anthropic rejects the PDF sent as `image_url`), last answer 2026-03-03. Config renamed it `Claude-Sonnet` on 2026-02-14 (rev 1498) but the class's allowlist still said `Claude-3.5-Sonnet`, so every Claude request was **silently served by gemini-2.5-pro until 2026-08-23** (rev 2006). gemini-2.5-pro last answer 2026-08-23 (dropped from the picker, not from the relay — `Llm::GenieAssist.list_model` still lists it on 2026-09-03; relay retirement expected ~2026-10). Then: gemini-3.1-pro + Claude-Sonnet (Genie, 08-24 →), claude-opus-4-5 (Gateway, 08-27 →), gemini-3.7-flash (Gateway, 08-28 →). Since 2026-08-01 no request has errored.
 - **Prompt storage and text:** hard-coded in `GenieAssist` (06-29) → `llm_prompt` tags per problem (07-17); two full copies `AI-AL` (239 problems) and `AI-DS` (45), identical apart from AL's Thai-translation appendix (present by 2026-03-04 at the latest); text otherwise unchanged for the feature's life → `codey-core` + one-line `codey-thai` (2026-09-03, `course-prep` rev 3) → evaluation-driven rewrite `codey-core` v2.2 live 2026-09-05 (`course-prep` rev 13; rev 4 tested offline, +1 sentence from the follow-up).
 - **Payload:** system prompt + statement PDF + source + verdict string (07-17) → + manager files with a do-not-reveal instruction (08-23) → + compiler output on compile errors, per-testcase table (group, verdict, time, memory, score, limits), previous answer + line diff on repeat requests (2026-09-03, rev 2089; on prod 2026-09-05 with chula_cp 2112). The prompt's "How to Map" section went with the rev 13 text the same day.
-- **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090).
+- **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090) → an admin's request on a student's submission is charged 0 (2026-09-09, rev 2116).
 - **Access:** site switch + contest `allow_llm` + tag present (07-10/11) → + owner-or-admin (2026-09-03, rev 2084; 11 historical requests were made by someone other than the owner, who paid).
 - **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089).
 - **Measurement:** none → next-submission outcome metric + mechanical checks + 291-answer read (2026-09-03) → offline old-vs-new prompt test, 100 inputs × 3 arms, blind-read (2026-09-04, Part 4 of the evaluation doc).
@@ -95,6 +96,12 @@ admin) may request it (since 2026-09-03).
 ---
 
 ## Entries
+
+### 2026-09-09 — An admin's request is free for the student
+**platform code** · master 2116
+- **Problem observed:** since 2026-09-03 only the owner or an admin can press Get (rev 2084), but an admin asking on a student's behalf still charged the owner the site price — the 11 historical staff requests had all done so.
+- **Change:** `Llm::CommentAssist.assist_cost_for(requester:, submission:)`: the site price when the requester owns the submission, 0 otherwise. Used where the charge is stored and by the confirm dialog, which now tells an admin the request does not reduce the student's full score. Dollar cost and tokens are recorded as before; the 100-point spend cap ignores a 0 charge by itself.
+- **Outcome / status:** decision dae 2026-09-09 ("when admin click on other, zero cost"). Reaches production with the next chula_cp deploy.
 
 ### 2026-09-05 — New prompt and payload live on production (`codey-core` v2.2 = `course-prep` rev 13; chula_cp 2112 deployed to 10.0.5.50)
 **deployment: platform code + prompt data** · chula_cp 2112 (master 2089–2111) deployed by dae via the GitLab job; tag #43 set over ssh by Claude; `course-prep` revs 13 (text), 14 (README)

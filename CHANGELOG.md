@@ -67,6 +67,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   users who preferred the original compact text. (rev 2068)
 
 ### Changed
+- **An admin's AI-assist request no longer charges the student.** Only the
+  submission's owner or an admin may press Get (rev 2084); when an admin asks
+  on a student's behalf, the stored charge is now 0 points and the confirm
+  dialog says the request does not reduce the full score — the student did
+  not ask, so the penalty is not theirs. The provider's dollar cost and
+  tokens are still recorded; the owner's own requests pay the site price as
+  before. (rev 2116)
 - **Nightly job cleanup also purges `error` jobs after 30 days.**
   `Job.clean_old_job` removed only `success` rows, so failed job rows lived
   forever and joined every judge poll scan — on 2026-09-08 comprog still
