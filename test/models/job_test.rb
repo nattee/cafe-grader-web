@@ -61,4 +61,36 @@ class JobTest < ActiveSupport::TestCase
       Job.clean_old_job(1.day)
     end
   end
+
+  test "clean_old_job keeps error jobs for 30 days, then removes them" do
+    jobs(:job_error).update(updated_at: 29.days.ago)
+    assert_no_difference "Job.count" do
+      Job.clean_old_job(1.day)
+    end
+    jobs(:job_error).update(updated_at: 31.days.ago)
+    assert_difference "Job.count", -1 do
+      Job.clean_old_job(1.day)
+    end
+  end
+
+  test "clean_old_job never touches waiting or processing jobs" do
+    Job.where(status: [:wait, :process]).update_all(updated_at: 90.days.ago)
+    assert_no_difference "Job.where(status: [:wait, :process]).count" do
+      Job.clean_old_job(1.day)
+    end
+  end
+
+  test "clean_old_job returns the number of rows removed" do
+    jobs(:job_success).update(updated_at: 2.days.ago)
+    jobs(:job_error).update(updated_at: 31.days.ago)
+    assert_equal 2, Job.clean_old_job(1.day)
+  end
+
+  # The judge polls and claims on `status` many times a second; without this
+  # index every poll is a full scan and every claim locks the whole table
+  # (see the 2026-09-08 migration). Guard against it being dropped.
+  test "jobs carries the status/priority/id index the judge poll relies on" do
+    assert ActiveRecord::Base.connection.index_exists?(:jobs, [:status, :priority, :id], name: "index_jobs_on_status_priority_id"),
+      "index_jobs_on_status_priority_id is missing from jobs"
+  end
 end

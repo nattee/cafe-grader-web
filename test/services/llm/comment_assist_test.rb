@@ -132,4 +132,20 @@ class Llm::CommentAssistTest < ActiveSupport::TestCase
     reset_grader_config_cache
     assert_equal 10, Llm::CommentAssist.assist_cost
   end
+
+  # --- who pays ---
+
+  test "assist_cost_for: the owner pays the site price; anyone else asking on their behalf pays nothing" do
+    assert_equal Llm::CommentAssist.assist_cost, Llm::CommentAssist.assist_cost_for(requester: users(:john), submission: @submission)
+    assert_equal 0, Llm::CommentAssist.assist_cost_for(requester: users(:admin), submission: @submission)
+  end
+
+  test "an admin's request on a student's submission is stored with cost 0; the dollar cost is still recorded" do
+    comment = @submission.comments.create!(user: users(:admin), kind: 'llm_assist', title: 't', body: 'b', cost: 0, status: 'processing')
+    body = {choices: [{message: {content: 'hint'}}], usage: {prompt_tokens: 10, completion_tokens: 20}}.to_json
+    CostedAssist.new(submission: @submission, comment: comment, model: 'm').send(:handle_response, FakeResponse.new(body))
+    comment.reload
+    assert_equal 0, comment.cost
+    assert_in_delta 0.0123, comment.llm_cost.to_f, 1e-9
+  end
 end

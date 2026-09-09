@@ -22,6 +22,18 @@ module Llm
       value.nil? ? DEFAULT_ASSIST_COST : value.to_i
     end
 
+    # The charge for one request: the site price when the requester owns the
+    # submission, 0 when someone else asked on the student's behalf (only an
+    # admin can — CommentsController#can_request_llm). The student did not ask
+    # for help, so the penalty is not theirs to pay (decision 2026-09-09; the
+    # 11 historical staff requests had charged the owner). The provider's
+    # dollar cost is still recorded on the row either way, and the picker's
+    # 100-point spend cap ignores a 0 charge by itself.
+    def self.assist_cost_for(requester:, submission:)
+      return 0 if requester && submission && requester.id != submission.user_id
+      assist_cost
+    end
+
     def initialize(submission:, comment:, model: nil, **args)
       super(submission: submission, **args)
       @record = comment
@@ -50,7 +62,7 @@ module Llm
       # transport reads its cost header; self-host answers 0.0; a provider
       # with no cost source leaves llm_cost nil rather than a fake 0).
       usage = @parsed_body['usage']
-      @record.cost              = self.class.assist_cost
+      @record.cost              = self.class.assist_cost_for(requester: @record.user, submission: @submission)
       @record.prompt_tokens     = usage['prompt_tokens']     if usage.is_a?(Hash)
       @record.completion_tokens = usage['completion_tokens'] if usage.is_a?(Hash)
       @record.llm_cost          = respond_to?(:compute_cost, true) ? compute_cost(usage) : nil

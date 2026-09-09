@@ -223,4 +223,18 @@ class CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/7 points\. If your final score/, response.body)
     assert_no_match(/10 points\. If your final score/, response.body)
   end
+
+  test "the confirm dialog tells an admin that a request on a student's submission is free; the owner still sees the price" do
+    enable_llm_assist!
+    sign_in_as("admin", "admin")
+    get submission_path(@sub)
+    assert_response :success
+    assert_match(/This request does not reduce the/, response.body)
+    assert_no_match(/10 points\. If your final score/, response.body)
+
+    sign_in_as("john", "hello")
+    get submission_path(@sub)
+    assert_match(/10 points\. If your final score/, response.body)
+    assert_no_match(/This request does not reduce the/, response.body)
+  end
 end

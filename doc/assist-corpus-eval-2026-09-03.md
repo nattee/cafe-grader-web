@@ -586,7 +586,7 @@ By verdict class, the rows that matter:
    +5, wrong diagnoses 3 → 0, hand-overs +2) and is what makes the repeat-request rule
    possible. It is not what changes the answers' shape.
 
-### Decision (pending dae)
+### Decision (taken 2026-09-05: rev 4 + the compile-error sentence = rev 13, live on prod; see the follow-up below)
 
 Against the success criterion set beforehand — fewer stated fixes and hand-overs, fewer wrong
 diagnoses, more single-focus answers, no rise in code — the new prompt clears "more
@@ -648,7 +648,7 @@ rather than add rules — e.g. a fixed three-sentence template (bottleneck, one 
 question) or a second pass that strikes any sentence describing a step of the new approach —
 and is parked.
 
-**Deployable prompt: `course-prep` rev 12 (`codey-core` v2.2) = rev 4 + edit 1 only.** The
+**Deployable prompt: `course-prep` rev 13 (`codey-core` v2.2) = rev 4 + edit 1 only.** The
 compile-error section is exactly what arm d ran; the TLE section is exactly what arm c ran, so
 both halves have been read blind. Cost of the follow-up: 38 Genie calls (~0.29M tokens) and
 three Claude readers (~0.33M tokens, about a quarter of a 5-hour window).

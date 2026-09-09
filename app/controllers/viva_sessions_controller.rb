@@ -123,56 +123,65 @@ class VivaSessionsController < ApplicationController
       redirect_to list_main_path, alert: "You cannot post to another user's viva session." and return
     end
 
-    case @submission.status.to_s
-    when 'done', 'grader_error'
-      redirect_to viva_submission_path(@submission), alert: 'This viva session has ended.' and return
-    when 'evaluating'
+    student_content = params[:content].to_s.strip
+
+    # Check-and-transition under a row lock. Two POSTs that arrive together —
+    # a double-click on Send, a second tab, a browser retry — used to both
+    # read the same state and both act on it: at the hard cap that meant two
+    # closing turns and two grade jobs for one interview; below it, two
+    # student turns and two assist jobs. The second request now waits for
+    # the first to commit, re-reads the row (lock! reloads) and is refused
+    # like any other late POST. Jobs are enqueued after the block commits so
+    # a worker never sees pre-commit state.
+    placeholder = nil
+    outcome = @submission.with_lock do
+      case @submission.status.to_s
+      when 'done', 'grader_error' then next :ended
+      when 'evaluating'           then next :grading
+      end
+      next :busy  if @submission.viva_turns.where(status: :processing).exists?
+      next :blank if student_content.blank?
+
+      # Hard turn cap (design D8): at the limit we force-finish instead of
+      # accepting another answer — the soft cap should normally end the
+      # interview well before this fires.
+      if @submission.viva_turns.where(role: :student).count >= @submission.problem.viva_hard_cap
+        force_finish!('(turn limit reached — the interview ends here and grading begins)')
+        next :capped
+      end
+
+      @submission.viva_turns.create!(role: :student, status: :ok, content: student_content)
+      placeholder = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+      :accepted
+    end
+
+    case outcome
+    when :ended
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has ended.'
+    when :grading
       # Interview already ended (LLM emitted [[VIVA_DONE]]); a grade job is
       # in flight. Accepting a new student turn here would race with the
       # grader and corrupt the transcript, so refuse.
-      redirect_to viva_submission_path(@submission), alert: 'Interview ended — grading in progress.' and return
-    end
-
-    if @submission.viva_turns.where(status: :processing).exists?
+      redirect_to viva_submission_path(@submission), alert: 'Interview ended — grading in progress.'
+    when :busy
       respond_to do |format|
         format.turbo_stream { head :unprocessable_entity }
         format.html { redirect_to viva_submission_path(@submission), alert: 'Waiting for the previous response.' }
       end
-      return
-    end
-
-    student_content = params[:content].to_s.strip
-    if student_content.blank?
+    when :blank
       respond_to do |format|
         format.turbo_stream { head :unprocessable_entity }
         format.html { redirect_to viva_submission_path(@submission), alert: 'Answer cannot be empty.' }
       end
-      return
-    end
-
-    # Hard turn cap (design D8): at the limit we force-finish instead of
-    # accepting another answer — the soft cap should normally end the
-    # interview well before this fires.
-    if @submission.viva_turns.where(role: :student).count >= @submission.problem.viva_hard_cap
-      @submission.viva_turns.create!(role: :system, status: :ok,
-        content: '(turn limit reached — the interview ends here and grading begins)')
-      @submission.update!(status: :evaluating)
+    when :capped
       Llm::VivaGradeAssistJob.perform_later(@submission)
       redirect_to viva_submission_path(@submission), notice: 'Turn limit reached — grading has started.'
-      return
-    end
-
-    placeholder = nil
-    Submission.transaction do
-      @submission.viva_turns.create!(role: :student, status: :ok, content: student_content)
-      placeholder = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
-    end
-
-    Llm::VivaTurnAssistJob.perform_later(@submission, turn: placeholder)
-
-    respond_to do |format|
-      format.turbo_stream { redirect_to viva_submission_path(@submission) }
-      format.html { redirect_to viva_submission_path(@submission) }
+    when :accepted
+      Llm::VivaTurnAssistJob.perform_later(@submission, turn: placeholder)
+      respond_to do |format|
+        format.turbo_stream { redirect_to viva_submission_path(@submission) }
+        format.html { redirect_to viva_submission_path(@submission) }
+      end
     end
   end
 
@@ -287,24 +296,32 @@ class VivaSessionsController < ApplicationController
     if @submission.problem.viva_daily_limit == 0
       redirect_to viva_submission_path(@submission), alert: 'Contest vivas cannot be ended early.' and return
     end
-    unless @submission.status.to_s == 'submitted'
-      redirect_to viva_submission_path(@submission), alert: 'This viva session has already ended.' and return
-    end
-    if @submission.viva_archived_at.present?
-      redirect_to viva_submission_path(@submission), alert: 'This viva session has been archived.' and return
-    end
-    if @submission.viva_turns.where(status: :processing).exists?
-      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.' and return
-    end
-    unless @submission.viva_turns.where(role: :student).exists?
-      redirect_to viva_submission_path(@submission), alert: 'Answer at least one question first — or use Restart to start over.' and return
+
+    # Same row lock as #answer: a double-click on End used to write two
+    # closing turns and queue two grade jobs for one interview.
+    outcome = @submission.with_lock do
+      next :ended     unless @submission.status.to_s == 'submitted'
+      next :archived  if @submission.viva_archived_at.present?
+      next :busy      if @submission.viva_turns.where(status: :processing).exists?
+      next :no_answer unless @submission.viva_turns.where(role: :student).exists?
+
+      force_finish!('(student ended the interview — grading begins)')
+      :finished
     end
 
-    @submission.viva_turns.create!(role: :system, status: :ok,
-      content: '(student ended the interview — grading begins)')
-    @submission.update!(status: :evaluating)
-    Llm::VivaGradeAssistJob.perform_later(@submission)
-    redirect_to viva_submission_path(@submission), notice: 'Interview ended — grading has started.'
+    case outcome
+    when :ended
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has already ended.'
+    when :archived
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has been archived.'
+    when :busy
+      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.'
+    when :no_answer
+      redirect_to viva_submission_path(@submission), alert: 'Answer at least one question first — or use Restart to start over.'
+    when :finished
+      Llm::VivaGradeAssistJob.perform_later(@submission)
+      redirect_to viva_submission_path(@submission), notice: 'Interview ended — grading has started.'
+    end
   end
 
   # GET /submissions/:submission_id/viva/refresh
@@ -320,6 +337,15 @@ class VivaSessionsController < ApplicationController
   end
 
   private
+
+  # Ends the interview and hands the transcript to the grader: closing system
+  # turn + status :evaluating. Call only inside `@submission.with_lock` — the
+  # lock is what stops two concurrent requests from both taking this step —
+  # and enqueue Llm::VivaGradeAssistJob AFTER the lock block has committed.
+  def force_finish!(closing_note)
+    @submission.viva_turns.create!(role: :system, status: :ok, content: closing_note)
+    @submission.update!(status: :evaluating)
+  end
 
   # Resolved daily start cap for a viva (design 2026-07-21, Phase A).
   # Reused by #start's rate-limit guard, #restart's notice text, and the

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_05_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_08_120000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -274,6 +274,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_05_090000) do
     t.datetime "updated_at", null: false
     t.integer "priority", default: 0
     t.index ["parent_job_id"], name: "index_jobs_on_parent_job_id"
+    t.index ["status", "priority", "id"], name: "index_jobs_on_status_priority_id", order: { priority: :desc }
   end
 
   create_table "languages", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|

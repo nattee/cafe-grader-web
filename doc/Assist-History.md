@@ -51,13 +51,14 @@ the problem's full score (the "reduced full score" mechanic: final score =
 min(best score, 100 − penalties), floored at 0 since 2026-09-03). It is on
 only when the site switch `system.llm_assist` is on, and in contest mode only
 for contest problems flagged `allow_llm`. Only the submission's owner (or an
-admin) may request it (since 2026-09-03).
+admin) may request it (since 2026-09-03); an admin's request costs the
+student nothing (since 2026-09-09).
 
 ## Eras at a glance
 
 | # | Era | Dates | Characterization |
 |---|-----|-------|------------------|
-| 6 | Review, hardening, rebuild | 2026-09-03 | Code review found seven defects (any user could charge any student; index-addressed model; negative scores; raw-HTML answers); payload rebuilt around what the grader knows; picker guards + spend cap; dollar/token accounting; two prompt copies collapsed into `codey-core` + `codey-thai`; first corpus evaluation (291 answers read); this document. |
+| 6 | Review, hardening, rebuild | 2026-09-03 → 09-09 | Code review found seven defects (any user could charge any student; index-addressed model; negative scores; raw-HTML answers); payload rebuilt around what the grader knows; picker guards + spend cap; dollar/token accounting; two prompt copies collapsed into `codey-core` + `codey-thai`; first corpus evaluation (291 answers read); this document. Follow-ups 09-09: an admin's request is free for the student; per-model cost on the stat pages; Genie models off the picker by default. |
 | 5 | New providers, new models | 2026-07-30 → 08-30 | Self-hosted DGX provider; Genie roster refresh makes gemini-3.1-pro the default and *un-breaks* Claude-Sonnet (silently downgraded since Feb); Chula AI Gateway family adds claude-opus-4-5 and gemini-3.7-flash to the picker; gateway-reported cost. |
 | 4 | Tag taxonomy | 2026-07-20 → 07-21 | Viva moves off `llm_prompt`; the kind now means exactly "AI-helper system prompt"; the generic tag picker keeps offering it (D6 amendment). |
 | 3 | Refactor | 2026-05-07 → 05-19 | `Llm::Request` hierarchy; comment-assembly lifted from `GenieAssist` into `CommentAssist`; the score-penalty semantics regress and are restored the same day; `preview` tooling; `llm.yml.SAMPLE`. |
@@ -66,12 +67,12 @@ admin) may request it (since 2026-09-03).
 
 ## Lineages (the same story told per thread)
 
-- **Models actually running in prod:** gemini-2.5-pro + Claude-3.5-Sonnet via ChulaGenie (2025-07-23 →). Claude-3.5-Sonnet: 74 HTTP-400s Feb–Mar 2026 (Anthropic rejects the PDF sent as `image_url`), last answer 2026-03-03. Config renamed it `Claude-Sonnet` on 2026-02-14 (rev 1498) but the class's allowlist still said `Claude-3.5-Sonnet`, so every Claude request was **silently served by gemini-2.5-pro until 2026-08-23** (rev 2006). gemini-2.5-pro last answer 2026-08-23 (dropped from the picker, not from the relay — `Llm::GenieAssist.list_model` still lists it on 2026-09-03; relay retirement expected ~2026-10). Then: gemini-3.1-pro + Claude-Sonnet (Genie, 08-24 →), claude-opus-4-5 (Gateway, 08-27 →), gemini-3.7-flash (Gateway, 08-28 →). Since 2026-08-01 no request has errored.
-- **Prompt storage and text:** hard-coded in `GenieAssist` (06-29) → `llm_prompt` tags per problem (07-17); two full copies `AI-AL` (239 problems) and `AI-DS` (45), identical apart from AL's Thai-translation appendix (present by 2026-03-04 at the latest); text otherwise unchanged for the feature's life → `codey-core` + one-line `codey-thai` (2026-09-03, `course-prep` rev 3). Edits recommended by the evaluation are **pending**.
-- **Payload:** system prompt + statement PDF + source + verdict string (07-17) → + manager files with a do-not-reveal instruction (08-23) → + compiler output on compile errors, per-testcase table (group, verdict, time, memory, score, limits), previous answer + line diff on repeat requests (2026-09-03, rev 2089). The prompt still carries the "How to Map" section that the table makes redundant.
-- **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090).
+- **Models actually running in prod:** gemini-2.5-pro + Claude-3.5-Sonnet via ChulaGenie (2025-07-23 →). Claude-3.5-Sonnet: 74 HTTP-400s Feb–Mar 2026 (Anthropic rejects the PDF sent as `image_url`), last answer 2026-03-03. Config renamed it `Claude-Sonnet` on 2026-02-14 (rev 1498) but the class's allowlist still said `Claude-3.5-Sonnet`, so every Claude request was **silently served by gemini-2.5-pro until 2026-08-23** (rev 2006). gemini-2.5-pro last answer 2026-08-23 (dropped from the picker, not from the relay — `Llm::GenieAssist.list_model` still lists it on 2026-09-03; relay retirement expected ~2026-10). Then: gemini-3.1-pro + Claude-Sonnet (Genie, 08-24 →), claude-opus-4-5 (Gateway, 08-27 →), gemini-3.7-flash (Gateway, 08-28 →). Since 2026-08-01 no request has errored. → Genie models (gemini-3.1-pro, Claude-Sonnet) withdrawn from the picker by default, relay kept as a backup (config chula_cp 2118, 2026-09-09; live at the next deploy).
+- **Prompt storage and text:** hard-coded in `GenieAssist` (06-29) → `llm_prompt` tags per problem (07-17); two full copies `AI-AL` (239 problems) and `AI-DS` (45), identical apart from AL's Thai-translation appendix (present by 2026-03-04 at the latest); text otherwise unchanged for the feature's life → `codey-core` + one-line `codey-thai` (2026-09-03, `course-prep` rev 3) → evaluation-driven rewrite `codey-core` v2.2 live 2026-09-05 (`course-prep` rev 13; rev 4 tested offline, +1 sentence from the follow-up).
+- **Payload:** system prompt + statement PDF + source + verdict string (07-17) → + manager files with a do-not-reveal instruction (08-23) → + compiler output on compile errors, per-testcase table (group, verdict, time, memory, score, limits), previous answer + line diff on repeat requests (2026-09-03, rev 2089; on prod 2026-09-05 with chula_cp 2112). The prompt's "How to Map" section went with the rev 13 text the same day.
+- **Price and score policy:** 10 points per request, a constant in code, stated in the confirm dialog (07-11) → the same 10 as a site setting `system.llm_assist_cost` (2026-09-03, rev 2100); contest views show `final_score = min(max, 100 − llm − hints)` (09-14, summation fixed 11-25) → floored at 0 (2026-09-03, rev 2085; 10 student–problem pairs had gone negative, worst −360) → requests refused while one is running, when that model already answered, at full score, and once 100 points are spent on the problem (rev 2090) → an admin's request on a student's submission is charged 0 (2026-09-09, rev 2116).
 - **Access:** site switch + contest `allow_llm` + tag present (07-10/11) → + owner-or-admin (2026-09-03, rev 2084; 11 historical requests were made by someone other than the owner, who paid).
-- **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089).
+- **Accounting:** score penalty only (`comments.cost`) → `llm_cost`, `prompt_tokens`, `completion_tokens` + backfill task (rev 2089) → shown per model on the user and problem stat pages (2026-09-09, rev 2117).
 - **Measurement:** none → next-submission outcome metric + mechanical checks + 291-answer read (2026-09-03) → offline old-vs-new prompt test, 100 inputs × 3 arms, blind-read (2026-09-04, Part 4 of the evaluation doc).
 
 ## Numbers for reporting (production, as of 2026-09-03 11:44)
@@ -96,11 +97,35 @@ admin) may request it (since 2026-09-03).
 
 ## Entries
 
+### 2026-09-09 — Decisions: Genie models off the picker by default (relay kept as a backup); `codey-thai` stays
+**deployment config + decision** · chula_cp 2118 (config), master 2119 (this entry, backlog)
+- **Problem observed:** the 2026-09-03 evaluation left two deployment decisions open — Claude-Sonnet via Genie was the least accurate model (8/40 wrong diagnoses, 6/40 hand-overs; gemini-3.1-pro 0/90), and the Thai appendix doubles the visible output on the 239 Algorithms problems.
+- **Change:** dae 2026-09-09: (1) OIT says the ChulaGenie relay will rotate out soon — keep `GenieAssist` as a backup but do not offer its models by default; the registration line in chula_cp's `config/llm.yml` is commented out with the re-enable recipe (uncomment + restart), the classes are untouched. On deploy the "AI help by" block offers claude-opus-4-5 and gemini-3.7-flash (Gateway) only. (2) `codey-thai` stays as is — Algorithms students keep the English + Thai answer.
+- **Outcome / status:** takes effect at the next chula_cp deploy (not yet deployed as of this entry). Recorded concern: gemini-3.1-pro leaves with the relay, and neither Gateway model has been read for quality yet — backlog: read a sample of each, ask OIT for a Gemini Pro model on the Gateway.
+
+### 2026-09-09 — Stat pages show the per-model cost of AI assistance
+**platform code** · master 2117
+- **Problem observed:** `llm_cost`, `prompt_tokens` and `completion_tokens` have been recorded since rev 2089 (on prod since 2026-09-05) but appeared nowhere; the only visible figure was the score penalty, and the user stat card's "AI Assist" count went by who pressed Get, not by the student charged.
+- **Change:** `Comment.llm_assists_on(submissions)` (attributed to the submission owner) and `Comment.usage_by_model`; one shared table (`comments/_llm_usage_by_model`) on the user stat card, on its per-contest variant (requests inside the window only) and in a new "AI assist" card on the problem stat page, absent when nobody asked. Columns: model, requests (answered), points, cost — "—" when no row of that model carries a dollar figure, "$x (n of m priced)" when only some do — and tokens in / out.
+- **Outcome / status:** on the local prod copy every row shows "—" for cost (the Genie relay reports none, and the column is younger than the rows); real figures accumulate from the Gateway answers since 2026-09-05. Reaches production with the next chula_cp deploy.
+
+### 2026-09-09 — An admin's request is free for the student
+**platform code** · master 2116
+- **Problem observed:** since 2026-09-03 only the owner or an admin can press Get (rev 2084), but an admin asking on a student's behalf still charged the owner the site price — the 11 historical staff requests had all done so.
+- **Change:** `Llm::CommentAssist.assist_cost_for(requester:, submission:)`: the site price when the requester owns the submission, 0 otherwise. Used where the charge is stored and by the confirm dialog, which now tells an admin the request does not reduce the student's full score. Dollar cost and tokens are recorded as before; the 100-point spend cap ignores a 0 charge by itself.
+- **Outcome / status:** decision dae 2026-09-09 ("when admin click on other, zero cost"). Reaches production with the next chula_cp deploy.
+
+### 2026-09-05 — New prompt and payload live on production (`codey-core` v2.2 = `course-prep` rev 13; chula_cp 2112 deployed to 10.0.5.50)
+**deployment: platform code + prompt data** · chula_cp 2112 (master 2089–2111) deployed by dae via the GitLab job; tag #43 set over ssh by Claude; `course-prep` revs 13 (text), 14 (README)
+- **Problem observed:** production had run the 2025-07 prompt text and the old payload (statement PDF, managers, source, verdict string) for the feature's whole life; the evaluation (Parts 1–4) showed the answers were long, multi-issue and, on time limits, handed over the algorithm in words.
+- **Change:** (1) code: compiler output on compile errors, per-testcase table, previous answer + diff on repeats, picker guards + 100-point spend cap, token/dollar accounting, name-ordered tags, price as a site setting (`system.llm_assist_cost`, created by data migration on deploy — no `db:seed`); (2) prompt: `codey-core` #43 replaced with rev 13 — the rev 4 text (results table instead of percentage mapping, majority-failure rule, describe-the-algorithm loophole closed, textbook names allowed, ~250-word single-issue shape, trace check, no unverified praise, repeat-request rule) plus the compile-error "fix, recompile, resubmit" sentence. `codey-thai` #44 unchanged. Order kept: code first, prompt second (the prompt assumes the new payload). Old text backed up at `~/codey-tag-43-backup-2026-09-05.txt` on the host (rev 3); rollback = paste it back.
+- **Outcome / status:** verified on the host after the switch by assembling the payload for an AL problem (core + Thai addendum, 4 user parts incl. the table and a previous answer) and a DS problem (core only, managers + table) — no network call. Expected from the offline test (same model, 100 real stuck moments): one-issue answers ~46% → ~89%, ~150 words instead of ~240, no code, hand-overs ~11% → ~8%, compile-error answers always ending with a next step; the "states the fix" rate is not expected to move. Re-measure after a term with `frame.rb` (read scores) and `frame2.rb`/`frame3.rb` (outcomes), compile errors and repeat requests first. Post-deploy one-offs still open in `doc/backlog.md`: `rake comments:backfill_llm_usage`, the 397 stuck `processing` comments.
+
 ### 2026-09-05 — Follow-up on the two prompt edits: keep the compile-error one, drop the TLE stop rule
-**study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4 "Follow-up"; `course-prep` revs 11 (v2.1 tested), 12 (v2.2 = rev 4 + one sentence), 13 (scores)
+**study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4 "Follow-up"; `course-prep` revs 11 (v2.1 tested), 12 (arm-d answers + blind set), 13 (v2.2 = rev 4 + one sentence; reader scores)
 - **Problem observed:** Part 4 left two weaknesses in rev 4: compile-error answers that ended on a bare question (15 of 20 had a next step), and time-limit answers that named the allowed tool and then laid out the redesign (6–7 of 18).
 - **Change:** one new arm on the 38 CE + TLE inputs with both edits (v2.1), graded blind against the rev 4 answers for the same inputs by the same three readers.
-- **Outcome / status:** the compile-error sentence works — next step 7 → 20 of 20 on the stricter reading, gained on 13 inputs, lost none, no side effects. The TLE stop rule does not — hand-overs 7 → 9 of 18 (removed 2, introduced 4); reverted. **Deployable text = `course-prep` rev 12 (v2.2)**, both halves of which have been read blind. The TLE hand-over stays an open problem for a shape-level fix (template or second pass), parked. Still **pending dae**: deploy chula_cp (2112, which carries the key migration), then paste rev 12 into tag #43.
+- **Outcome / status:** the compile-error sentence works — next step 7 → 20 of 20 on the stricter reading, gained on 13 inputs, lost none, no side effects. The TLE stop rule does not — hand-overs 7 → 9 of 18 (removed 2, introduced 4); reverted. **Deployable text = `course-prep` rev 13 (v2.2)**, both halves of which have been read blind. The TLE hand-over stays an open problem for a shape-level fix (template or second pass), parked. Still **pending dae**: deploy chula_cp (2112, which carries the key migration), then paste rev 13 into tag #43.
 
 ### 2026-09-04 — Offline old-vs-new prompt test: rev 4 fixes focus, not the "states the fix" line
 **study** · `doc/assist-corpus-eval-2026-09-03.md` Part 4; data + scripts `course-prep/assist/eval-2026-09-03/offline-prompt-test/` (course-prep revs 6–10)
@@ -124,13 +149,13 @@ admin) may request it (since 2026-09-03).
 **policy (prompt), pending the prompt edit** · discussion 2026-09-03; evaluation Part 1 finding 1
 - **Problem observed:** the "never name an algorithm or data structure" rule was obeyed to the letter and defeated in spirit — 9% of current answers narrate the algorithm step by step unnamed, a fuller leak than the word would be and harder for the student to look up; four property-descriptions of `set::lower_bound` failed to land where the name would have.
 - **Change (agreed with dae):** allow naming standard textbook algorithms and data structures taught in the course; forbid the problem-specific step — the recurrence, the invariant, the reformulation, a worked example on the student's problem, solution code; when the fix is a redesign, tell the student to keep the current solution for the subtasks it passes and add the faster path for the rest. Price stays 10 points for now.
-- **Outcome / status:** to be written into `codey-core` (course-prep) together with the other evaluation edits; not yet live.
+- **Outcome / status:** written into `codey-core` rev 4 (TLE section + anti-cheating rule), tested offline 2026-09-04, live on prod 2026-09-05 as part of rev 13.
 
 ### 2026-09-03 — Prompt tags: two full copies → `codey-core` + `codey-thai`; name-ordered assembly
 **data + platform code** · prod tags #43/#44 (AI-AL #33, AI-DS #34 deleted; backup `~/codey-tag-backup-2026-09-03.txt` on 10.0.5.50); `course-prep` rev 3 (`assist/`); rev 2093
 - **Problem observed:** `AI-AL` (239 problems) and `AI-DS` (45) were the same 9.4 KB text except AL's Thai appendix; every edit had to be made twice and they had drifted by one wording change. The tag lookup had no ORDER BY, so multi-tag assembly order depended on attach order.
 - **Change:** dry-run then apply of a re-tag script on prod: `codey-core` (AL text minus the appendix) on all 284, `codey-thai` (one sentence) on the 239 AL problems. `CommentAssist` orders tags by name. Prompt text checked into `course-prep/assist/`.
-- **Outcome / status:** live on prod (per-problem behaviour unchanged; verified by assembling the payload for an AL and a DS problem). Code in master 2093, not yet merged to chula_cp.
+- **Outcome / status:** live on prod (per-problem behaviour unchanged; verified by assembling the payload for an AL and a DS problem). Code in master 2093, on prod with chula_cp 2112 (2026-09-05).
 
 ### 2026-09-03 — First corpus evaluation (Part 1 read scores, Part 2 whole-corpus outcomes, Part 3 DGX judge calibration)
 **study** · `doc/assist-corpus-eval-2026-09-03.md` (revs 2094, 2096, 2097, 2098); raw frame + scores + `frame2.rb`/`frame3.rb` + `judge.py`/`agreement.py`/`judge-*.csv` in `course-prep/assist/eval-2026-09-03/` (local-only repo; `~/cafe-grader/assist-eval-2026-09-03` is a symlink to it)
@@ -142,19 +167,19 @@ admin) may request it (since 2026-09-03).
 **platform code** · rev 2090; `Submission#llm_assist_refusal`, `submissions/_add_assist`, `CommentsController#can_request_llm`
 - **Problem observed:** 190 submissions had the same model asked twice, 126 requests were made on full-score submissions, 10 student–problem pairs had spent more than the problem was worth — each a wasted API call and, until rev 2085, a negative score.
 - **Change:** one predicate disables Get with the reason shown, and the controller applies it to a replayed form (422). The picker refreshes with the comments so a finished request re-enables Get.
-- **Outcome / status:** master 2090, not yet deployed. Side effect: the 397 historical stuck-processing comments now also block new requests on those submissions until cleared (one-off recorded in `doc/backlog.md`).
+- **Outcome / status:** master 2090, on prod 2026-09-05 (chula_cp 2112). Side effect: the 397 historical stuck-processing comments now also block new requests on those submissions until cleared (one-off recorded in `doc/backlog.md`).
 
 ### 2026-09-03 — Payload rebuilt around what the grader knows; dollar/token accounting
 **platform code** · rev 2089; `Llm::CommentAssist`, migration `AddLlmUsageToComments`, `rake comments:backfill_llm_usage`
 - **Problem observed:** the model was asked to infer subtask boundaries from percentages in the PDF and to find syntax errors without the compiler message (166 assisted compile errors); repeat requests (44%) arrived with no memory of the previous answer, so students got the same hint again; no record of what a request cost in dollars or tokens.
 - **Change:** compiler output block on compile errors; per-testcase table from `evaluations` (group, verdict, time, memory, score, dataset limits, ≤100 rows, never inputs or answers); previous answer + line diff (or "code unchanged") with an instruction not to repeat; `llm_cost` / `prompt_tokens` / `completion_tokens` columns filled from the response (gateway cost header; self-host 0.0; nil where no source), backfill recovers tokens for 5,098 historical rows.
-- **Outcome / status:** master 2089, tests cover each block; not yet deployed. Prompt text still teaches the old "How to Map" method — see pending edits.
+- **Outcome / status:** master 2089, tests cover each block; on prod 2026-09-05 (chula_cp 2112) together with the rev 13 prompt that reads the new parts.
 
 ### 2026-09-03 — Seven defects fixed
 **platform code + security** · revs 2084–2086, merged to chula_cp 2088 and pushed
 - **Problem observed:** (1) any logged-in user could request assist on any submission id, charging its owner and the API budget, on a submission they could not view; (2) the model was addressed by its index in the provider map (an `llm.yml` reorder repointed every link; a stale index was a 500); (3) `final_score` could go negative; (4) the model-written answer was rendered as raw HTML (stored-XSS class); (5) a problem without a statement PDF produced a `null` content part (400); (6) a failed request got two error blocks; (7) the picker was a `link_to` with `turbo_method`, against the mutating-click convention.
 - **Change:** owner-or-admin gate; model by name via a `button_to` form; `GREATEST(0, …)`; sanitize after markdown; `.compact`; job leaves a comment the service already marked; regression tests for each.
-- **Outcome / status:** live in the repo (chula_cp 2088); deployment to 10.0.5.50 pending.
+- **Outcome / status:** live in the repo (chula_cp 2088); deployed to 10.0.5.50 on 2026-09-05 (chula_cp 2112).
 
 ### 2026-08-26 → 08-30 — Chula AI Gateway provider; claude-opus-4-5 and gemini-3.7-flash join the picker
 **platform code + config** · revs 2018–2019, 2050; chula_cp `llm.yml`

@@ -247,6 +247,7 @@ class ProblemsController < ApplicationController
     @submission_count = Submission.regular.where(problem_id: @problem.id).count
     @summary          = @problem.attempt_summary            # distinct users, all groups
     @group_stats      = @problem.group_stats_for(@current_user)
+    @llm_usage        = Comment.llm_assists_on(Submission.where(problem_id: @problem.id)).usage_by_model
 
     # for new graph
     @chart_dataset = @problem.get_jschart_history.to_json.html_safe
