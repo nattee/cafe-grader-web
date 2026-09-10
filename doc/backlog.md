@@ -260,13 +260,6 @@ its header; each step re-prints the report).
   "name the tool then stop" rule made it worse (7 → 9/18, 2026-09-05) and was
   reverted; parked for a shape-level change plus a blind check.
 
-### Small bug, adjacent
-- **User stat "Hints" row is blank for students.** `Comment.chargeable_for`
-  counts by `comments.user_id`, which for a hint is its *author*, so the row
-  shows nothing for a student; reveals live in `comment_reveals`. Count reveals
-  instead. (The AI Assist total on the same card is owner-attributed since
-  2117 and correct.)
-
 **Size:** the prod steps are minutes; the Gateway read is a session; the TLE
 fix is prompt authoring plus a blind check.
 

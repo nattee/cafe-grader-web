@@ -529,13 +529,14 @@ class UserAdminController < ApplicationController
 
     # for action stat and user_stat
     def build_stat
-      # when @contest is null, `chargeable_for` will ignore contest filtering
-      if @contest
-        range = (@contest.start)..(@contest.stop)
-        comment_count = Comment.chargeable_for(@user, range).group(:kind).count
-      else
-        comment_count = Comment.chargeable_for(@user).group(:kind).count
-      end
+      range = (@contest.start)..(@contest.stop) if @contest
+
+      # Hints the user REVEALED (comment_reveals), not hints they authored: the
+      # old `Comment.chargeable_for` count went by comments.user_id — the hint's
+      # author — so this row was blank on every student's page. In a contest,
+      # only reveals inside its window.
+      reveals = CommentReveal.joins(:comment).where(user_id: @user.id, comments: {kind: Comment::HINT_KIND.keys})
+      reveals = reveals.where(created_at: range) if @contest
 
       # AI-assist requests on this user's submissions, by model — attributed to
       # the submission owner (who is charged), not to whoever pressed Get; in a
@@ -548,7 +549,7 @@ class UserAdminController < ApplicationController
       max_score = @submission.group(:problem_id).pluck('problem_id, max(points) as max_point')
       @summary = {count: max_score.count,
                   solve: max_score.select { |x| x[1] == 100 }.count,
-                  hint: comment_count["hint"],
+                  hint: reveals.count,
                   llm_assist: @llm_usage.sum(&:requests)}
     end
 end

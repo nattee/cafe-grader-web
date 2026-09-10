@@ -43,4 +43,27 @@ class UserAdminStatControllerTest < ActionDispatch::IntegrationTest
     assert_select ".llm-usage-table tbody tr td", text: "1"
     assert_select ".row", text: /AI Assist\s+1\s*$/m
   end
+
+  # --- Hints row: what the user revealed, not what they wrote ---
+
+  test "Hints counts the hints the user revealed, not hints they authored" do
+    hint = comments(:hint_for_add)                     # written by admin
+    hint.comment_reveals.create!(user: users(:john))
+    sign_in_as("admin", "admin")
+    get stat_user_admin_path(users(:john))
+    assert_response :success
+    assert_select ".row", text: /Hints\s+1\s*$/m
+    get stat_user_admin_path(users(:admin))            # the author revealed nothing
+    assert_select ".row", text: /Hints\s+0\s*$/m
+  end
+
+  test "the contest variant counts only reveals inside the contest window" do
+    hint = comments(:hint_for_add)
+    hint.comment_reveals.create!(user: users(:james), created_at: 2.days.ago)
+    hint.comment_reveals.create!(user: users(:james))
+    sign_in_as("admin", "admin")
+    get stat_contest_user_admin_path(users(:james), contest_id: contests(:contest_a).id)
+    assert_response :success
+    assert_select ".row", text: /Hints\s+1\s*$/m
+  end
 end
