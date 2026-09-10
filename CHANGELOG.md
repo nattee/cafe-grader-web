@@ -10,7 +10,38 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.6.0] — 2026-09-10
+
+**Upgrade notes.** Run `bin/rails db:migrate` — this release carries 5
+migrations (`users.verdict_display`; `comments.llm_cost` / `prompt_tokens` /
+`completion_tokens`; a data migration that creates the `system.llm_assist_cost`
+setting at 10 where it is absent; the `jobs (status, priority DESC, id)` index;
+`groups.created_at` / `updated_at`). Three entries are security fixes — stored
+XSS through the admin DataTables, AI-assist answers rendered as raw HTML, and
+an assist request any logged-in user could charge to another student — so
+servers with self-registration or AI assist should not wait. Behaviour changes
+worth knowing before upgrading a live server: the evaluation types `custom_cms`
+/ `custom_cms_raw` are now `custom_testlib` / `custom_testlib_raw` (stored
+values unchanged, the old names still accepted on input, exported packages
+carry the new ones); the nightly job cleanup also deletes `error` jobs older
+than 30 days; an admin's AI-assist request costs the student nothing, the
+student's own requests cost the new site setting, and the picker refuses
+requests that cannot help; the first `grader_job_reclaim` sweep surfaces
+long-stranded jobs as error rows on the Grader Processes page, where they can
+be cleared. After deploying to a judge host, run `bin/rails engine:smoke
+SUB=<id>` once on a submission you are happy to see re-evaluated — it is the
+check that would have caught the 2026-08-30 outage. Optional:
+`rake comments:backfill_llm_usage` recovers token counts for earlier assist
+answers.
+
 ### Added
+- **Groups index shows when each group was created and lists newest first.**
+  A new sortable "Created" column, and the default order is created date,
+  newest first, then id descending (the list used to come out in whatever
+  order the database returned it). Groups made before this release have no
+  recorded creation date anywhere, so their cell is blank and they sit at the
+  bottom in id order; a migration adds `created_at` / `updated_at` to
+  `groups`. (rev 2126)
 - **Stat pages show what AI assistance cost, per model.** The user stat card
   (and its per-contest variant) and a new "AI assist" card on the problem stat
   page list, per model, the requests on the student's or problem's
