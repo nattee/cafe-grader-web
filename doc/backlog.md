@@ -224,22 +224,10 @@ decision and the verification are the work.
 admin's request is free for the student (2116); per-model requests / points /
 dollars / tokens on the user and problem stat pages (2117); Genie models off
 the picker by default, relay kept as a backup (chula_cp 2118, config);
-`codey-thai` kept as is (decided). Still open:
-
-### Operational (prod, dae) — script ready
-`~/cafe-grader/assist-cleanup-2026-09-09.rb`: run once in report mode, then
-`STEP=stuck`, `STEP=backfill`, `STEP=ai_viva` one at a time (ssh commands in
-its header; each step re-prints the report).
-- **397 comments stuck `processing`** (2025-08-26 → 09-10, before the
-  retries-exhausted fix): eternal spinner + 5 s polling on those pages, and the
-  picker guard refuses further requests on those submissions → mark failed.
-- **`rake comments:backfill_llm_usage`** once — chula_cp 2112 is deployed but
-  the token columns are still empty on prod's historical rows.
-- **Tag #36 `AI_viva`** is still `llm_prompt` on problems 670 `viva_test`
-  (visible to students) and 671 `a68_mv_relay`: read by nothing since viva
-  left `llm_prompt` (2026-07), but it makes both problems eligible for AI help
-  with a viva prompt as the instructions (no request so far). Delete; the
-  script prints the text first.
+`codey-thai` kept as is (decided). All of it live on production 2026-09-10 15:51
+(chula_cp 2123); the same day dae ran the clean-up script — 397 stuck
+`processing` rows marked failed, token counts backfilled on 5,184 answers,
+the dead `AI_viva` tag deleted. Still open:
 
 ### Measurement (after a term of the new payload + prompt)
 - **Effectiveness re-measure**: assisted improved 36% / same 50% / reached 100
