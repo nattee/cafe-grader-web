@@ -11,6 +11,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Groups index shows when each group was created and lists newest first.**
+  A new sortable "Created" column, and the default order is created date,
+  newest first, then id descending (the list used to come out in whatever
+  order the database returned it). Groups made before this release have no
+  recorded creation date anywhere, so their cell is blank and they sit at the
+  bottom in id order; a migration adds `created_at` / `updated_at` to
+  `groups`. (rev 2126)
 - **Stat pages show what AI assistance cost, per model.** The user stat card
   (and its per-contest variant) and a new "AI assist" card on the problem stat
   page list, per model, the requests on the student's or problem's
