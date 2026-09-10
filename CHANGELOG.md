@@ -171,6 +171,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   submission report (client-side, same tiles) use it too (rev 2041).
 
 ### Fixed
+- **The user stat page showed no hints for students.** Its "Hints" row counted
+  hints the user had *written* (the comment's author), so it was blank on
+  every student's page. It now counts the hints the user revealed; the
+  per-contest variant counts reveals made inside the contest window.
+  (rev 2122)
 - **Judge job queue: index on `jobs.status`.** The judge polls the `jobs`
   table on `status` several times a second per grader and claims work with
   `FOR UPDATE SKIP LOCKED`, but the table had no index on that column: every

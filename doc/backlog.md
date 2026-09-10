@@ -22,6 +22,41 @@ Conventions:
 
 ---
 
+## Viva grade history — make "regrade" a feature instead of a script
+
+**Raised 2026-09-09 after the Quiz 1 Cell Detection regrade** (done by hand with
+`course-prep/…/regrade-cell-detection-2026-09-09/tools/regrade_tool.rb`; record in
+`doc/Viva-History.md` 2026-09-09). `viva_grades` is one row per submission (unique
+index) and the admin **Re-run grading** button destroys it, so the app keeps no
+grade history and a batch regrade needs an external snapshot to be reversible.
+`viva_grades.rubric_version` exists and is never written.
+
+Proposed: `superseded_at` on `viva_grades` (index becomes non-unique; `has_one
+:viva_grade, -> { where(superseded_at: nil) }` + `has_many :viva_grades`); write
+`rubric_version` = sha256 of the briefing at grading time; the Re-run button and a
+new `bin/rails viva:regrade PROBLEM=<name> [MODEL=…] [NEVER_LOWER=1] [APPLY=1]`
+supersede instead of destroy; the admin viva page lists earlier grades. The
+never-lower rule keeps the whole higher record (points + breakdown + narrative),
+as decided 2026-09-09. Rough size: 1–2 days incl. migration, tests, docs.
+
+## `viva:import` updated `viva_prompt` on prod without an audit row
+
+**Observed 2026-09-09 on 10.0.5.50:** `viva:import DIR=quiz-2569-1 APPLY=1` printed
+`UPDATE problem 'd69_v1_cell_detection' — description, viva_prompt` and changed both,
+but `AuditLog.where(auditable: problem)` gained nothing — while a single
+`problem.update!(viva_prompt: …)` from a runner in the same session (and the
+`available` flip, audit 816) were logged. Suspects, in `app/services/viva/kit_importer.rb`
++ `app/models/concerns/auditable.rb`: `after_update_commit` fires once per record
+at the end of the importer's single transaction, and a later save on the same
+record inside it (setup checks / touch) leaves `saved_changes` empty, so
+`write_audit!` returns on an empty diff; and `description` is not in `Problem`'s
+`audited only:` list at all, so scenario edits are never audited. Fix: reproduce
+in a test, then either `AuditLog.record!` explicitly in the importer (one
+semantic row per problem, like the bulk actions) or move the audited save out of
+the shared transaction; add `description` to the audited list. Size: small.
+
+---
+
 ## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
 
 **Raised 2026-08-03 from the CMS migration validation.** Three separate things
@@ -224,13 +259,6 @@ its header; each step re-prints the report).
   allowed tool, then lays out the redesign anyway (6–7 of 18). The
   "name the tool then stop" rule made it worse (7 → 9/18, 2026-09-05) and was
   reverted; parked for a shape-level change plus a blind check.
-
-### Small bug, adjacent
-- **User stat "Hints" row is blank for students.** `Comment.chargeable_for`
-  counts by `comments.user_id`, which for a hint is its *author*, so the row
-  shows nothing for a student; reveals live in `comment_reveals`. Count reveals
-  instead. (The AI Assist total on the same card is owner-attributed since
-  2117 and correct.)
 
 **Size:** the prod steps are minutes; the Gateway read is a session; the TLE
 fix is prompt authoring plus a blind check.
