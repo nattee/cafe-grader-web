@@ -320,4 +320,18 @@ class SubmissionTest < ActiveSupport::TestCase
     assist_comment(earlier, status: 'ok', model: 'b', cost: 40)
     assert_match(/spent/i, sub.llm_assist_refusal('m'))
   end
+
+  test "judge_backlog lists ungraded non-viva submissions only" do
+    viva = Language.find_or_create_by!(name: "viva") { |l| l.pretty_name = "Viva Exam" }
+    ungraded = Submission.create!(user: users(:john), problem: problems(:prob_add), language: languages(:Language_c),
+                                  source: "int main() { return 0; }", submitted_at: Time.zone.now)
+    graded = Submission.create!(user: users(:john), problem: problems(:prob_add), language: languages(:Language_c),
+                                source: "int main() { return 1; }", submitted_at: Time.zone.now, graded_at: Time.zone.now)
+    viva_sub = Submission.create!(user: users(:john), problem: problems(:prob_viva), language: viva,
+                                  status: :submitted, submitted_at: Time.zone.now)
+
+    assert_includes Submission.judge_backlog, ungraded
+    assert_not_includes Submission.judge_backlog, graded
+    assert_not_includes Submission.judge_backlog, viva_sub
+  end
 end

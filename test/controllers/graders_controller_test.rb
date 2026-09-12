@@ -174,4 +174,46 @@ class GradersControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/what's the time complexity\?/, response.body)
     assert_match(/No flags yet/, response.body)
   end
+
+  # --- Error job without a submission id (reclaim gave up: submission deleted) ---
+
+  test "index renders when an error job has no submission id" do
+    sign_in_as("admin", "admin")
+    job = Job.create!(status: :error, job_type: :compile, arg: nil,
+                      result: "reclaim gave up (grader worker 1 box 6): submission no longer exists")
+
+    get grader_processes_path
+    assert_response :success
+    assert_match(/#{job.id}/, response.body)
+  end
+
+  # --- Navbar "backlogs!" badge must agree with the monitor page ---
+
+  def badge_count_before
+    # what the badge shows on the fixture data alone (all fixture submissions
+    # are ungraded and dated 2019, so they all count)
+    Submission.where(graded_at: nil).where("submitted_at < ?", 1.minute.ago).count
+  end
+
+  test "navbar backlog badge excludes ungraded viva submissions" do
+    sign_in_as("admin", "admin")
+    before = badge_count_before
+    Submission.create!(user: users(:john), problem: problems(:prob_viva), language: viva_language,
+                       status: :submitted, submitted_at: 5.minutes.ago)
+
+    get grader_processes_path
+    assert_response :success
+    assert_match(/>#{before} backlogs!</, response.body)
+  end
+
+  test "navbar backlog badge counts an ungraded code submission" do
+    sign_in_as("admin", "admin")
+    before = badge_count_before
+    Submission.create!(user: users(:john), problem: problems(:prob_add), language: languages(:Language_c),
+                       source: "int main() { return 0; }", submitted_at: 5.minutes.ago)
+
+    get grader_processes_path
+    assert_response :success
+    assert_match(/>#{before + 1} backlogs!</, response.body)
+  end
 end

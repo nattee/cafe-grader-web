@@ -33,12 +33,9 @@ class GradersController < ApplicationController
 
     # Viva submissions are LLM-graded (async, off the judge-worker queue) —
     # a not-yet-graded one sitting with graded_at nil is normal mid-interview
-    # state, not a stuck job. Excluded via the durable 'viva' sentinel
-    # language (see DatasetsController#rejudge for the same filter).
-    backlog = Submission.where('graded_at is null')
-    viva_language = Language.find_by(name: "viva")
-    backlog = backlog.where.not(language: viva_language) if viva_language
-    @backlog_submission = backlog.includes(:user, :problem)
+    # state, not a stuck job. Submission.judge_backlog excludes them; the
+    # navbar badge reads the same scope.
+    @backlog_submission = Submission.judge_backlog.includes(:user, :problem)
 
     @wait_compile_job_count = Job.where(job_type: :compile, status: :wait).count
     @wait_eval_job_count = Job.where(job_type: :evaluate, status: :wait).count

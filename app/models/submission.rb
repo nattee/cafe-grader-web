@@ -97,6 +97,19 @@ class Submission < ApplicationRecord
   scope :regular, -> { where(repaired_from_id: nil) }
   scope :shadow,  -> { where.not(repaired_from_id: nil) }
 
+  # Ungraded submissions the judge workers still owe a verdict. Viva sessions
+  # are LLM-graded off the judge queue, so graded_at = nil there is normal
+  # mid-interview (or abandoned) state, not backlog; they are excluded through
+  # the durable 'viva' sentinel language (Language::VIVA_NAME). The navbar
+  # "backlogs!" badge (ApplicationController#header_info) and the grader
+  # monitor page (GradersController#index) both read this scope so the two
+  # can never disagree — they did on cedt-grader 2026-09-12: badge 48, all of
+  # them abandoned viva_basic sessions, real judge queue 0.
+  scope :judge_backlog, -> {
+    where(graded_at: nil)
+      .where.not(language_id: Language.where(name: Language::VIVA_NAME).select(:id))
+  }
+
   # Viva submissions parked in :evaluating with no viva_grade row yet,
   # older than STALE_EVALUATING_AFTER — i.e. what
   # fail_stale_viva_evaluating! would sweep right now. A viva_grade row

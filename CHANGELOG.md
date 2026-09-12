@@ -10,6 +10,21 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Fixed
+- **Grader Processes page crashed with a 500 when an error job had no
+  submission.** The Failed Jobs table linked every error job to its
+  submission; a job whose submission was deleted before the orphan reclaim
+  (4.6.0) gave up on it has no submission id, and building that link raised.
+  cedt-grader had three such rows from December 2023 among the fifty most
+  recent error jobs, so the page failed on every visit from 30 August. The
+  cell now reads "deleted" for such a job. (rev 2130)
+- **The navbar "N backlogs!" badge counted ungraded viva sessions.** The
+  badge and the monitor page it links to counted different things: the page
+  excluded viva sessions (LLM-graded, never on the judge queue), the badge
+  did not, so a server with abandoned viva sessions showed a permanent
+  backlog while its judge queue was empty (cedt-grader: badge 48, all viva,
+  queue 0). Both now read one scope, `Submission.judge_backlog`. (rev 2130)
+
 ## [4.6.0] — 2026-09-10
 
 **Upgrade notes.** Run `bin/rails db:migrate` — this release carries 5
