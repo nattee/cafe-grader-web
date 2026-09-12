@@ -1,5 +1,6 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
+                                     :ai_usage, :ai_usage_query,
                                      :add_users_from_csv, :clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
@@ -9,7 +10,7 @@ class ContestsController < ApplicationController
   before_action :set_problem, only: [:do_problem]
 
   USER_ACTION = [:user_check_in, :set_active]
-  EDITOR_ACTION = %i[show edit update destroy view view_query clone
+  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query clone
                      show_users_query show_problems_query
                      add_users_from_csv add_user add_user_by_group
                      add_problem add_problem_by_group
@@ -65,6 +66,18 @@ class ContestsController < ApplicationController
       result: @result,
       problem: @contest.problems.select(:id, :name).order(:number)
     }
+  end
+
+  # GET /contests/:id/ai_usage — read-only LLM usage overview for this contest
+  # (viva interviews, grading, and submission assists): volume, cost, and
+  # response-time percentiles over the contest window.
+  def ai_usage
+    @report = AiUsageReport.new(@contest)
+  end
+
+  # POST /contests/:id/ai_usage_query — per-call feed for the DataTable.
+  def ai_usage_query
+    render json: { data: AiUsageReport.new(@contest).calls_json }
   end
 
   # GET /contests/new
@@ -460,6 +473,11 @@ class ContestsController < ApplicationController
   end
 
   def set_system_mode
+    # Switching the whole site's mode is an admin-only act. It was reachable by
+    # any group editor (this controller is only editor-gated) — a TA flipped the
+    # site's mode mid-exam on 2026-09-09. admin_authorization redirects non-admins.
+    return unless admin_authorization
+
     unless ['standard', 'contest', 'indv-contest', 'analysis'].include? params[:mode]
       redirect_to contests_path, notice: 'Unrecognized mode' and return
     end

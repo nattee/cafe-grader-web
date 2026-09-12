@@ -1,0 +1,141 @@
+= render 'application/breadcrumb', steps: [ { label: 'Contests', path: contests_path, icon: resource_icon_name(Contest) }, { label: 'Management', path: contest_path(@contest) }, { label: 'AI Usage' } ]
+
+- s = @report.summary
+.d-flex.justify-content-between.align-items-center.mb-3
+  .d-flex.align-items-center.gap-2
+    %h2.fw-bold.text-dark.mb-0.font-monospace= @contest.name
+    %span.badge.bg-info-subtle.text-info.border.border-info-subtle.rounded-pill.fw-medium
+      %small AI Usage
+  .d-flex.gap-2
+    = link_to mdi(:settings, 'me-1') + 'Manage', contest_path(@contest), class: 'btn btn-outline-primary btn-flex'
+    = link_to mdi(:summarize, 'me-1') + 'Watch', view_contest_path(@contest), class: 'btn btn-outline-success btn-flex'
+
+.text-secondary.small.mb-3
+  = "#{@contest.start.strftime('%Y-%m-%d %H:%M')} – #{@contest.stop.strftime('%H:%M')} · #{s[:enrolled]} enrolled"
+  %span.ms-2 Wait = queue time + provider time; grades show provider time only (blank on calls made before per-call timing shipped).
+
+.row.g-3.mb-4{data: {controller: 'init-ui-component'}}
+  - tiles = [["#{s[:sessions_opened]}", 'viva sessions opened', "#{s[:students]} of #{s[:enrolled]} enrolled"], ["#{s[:answered]}", 'answered at least once', "#{s[:never_answered]} never answered"], ["#{s[:turns]}", 'viva turns', "$#{'%.2f' % s[:turn_cost]} · p95 #{s[:turn_wait_p95] || '–'} s"], ["#{s[:assists]}", 'assist requests', "#{s[:assist_students]} students · #{s[:assist_points].to_i} points"], ["$#{'%.2f' % s[:assist_dollars]}", 'assist dollars (priced)', "#{s[:assist_priced]} of #{s[:assists_total]} priced"], ["#{s[:grades]}", 'grades', "$#{'%.2f' % s[:grade_cost]} · p95 #{s[:grade_wait_p95] || '–'} s"]]
+  - tiles.each do |num, label, sub|
+    .col-6.col-lg-2
+      .card.card-shadow.h-100
+        .card-body.py-2
+          .fs-3.fw-bold= num
+          .small.text-secondary= label
+          .text-secondary{style: 'font-size:.75rem'}= sub
+
+.row.gx-3.mb-4
+  .col-lg-6
+    .card.card-shadow.h-100
+      .card-body
+        %h6.fw-bold AI calls per 5 minutes
+        %div{style: 'height: 260px'}
+          %canvas{data: {controller: 'chart', 'chart-data-value': @report.counts_chart.to_json, 'chart-preset-value': 'stacked_bar'}}
+  .col-lg-6
+    .card.card-shadow.h-100
+      .card-body
+        %h6.fw-bold Mean wait per 5 minutes (seconds)
+        %div{style: 'height: 260px'}
+          %canvas{data: {controller: 'chart', 'chart-data-value': @report.wait_chart.to_json, 'chart-preset-value': 'multiline'}}
+
+.card.card-shadow.mb-4
+  .card-body
+    %h6.fw-bold Wait time distribution
+    %table.table.table-sm.table-hover.align-middle.mb-0
+      %thead
+        %tr
+          %th kind
+          %th.text-end calls
+          %th.text-end timed
+          %th.text-end mean
+          %th.text-end p50
+          %th.text-end p90
+          %th.text-end p95
+          %th.text-end p99
+          %th.text-end max
+          %th.text-end over 60 s
+      %tbody
+        - @report.distribution.each do |r|
+          %tr
+            %td= r[:kind]
+            %td.text-end= r[:calls]
+            %td.text-end= r[:timed]
+            - [:mean, :p50, :p90, :p95, :p99, :max].each do |k|
+              %td.text-end= r[k].nil? ? '–' : r[k].round
+            %td.text-end= "#{r[:over_60]}%"
+
+.row.gx-3.mb-4
+  .col-lg-6
+    .card.card-shadow.h-100
+      .card-body
+        %h6.fw-bold Assist by model
+        %table.table.table-sm.table-hover.align-middle.mb-0
+          %thead
+            %tr
+              %th model
+              %th.text-end req
+              %th.text-end students
+              %th.text-end points
+              %th.text-end dollars
+              %th.text-end mean
+              %th.text-end p95
+          %tbody
+            - @report.by_model.each do |r|
+              %tr
+                %td= r[:model]
+                %td.text-end= r[:requests]
+                %td.text-end= r[:students]
+                %td.text-end= r[:points].to_i
+                %td.text-end= r[:priced].zero? ? 'unpriced' : "$#{'%.2f' % r[:dollars]}"
+                %td.text-end= r[:mean_wait].nil? ? '–' : r[:mean_wait].round
+                %td.text-end= r[:p95].nil? ? '–' : r[:p95].round
+  .col-lg-6
+    .card.card-shadow.h-100
+      .card-body
+        %h6.fw-bold By problem
+        %table.table.table-sm.table-hover.align-middle.mb-0
+          %thead
+            %tr
+              %th problem
+              %th.text-end turns
+              %th.text-end grades
+              %th.text-end assists
+              %th.text-end students
+              %th.text-end $
+              %th.text-end p95
+          %tbody
+            - @report.by_problem.each do |r|
+              %tr
+                %td= r[:problem]
+                %td.text-end= r[:turns]
+                %td.text-end= r[:grades]
+                %td.text-end= r[:assists]
+                %td.text-end= r[:students]
+                %td.text-end= "$#{'%.2f' % r[:dollars]}"
+                %td.text-end= r[:p95].nil? ? '–' : r[:p95].round
+
+- na = @report.never_answered
+- if na.any?
+  .card.card-shadow.mb-4
+    .card-body
+      %h6.fw-bold Opened the viva and never answered (#{na.size})
+      %table.table.table-sm.table-hover.align-middle.mb-0
+        %thead
+          %tr
+            %th student
+            %th opened
+            %th.text-end greeting wait (s)
+            %th submission
+        %tbody
+          - na.each do |r|
+            %tr
+              %td= r[:login]
+              %td= r[:opened_at]&.strftime('%H:%M:%S')
+              %td.text-end= r[:greeting_wait] || '–'
+              %td= link_to "##{r[:submission_id]}", viva_submission_path(r[:submission_id])
+
+.card.card-shadow
+  .card-body
+    %h6.fw-bold Every AI call
+    .col-sm-12{data: {turbo: true, controller: 'datatables--init init-ui-component', 'datatables--init-config-name-value': 'contestAiUsage', 'datatables--init-ajax-url-value': ai_usage_query_contest_path(@contest)}}
+      %table#ai-usage-table.table.table-hover.table-condense

@@ -24,6 +24,26 @@ const PRESETS = {
       },
     },
   },
+  stacked_bar: {
+    type: 'bar',
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+      plugins: { legend: { position: 'bottom' } },
+    },
+  },
+  multiline: {
+    type: 'line',
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      spanGaps: true,
+      elements: { point: { radius: 2 } },
+      plugins: { legend: { position: 'bottom' } },
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'seconds' } } },
+    },
+  },
   submission_line: {
     type: 'line',
     options: {
