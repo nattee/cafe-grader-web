@@ -70,8 +70,12 @@ export default class extends Controller {
   }
 
   connect() {
-    // Canvas may exist before AJAX data arrives — skip if empty
-    if (Object.keys(this.dataValue).length > 0) {
+    // Canvas may exist before AJAX data arrives — skip if empty. Guard on
+    // this.chart: when data is present at connect time (server-rendered, e.g.
+    // the contest AI-usage charts), Stimulus has already fired
+    // dataValueChanged and drawn the chart before connect() runs; drawing
+    // again here would throw "Canvas is already in use".
+    if (!this.chart && Object.keys(this.dataValue).length > 0) {
       this._drawChart()
     }
   }
