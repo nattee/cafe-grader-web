@@ -66,6 +66,8 @@ module Llm
       @record.prompt_tokens     = usage['prompt_tokens']     if usage.is_a?(Hash)
       @record.completion_tokens = usage['completion_tokens'] if usage.is_a?(Hash)
       @record.llm_cost          = respond_to?(:compute_cost, true) ? compute_cost(usage) : nil
+      @record.llm_started_at    = llm_started_at
+      @record.llm_latency_ms    = llm_latency_ms
       @record.llm_response = response.body
       @record.status       = 'ok'
       @record.update!(parse_response)

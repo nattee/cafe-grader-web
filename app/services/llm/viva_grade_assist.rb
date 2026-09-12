@@ -157,12 +157,12 @@ module Llm
     # viva_grade.llm_response_raw keeps the LAST body; the first bad one is
     # logged here, and #handle_response folds its cost into the grade row.
     def respond(data)
-      handle_response(execute_call(data))
+      handle_response(timed_execute_call(data))
     rescue ResponseError => e
       raise if @re_asked || truncated?(e)
       @re_asked = true
       Rails.logger.warn("[viva grade] submission #{@submission.id}: #{e.message} — re-asking once. content=#{content_snippet(e.body)}")
-      handle_response(execute_call(data))
+      handle_response(timed_execute_call(data))
     end
 
     def handle_response(response)
@@ -179,6 +179,8 @@ module Llm
         llm_model:        parsed['model'] || @model,
         llm_response_raw: response.body,
         cost:             compute_cost(usage) + (@re_asked ? grade.cost.to_f : 0.0),
+        llm_started_at:   llm_started_at,
+        llm_latency_ms:   llm_latency_ms,
         graded_at:        Time.zone.now
       )
       grade.save!
