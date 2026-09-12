@@ -11,6 +11,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Fixed
+- **Every page 500'd for a logged-in user whose session pointed at an enabled
+  contest they were not enrolled in.** In contest mode the navbar countdown
+  read `extra_time_second` off a nil contest-membership. It now treats a
+  missing membership as zero extra time. (rev 2139)
 - **Score/max-score reports crashed with a 500 in contest mode for group
   editors.** The contest-mode report problem scope was a `SELECT DISTINCT
   problems.id` relation; ordering it by `date_added` (the score report) under
