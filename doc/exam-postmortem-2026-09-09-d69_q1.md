@@ -158,3 +158,21 @@ for no gain. Score at request time was under 25 for 228 of 260 requests.
 4. **The seven students in F2** — makeup or not is a course decision.
 5. **Confirm** the 62 Re-run grading clicks (13:28–14:04) were yours, and whether the TA's mode flip (F6/B4) was intended.
 6. **Housekeeping** — keep or drop the `prod_solid_queue_*` tables in the local dev DB.
+
+## Status update — 2026-09-12 (built)
+
+Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed on master; full minitest suite green (1111 tests, 0 failures). All commits UNPUSHED, awaiting review + deploy.
+
+| item | status | rev |
+|---|---|---|
+| W0 dedicated viva queue+worker | DONE (deploy pending: RAILS_MAX_THREADS>=12 on solid_queue unit) | 2137 |
+| W1 contest AI-usage report | DONE (page + charts + per-call table; screenshot reviewed) | 2140, 2141 |
+| W2 per-call timing columns | DONE | 2135, 2136 |
+| B1 header/contest-box 500 | DONE | 2139 |
+| B2 contest-mode report 500 | DONE | 2138 |
+| B3 stale sweeper queued-vs-running | DONE | 2142 |
+| B4 admin-only site-mode switch | DONE | 2141 |
+| chart double-draw fix (found in review) | DONE | 2143 |
+| F5 contest-stop auto-finish of open vivas | deferred to `doc/backlog.md` | — |
+
+Still open (dae): decisions 2 (deploy: set RAILS_MAX_THREADS on the solid_queue unit, then run the pipeline), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
