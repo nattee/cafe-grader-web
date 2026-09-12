@@ -253,45 +253,6 @@ fix is prompt authoring plus a blind check.
 
 ---
 
-## Grounding materials — deferred follow-ups (from the 2026-07-19 design)
-
-**Context.** Viva grounding was extracted off `Tag` into a dedicated
-`GroundingMaterial` model with its own admin library (Manage → Grounding) and
-a viva-only attach select on the problem form — see
-`docs/superpowers/specs/2026-07-19-viva-grounding-materials-design.md` and
-`doc/Viva-Exam.md` §3. Three items were explicitly deferred out of that work:
-
-- **Unify `llm_prompt` into a shared `LlmAsset` model** (deferred alternative
-  C from the spec). `llm_prompt` stays on `Tag` for now — small, always text,
-  and working. Unifying it with `GroundingMaterial` into one LLM-asset model
-  would let `Tag` become a pure label table, for marginal benefit today;
-  revisit if `llm_prompt` ever grows document-native needs (files, per-item
-  token budgeting) the way grounding did. *(2026-09-03: the original cost
-  estimate — "rewrites the rubric-injection path in `viva_turn_assist.rb` /
-  `viva_grade_assist.rb`" — is stale since D6 (2026-07-20) moved viva onto
-  `problems.viva_prompt` + `viva_conduct`; `llm_prompt` now has exactly one
-  consumer, `comment_assist.rb`. The 2026-07-20 decision reaffirmed NOT
-  unifying the schema, only the UI grammar.)*
-- **Accurate page-count token estimate for grounding files.** `GroundingMaterial#compute_estimated_tokens`
-  (`app/models/grounding_material.rb`) uses a byte-size proxy
-  (`BYTES_PER_PROXY_TOKEN = 400`, i.e. ~1 token per 400 bytes) for attached
-  PDF/image files — deliberately approximate, no PDF library in the codebase.
-  A `pdf-reader`-based page count would give a tighter budgeting number.
-- **Grounding image files (png/jpeg) are rejected at upload — PDF-only for v1.**
-  `GroundingMaterial::ALLOWED_CONTENT_TYPES` was originally
-  `image/png`/`image/jpeg`/`image/webp` plus `application/pdf`, but
-  `Llm::Request.encode_pdf_part` (`app/services/llm/request.rb:124`) hard-guards
-  `return nil unless attachment.content_type == 'application/pdf'`, so an
-  uploaded image was accepted, token-counted, then silently never sent to the
-  model — a validation/delivery mismatch fixed by narrowing
-  `ALLOWED_CONTENT_TYPES` to `%w[application/pdf]`. Adding image support back
-  requires extending BOTH `ALLOWED_CONTENT_TYPES` (validation) AND
-  `encode_pdf_part` (or a sibling encoder emitting a plain
-  `data:image/png;base64,...` `image_url` part, no PDF-specific framing)
-  together — extending either alone reintroduces the same silent-drop bug.
-
----
-
 ## Import/Export & CMS interop (from doc/problem-import-export-design-2026-07-14.md)
 
 **Status 2026-08-02.** A *live-server* CMS import path shipped (master revs 1960–1968;
@@ -474,6 +435,35 @@ the visible label alone is enough discoverability.
 
 **Reopen when:** there is evidence the label is not enough — admins asking
 where the help is, or drawers that measurably never get opened. Not a date.
+
+### Grounding materials — three follow-ups deferred by the 2026-07-19 design
+
+**Settled (spec `docs/superpowers/specs/2026-07-19-viva-grounding-materials-design.md`,
+reaffirmed 2026-07-20, re-filed here 2026-09-12 with dae):** `GroundingMaterial`
+is its own model with the Manage → Grounding library and a viva-only attach
+select (`doc/Viva-Exam.md` §3); `llm_prompt` stays a `Tag` kind with exactly one
+consumer (`comment_assist.rb`); grounding files are PDF-only; the ≈token figure
+is a byte-size proxy (`BYTES_PER_PROXY_TOKEN = 400`) shown for information only.
+
+**Not built, on purpose:**
+- (a) one shared LLM-asset model for `llm_prompt` tags and grounding materials
+  (alternative C in the spec) — would let `Tag` become a pure label table, for
+  no benefit today.
+- (b) a `pdf-reader` page count behind `GroundingMaterial#compute_estimated_tokens`
+  — nothing gates on the number; it appears only in the library table, the viva
+  form line "Attached grounding ≈ N tokens — re-sent every turn" and the kit
+  importer log.
+- (c) image grounding files. v1 originally accepted png/jpeg/webp at upload, but
+  `Llm::Request.encode_pdf_part` only emits PDFs, so an image was accepted,
+  token-counted and silently never sent; `ALLOWED_CONTENT_TYPES` was narrowed to
+  PDF. Adding images back means extending BOTH the validation list AND the
+  encoder (a sibling emitting a plain `data:image/png;base64,…` part) in the
+  same change — either alone reintroduces the silent drop.
+
+**Reopen when:** (a) the prompt tag needs files or per-item token budgeting;
+(b) the shown ≈token number misleads a real decision about what to attach;
+(c) a course actually wants a diagram or slide image as grounding. None of
+these has happened.
 
 ### `ai_gateway:` holds ONE gateway — no second bearer-key gateway side by side
 
