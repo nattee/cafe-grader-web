@@ -12,7 +12,7 @@ class VivaSessionsController < ApplicationController
   # #show's "Viva Info" card reads this to render "N of L starts left today".
   helper_method :daily_start_limit_for
 
-  VIVA_LANGUAGE_NAME = 'viva'.freeze
+  VIVA_LANGUAGE_NAME = Language::VIVA_NAME
 
   # Context-based viva policy (2026-07-21 design, Phase A): every viva is
   # practice; the out-of-contest limiter is a per-problem daily start count

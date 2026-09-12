@@ -106,7 +106,9 @@ class ApplicationController < ActionController::Base
     @nav_announcement = Announcement.where(on_nav_bar: true)
     if @current_user && @current_user.admin?
       # if not admin, this info is not needed
-      @backlog = Submission.where('graded_at is null').where('submitted_at < ?', 1.minutes.ago).count
+      # same scope as the grader monitor page, so the badge never counts
+      # ungraded viva sessions as judge backlog
+      @backlog = Submission.judge_backlog.where('submitted_at < ?', 1.minute.ago).count
     end
   end
 

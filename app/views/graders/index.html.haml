@@ -105,7 +105,13 @@
                     %td
                       %span.badge.text-bg-secondary= job.job_type
                     %td
-                      = link_to "##{job.arg}", submission_path(job.arg)
+                      -# arg is nil for a job whose submission was deleted before
+                      -# the orphan reclaim gave up on it (Job.reclaim_orphaned!);
+                      -# submission_path(nil) would raise and take the page down.
+                      - if job.arg
+                        = link_to "##{job.arg}", submission_path(job.arg)
+                      - else
+                        %span.text-muted deleted
                     %td
                       %small.text-danger= job.result
                     %td
