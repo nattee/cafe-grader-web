@@ -13,6 +13,12 @@ class VivaTurn < ApplicationRecord
   # eventually sees a real error and a retry button.
   STALE_AFTER = 10.minutes
 
+  # A turn that was queued but never started running (llm_started_at nil) is
+  # only stale after a longer grace — a queue backlog is not a stuck job, and
+  # failing a still-queued turn showed the student a false "timed out" (the
+  # 2026-09-09 exam queued turns up to ~7.7 min under one shared worker).
+  QUEUE_STALE_AFTER = 20.minutes
+
   scope :ordered, -> { order(:sequence) }
   scope :assistant_turns, -> { where(role: :assistant) }
 
@@ -28,9 +34,9 @@ class VivaTurn < ApplicationRecord
       .assistant_turns
       .where(submissions: {status: Submission.statuses[:submitted]})
       .where(
-        "(viva_turns.status = ? AND viva_turns.updated_at < ?) OR viva_turns.status = ?",
-        statuses[:processing], STALE_AFTER.ago,
-        statuses[:error]
+        "(viva_turns.status = :processing AND ((viva_turns.llm_started_at IS NOT NULL AND viva_turns.llm_started_at < :run) OR (viva_turns.llm_started_at IS NULL AND viva_turns.updated_at < :queue))) OR viva_turns.status = :error",
+        processing: statuses[:processing], error: statuses[:error],
+        run: STALE_AFTER.ago, queue: QUEUE_STALE_AFTER.ago
       )
   }
 
@@ -46,9 +52,11 @@ class VivaTurn < ApplicationRecord
   # this, a job that crashes the worker process — or any failure path
   # we forgot to wrap — leaves the turn stuck in :processing and the
   # student sees "Interviewer is thinking..." forever.
-  def self.fail_stale!(threshold: STALE_AFTER, now: Time.zone.now)
-    stale = where(role: :assistant, status: :processing)
-              .where("updated_at < ?", now - threshold)
+  def self.fail_stale!(threshold: STALE_AFTER, queue_threshold: QUEUE_STALE_AFTER, now: Time.zone.now)
+    stale = where(role: :assistant, status: :processing).where(
+      "(llm_started_at IS NOT NULL AND llm_started_at < :run) OR (llm_started_at IS NULL AND updated_at < :queue)",
+      run: now - threshold, queue: now - queue_threshold
+    )
     count = 0
     stale.find_each do |turn|
       turn.update(
