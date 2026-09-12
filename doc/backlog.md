@@ -414,6 +414,16 @@ value is entirely in the next 2045.
 
 ---
 
+## Contest stop does not finish open viva sessions
+
+**Raised 2026-09-12 from the Quiz 1 postmortem** (`doc/exam-postmortem-2026-09-09-d69_q1.md` F5). When `d69_q1` stopped at
+11:20, 65 of 151 answered viva sessions were still open (no End, no `[[VIVA_DONE]]`, under the hard cap) and were
+finalised by 62 manual Re-run grading clicks over 36 minutes; otherwise the 24 h abandoned-session reaper would have graded
+them the next day. Proposed: when a contest's stop (plus per-user extra time) passes, queue grading for every open viva
+session on that contest's viva problems that has at least one student turn, and archive greeting-only ones — the same two
+branches as `Submission.reap_abandoned_vivas!`, keyed on the contest window instead of 24 h of inactivity. Belongs with
+Phase B (per-contest retakes) in `doc/Viva-Exam.md`.
+
 ## Waiting for a signal
 
 Decided, not deprioritized: each of these stays closed until its **Reopen

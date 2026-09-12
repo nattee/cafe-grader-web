@@ -39,6 +39,12 @@ repo, started 2026-09-02).
 
 ## Entries
 
+### 2026-09-12 — Quiz 1 post-exam analysis: queue saturation, seven lost vivas, dry second-opinion pilot
+**analysis only, no code change** · `doc/exam-postmortem-2026-09-09-d69_q1.md`; working files in course-prep `data-structures/viva/quiz-2569-1-postmortem-2026-09-12/`
+- **Problem observed:** the single 3-thread Solid Queue worker served viva turns, grades and assists together; from 10:19 turn wait rose from 4–6 s to p95 358 s / max 461 s. Seven active students opened the viva, waited 92–454 s for the greeting and never answered (viva 0). 65 of 151 sessions were still open at 11:20 and were finalised by 62 manual Re-run clicks. No failed turns. Daily limit 5 → 1 changed by hand at 09:38 and held; no contest-level retake limit exists.
+- **Change:** none yet. Proposed: dedicated `viva` queue/worker, `llm_started_at` timing columns, contest AI-usage report, fixes for the header/report 500s, the stale-turn sweeper and editor-level mode switching — all listed with status in the postmortem.
+- **Outcome / status:** dry second-opinion pilot (claude-opus-4-5, 30 sessions, USD 2.03, nothing written): opus ≈ 11 points stricter than gemini-3.7-flash, 25 down / 4 up. Decision on a full pass is open (postmortem §Decisions).
+
 ### 2026-09-09 — Quiz 1 "Cell Detection": lenient briefing v2 + whole-cohort regrade under a never-lower rule
 **prompt text + production operation** · course-prep revs 15–19 (`data-structures/viva/quiz-2569-1/` kit, `data-structures/viva/regrade-cell-detection-2026-09-09/` images, tooling, run); prod problem 705 `d69_v1_cell_detection`, contest `d69_q1` (165 students, 157 graded)
 - **Problem observed:** the quiz briefing named one design (per-row / per-column `vector<set<int>>`); students who proposed the equivalent two-`set<pair<int,int>>` design were marked down under `container_selection_and_memory`. Cohort mean 39.0/100. The briefing existed only in prod's DB (typed in the web form, CRLF line endings) — nothing in course-prep, and the audit log stores briefing text as `[redacted]`.
