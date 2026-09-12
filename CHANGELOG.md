@@ -11,6 +11,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Fixed
+- **Score/max-score reports crashed with a 500 in contest mode for group
+  editors.** The contest-mode report problem scope was a `SELECT DISTINCT
+  problems.id` relation; ordering it by `date_added` (the score report) under
+  MySQL 8 `ONLY_FULL_GROUP_BY` raised "ORDER BY ... incompatible with
+  DISTINCT". Staff hit this on the 2026-09-09 quiz. The scope now returns a
+  `Problem.where(id: <subquery>)`, which is orderable; the problem set is
+  unchanged. (rev 2138)
 - **Grader Processes page crashed with a 500 when an error job had no
   submission.** The Failed Jobs table linked every error job to its
   submission; a job whose submission was deleted before the orphan reclaim

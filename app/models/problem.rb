@@ -158,14 +158,22 @@ class Problem < ApplicationRecord
   # return all problem that the user has "editing" rights in a contest
   #   if the user is an editor of the contest, they can always see the problems
   #   even if the contest is not "enabled"
+  # Returned as a Problem.where(id: <subquery>) rather than a joined
+  # SELECT DISTINCT: this is the :report/:edit scope in contest mode, and the
+  # score report both plucks .ids and orders it by date_added. Under MySQL 8
+  # ONLY_FULL_GROUP_BY a "SELECT DISTINCT problems.id ... ORDER BY date_added"
+  # raises "incompatible with DISTINCT" (staff hit this on the 2026-09-09 quiz
+  # score report). The subquery form is orderable and pluckable, and the id set
+  # is identical. Same shape group_reportable_by_user already uses.
   scope :contests_editable_problems_for_user, ->(user_id) {
-    joins(contests_problems: {contest: :contests_users})
+    inner = joins(contests_problems: {contest: :contests_users})
       .where(available: true)                   # available problems only
       .where('contests.enabled': true)          # contests is enabled
       .where('contests_users.user_id': user_id) # user is in the contest
       .where('contests_users.enabled': true)    # user in the contest is enabled
       .where('contests_users.role': 'editor')   # user must have 'editor' role
-      .distinct('problems.id')
+      .select('problems.id')
+    Problem.where(id: inner)
   }
 
   scope :default_order, -> {

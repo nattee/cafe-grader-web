@@ -100,4 +100,13 @@ class ReportControllerAccessTest < ActionDispatch::IntegrationTest
     body = JSON.parse(response.body)
     assert(body["data"].any? { |row| row["attempted_login"] == "ghost" })
   end
+
+  test "max_score report survives contest mode for a contest editor" do
+    set_grader_config("system.mode", "contest")
+    sign_in_as("mary", "mary")   # editor of contest_a
+    get max_score_report_path(probs: { use: "all" }, users: { use: "all" })
+    assert_response :success
+  ensure
+    set_grader_config("system.mode", "standard")
+  end
 end
