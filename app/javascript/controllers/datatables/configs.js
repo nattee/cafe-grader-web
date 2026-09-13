@@ -254,6 +254,35 @@ export const configs = {
       }).draw();
     }
   },
+  // contest -> AI Usage (per-call table)
+  contestAiUsage: {
+    ...baseConfig,
+    paging: true,
+    pageLength: 50,
+    order: [[0, 'asc']],
+    layout: {
+      topStart: ['buttons', 'pageLength'],
+    },
+    buttons: [
+      { text: 'Refresh', action: function (e, dt, node, config) { dt.ajax.reload() } },
+      'copyHtml5',
+      'excelHtml5',
+    ],
+    columns: [
+      columns.aiUsage.at, columns.aiUsage.kind, columns.aiUsage.login, columns.aiUsage.problem,
+      columns.aiUsage.model, columns.aiUsage.queuedS, columns.aiUsage.modelS, columns.aiUsage.totalS,
+      columns.aiUsage.tokensIn, columns.aiUsage.tokensOut, columns.aiUsage.cost, columns.aiUsage.status,
+      columns.aiUsage.submissionId,
+    ],
+    ajax: {
+      ...baseAjax, //use spread so that it is copied
+      data: (data) => data,
+    },
+    drawCallback: function (settings) {
+      var api = this.api();
+      api.columns.adjust()
+    },
+  },
   // report -> AI report
   aiAssistReport: {
     ...baseConfig,

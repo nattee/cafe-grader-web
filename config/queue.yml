@@ -3,9 +3,19 @@ default: &default
     - polling_interval: 1
       batch_size: 500
   workers:
-    - queues: "*"
-      threads: 3
-      processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
+    # Interview turns and grading. Isolated from assists so a flood of assist
+    # requests can't starve a student mid-interview (2026-09-09 exam). Every
+    # job in this app is on `default` except the two viva jobs (queue_as :viva),
+    # so these two queue names are exhaustive — do NOT use "*" for the second
+    # worker, it would also drain `viva` and defeat the isolation.
+    - queues: "viva"
+      threads: <%= ENV.fetch("VIVA_JOB_CONCURRENCY", 5) %>
+      processes: 1
+      polling_interval: 0.1
+    # Everything else: assists, PDF, problem stats, recurring housekeeping.
+    - queues: "default"
+      threads: <%= ENV.fetch("JOB_CONCURRENCY", 3) %>
+      processes: 1
       polling_interval: 0.1
   recurring:
     refresh_problem_stats:

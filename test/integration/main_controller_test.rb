@@ -73,4 +73,20 @@ class MainControllerTest < ActionDispatch::IntegrationTest
       url_for(controller: "main", action: "confirm_contest_start", only_path: true)
     end
   end
+
+  # Regression: a logged-in user whose session points at an enabled contest
+  # they are NOT enrolled in has a nil contest-membership; the header countdown
+  # read extra_time_second off it and 500'd every page (2 hits, 2026-09-09).
+  test "list does not 500 when the session contest excludes the user" do
+    set_grader_config("system.mode", "contest")
+    contest = contests(:contest_a)
+    membership = ContestUser.find_by(contest: contest, user: users(:james))  # james_in_contest_a
+    sign_in_as("james", "morning")
+    get set_active_contest_path(contest)                # sets session[:contest_id] while james is a member
+    membership.destroy                                  # now the session points at a contest he is not in
+    get list_main_path
+    assert_response :success
+  ensure
+    set_grader_config("system.mode", "standard")
+  end
 end

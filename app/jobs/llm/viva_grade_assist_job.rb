@@ -1,5 +1,9 @@
 module Llm
   class VivaGradeAssistJob < RequestJob
+    # Grading shares the `viva` queue with interview turns — see
+    # VivaTurnAssistJob and config/queue.yml.
+    queue_as :viva
+
     private
 
     # The concrete viva grade service class is configured in config/llm.yml via

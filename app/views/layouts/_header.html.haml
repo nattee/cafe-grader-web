@@ -14,7 +14,11 @@
         - elsif GraderConfiguration.time_limit_mode?
           - if @current_contest
             -# we have a contest
-            - if @current_contest.stop + @current_contest_user.extra_time_second < Time.zone.now
+            -# @current_contest_user is nil when the session points at an enabled
+            -# contest the user is not enrolled in (stale session[:contest_id]);
+            -# reading extra_time_second off nil 500'd every page (2026-09-09).
+            - extra = @current_contest_user&.extra_time_second.to_i
+            - if @current_contest.stop + extra < Time.zone.now
               -# contest is over
               %div.btn.btn-danger#countdown= "Contest is over"
             - elsif !@current_contest&.contest_status == :later

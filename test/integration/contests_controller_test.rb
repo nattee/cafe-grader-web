@@ -116,9 +116,13 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "non-admin cannot change system mode" do
-    sign_in_as("mary", "mary")
-    post set_system_mode_contests_path, params: { mode: "standard" }
+    set_grader_config("system.mode", "standard")
+    sign_in_as("mary", "mary")   # a group editor — could flip the site's mode before B4
+    post set_system_mode_contests_path, params: { mode: "contest" }
     assert_response :redirect
+    assert_equal "standard", GraderConfiguration[GraderConfiguration::SYSTEM_MODE_CONF_KEY]
+  ensure
+    set_grader_config("system.mode", "standard")
   end
 
   test "user_check_in returns JSON heartbeat" do

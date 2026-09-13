@@ -213,4 +213,22 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     refute_includes clean, Llm::VivaTurnAssist::ALERT_SENTINEL, 'no ALERT sentinel should leak into student-visible content'
     refute_includes clean, Llm::VivaTurnAssist::DONE_SENTINEL, 'no DONE sentinel should leak into student-visible content'
   end
+
+  class StubTurnAssist < Llm::VivaTurnAssist
+    Fake = Struct.new(:body)
+    def execute_call(_data)
+      Fake.new({choices: [{message: {content: "Question one?"}}], usage: {prompt_tokens: 10, completion_tokens: 3}, model: "test-model"}.to_json)
+    end
+    def compute_cost(_usage) = 0.01
+  end
+
+  test "a successful turn records llm_started_at and llm_latency_ms" do
+    svc = StubTurnAssist.new(submission: @submission, turn: @placeholder)
+    svc.call
+    @placeholder.reload
+    assert @placeholder.ok?
+    assert_not_nil @placeholder.llm_started_at
+    assert_not_nil @placeholder.llm_latency_ms
+    assert_operator @placeholder.llm_latency_ms, :>=, 0
+  end
 end

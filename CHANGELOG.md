@@ -10,7 +10,34 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+- **AI-usage report, per contest** (Manage/Watch → AI Usage, or
+  `/contests/:id/ai_usage`; admins and contest editors). Shows viva-interview,
+  grading and assist volume, cost, and response-time percentiles (mean / p50 /
+  p90 / p95 / p99 / max) over the contest window, with per-5-minute charts, a
+  per-model and per-problem breakdown, the students who opened a viva but never
+  answered, and a searchable per-call table. Response time is now recorded per
+  call split into queue time and provider time (`llm_started_at` /
+  `llm_latency_ms` on viva turns, comments and viva grades); calls made before
+  this release show only the combined total. (rev 2136, 2140, 2141)
+
+### Security
+- **Switching the site mode (standard/contest/analysis) now requires an
+  admin.** It was reachable by any group editor; a TA flipped the whole site's
+  mode mid-exam on 2026-09-09. (rev 2141)
+
 ### Fixed
+- **Every page 500'd for a logged-in user whose session pointed at an enabled
+  contest they were not enrolled in.** In contest mode the navbar countdown
+  read `extra_time_second` off a nil contest-membership. It now treats a
+  missing membership as zero extra time. (rev 2139)
+- **Score/max-score reports crashed with a 500 in contest mode for group
+  editors.** The contest-mode report problem scope was a `SELECT DISTINCT
+  problems.id` relation; ordering it by `date_added` (the score report) under
+  MySQL 8 `ONLY_FULL_GROUP_BY` raised "ORDER BY ... incompatible with
+  DISTINCT". Staff hit this on the 2026-09-09 quiz. The scope now returns a
+  `Problem.where(id: <subquery>)`, which is orderable; the problem set is
+  unchanged. (rev 2138)
 - **Grader Processes page crashed with a 500 when an error job had no
   submission.** The Failed Jobs table linked every error job to its
   submission; a job whose submission was deleted before the orphan reclaim

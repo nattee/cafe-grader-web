@@ -97,6 +97,12 @@ student nothing (since 2026-09-09).
 
 ## Entries
 
+### 2026-09-12 — Quiz 1 exam usage measured: 260 requests, most students ended worse off
+**analysis only, no code change** · `doc/exam-postmortem-2026-09-09-d69_q1.md` §F8
+- **Problem observed:** during `d69_q1` (2026-09-09) 109 students made 260 assist requests (opus 82, gemini-3.1-pro 77, Claude-Sonnet 53, flash 48); 74% resubmitted afterwards, 36–50% improved by model, 2–13% reached 100. Of 133 student-problem pairs 97 ended worse off (penalty > gain). Requests queued behind viva turns on the shared 3-thread worker: mean wait 195 s, p95 457 s; 58 of the 75 requests in the last ten minutes got no follow-up submission.
+- **Change:** SHIPPED on master (revs 2134–2143): assists now have a worker of their own (viva jobs moved to a dedicated `viva` queue, 2137); per-call timing on comments (`llm_started_at`/`llm_latency_ms`, 2136); and a contest AI-usage report showing assist volume, cost, per-model breakdown and response-time percentiles (2140–2141). Not yet deployed.
+- **Outcome / status:** open; numbers not yet in the "Numbers for reporting" table.
+
 ### 2026-09-10 — Follow-ups live on production; historical rows cleaned up
 **deployment + data** · chula_cp 2123 deployed 15:51 by dae via the GitLab pipeline (web_check, then the whole matrix); `~/cafe-grader/assist-cleanup-2026-09-09.rb` run by dae 17:08–17:19 (report, then one step at a time)
 - **Problem observed:** the 2026-09-09 follow-ups (admin requests free for the student, per-model cost on the stat pages, Genie off the picker) were committed but not live; production still carried 397 requests stuck in `processing` since Aug–Sep 2025, 5,184 answers without token counts, and the dead `AI_viva` tag (#36, `llm_prompt` on `viva_test` 670 and `a68_mv_relay` 671).

@@ -221,6 +221,8 @@ module Llm
         token_count_in:   usage['prompt_tokens'],
         token_count_out:  usage['completion_tokens'],
         cost:             compute_cost(usage),
+        llm_started_at:   llm_started_at,
+        llm_latency_ms:   llm_latency_ms,
         status:           :ok
       )
 

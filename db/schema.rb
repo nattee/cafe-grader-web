@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_12_120000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -96,6 +96,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
     t.decimal "llm_cost", precision: 12, scale: 6
     t.integer "prompt_tokens"
     t.integer "completion_tokens"
+    t.datetime "llm_started_at"
+    t.integer "llm_latency_ms"
     t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable"
     t.index ["user_id"], name: "index_comments_on_user_id"
   end
@@ -357,6 +359,31 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
     t.index ["tag_id"], name: "index_problems_tags_on_tag_id"
   end
 
+  create_table "prod_solid_queue_failed_executions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "job_id", null: false
+    t.text "error"
+    t.datetime "created_at", null: false
+    t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
+  end
+
+  create_table "prod_solid_queue_jobs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "queue_name", null: false
+    t.string "class_name", null: false
+    t.text "arguments"
+    t.integer "priority", default: 0, null: false
+    t.string "active_job_id"
+    t.datetime "scheduled_at"
+    t.datetime "finished_at"
+    t.string "concurrency_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
+    t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
+    t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
+    t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
+    t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
+  end
+
   create_table "rights", id: :integer, charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name"
     t.string "controller"
@@ -574,6 +601,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
     t.datetime "graded_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "llm_started_at"
+    t.integer "llm_latency_ms"
     t.index ["submission_id"], name: "index_viva_grades_on_submission_id", unique: true
   end
 
@@ -591,6 +620,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "alerted", default: false, null: false
+    t.datetime "llm_started_at"
+    t.integer "llm_latency_ms"
     t.index ["submission_id", "sequence"], name: "index_viva_turns_on_submission_id_and_sequence", unique: true
   end
 
@@ -613,6 +644,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_10_120000) do
   add_foreign_key "problem_stats", "problems"
   add_foreign_key "problems_tags", "problems"
   add_foreign_key "problems_tags", "tags"
+  add_foreign_key "prod_solid_queue_failed_executions", "prod_solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "viva_grades", "submissions"
   add_foreign_key "viva_turns", "submissions"
 end
