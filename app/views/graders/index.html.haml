@@ -145,6 +145,50 @@
             %tbody
               = render partial: 'grader', collection: @graders
 
+      -# Job Workers card: the Solid Queue processes (supervisor, dispatcher,
+      -# scheduler, workers) as they REGISTERED themselves. A worker's queues and
+      -# thread pool are the effective values after any per-host override
+      -# (config/solid_queue.env) — what this host really runs, not what a
+      -# config file says. A row turns red when its heartbeat is older than
+      -# Solid Queue's prune threshold.
+      .card.shadow-sm.mb-4
+        .card-body
+          .d-flex.align-items-start.mb-3
+            .bg-primary-subtle.text-primary.rounded-3.d-flex.align-items-center.justify-content-center.me-3{ style: "width: 48px; height: 48px; flex-shrink: 0;" }
+              %span.mi.md-36.fill memory
+
+            .flex-grow-1
+              %h5.fw-bold.text-dark.mb-0 Job Workers
+              .text-secondary.small
+                = pluralize(@job_workers.size, 'Solid Queue process')
+                registered · effective queues and thread pools · stale after #{@job_worker_stale_after.inspect}
+
+          - if @job_workers.empty?
+            .text-secondary.small No Solid Queue process is registered — is the solid_queue service running?
+          - else
+            %table#job-workers.table.table-hover.align-middle.mb-0
+              %thead
+                %tr.text-secondary.small
+                  %th Kind
+                  %th Queues
+                  %th.text-end Threads
+                  %th Heartbeat
+                  %th Host
+              %tbody
+                - @job_workers.each do |p|
+                  - stale = p.last_heartbeat_at <= @job_worker_stale_after.ago
+                  %tr{class: ('table-danger' if stale)}
+                    %td
+                      %span.badge{class: (p.kind == 'Worker' ? 'text-bg-primary' : 'text-bg-secondary')}= p.kind
+                    %td= p.metadata['queues']
+                    %td.text-end= p.metadata['thread_pool_size']
+                    %td
+                      %small{class: (stale ? 'text-danger fw-bold' : 'text-muted')}
+                        = time_ago_in_words(p.last_heartbeat_at) + ' ago'
+                        = ' (stale)' if stale
+                    %td
+                      %small.text-muted= "#{p.hostname}:#{p.pid}"
+
     -# ==========================================
     -# ---------- Right Column ------------------
     -# ==========================================

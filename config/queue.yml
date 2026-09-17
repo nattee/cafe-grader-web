@@ -2,20 +2,17 @@ default: &default
   dispatchers:
     - polling_interval: 1
       batch_size: 500
-  # Two workers, two queues. Interview turns and grading are isolated from
-  # assists so a flood of assist requests can't starve a student mid-interview
-  # (2026-09-09 exam: one shared 3-thread worker, turn wait p95 5s -> 358s).
-  # Every job in this app is on `default` except the two viva jobs
-  # (queue_as :viva), so these two queue names are exhaustive — do NOT use "*"
-  # for the second worker, it would also drain `viva` and defeat the isolation.
+  # Two workers, two queues: viva (interview turns + grading) is isolated from
+  # default (assists, PDF, stats, housekeeping) so an assist flood can't starve
+  # a student mid-interview (2026-09-09 exam). The two names are exhaustive —
+  # never use "*" for the second worker, it would drain viva too.
   #
-  # Sizing rule (the one invariant): each worker is its own process and needs
-  # one DB connection per thread PLUS one for its polling loop, so
-  #     threads <= pool - 1        (pool = RAILS_MAX_THREADS in database.yml)
-  # The defaults below (3 + 3) fit the stock pool of 5 on every host with no
-  # extra setup. To run hotter on one host, set the env vars below AND
-  # RAILS_MAX_THREADS together, in that host's Solid Queue environment file
-  # (per-host, untracked — same class of thing as database.yml), never here.
+  # Sizing: the numbers below are the DEFAULTS for every host. Change a default
+  # here. To deviate on ONE host, set VIVA_JOB_THREADS / JOB_THREADS in that
+  # host's config/solid_queue.env (see .SAMPLE) and never restate a default
+  # there. Keep threads <= DB pool - 1 (RAILS_MAX_THREADS in database.yml):
+  # each worker needs one connection per thread plus one for polling. The
+  # effective values a host really runs are on Manage -> Grader Processes.
   workers:
     - queues: "viva"
       threads: <%= ENV.fetch("VIVA_JOB_THREADS", 3) %>
