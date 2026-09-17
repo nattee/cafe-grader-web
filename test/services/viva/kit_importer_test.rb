@@ -196,4 +196,31 @@ class Viva::KitImporterTest < ActiveSupport::TestCase
     assert_equal 'coding alpha', Problem.find_by!(name: 'vk_alpha').full_name
     assert_nil Problem.find_by(name: 'vk_beta')
   end
+  test 'apply writes one audit row per updated problem, naming scenario and briefing' do
+    assert run_import(apply: true)
+    alpha = Problem.find_by!(name: 'vk_alpha')
+    old_scenario = alpha.description
+
+    Dir.mktmpdir do |tmp|
+      copy_kit_to(tmp)
+      File.write(File.join(tmp, 'alpha.scenario.md'), "# Alpha scenario v2\n\nDesign a better thing.")
+      File.write(File.join(tmp, 'alpha.briefing.md'), "New model answer.\n\n# Rubric\n\n- design (100)\n")
+      @out.truncate(0)
+      Current.actor_note = 'Rake: viva:import test'
+      assert_difference -> { AuditLog.for(alpha).where(action: 'update').count }, 1 do
+        assert run_import(tmp, apply: true)
+      end
+    end
+    assert_match(/UPDATE\s+problem 'vk_alpha' — description, viva_prompt/, @out.string)
+
+    row = AuditLog.for(alpha).where(action: 'update').last
+    assert_equal %w[description viva_prompt], row.object_changes.keys.sort
+    assert_equal [old_scenario, "# Alpha scenario v2\n\nDesign a better thing."], row.object_changes['description'],
+                 'the scenario text is stored (it is what students see, and small)'
+    assert_equal [AuditLog::REDACTED, AuditLog::REDACTED], row.object_changes['viva_prompt'],
+                 'the briefing stays redacted'
+    assert_equal 'Rake: viva:import test', row.actor_note
+  ensure
+    Current.actor_note = nil
+  end
 end

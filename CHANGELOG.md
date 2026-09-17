@@ -59,6 +59,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- **Audit rows no longer vanish when a record is reloaded or saved again
+  before its transaction commits.** The `Auditable` concern read
+  `saved_changes` in the commit callback, which describes only the last save
+  and is cleared by `reload`; `viva:import APPLY=1` reloads every problem it
+  touched for its post-check, so a live briefing rewrite on 2026-09-09 left
+  no `AuditLog` row. Changes are now staged at save time and written at
+  commit: one row per record per transaction with the first old and last new
+  value, a rollback discards the staged diff, and `AuditLog.paused` now also
+  works around a save inside an outer transaction. `Problem#description`
+  (statement / viva scenario) is audited too, stored in full. (rev 2157)
 - **Every page 500'd for a logged-in user whose session pointed at an enabled
   contest they were not enrolled in.** In contest mode the navbar countdown
   read `extra_time_second` off a nil contest-membership. It now treats a
