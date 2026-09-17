@@ -216,4 +216,33 @@ class GradersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/>#{before + 1} backlogs!</, response.body)
   end
+
+  # --- Job Workers card (Solid Queue processes as registered) ---
+
+  test "admin index lists Solid Queue workers with their effective thread pool and flags a stale one" do
+    SolidQueue::Process.create!(kind: "Worker", name: "worker-live", pid: 4242, hostname: "testhost",
+                                last_heartbeat_at: Time.current,
+                                metadata: {queues: "viva", thread_pool_size: 3, polling_interval: 0.1})
+    SolidQueue::Process.create!(kind: "Worker", name: "worker-stale", pid: 4243, hostname: "testhost",
+                                last_heartbeat_at: 20.minutes.ago,
+                                metadata: {queues: "default", thread_pool_size: 3, polling_interval: 0.1})
+    sign_in_as("admin", "admin")
+    get grader_processes_path
+    assert_response :success
+    assert_select "#job-workers td", text: "viva"
+    assert_select "#job-workers td", text: "default"
+    assert_select "#job-workers td", text: "3", minimum: 2
+    assert_select "#job-workers tr.table-danger", {count: 1}, "only the 20-minute-old heartbeat is stale"
+  ensure
+    SolidQueue::Process.where(hostname: "testhost").delete_all
+  end
+
+  test "admin index renders when no Solid Queue process is registered" do
+    SolidQueue::Process.delete_all
+    sign_in_as("admin", "admin")
+    get grader_processes_path
+    assert_response :success
+    assert_select "#job-workers", count: 0
+    assert_match(/No Solid Queue process is registered/, response.body)
+  end
 end

@@ -15,6 +15,14 @@ class GradersController < ApplicationController
     # point at the existing specialized pages.
     @sq_failed_count = SolidQueue::Job.failed.count
 
+    # Solid Queue processes as they registered themselves. A worker's queues
+    # and thread pool here are the EFFECTIVE values after any per-host
+    # override (config/solid_queue.env), so this is where to confirm what a
+    # host really runs — config/queue.yml is only the default. Stale = no
+    # heartbeat within Solid Queue's own prune threshold.
+    @job_workers = SolidQueue::Process.order(:kind, :name).to_a
+    @job_worker_stale_after = SolidQueue.process_alive_threshold
+
     # Combined tile count: stuck mid-interview turns (VivaTurn.stuck) +
     # stuck mid-grading submissions (Submission.stale_evaluating) — two
     # stages of the same "viva LLM job never resolved" failure mode.

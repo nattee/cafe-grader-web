@@ -21,6 +21,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   `llm_latency_ms` on viva turns, comments and viva grades); calls made before
   this release show only the combined total. (rev 2136, 2140, 2141)
 
+- **Grader Processes page shows the Solid Queue workers as they actually
+  run** — a "Job Workers" card listing every registered process (supervisor,
+  dispatcher, scheduler, workers) with its queues, thread pool, heartbeat age
+  and host. The thread pool shown is the effective value after any per-host
+  override, so an operator can confirm what a host runs without reading
+  config files; a row with a heartbeat older than the prune threshold turns
+  red. (rev 2151)
+
 ### Changed
 - **Viva interviews and grading now run on their own background-job queue
   and worker**, isolated from AI-assist requests. During the 2026-09-09 quiz
