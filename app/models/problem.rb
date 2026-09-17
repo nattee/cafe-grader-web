@@ -1,6 +1,9 @@
 class Problem < ApplicationRecord
   include Auditable
-  audited only: %i[name full_name full_score available live_dataset_id
+  # `description` (statement, or a viva's scenario) is stored in full: it is
+  # what students see and the largest one in production is 6 KB. The viva
+  # briefing holds the model answer, so only the fact of its change is kept.
+  audited only: %i[name full_name full_score available live_dataset_id description
                    view_testcase view_submission allow_hint
                    permitted_lang submission_filename task_type compilation_type
                    viva_daily_limit viva_prompt viva_soft_cap viva_hard_cap],
@@ -345,8 +348,8 @@ class Problem < ApplicationRecord
     end
   end
 
-  def helpers_cost(user,contest)
-    Comment.cost_summary_for(user,contest)
+  def helpers_cost(user, contest)
+    Comment.cost_summary_for(user, contest)
   end
 
   # return the enabled comments of the specified *kind* that are revealed by *user*

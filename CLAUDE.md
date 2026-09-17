@@ -163,6 +163,7 @@ audited                                       # GraderConfiguration — all attr
 
 - `only:` — whitelist of attributes. Omit to log every attribute (except id/timestamps).
 - `redact:` — values for these fields are stored as `"[redacted]"` (use for large blobs like `Testcase#input`/`sol`). Changes are still detected and logged; just the content isn't stored.
+- **Timing** — changes are *staged* in `after_save` and *written* in the `after_*_commit` callback: one row per record per transaction, first old / last new value per field, a field changed and changed back is dropped, a rollback discards the staging. So a `reload` or a second save between the save and the commit is safe (it was not before rev 2157 — `viva:import`'s post-check reload silently lost its rows), and `AuditLog.paused` suppresses a save whether or not an outer transaction is open. A record created and updated in one transaction gets a single `create` row showing the committed values.
 
 **Actor tracking** — `Current.user` and `Current.ip` (from `app/models/current.rb`, an `ActiveSupport::CurrentAttributes`) are set by `ApplicationController#set_current_audit_context` on every request. Background jobs without a user context should set `Current.actor_note` manually (e.g. `"Job: DailyReset"`) so the row isn't anonymous.
 

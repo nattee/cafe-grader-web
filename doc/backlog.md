@@ -39,22 +39,6 @@ supersede instead of destroy; the admin viva page lists earlier grades. The
 never-lower rule keeps the whole higher record (points + breakdown + narrative),
 as decided 2026-09-09. Rough size: 1–2 days incl. migration, tests, docs.
 
-## `viva:import` updated `viva_prompt` on prod without an audit row
-
-**Observed 2026-09-09 on 10.0.5.50:** `viva:import DIR=quiz-2569-1 APPLY=1` printed
-`UPDATE problem 'd69_v1_cell_detection' — description, viva_prompt` and changed both,
-but `AuditLog.where(auditable: problem)` gained nothing — while a single
-`problem.update!(viva_prompt: …)` from a runner in the same session (and the
-`available` flip, audit 816) were logged. Suspects, in `app/services/viva/kit_importer.rb`
-+ `app/models/concerns/auditable.rb`: `after_update_commit` fires once per record
-at the end of the importer's single transaction, and a later save on the same
-record inside it (setup checks / touch) leaves `saved_changes` empty, so
-`write_audit!` returns on an empty diff; and `description` is not in `Problem`'s
-`audited only:` list at all, so scenario edits are never audited. Fix: reproduce
-in a test, then either `AuditLog.record!` explicitly in the importer (one
-semantic row per problem, like the bulk actions) or move the audited save out of
-the shared transaction; add `description` to the audited list. Size: small.
-
 ---
 
 ## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
@@ -484,6 +468,25 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### `viva:import` updated `viva_prompt` on prod without an audit row — RESOLVED 2026-09-17
+
+Root cause (reproduced with a dev-DB probe and `test/models/auditable_test.rb`):
+`Auditable` read `saved_changes` in `after_update_commit`, but `reload` clears
+it — and `KitImporter#post_check` reloads every touched problem inside the
+import transaction, so the commit callback saw an empty diff and returned. The
+same read also mis-reported two other shapes: several saves of one record in
+one transaction logged only the last save's fields, and a record created then
+updated in one transaction got a create row carrying only the update's field
+(`create_problem` does exactly that with `live_dataset`). Fix, rev 2157 (chula_cp
+2158): the concern stages the tracked `saved_changes` in `after_save` and writes
+them at commit — first old / last new per field, changed-and-changed-back
+dropped, `after_rollback` discards the staging, and a save under
+`AuditLog.paused` stages nothing (pausing inside an outer transaction used to
+leak the row at commit). The importer is unchanged; its reload is legitimate.
+`description` joined `Problem`'s audited list, stored in full (max 6 KB on
+prod). Tests: 6 new concern tests + 1 importer test asserting one `update` row
+naming `description` and `viva_prompt` (redacted) with the rake's actor note.
 
 ### Deploy has no automatic post-deploy grading check — RESOLVED 2026-09-17
 
