@@ -1,10 +1,32 @@
 namespace :engine do
-  desc 'Grade one existing submission end to end on this host (real isolate), report, then restore it. SUB=<id> [BOX=99]'
+  desc 'Grade one existing submission end to end on this host (real isolate), report, then restore it. SUB=<id>|auto [BOX=99]'
   task smoke: :environment do
-    sub_id = ENV['SUB'] or abort 'usage: bin/rails engine:smoke SUB=<submission id> [BOX=99]   (pick a submission you are happy to see re-evaluated; its stored grade is restored afterwards)'
-    sub = Submission.find(Integer(sub_id))
+    sub_id = ENV['SUB'] or abort 'usage: bin/rails engine:smoke SUB=<submission id>|auto [BOX=99]   (pick a submission you are happy to see re-evaluated, or SUB=auto to let EngineSmokePicker choose; its stored grade is restored afterwards)'
     box = Integer(ENV.fetch('BOX', '99'))
     fmt = ->(g) { "#{g[:status]} points=#{g[:points]} comment=#{g[:grader_comment].inspect}" }
+
+    if sub_id == 'auto'
+      # The deploy pipeline's mode. Two SKIPPED exits (0) are deliberate: a
+      # web-only host grades nothing, and a fresh host has nothing to regrade;
+      # neither should block a deploy. An explicit SUB=<id> never skips.
+      worker_id = Rails.configuration.worker[:worker_id]
+      if GraderProcess.where(worker_id: worker_id, enabled: true).none?
+        puts "SKIPPED: no enabled grader boxes for worker #{worker_id} on this host — nothing grades here, nothing to smoke"
+        exit 0
+      end
+      picker = EngineSmokePicker.new
+      sub = picker.pick
+      unless sub
+        puts 'SKIPPED: no suitable submission on this host — need done, regular, non-viva, full score, ' \
+             "#{EngineSmokePicker::LANGUAGE_ORDER.join('/')}, graded after its live dataset last changed, " \
+             "slowest testcase within #{(EngineSmokePicker::RUNTIME_MARGIN * 100).to_i}% of the time limit, " \
+             "testcases x limit <= #{EngineSmokePicker::MAX_BUDGET_SECONDS}s"
+        exit 0
+      end
+      puts "auto-picked submission #{sub.id}: #{picker.describe(sub)}"
+    else
+      sub = Submission.find(Integer(sub_id))
+    end
 
     report = EngineSmoke.new(sub, box_id: box).run
 

@@ -387,33 +387,6 @@ out of the audited attrs (derived, bulky).
 
 ---
 
-## Deploy has no automatic post-deploy grading check
-
-**Noticed 2026-08-30, after the outage that `engine:smoke` was built for.** The
-`deploy_production` pipeline proves the app boots (Passenger restart) and that
-`Grader.restart` spawned processes, but nothing proves the *grading engine*
-still grades. That gap is exactly how rev 2045 reached nine servers: the unit
-suite cannot cross the Evaluator→Checker path without isolate, and CI has none.
-`bin/rails engine:smoke SUB=<id> [BOX=99]` (rev 2063) closes it, but it is a
-manual step someone has to remember.
-
-**The shape of the fix.** A final deploy step that runs `engine:smoke` on the
-host and fails the job on a non-zero exit. What blocks it is choosing the
-submission: it must exist on that server, be `done`, and have a live dataset
-whose testcase blobs are still on disk — and each server's ids differ, so a
-hardcoded `SUB=` is wrong everywhere but one host. Options, none costed yet:
-a per-host id in `inventory.yml`; a `--pick` mode that queries for a suitable
-recent submission itself (roughly the picker used to verify the fleet on
-2026-08-30, which needed widening on toi where every dataset is grouped and on
-hosts whose older blobs are gone); or a dedicated never-deleted smoke problem
-seeded on each server, which is the most predictable and the most setup.
-
-**Worth noting** the check is cheap — the fleet runs took 2–20 s per host — and
-it caught nothing on 2026-08-30 only because it was written after the fix. Its
-value is entirely in the next 2045.
-
----
-
 ## Contest stop does not finish open viva sessions
 
 **Raised 2026-09-12 from the Quiz 1 postmortem** (`doc/exam-postmortem-2026-09-09-d69_q1.md` F5). When `d69_q1` stopped at
@@ -423,6 +396,14 @@ them the next day. Proposed: when a contest's stop (plus per-user extra time) pa
 session on that contest's viva problems that has at least one student turn, and archive greeting-only ones — the same two
 branches as `Submission.reap_abandoned_vivas!`, keyed on the contest window instead of 24 h of inactivity. Belongs with
 Phase B (per-contest retakes) in `doc/Viva-Exam.md`.
+
+**Decision 2026-09-17 (dae): not automatic — a batch button.** No contest-stop
+trigger. Instead an admin control on the contest page (`contests/show`) —
+"Finish open viva sessions" — that runs the two branches above once, on click,
+over every open session of that contest's viva problems: queue grading for
+sessions with at least one student turn, archive greeting-only ones, and toast
+the two counts. Same window/offset logic as `Contest#submissions`; Flavor A
+`button_to` with a `turbo-confirm`. The 24 h reaper stays as the safety net.
 
 ## Waiting for a signal
 
@@ -503,6 +484,31 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Deploy has no automatic post-deploy grading check — RESOLVED 2026-09-17
+
+Shipped web rev 2155 (master; chula_cp merge 2156) + automation rev 63. The
+entry's `--pick` option: `EngineSmokePicker` (`app/engine/engine_smoke_picker.rb`)
+chooses the submission on each host — done, regular (no near-miss shadow),
+non-viva, full score, C++ then C then Python, slowest testcase ≤ 50 % of the
+time limit (no P↔T flips), graded after the live dataset and its testcases
+last changed (the stored grade is against the dataset the run uses),
+testcases × limit ≤ 60 s, most recent first (its blobs are still on disk).
+`bin/rails engine:smoke SUB=auto` runs it and prints `SKIPPED` (exit 0) on a
+web-only host (no enabled `GraderProcess` rows) or when nothing qualifies, so
+neither blocks a deploy; explicit `SUB=<id>` never skips. The deploy job runs
+it right after `assets:precompile` and BEFORE the Solid Queue / Passenger /
+`Grader.restart` steps: `set -e` aborts the remote script on exit 1 (engine
+error) or 2 (verdict differs), leaving the long-lived graders on the old code.
+The two hand scripts (`~/cafe-grader/deploy_cedt.sh`, `deploy-cp-grader.sh`)
+carry the same line. Checked on the dev prod-copy DB: picked a 10-testcase
+C++ submission in 2.6 s; the run itself 404s locally because the testcase
+blobs exist only on the servers (10 attached in DB, 0 files under `storage/`)
+— the very failure the recency rule avoids on a host. Tests:
+`test/engine/engine_smoke_picker_test.rb` (10). Residual: the entry's third
+option, a never-deleted smoke problem seeded per host, was not built — the
+`SKIPPED` path covers a fresh host, and a real host always has recent
+full-score C++.
 
 ### `jobs.status` has no index, and the judge polls it at 5 Hz per grader — RESOLVED 2026-09-08
 
