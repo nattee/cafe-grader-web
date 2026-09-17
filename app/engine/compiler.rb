@@ -4,6 +4,7 @@ require 'net/http'
 class Compiler
   include IsolateRunner
   include JudgeBase
+  include ZipArchive
   include Rails.application.routes.url_helpers
 
   # Each language-specific sub-class MAY implement this method
@@ -159,8 +160,13 @@ class Compiler
     @isolate_source_file = @isolate_source_path + self.get_submission_filename
     @isolate_main_file = @isolate_source_manager_path + (@working_dataset.main_filename || '')
 
-    # write student files
-    File.write(@source_file.cleanpath, @sub.source)
+    # write student files: archive submissions (zip/jar) go to disk in the
+    # binary blob as-is and are extracted later by the language compiler
+    if @sub.submitted_archive?
+      File.binwrite(@source_file.cleanpath, @sub.binary)
+    else
+      File.write(@source_file.cleanpath, @sub.source)
+    end
     judge_log "Save contestant file to #{@source_file.cleanpath}"
   end
 

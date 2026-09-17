@@ -185,6 +185,22 @@ class Submission < ApplicationRecord
 
   def shadow? = repaired_from_id.present?
 
+  # A submission delivered as a zip/jar binary archive (the 'archive'
+  # language, or a circuit/CAD language like digital accepting a multi-file
+  # project). The worker writes `binary` to disk and extracts it into the
+  # compile dir instead of compiling a single text `source`.
+  def submitted_archive?
+    binary.present?
+  end
+
+  # True for upload filenames that carry a multi-file archive (zip/jar) and
+  # must be stored as binary even against a non-binary language — e.g. a
+  # Digital circuit project submitted as Demo.zip with the 'digital'
+  # language. The text-capture path would mangle the raw bytes.
+  def self.archive_filename?(filename)
+    %w[.zip .jar].include?(File.extname(filename.to_s).downcase)
+  end
+
   def add_judge_job(dataset = problem.live_dataset, priority = 0)
     evaluations.delete_all
     self.update(status: 'submitted', points: nil, grader_comment: nil, graded_at: nil)

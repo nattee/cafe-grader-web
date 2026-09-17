@@ -424,6 +424,23 @@ session on that contest's viva problems that has at least one student turn, and 
 branches as `Submission.reap_abandoned_vivas!`, keyed on the contest window instead of 24 h of inactivity. Belongs with
 Phase B (per-contest retakes) in `doc/Viva-Exam.md`.
 
+---
+
+## Archive submissions have no extraction quota
+
+**Raised 2026-09-17 with ZIP grading for Digital circuit problems**
+(`app/engine/zip_archive.rb` + `test/engine/zip_archive_test.rb`). `extract_archive`
+lays a student zip flat into the compile dir with `unzip -j -o` and no size or
+entry-count limit, so a zip bomb (or a zip of thousands of files) can balloon the
+worker's filesystem and the isolate box upload. `ProblemImporter#unzip_to_dir` has
+the same unbounded shape for admin-side imports, where trust is higher.
+
+**The shape of the fix.** Cap total extracted bytes and entry count in
+`extract_archive` (e.g. `unzip -l` pre-check + rely on `-d` size afterwards, or a
+bounded streaming read), failing the compile with `GraderError` past the cap.
+Rough size: a few hours + tests. Not a blocker: submissions are faculty-graded
+content, not adversarial input — yet.
+
 ## Waiting for a signal
 
 Decided, not deprioritized: each of these stays closed until its **Reopen
