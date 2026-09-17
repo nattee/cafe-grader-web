@@ -2,19 +2,28 @@ default: &default
   dispatchers:
     - polling_interval: 1
       batch_size: 500
+  # Two workers, two queues. Interview turns and grading are isolated from
+  # assists so a flood of assist requests can't starve a student mid-interview
+  # (2026-09-09 exam: one shared 3-thread worker, turn wait p95 5s -> 358s).
+  # Every job in this app is on `default` except the two viva jobs
+  # (queue_as :viva), so these two queue names are exhaustive — do NOT use "*"
+  # for the second worker, it would also drain `viva` and defeat the isolation.
+  #
+  # Sizing rule (the one invariant): each worker is its own process and needs
+  # one DB connection per thread PLUS one for its polling loop, so
+  #     threads <= pool - 1        (pool = RAILS_MAX_THREADS in database.yml)
+  # The defaults below (3 + 3) fit the stock pool of 5 on every host with no
+  # extra setup. To run hotter on one host, set the env vars below AND
+  # RAILS_MAX_THREADS together, in that host's Solid Queue environment file
+  # (per-host, untracked — same class of thing as database.yml), never here.
   workers:
-    # Interview turns and grading. Isolated from assists so a flood of assist
-    # requests can't starve a student mid-interview (2026-09-09 exam). Every
-    # job in this app is on `default` except the two viva jobs (queue_as :viva),
-    # so these two queue names are exhaustive — do NOT use "*" for the second
-    # worker, it would also drain `viva` and defeat the isolation.
     - queues: "viva"
-      threads: <%= ENV.fetch("VIVA_JOB_CONCURRENCY", 5) %>
+      threads: <%= ENV.fetch("VIVA_JOB_THREADS", 3) %>
       processes: 1
       polling_interval: 0.1
     # Everything else: assists, PDF, problem stats, recurring housekeeping.
     - queues: "default"
-      threads: <%= ENV.fetch("JOB_CONCURRENCY", 3) %>
+      threads: <%= ENV.fetch("JOB_THREADS", 3) %>
       processes: 1
       polling_interval: 0.1
   recurring:
