@@ -29,6 +29,18 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   config files; a row with a heartbeat older than the prune threshold turns
   red. (rev 2151)
 
+- **Deploy pipeline smoke-grades one real submission before anything
+  restarts.** `bin/rails engine:smoke SUB=auto` lets the new
+  `EngineSmokePicker` choose a recent full-score C++ / C / Python submission on
+  the host — graded after its live dataset last changed, slowest testcase
+  within half the time limit, at most 60 s of worst-case run — regrades it
+  with the freshly checked-out engine, restores it, and exits non-zero on an
+  engine error or a differing verdict. The deploy job runs it right after
+  asset precompile and before Solid Queue, Passenger and the judge graders
+  restart, so a broken engine never reaches the long-lived grader processes.
+  Web-only hosts and hosts with no suitable submission print `SKIPPED` and
+  continue. (rev 2155; automation repo rev 63)
+
 ### Changed
 - **Viva interviews and grading now run on their own background-job queue
   and worker**, isolated from AI-assist requests. During the 2026-09-09 quiz
