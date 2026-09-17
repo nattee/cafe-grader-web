@@ -79,15 +79,23 @@ class MainController < ApplicationController
                                  cookie: cookies.encrypted[:uuid],
                                  ip_address: request.remote_ip)
     # if a file is submitted, without editor_text
-    if params['file'] && params['file']!='' && params[:editor_text].blank?
-      if language.binary?
-        @submission.binary = params['file'].read
-        @submission.content_type = params['file'].content_type
-        @submission.source_filename = params['file'].original_filename
+    uploaded_file = params['file']
+    # A zip/jar cannot survive the editor round-trip: the file-picker JS
+    # (editor_controller.js#loadFileToEditor -> readAsText) stuffs the chosen
+    # file into the Ace editor as text, so a binary archive ALSO arrives as
+    # (garbage) editor_text. Detect it by name and capture the raw upload,
+    # letting it win over editor_text.
+    archive_upload = uploaded_file.present? && Submission.archive_filename?(uploaded_file.original_filename)
+
+    if uploaded_file.present? && (archive_upload || params[:editor_text].blank?)
+      if language.binary? || archive_upload
+        @submission.binary = uploaded_file.read
+        @submission.content_type = uploaded_file.content_type
+        @submission.source_filename = uploaded_file.original_filename
       else
-        @submission.source = File.open(params['file'].path, 'r:UTF-8', &:read)
+        @submission.source = File.open(uploaded_file.path, 'r:UTF-8', &:read)
         @submission.source.encode!('UTF-8', 'UTF-8', invalid: :replace, replace: '')
-        @submission.source_filename = params['file'].original_filename
+        @submission.source_filename = uploaded_file.original_filename
       end
     end
 
@@ -95,7 +103,7 @@ class MainController < ApplicationController
     # we prioritize editor_text if it exists
     # because a user might choose a file and it is loaded to the editor_text and then
     # the user might edit the editor text later
-    if params[:editor_text] && !language.binary?
+    if params[:editor_text] && !language.binary? && !archive_upload
       @submission.language = language
       @submission.source = params[:editor_text]
       @submission.source_filename = "live_edit.#{language.ext}"

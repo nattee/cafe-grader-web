@@ -42,6 +42,38 @@ class MainControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # Regression: the file-picker JS reads the chosen file into the Ace editor
+  # as text (editor_controller.js#loadFileToEditor -> readAsText), so a zip
+  # upload arrives with a non-blank `editor_text`. Before 2026-09-17 the
+  # controller let editor_text win and stored the mangled zip in `source`
+  # (live_edit.dig), so the Digital CLI got garbage as its circuit and
+  # reported "Exited with error status 200". An archive by name must always be
+  # captured raw into `binary`.
+  test "submit stores a zip upload as binary even when the editor is populated" do
+    lang = Language.create!(name: "digital", pretty_name: "Digital", ext: "dig")
+    sign_in_as("admin", "admin")
+    prob = problems(:prob_add)
+    zip_path = Rails.root.join("lib", "language", "digital", "Demo.zip")
+    upload = Rack::Test::UploadedFile.new(zip_path, "application/zip")
+
+    sub = nil
+    assert_difference "Submission.count" do
+      post submit_main_path, params: {
+        submission: { problem_id: prob.id },
+        language_id: lang.id,
+        editor_text: "PK\u0003\u0004 mojibake the zip looked like in the editor",
+        file: upload
+      }
+      sub = Submission.order(:id).last
+    end
+
+    assert_equal lang.id, sub.language_id
+    assert sub.submitted_archive?, "zip must be captured as binary, not editor_text"
+    assert_nil sub.source
+    assert_equal "Demo.zip", sub.source_filename
+    assert_equal File.binread(zip_path), sub.binary
+  end
+
   test "help page loads" do
     sign_in_as("john", "hello")
     get help_main_path

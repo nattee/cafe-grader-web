@@ -11,6 +11,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **ZIP submissions for Digital circuit problems.** The judge worker now
+  accepts a multi-file Digital project as a zip: it extracts the archive
+  (flat), picks the main circuit from `MANIFEST.TXT` (`Main-Circuit:`),
+  otherwise the lone `.dig`, and grades it. A `.zip`/`.jar` upload is stored
+  as a binary archive even against the (non-binary) `digital` language,
+  instead of being mangled as text.
 - **AI-usage report, per contest** (Manage/Watch → AI Usage, or
   `/contests/:id/ai_usage`; admins and contest editors). Shows viva-interview,
   grading and assist volume, cost, and response-time percentiles (mean / p50 /

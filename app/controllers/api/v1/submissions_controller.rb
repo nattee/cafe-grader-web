@@ -83,7 +83,7 @@ class Api::V1::SubmissionsController < Api::V1::BaseController
       submission.source = params[:source]
       submission.source_filename = params[:filename] || "submit.#{language.ext}"
     elsif params[:file].present?
-      if language.binary?
+      if language.binary? || Submission.archive_filename?(params[:file].original_filename)
         submission.binary = params[:file].read
         submission.content_type = params[:file].content_type
         submission.source_filename = params[:file].original_filename
