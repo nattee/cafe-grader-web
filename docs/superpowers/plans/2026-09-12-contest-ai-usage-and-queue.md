@@ -10,6 +10,12 @@
 
 **Spec:** `doc/exam-postmortem-2026-09-09-d69_q1.md` (findings F1–F8, work items W0–W3, bug table B1–B4).
 
+> **Post-execution notes (2026-09-13 → 09-17).** Executed as revs 2134–2143 with these deviations, kept here so the plan is not read as the shipped state:
+> - Task 4: `config/database.yml` is per-host and hg-ignored (only `database.yml.SAMPLE` is tracked), so its pool floor could not be committed. Instead the worker defaults were resized to **viva 3 + default 3 threads** (rev 2146) to fit the stock pool of 5 — a deploy needs no host environment change. The knobs were renamed **`VIVA_JOB_THREADS` / `JOB_THREADS`** because in the stock Solid Queue template `JOB_CONCURRENCY` means *processes*. The `RAILS_MAX_THREADS>=12` deployment step below is therefore obsolete.
+> - Per-host tuning path: `config/solid_queue.env` (untracked; `.SAMPLE` shipped, rev 2150), read by the systemd unit via `EnvironmentFile=` — that unit line is not yet installed on any host.
+> - Added beyond the plan: `database.yml.SAMPLE` sizing note (2148); a **Job Workers** card on Grader Processes showing each Solid Queue worker's effective queues and thread pool (2151); chart double-draw guard (2143).
+> - Record of what shipped and what is still open: `doc/exam-postmortem-2026-09-09-d69_q1.md` → "Status update".
+
 ## Global Constraints
 
 - **VCS is Mercurial**, not git. Commit with `hg commit -m "..." <explicit files>`. The active bookmark must be `master` before committing — check `hg log -r . --template '{activebookmark}\n'`; if it prints `chula_cp`, run `hg update master` first. Never `hg add`-less commit a new file (run `hg add <path>` first).
