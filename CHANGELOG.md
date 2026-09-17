@@ -21,6 +21,18 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   `llm_latency_ms` on viva turns, comments and viva grades); calls made before
   this release show only the combined total. (rev 2136, 2140, 2141)
 
+### Changed
+- **Viva interviews and grading now run on their own background-job queue
+  and worker**, isolated from AI-assist requests. During the 2026-09-09 quiz
+  one 3-thread worker served interview turns, grading and assists together;
+  when assist traffic spiked, interview responses queued for up to ~7.5
+  minutes and seven students never received their first question. Two
+  workers now: `viva` (turns + grading) and `default` (everything else), 3
+  threads each — sized to fit the stock database pool of 5, so no host
+  configuration change is needed to deploy. Per-host tuning via
+  `VIVA_JOB_THREADS` / `JOB_THREADS`, raising `RAILS_MAX_THREADS` with them
+  (threads must stay at most pool minus one). (rev 2137, 2146)
+
 ### Security
 - **Switching the site mode (standard/contest/analysis) now requires an
   admin.** It was reachable by any group editor; a TA flipped the whole site's

@@ -165,7 +165,7 @@ Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed 
 
 | item | status | rev |
 |---|---|---|
-| W0 dedicated viva queue+worker | DONE (deploy pending: RAILS_MAX_THREADS>=12 on solid_queue unit) | 2137 |
+| W0 dedicated viva queue+worker | DONE; defaults 3+3 threads fit the stock pool of 5, deploy needs NO host env change (per-host tuning: `VIVA_JOB_THREADS`/`JOB_THREADS` + `RAILS_MAX_THREADS` in a queue env file) | 2137, 2146 |
 | W1 contest AI-usage report | DONE (page + charts + per-call table; screenshot reviewed) | 2140, 2141 |
 | W2 per-call timing columns | DONE | 2135, 2136 |
 | B1 header/contest-box 500 | DONE | 2139 |
@@ -175,4 +175,4 @@ Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed 
 | chart double-draw fix (found in review) | DONE | 2143 |
 | F5 contest-stop auto-finish of open vivas | deferred to `doc/backlog.md` | — |
 
-Still open (dae): decisions 2 (deploy: set RAILS_MAX_THREADS on the solid_queue unit, then run the pipeline), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
+Still open (dae): decisions 2 (deploy: run the pipeline for cp-grader — no host step needed; optional later: add `EnvironmentFile=` to the solid_queue unit once, for exam-time tuning), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
