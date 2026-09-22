@@ -209,7 +209,13 @@ class ApplicationController < ActionController::Base
 
       visitor_id = unique_visitor_id
       if @current_user.last_ip && @current_user.last_ip != visitor_id
-        redirect_to login_main_path, alert: "You cannot login from two different places"
+        # Log the refused browser out, don't just redirect it. A refused window
+        # that kept its session went on polling the contest heartbeat and
+        # retook the lock within seconds of every admin reset, locking the
+        # student's real browser out for good (ise-grader, 2026-09-22). The
+        # `uuid` device cookie is untouched, so the same browser is recognised
+        # again once an admin clears the lock.
+        unauthorized_redirect(msg: 'You cannot login from two different places', logout: true)
         return false
       end
       unless @current_user.last_ip
