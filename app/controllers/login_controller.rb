@@ -28,15 +28,8 @@ class LoginController < ApplicationController
       return
     end
 
-    # store uuid when login
-    if user.last_ip.nil?
-      user.last_ip = cookies.encrypted[:uuid]
-    else
-      if user.last_ip != cookies.encrypted[:uuid]
-        user.last_ip =cookies.encrypted[:uuid]
-        # log different login
-      end
-    end
+    # The device lock (users.last_ip) is not touched here: check_valid_login
+    # records the first browser seen after login and refuses every other one.
 
     # process logging in
     session[:user_id] = user.id

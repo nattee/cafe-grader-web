@@ -174,12 +174,20 @@
       },
     }).then( response => {
       response_received_time = moment()
-      
+
+      if (response.redirected) {
+        // Bounced to the login page: this window is no longer logged in
+        // (logged out, session expired, or refused by the device lock).
+        // Stop polling for good; retrying cannot succeed without a fresh login.
+        console.log('check-in stopped: this window is not logged in')
+        return null
+      }
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
       return response.text() // this is a promise
     }).then( response_text => {
+      if (response_text === null) return
       response = JSON.parse(response_text)
       ms_since_last_check_in = response.ms_since_last_check_in
 

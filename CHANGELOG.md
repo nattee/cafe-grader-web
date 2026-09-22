@@ -59,6 +59,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- **A browser refused by the device lock ("You cannot login from two
+  different places") is now logged out, not just redirected.** A refused
+  window used to keep its session, so its contest heartbeat kept polling and
+  retook the lock within seconds of every admin reset; on ise-grader on
+  2026-09-22 a student with a forgotten second window could not get back in
+  through eleven resets by the TAs and the admin. The refused browser keeps
+  its device cookie, so it is recognised again after a reset; the heartbeat
+  poller also stops once it is bounced to the login page instead of retrying
+  every 5 seconds. (rev 2159)
 - **Audit rows no longer vanish when a record is reloaded or saved again
   before its transaction commits.** The `Auditable` concern read
   `saved_changes` in the commit callback, which describes only the last save
