@@ -11,6 +11,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **"Finish open vivas" button on the contest management page** (contest
+  editors and admins). One click closes every viva session of the contest
+  that is still open — started inside the contest window by an enrolled
+  student, not yet ended or archived: a session with at least one student
+  answer is closed and sent to grading, a greeting-only session is archived,
+  and a session whose assistant reply is still in flight is skipped and
+  counted so staff can click again. The confirm names the current count, a
+  toast reports the three counts, and one audit row records them. At the
+  2026-09-09 quiz bell 65 of 151 sessions were still open and were finalised
+  by 62 manual Re-run clicks. The 24-hour abandoned-session reaper remains
+  the safety net and now shares this exact finishing step, including the row
+  lock the student End button uses. (rev 2161)
+
 - **AI-usage report, per contest** (Manage/Watch → AI Usage, or
   `/contests/:id/ai_usage`; admins and contest editors). Shows viva-interview,
   grading and assist volume, cost, and response-time percentiles (mean / p50 /

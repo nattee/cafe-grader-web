@@ -33,11 +33,17 @@ repo, started 2026-09-02).
 - **Models actually running in prod:** turns gemini-2.5-flash via Genie (08-22 → 08-27 21:46) → gemini-3.7-flash via Chula AI Gateway (08-27 22:57 →). Grades: 2.5-flash → 3.1-pro (08-23 → 08-27) → 3.7-flash (08-27 →). The Claude-Sonnet turn default (chula_cp 2010) never ran in prod.
 - **Pacing (Buggy Counter, completed sessions):** 2.5-flash median 10 student turns, 42% at the hard cap → 3.7-flash median 6, 3% at the cap, 55% inside the 6–9 target. Same prompt.
 - **Retakes:** single attempt + admin archive (05-09) → practice self-restart 3/day, exam single attempt (07-20, lived one day) → per-problem daily limit, everyone restarts (07-21) → engaged sessions only count (08-25) → best-of-N recorded score confirmed as policy; audit shows it invites grinding (09-01).
-- **Still open / never built:** D7 authoring lint + test-drive; red-team regression set; Phase B (per-contest retake budgets, governing-contest snapshot, window-end force-finish); viva in problem export/import; persistent scenario panel; session wall clock; grade-JSON validation against rubric *weights*.
+- **Still open / never built:** D7 authoring lint + test-drive; red-team regression set; Phase B (per-contest retake budgets, governing-contest snapshot, window-end force-finish — its manual precursor, the contest page's "Finish open vivas" button, shipped 09-23); viva in problem export/import; persistent scenario panel; session wall clock; grade-JSON validation against rubric *weights*.
 
 ---
 
 ## Entries
+
+### 2026-09-23 — "Finish open vivas": one click closes every open session of a contest
+**behavior + policy** · rev 2161 (master); backlog "Contest stop does not finish open viva sessions" → Resolved
+- **Problem observed:** at the 2026-09-09 quiz bell, 65 of 151 answered sessions were still open (no End, no `[[VIVA_DONE]]`, under the hard cap) and were finalised by 62 manual Re-run clicks over 36 minutes; otherwise the 24 h reaper would have graded them the next day. Decision 2026-09-17 (dae): a batch button, not a contest-stop trigger.
+- **Change:** `Contest#finish_open_vivas!` runs over the contest's open viva sessions — enrolled users, contest problems, inside the window with per-user offset/extra time, the same rules as `Contest#submissions` — and the button on `contests/show` (contest editors and admins; shown only when the contest has a viva problem; confirm names the current count) toasts the three counts: sent to grading, archived, skipped. The two branches now live in one place, `Submission#finalize_open_viva!` (answered → closing system turn `(session closed by contest staff — grading begins)` + :evaluating + grade job with the default model; greeting-only → `(… — archived)` + `viva_archived_at`), shared with `reap_abandoned_vivas!`. Both run under the same row lock as `#answer`/`#finish` and re-check inside it, so a student's answer landing at the same instant is serialised, not doubled; a session with a reply in flight is skipped, not force-closed. Audit row `finish_open_vivas` on the contest with the counts.
+- **Outcome / status:** shipped on master, not yet deployed. The manual precursor of Phase B's window-end force-finish (`doc/Viva-Exam.md`), which stays open; so does the missing session wall clock.
 
 ### 2026-09-12 — Quiz 1 post-exam analysis: queue saturation, seven lost vivas, dry second-opinion pilot
 **analysis only, no code change** · `doc/exam-postmortem-2026-09-09-d69_q1.md`; working files in course-prep `data-structures/viva/quiz-2569-1-postmortem-2026-09-12/`

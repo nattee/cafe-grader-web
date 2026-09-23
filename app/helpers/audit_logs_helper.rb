@@ -70,6 +70,8 @@ module AuditLogsHelper
       bulk_badge 'toggle_off', 'bulk disable problems'
     when 'bulk_remove_problems'
       bulk_badge 'remove_circle_outline', 'bulk remove problems'
+    when 'finish_open_vivas'
+      bulk_badge 'stop_circle', 'finish open vivas'
     else
       badge action, 'bg-secondary-subtle text-secondary-emphasis'
     end

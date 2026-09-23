@@ -27,6 +27,15 @@
         %small Manage
 
     .d-flex.gap-2
+      -# "Finish open vivas" — closes every still-open viva session of this
+      -# contest in one click (answered → grading, greeting-only → archived).
+      -# Flavor A button_to with a turbo-confirm that names the current count.
+      - if @contest.problems.viva_exam.exists?
+        - open_vivas = @contest.open_viva_sessions.count
+        = button_to finish_open_vivas_contest_path(@contest), class: 'btn btn-outline-warning btn-flex',
+          form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': "Finish #{pluralize(open_vivas, 'open viva session')}? Answered sessions are sent to grading; greeting-only sessions are archived."}} do
+          = mdi(:stop_circle, 'me-1') + 'Finish open vivas'
+          %span#open-viva-count.badge.bg-warning-subtle.text-warning-emphasis.border.border-warning-subtle.rounded-pill.ms-1= open_vivas
       = link_to mdi(:query_stats, 'me-1') + 'AI Usage', ai_usage_contest_path(@contest), class: 'btn btn-outline-info btn-flex'
       = link_to mdi(:summarize, 'me-1') + 'Watch', view_contest_path(@contest), class: 'btn btn-outline-primary btn-flex'
       = link_to mdi(:edit, 'me-1') + 'Edit', edit_contest_path(@contest), class: 'btn btn-primary btn-flex'

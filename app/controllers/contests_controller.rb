@@ -1,6 +1,6 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
-                                     :ai_usage, :ai_usage_query,
+                                     :ai_usage, :ai_usage_query, :finish_open_vivas,
                                      :add_users_from_csv, :clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
@@ -10,7 +10,7 @@ class ContestsController < ApplicationController
   before_action :set_problem, only: [:do_problem]
 
   USER_ACTION = [:user_check_in, :set_active]
-  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query clone
+  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query finish_open_vivas clone
                      show_users_query show_problems_query
                      add_users_from_csv add_user add_user_by_group
                      add_problem add_problem_by_group
@@ -78,6 +78,39 @@ class ContestsController < ApplicationController
   # POST /contests/:id/ai_usage_query — per-call feed for the DataTable.
   def ai_usage_query
     render json: { data: AiUsageReport.new(@contest).calls_json }
+  end
+
+  # POST /contests/:id/finish_open_vivas — the "Finish open vivas" button.
+  # Runs Contest#finish_open_vivas! once and toasts the three counts. Not
+  # behind check_finalized on purpose: the 24 h reaper grades open sessions
+  # whatever that flag says, so gating here would add friction without a
+  # guarantee. One audit row carries the counts when anything changed.
+  def finish_open_vivas
+    counts = @contest.finish_open_vivas!
+    @toast = {title: "Contest #{@contest.name}"}
+    if counts.values.sum.zero?
+      @toast[:body] = 'No open viva sessions.'
+    else
+      body = "Sent #{pluralize(counts[:graded], 'session')} to grading, archived #{pluralize(counts[:archived], 'greeting-only session')}."
+      if counts[:skipped].positive?
+        body += " Skipped #{pluralize(counts[:skipped], 'session')} with a reply in flight — click again in a minute."
+        @toast[:type] = :warning
+      end
+      @toast[:body] = body
+    end
+
+    if (counts[:graded] + counts[:archived]).positive?
+      AuditLog.record!(auditable: @contest, action: 'finish_open_vivas',
+                       object_changes: { 'graded_count'   => [nil, counts[:graded]],
+                                         'archived_count' => [nil, counts[:archived]],
+                                         'skipped_count'  => [nil, counts[:skipped]] })
+    end
+    # Toast plus an in-place refresh of the button's open-session badge, so the
+    # count drops to what is left (the skipped ones) without a reload.
+    render turbo_stream: [
+      turbo_stream.append('toast-area', partial: 'toast', locals: {toast: @toast}),
+      turbo_stream.update('open-viva-count', @contest.open_viva_sessions.count.to_s),
+    ]
   end
 
   # GET /contests/new
