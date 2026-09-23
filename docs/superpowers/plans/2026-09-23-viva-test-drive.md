@@ -860,14 +860,20 @@ with
 ```haml
             - if @current_user == @submission.user && @current_user.admin?
               | Unlimited starts (admin)
+            - elsif @submission.problem.viva_daily_limit == 0
+              | Contest-only viva — starts are governed by the contest
 ```
 with
 ```haml
             - if @submission.test_drive?
-              | Test-drive — unlimited restarts; excluded from reports, cost figures and start limits
+              Test-drive — unlimited restarts; excluded from reports, cost figures and start limits
             - elsif @current_user == @submission.user && @current_user.admin?
-              | Unlimited starts (admin)
+              Unlimited starts (admin)
+            - elsif @submission.problem.viva_daily_limit == 0
+              Contest-only viva — starts are governed by the contest
 ```
+
+(No leading `|`: in HAML a line that *starts* with a pipe is plain text, so the two pre-existing lines printed a stray "| " — found in the controller's render check; fixed in the same hunk. Guard assertions `assert_no_match(/\|\s*Test-drive/, …)` and `assert_no_match(/\|\s*Unlimited starts/, …)` go in the test-drive show test and the existing admin-unlimited test.)
 
 (c) Owner buttons — replace the block
 
