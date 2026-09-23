@@ -826,10 +826,10 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_select 'table.grade-history span.badge', text: 'replaced', count: 1
     assert_select 'table.grade-history span.badge', text: 'lower', count: 1
     assert_select 'table.grade-history span.badge', text: 'error', count: 1
-    assert_select 'table.grade-history td', text: 'aaaaaaaa'
-    assert_select 'table.grade-history td', text: 'admin'
-    assert_select 'table.grade-history td', text: 'batch regrade-1-x'
-    assert_select 'table.grade-history td', text: 'auto', minimum: 1
+    assert_select 'table.grade-history .rubric', text: 'aaaaaaaa'
+    assert_select 'table.grade-history .requester', text: 'admin'
+    assert_select 'table.grade-history .requester', text: 'batch regrade-1-x'
+    assert_select 'table.grade-history .requester', text: 'auto', minimum: 1
     assert_select "form[action=?]", adopt_viva_grade_submission_path(@owner_sub, grade_id: old.id), count: 1
     assert_select "form[action=?]", adopt_viva_grade_submission_path(@owner_sub, grade_id: cur.id), count: 0
     assert_select "form[action=?]", adopt_viva_grade_submission_path(@owner_sub, grade_id: bad.id), count: 0
