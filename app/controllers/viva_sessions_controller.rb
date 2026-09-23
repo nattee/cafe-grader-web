@@ -281,27 +281,37 @@ class VivaSessionsController < ApplicationController
     unless @submission.problem.viva_exam?
       redirect_to viva_submission_path(@submission), alert: 'Restart is only available for viva exam problems.' and return
     end
-    if @submission.viva_archived_at.present?
-      redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.' and return
-    end
-    if @submission.viva_turns.where(status: :processing).exists?
-      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.' and return
+
+    # Same row lock as #answer / #finish. Two concurrent Restart clicks used
+    # to both pass the not-archived check — harmless while restart only
+    # archived (idempotent), but a test-drive restart now CREATES a fresh
+    # session, so the second click must be refused, not doubled. The fresh
+    # session is created after the lock block has committed.
+    outcome = @submission.with_lock do
+      next :archived if @submission.viva_archived_at.present?
+      next :busy     if @submission.viva_turns.where(status: :processing).exists?
+      @submission.update!(viva_archived_at: Time.zone.now)
+      :restarted
     end
 
-    @submission.update!(viva_archived_at: Time.zone.now)
-    problem = @submission.problem
-    if @submission.test_drive?
-      # Test-drives restart in place: archive, then open a fresh test-drive
-      # at once — no limit, no detour through the problem list.
-      fresh = create_viva_session!(problem, test_drive: true)
-      redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.' and return
+    case outcome
+    when :archived
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.'
+    when :busy
+      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.'
+    when :restarted
+      problem = @submission.problem
+      if @submission.test_drive?
+        # Test-drives restart in place: archive, then open a fresh test-drive
+        # at once — no limit, no detour through the problem list.
+        fresh = create_viva_session!(problem, test_drive: true)
+        redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.'
+      elsif problem.viva_daily_limit == 0
+        redirect_to list_main_path, notice: 'Viva archived — start a fresh one from the problem list (only available during a contest).'
+      else
+        redirect_to list_main_path, notice: "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
+      end
     end
-    if problem.viva_daily_limit == 0
-      notice = 'Viva archived — start a fresh one from the problem list (only available during a contest).'
-    else
-      notice = "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
-    end
-    redirect_to list_main_path, notice: notice
   end
 
   # POST /submissions/:submission_id/viva/finish

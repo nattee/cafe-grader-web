@@ -688,4 +688,21 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to edit_problem_path(problems(:prob_add))
   end
+
+  test "restart on a test-drive does not open a second session when a concurrent restart archived it first" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    drive = make_test_drive(user: users(:mary), problem: problem)
+    # The other click archived this test-drive (and opened its own fresh one) while this one waited for the lock.
+    SubmissionLockHook.once = ->(s) { Submission.find(s.id).update_columns(viva_archived_at: Time.zone.now) }
+
+    assert_no_enqueued_jobs(only: Llm::VivaTurnAssistJob) do
+      assert_no_difference -> { Submission.test_drives.count } do
+        post viva_restart_submission_path(drive)
+      end
+    end
+    assert_redirected_to viva_submission_path(drive)
+    assert_match(/already been archived/i, flash[:alert])
+    assert_nil SubmissionLockHook.once, "restart must take the row lock (the hook never ran)"
+  end
 end
