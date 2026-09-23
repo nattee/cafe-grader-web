@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_23_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_23_180000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -604,7 +604,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_23_120000) do
     t.datetime "updated_at", null: false
     t.datetime "llm_started_at"
     t.integer "llm_latency_ms"
-    t.index ["submission_id"], name: "index_viva_grades_on_submission_id", unique: true
+    t.datetime "superseded_at"
+    t.string "superseded_reason"
+    t.integer "superseded_by_id"
+    t.integer "requested_by_id"
+    t.string "batch_id"
+    t.text "error"
+    t.index ["batch_id"], name: "index_viva_grades_on_batch_id"
+    t.index ["submission_id", "superseded_at"], name: "index_viva_grades_on_submission_id_and_superseded_at"
   end
 
   create_table "viva_turns", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|

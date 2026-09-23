@@ -334,4 +334,117 @@ class SubmissionTest < ActiveSupport::TestCase
     assert_not_includes Submission.judge_backlog, graded
     assert_not_includes Submission.judge_backlog, viva_sub
   end
+
+  # --- grade history: adopt_viva_grade! / regrade_viva! (spec 2026-09-23-viva-grade-history-design) ---
+
+  def make_run(sub, total:, superseded_at: nil, reason: nil, graded_at: Time.zone.now)
+    sub.viva_grades.create!(total_points: total, narrative: "n#{total}", score_json: {'a' => total}.to_json,
+                            llm_model: 'test-model', graded_at: graded_at, superseded_at: superseded_at,
+                            superseded_reason: reason)
+  end
+
+  test "adopt_viva_grade! makes the run current and copies its result onto the submission" do
+    sub = make_viva_submission(status: :done)
+    old = make_run(sub, total: 40, graded_at: 2.hours.ago)
+    sub.update!(points: 40, graded_at: 2.hours.ago, grader_comment: Submission::VIVA_RESULT_MARKER)
+    new_run = make_run(sub, total: 70, superseded_at: Time.zone.now)
+
+    sub.adopt_viva_grade!(new_run)
+
+    sub.reload; old.reload; new_run.reload
+    assert new_run.current?
+    assert_equal new_run, sub.viva_grade
+    assert_equal 70, sub.points
+    assert_equal 'done', sub.status
+    assert_in_delta new_run.graded_at, sub.graded_at, 1
+    assert_equal Submission::VIVA_RESULT_MARKER, sub.grader_comment
+    assert_equal 'replaced', old.superseded_reason
+    assert_equal new_run.id, old.superseded_by_id
+  end
+
+  test "adopt_viva_grade! with reason reverted labels the displaced run reverted and clears the re-adopted row" do
+    sub = make_viva_submission(status: :done)
+    old = make_run(sub, total: 40, superseded_at: 1.hour.ago, reason: 'replaced')
+    cur = make_run(sub, total: 70)
+    old.update!(superseded_by_id: cur.id)
+    sub.update!(points: 70)
+
+    sub.adopt_viva_grade!(old, reason: 'reverted')
+
+    old.reload; cur.reload
+    assert old.current?
+    assert_nil old.superseded_reason
+    assert_nil old.superseded_by_id
+    assert_equal 'reverted', cur.superseded_reason
+    assert_equal old.id, cur.superseded_by_id
+    assert_equal 40, sub.reload.points
+  end
+
+  test "adopt_viva_grade! labels a displaced FAILED current run error and refuses to adopt a failed run" do
+    sub = make_viva_submission(status: :grader_error)
+    failed = sub.viva_grades.create!(llm_response_raw: 'prose')      # legacy shape: a failed row that is still current
+    good = make_run(sub, total: 65, superseded_at: Time.zone.now)
+    sub.adopt_viva_grade!(good)
+    assert_equal 'error', failed.reload.superseded_reason
+    assert_equal good.id, failed.superseded_by_id
+    assert_equal 'done', sub.reload.status
+    assert_equal 65, sub.points
+    assert_raises(ArgumentError) { sub.adopt_viva_grade!(failed) }
+  end
+
+  test "adopt_viva_grade! refuses a run of another submission" do
+    a = make_viva_submission(status: :done)
+    b = make_viva_submission(status: :done, user: users(:james))
+    run = make_run(b, total: 50)
+    assert_raises(ArgumentError) { a.adopt_viva_grade!(run) }
+  end
+
+  test "valid_viva_grade? is true only with a current run that has points" do
+    sub = make_viva_submission(status: :done)
+    refute sub.valid_viva_grade?
+    sub.viva_grades.create!(superseded_at: Time.zone.now, superseded_reason: 'error', error: 'x')
+    refute sub.valid_viva_grade?
+    make_run(sub, total: 30)
+    assert sub.valid_viva_grade?
+  end
+
+  test "regrade_viva! leaves a graded submission untouched and enqueues the job with the given options" do
+    sub = make_viva_submission(status: :done)
+    make_run(sub, total: 40)
+    sub.update!(points: 40, grader_comment: Submission::VIVA_RESULT_MARKER)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob,
+                         args: [sub, {model: 'gemini-x', never_lower: false, requested_by_id: users(:admin).id, batch_id: 'b1'}]) do
+      sub.regrade_viva!(model: 'gemini-x', never_lower: false, requested_by: users(:admin), batch_id: 'b1')
+    end
+    sub.reload
+    assert_equal 'done', sub.status
+    assert_equal 40, sub.points
+    assert_equal Submission::VIVA_RESULT_MARKER, sub.grader_comment
+  end
+
+  test "regrade_viva! sends a submission without a valid grade back to evaluating" do
+    sub = make_viva_submission(status: :grader_error)
+    sub.update!(grader_comment: 'Grader error: prose')
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob, args: [sub, {never_lower: true}]) do
+      sub.regrade_viva!
+    end
+    sub.reload
+    assert_equal 'evaluating', sub.status
+    assert_nil sub.points
+    assert_nil sub.grader_comment
+  end
+
+  test "regrade_viva! refuses an open interview and a non-viva submission" do
+    open_session = make_viva_submission(status: :submitted)
+    assert_raises(Submission::NotRegradable) { open_session.regrade_viva! }
+    assert_raises(Submission::NotRegradable) { submissions(:add1_by_admin).regrade_viva! }
+  end
+
+  test "fail_stale_viva_evaluating! sweeps a stale evaluating submission whose only grade rows are superseded" do
+    sub = make_viva_submission(status: :evaluating)
+    sub.viva_grades.create!(superseded_at: Time.zone.now, superseded_reason: 'error', error: 'x')
+    stamp_updated_at(sub, 21.minutes.ago)
+    assert_equal 1, Submission.fail_stale_viva_evaluating!
+    assert_predicate sub.reload, :grader_error?
+  end
 end

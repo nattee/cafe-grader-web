@@ -22,7 +22,14 @@ class Submission < ApplicationRecord
 
   # viva exam
   has_many :viva_turns, -> { order(:sequence) }, dependent: :destroy
-  has_one :viva_grade, dependent: :destroy
+  # One viva_grades row per grader run (design
+  # docs/superpowers/specs/2026-09-23-viva-grade-history-design.md).
+  # `viva_grade` is the CURRENT grade — the run whose total_points `points`
+  # holds (nil while grading is in flight or after a failed first grading);
+  # `viva_grades` is the full history. The scope lands in the JOIN condition,
+  # so `joins(:viva_grade)` and `where.missing(:viva_grade)` mean "current".
+  has_many :viva_grades, dependent: :destroy
+  has_one  :viva_grade, -> { where(superseded_at: nil) }
 
   # How long a viva submission may sit in :evaluating (grading in flight)
   # before fail_stale_viva_evaluating! treats it as abandoned — the worker
@@ -117,14 +124,14 @@ class Submission < ApplicationRecord
       .where.not(language_id: Language.where(name: Language::VIVA_NAME).select(:id))
   }
 
-  # Viva submissions parked in :evaluating with no viva_grade row yet,
-  # older than STALE_EVALUATING_AFTER — i.e. what
-  # fail_stale_viva_evaluating! would sweep right now. A viva_grade row
-  # already existing on an :evaluating submission means grading is
-  # mid-write (handle_response persists the grade row before flipping
-  # status to :done, see Llm::VivaGradeAssist#handle_response) — a
-  # different bug if it lingers, and NOT something this scope or the
-  # sweeper should touch.
+  # Viva submissions parked in :evaluating with no CURRENT grade row
+  # (where.missing on the scoped has_one), older than STALE_EVALUATING_AFTER
+  # — i.e. what fail_stale_viva_evaluating! would sweep right now. A current
+  # row on an :evaluating submission means adoption is mid-write
+  # (Submission#adopt_viva_grade! sets the run current, then flips status)
+  # — a different bug if it lingers, and NOT something this scope or the
+  # sweeper should touch. Superseded rows (earlier runs, failed runs) do not
+  # count: a regrade of a graded session never enters :evaluating at all.
   #
   # Used by GradersController to surface count + rows on the graders
   # "stuck" monitoring page, mirroring VivaTurn.stuck.
@@ -213,6 +220,56 @@ class Submission < ApplicationRecord
     viva_terminated_at? ? VIVA_RESULT_TERMINATED_MARKER : VIVA_RESULT_MARKER
   end
 
+  # Statuses from which one more grader run may be queued: the interview is
+  # over. A `submitted` session is still being interviewed.
+  VIVA_REGRADABLE_STATUSES = %w[done grader_error evaluating].freeze
+
+  class NotRegradable < StandardError; end
+
+  # True when the current grade run exists and carries points.
+  def valid_viva_grade?
+    viva_grades.current.where.not(total_points: nil).exists?
+  end
+
+  # Make `grade` (one of this submission's runs) the current grade and copy
+  # its result onto the submission. The displaced current run is labelled
+  # `reason` — 'replaced' when a newer run wins, 'reverted' when an admin
+  # (Make current) or viva:regrade_revert re-adopts an older one; a displaced
+  # FAILED run is always labelled 'error'. Runs under the row lock so two
+  # parallel decisions serialise; the grader service, the Make current button
+  # and Viva::Regrader.revert all come through here.
+  def adopt_viva_grade!(grade, reason: 'replaced', now: Time.zone.now)
+    raise ArgumentError, 'grade belongs to another submission' unless grade.submission_id == id
+    raise ArgumentError, 'cannot adopt a failed run' unless grade.valid_grade?
+    with_lock do
+      old = viva_grade
+      if old && old.id != grade.id
+        old.supersede!(reason: old.valid_grade? ? reason : 'error', by: grade, now: now)
+      end
+      grade.update!(superseded_at: nil, superseded_reason: nil, superseded_by_id: nil)
+      update!(points: grade.total_points, status: :done, graded_at: grade.graded_at || now,
+              grader_comment: viva_result_marker)
+    end
+  end
+
+  # Queue one more grader run for this viva session — the admin Re-run button
+  # and Viva::Regrader batches. An existing valid grade is never touched: the
+  # new run is written by Llm::VivaGradeAssist#handle_response and adopted,
+  # kept as 'lower' or recorded as 'error' there. Only when no valid grade
+  # exists (first grading failed or never finished) does the session go back
+  # to :evaluating, so the student sees "Grading in progress" and the stuck
+  # sweeper applies, exactly as for a first grading. The job is enqueued after
+  # the lock has committed, with only the options actually given.
+  def regrade_viva!(model: nil, never_lower: true, requested_by: nil, batch_id: nil)
+    raise NotRegradable, 'not a viva submission' unless problem.viva_exam?
+    raise NotRegradable, 'the interview is still open, end it first' unless VIVA_REGRADABLE_STATUSES.include?(status.to_s)
+    with_lock do
+      update!(status: :evaluating, points: nil, graded_at: nil, grader_comment: nil) unless valid_viva_grade?
+    end
+    kwargs = {model: model.presence, never_lower: never_lower, requested_by_id: requested_by&.id, batch_id: batch_id}.compact
+    Llm::VivaGradeAssistJob.perform_later(self, **kwargs)
+  end
+
 
   def set_grading_complete(point, grading_text, max_time, max_mem)
     update(points: point, status: :done, graded_at: Time.zone.now, grader_comment: grading_text, max_runtime: max_time, peak_memory: max_mem)
@@ -223,7 +280,7 @@ class Submission < ApplicationRecord
   end
 
   # Marks any viva submission stuck in :evaluating (grading in flight, no
-  # viva_grade row) for longer than `threshold` as :grader_error, so the
+  # current viva_grade row) for longer than `threshold` as :grader_error, so the
   # existing admin "Rejudge"/re-grade path (SubmissionsController#rejudge)
   # applies. Runs from the same Solid Queue recurring task as
   # VivaTurn.fail_stale! (see config/recurring.yml). Without this, a worker
