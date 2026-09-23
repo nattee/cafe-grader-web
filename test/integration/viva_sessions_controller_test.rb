@@ -435,6 +435,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/Unlimited starts \(admin\)/, @response.body)
     assert_no_match(/starts left today/, @response.body)
+    assert_no_match(/\|\s*Unlimited starts/, @response.body, "no stray HAML pipe before the text")
   end
 
   test "zero-engagement sessions do not count toward the daily start limit" do
@@ -714,6 +715,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/>test-drive</, response.body, "badge")
     assert_match(/unlimited restarts/, response.body)
+    assert_no_match(/\|\s*Test-drive/, response.body, "no stray HAML pipe before the text")
     assert_match(/Restart test-drive/, response.body)
     assert_no_match(/starts left today/, response.body)
   end
