@@ -161,7 +161,7 @@ for no gain. Score at request time was under 25 for 228 of 260 requests.
 
 ## Status update — 2026-09-12 (built)
 
-Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed on master; full minitest suite green (1111 tests, 0 failures). Reviewed by dae 2026-09-13; merged to chula_cp and PUSHED (chula_cp 2145, then 2147/2149/2152 for the follow-ups). NOT yet deployed — run the manual `deploy_production` job for cp-grader; no host step needed.
+Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed on master; full minitest suite green (1111 tests, 0 failures). Reviewed by dae 2026-09-13; merged to chula_cp and PUSHED (chula_cp 2145, then 2147/2149/2152 for the follow-ups). Deployed by dae via the GitLab pipeline; deployed with chula_cp 2158 — verified live on cp-grader 2026-09-21 and ise-grader 2026-09-22 (`hg id` on the hosts); other hosts unverified. No host step was needed.
 
 | item | status | rev |
 |---|---|---|
@@ -179,4 +179,4 @@ Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed 
 | Job Workers card on /grader_processes (effective queues + thread pools, stale rows red) | DONE (screenshot reviewed) | 2151 |
 | F5 contest-stop auto-finish of open vivas | deferred to `doc/backlog.md` | — |
 
-Still open (dae): decisions 2 (deploy: run the pipeline for cp-grader — no host step needed; optional later: add `EnvironmentFile=` to the solid_queue unit once, for exam-time tuning), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
+Decision 2 (deploy) is DONE — see above. Still open (dae): the optional `EnvironmentFile=` line on the solid_queue unit (one root edit per host, only for exam-time tuning), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
