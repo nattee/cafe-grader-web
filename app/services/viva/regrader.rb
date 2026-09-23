@@ -215,6 +215,7 @@ module Viva
     def self.revert(batch_id, apply: false, io: $stdout, now: Time.zone.now)
       audit   = find_batch_audit(batch_id)
       problem = audit.auditable
+      raise ArgumentError, "the problem of batch #{batch_id} no longer exists; nothing to revert" if problem.nil?
       io.puts(apply ? "== REVERTING batch #{batch_id} ==" : "== DRY RUN revert of batch #{batch_id} (report only; run with APPLY=1 to execute) ==")
       counts = Hash.new(0)
       VivaGrade.where(batch_id: batch_id).current.includes(:submission).order(:id).each do |run|

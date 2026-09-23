@@ -197,4 +197,13 @@ class Viva::RegraderTest < ActiveSupport::TestCase
     assert_equal({kept: 1}, Viva::Regrader.revert(batch_id, apply: true, io: @io))
     assert_equal 65, a.reload.points
   end
+
+  test "revert refuses a batch whose problem no longer exists" do
+    batch_id, _a, _b, _c, _d = batch_with_outcomes
+    @problem.grounding_materials.clear                 # HABTM join row has an FK on problem_id
+    Problem.where(id: @problem.id).delete_all          # the audit row outlives its problem by design
+    err = assert_raises(ArgumentError) { Viva::Regrader.revert(batch_id, apply: true, io: @io) }
+    assert_match(/no longer exists/, err.message)
+    refute AuditLog.where(action: 'viva_regrade_revert').exists?
+  end
 end

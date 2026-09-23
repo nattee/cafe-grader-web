@@ -47,6 +47,7 @@ namespace :viva do
   desc 'Progress and outcome of a viva:regrade batch: counts, old/new/final means, per-target rows; CSV=<path> writes them. Usage: bin/rails viva:regrade_status BATCH=<id> [CSV=<path>]'
   task regrade_status: :environment do
     batch_id = ENV['BATCH'].presence or abort 'usage: bin/rails viva:regrade_status BATCH=<id> [CSV=<path>]'
+    Current.actor_note = "Rake: viva:regrade_status #{batch_id}"
     st = Viva::Regrader.status(batch_id)
     st.print($stdout)
     if ENV['CSV'].present?
