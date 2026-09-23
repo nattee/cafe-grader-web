@@ -1,6 +1,7 @@
 require "test_helper"
 
 class ContestTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
   # --- Validations ---
 
   test "valid contest fixture" do
@@ -98,5 +99,99 @@ class ContestTest < ActiveSupport::TestCase
   test "contest has users through contests_users" do
     contest = contests(:contest_a)
     assert_includes contest.users, users(:james)
+  end
+
+  # --- finish_open_vivas! (the contest page's "Finish open vivas" button) ---
+
+  def viva_language
+    Language.find_or_create_by!(name: "viva") { |l| l.pretty_name = "Viva Exam" }
+  end
+
+  # contest_a with the viva fixture problem added (fixtures keep it out so the
+  # contest-problem counts elsewhere stay put).
+  def contest_with_viva
+    contests(:contest_a).tap do |c|
+      ContestProblem.create!(contest: c, problem: problems(:prob_viva), number: 3, enabled: true)
+    end
+  end
+
+  # An open viva session: greeting, optional student answer, optional reply in flight.
+  def open_viva(user:, answered:, in_flight: false, submitted_at: Time.zone.now)
+    sub = Submission.create!(user: user, problem: problems(:prob_viva), language: viva_language,
+                             status: :submitted, submitted_at: submitted_at)
+    sub.viva_turns.create!(role: :assistant, status: :ok, content: 'hello')
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'my answer') if answered
+    sub.viva_turns.create!(role: :assistant, status: :processing, content: nil) if in_flight
+    sub
+  end
+
+  test "finish_open_vivas! sends an answered session to grading with a staff closing turn" do
+    contest = contest_with_viva
+    sub = open_viva(user: users(:james), answered: true)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+      assert_equal({graded: 1, archived: 0, skipped: 0}, contest.finish_open_vivas!)
+    end
+    sub.reload
+    assert_predicate sub, :evaluating?
+    assert sub.viva_turns.where(role: :system).where("content LIKE '%contest staff%grading begins%'").exists?,
+           "must leave the staff closing turn in the transcript"
+  end
+
+  test "finish_open_vivas! archives a greeting-only session without grading" do
+    contest = contest_with_viva
+    sub = open_viva(user: users(:james), answered: false)
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      assert_equal({graded: 0, archived: 1, skipped: 0}, contest.finish_open_vivas!)
+    end
+    sub.reload
+    assert_predicate sub, :submitted?
+    assert sub.viva_archived_at.present?, "greeting-only session must be archived, not graded"
+  end
+
+  test "finish_open_vivas! skips a session whose assistant reply is still in flight" do
+    contest = contest_with_viva
+    sub = open_viva(user: users(:james), answered: true, in_flight: true)
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      assert_equal({graded: 0, archived: 0, skipped: 1}, contest.finish_open_vivas!)
+    end
+    sub.reload
+    assert_predicate sub, :submitted?
+    assert_nil sub.viva_archived_at
+  end
+
+  test "finish_open_vivas! leaves sessions started before the contest window alone" do
+    contest = contest_with_viva
+    sub = open_viva(user: users(:james), answered: true, submitted_at: contest.start - 1.hour)
+    assert_equal({graded: 0, archived: 0, skipped: 0}, contest.finish_open_vivas!)
+    assert_predicate sub.reload, :submitted?
+  end
+
+  test "finish_open_vivas! honours a user's extra time" do
+    contest = contest_with_viva
+    contest.contests_users.find_by!(user: users(:james)).update!(extra_time_second: 7200)
+    open_viva(user: users(:james), answered: true, submitted_at: contest.stop + 1.hour)
+    assert_equal({graded: 1, archived: 0, skipped: 0}, contest.finish_open_vivas!)
+  end
+
+  test "finish_open_vivas! ignores sessions of users not enrolled in the contest" do
+    contest = contest_with_viva
+    sub = open_viva(user: users(:john), answered: true) # john is not in contest_a
+    assert_equal({graded: 0, archived: 0, skipped: 0}, contest.finish_open_vivas!)
+    assert_predicate sub.reload, :submitted?
+  end
+
+  test "finish_open_vivas! ignores viva problems that are not in the contest" do
+    contest_with_viva # prob_viva is in contest_a only
+    sub = open_viva(user: users(:jack), answered: true) # jack is in contest_a AND contest_b
+    assert_equal({graded: 0, archived: 0, skipped: 0}, contests(:contest_b).finish_open_vivas!)
+    assert_predicate sub.reload, :submitted?
+  end
+
+  test "finish_open_vivas! is idempotent — a second click finds nothing" do
+    contest = contest_with_viva
+    open_viva(user: users(:james), answered: true)
+    open_viva(user: users(:jack), answered: false)
+    assert_equal({graded: 1, archived: 1, skipped: 0}, contest.finish_open_vivas!)
+    assert_equal({graded: 0, archived: 0, skipped: 0}, contest.finish_open_vivas!)
   end
 end

@@ -371,24 +371,6 @@ out of the audited attrs (derived, bulky).
 
 ---
 
-## Contest stop does not finish open viva sessions
-
-**Raised 2026-09-12 from the Quiz 1 postmortem** (`doc/exam-postmortem-2026-09-09-d69_q1.md` F5). When `d69_q1` stopped at
-11:20, 65 of 151 answered viva sessions were still open (no End, no `[[VIVA_DONE]]`, under the hard cap) and were
-finalised by 62 manual Re-run grading clicks over 36 minutes; otherwise the 24 h abandoned-session reaper would have graded
-them the next day. Proposed: when a contest's stop (plus per-user extra time) passes, queue grading for every open viva
-session on that contest's viva problems that has at least one student turn, and archive greeting-only ones — the same two
-branches as `Submission.reap_abandoned_vivas!`, keyed on the contest window instead of 24 h of inactivity. Belongs with
-Phase B (per-contest retakes) in `doc/Viva-Exam.md`.
-
-**Decision 2026-09-17 (dae): not automatic — a batch button.** No contest-stop
-trigger. Instead an admin control on the contest page (`contests/show`) —
-"Finish open viva sessions" — that runs the two branches above once, on click,
-over every open session of that contest's viva problems: queue grading for
-sessions with at least one student turn, archive greeting-only ones, and toast
-the two counts. Same window/offset logic as `Contest#submissions`; Flavor A
-`button_to` with a `turbo-confirm`. The 24 h reaper stays as the safety net.
-
 ## Waiting for a signal
 
 Decided, not deprioritized: each of these stays closed until its **Reopen
@@ -468,6 +450,19 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Contest stop does not finish open viva sessions — RESOLVED 2026-09-23
+
+**Rev 2161.** Raised from the Quiz 1 postmortem (F5: 65 sessions open at the
+bell, 62 Re-run clicks); decided 2026-09-17 as a batch button, not a
+contest-stop trigger. "Finish open vivas" on `contests/show` runs
+`Contest#finish_open_vivas!` over the contest window (same rules as
+`Contest#submissions`) and toasts graded / archived / skipped-in-flight
+counts; the two branches moved into `Submission#finalize_open_viva!`, shared
+with the 24 h reaper and now under the row lock `#answer`/`#finish` use.
+Audit row `finish_open_vivas`. Phase B's automatic window-end force-finish
+and the session wall clock stay open in `doc/Viva-Exam.md`. Record:
+CHANGELOG [Unreleased], `doc/Viva-History.md` 2026-09-23.
 
 ### `viva:import` updated `viva_prompt` on prod without an audit row — RESOLVED 2026-09-17
 

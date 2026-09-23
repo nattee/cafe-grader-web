@@ -130,4 +130,90 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     post user_check_in_contests_path
     assert_response :success
   end
+
+  # --- finish_open_vivas (the "Finish open vivas" button) ---
+
+  def viva_language
+    Language.find_or_create_by!(name: "viva") { |l| l.pretty_name = "Viva Exam" }
+  end
+
+  def add_viva_to_contest_a
+    ContestProblem.create!(contest: contests(:contest_a), problem: problems(:prob_viva), number: 3, enabled: true)
+  end
+
+  def open_viva_in_contest_a(answered: true)
+    Submission.create!(user: users(:james), problem: problems(:prob_viva), language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now).tap do |sub|
+      sub.viva_turns.create!(role: :assistant, status: :ok, content: 'hello')
+      sub.viva_turns.create!(role: :student, status: :ok, content: 'answer') if answered
+    end
+  end
+
+  def finish_open_vivas_audit_rows
+    AuditLog.where(auditable_type: 'Contest', auditable_id: contests(:contest_a).id, action: 'finish_open_vivas')
+  end
+
+  test "contest page shows the Finish open vivas button only when the contest has a viva problem" do
+    sign_in_as("admin", "admin")
+    get contest_path(contests(:contest_a))
+    assert_response :success
+    assert_no_match(/Finish open vivas/, response.body)
+
+    add_viva_to_contest_a
+    open_viva_in_contest_a
+    get contest_path(contests(:contest_a))
+    assert_response :success
+    assert_match(/Finish open vivas/, response.body)
+    assert_match(/Finish 1 open viva session\?/, response.body)
+  end
+
+  test "finish_open_vivas grades answered sessions, archives greeting-only ones, toasts and audits the counts" do
+    add_viva_to_contest_a
+    answered = open_viva_in_contest_a(answered: true)
+    peek     = open_viva_in_contest_a(answered: false)
+    sign_in_as("admin", "admin")
+    assert_difference -> { finish_open_vivas_audit_rows.count }, 1 do
+      assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+        post finish_open_vivas_contest_path(contests(:contest_a)), as: :turbo_stream
+      end
+    end
+    assert_response :success
+    assert_match(/Sent 1 session to grading, archived 1 greeting-only session\./, response.body)
+    assert_match(/target="open-viva-count"/, response.body, "response must refresh the button's open-count badge")
+    assert_predicate answered.reload, :evaluating?
+    assert peek.reload.viva_archived_at.present?
+    log = finish_open_vivas_audit_rows.last
+    assert_equal [nil, 1], log.object_changes['graded_count']
+    assert_equal [nil, 1], log.object_changes['archived_count']
+    assert_equal [nil, 0], log.object_changes['skipped_count']
+  end
+
+  test "finish_open_vivas with nothing open toasts and writes no audit row" do
+    add_viva_to_contest_a
+    sign_in_as("admin", "admin")
+    assert_no_difference -> { AuditLog.count } do
+      post finish_open_vivas_contest_path(contests(:contest_a)), as: :turbo_stream
+    end
+    assert_response :success
+    assert_match(/No open viva sessions\./, response.body)
+  end
+
+  test "contest editor (mary) can finish open vivas of their own contest" do
+    add_viva_to_contest_a
+    sign_in_as("mary", "mary")
+    post finish_open_vivas_contest_path(contests(:contest_a)), as: :turbo_stream
+    assert_response :success
+  end
+
+  test "contest editor (mary) cannot finish open vivas of a contest they don't manage" do
+    sign_in_as("mary", "mary")
+    post finish_open_vivas_contest_path(contests(:contest_b)), as: :turbo_stream
+    assert_response :redirect
+  end
+
+  test "normal user cannot finish open vivas" do
+    sign_in_as("john", "hello")
+    post finish_open_vivas_contest_path(contests(:contest_a)), as: :turbo_stream
+    assert_response :redirect
+  end
 end

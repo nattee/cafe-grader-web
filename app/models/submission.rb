@@ -246,18 +246,13 @@ class Submission < ApplicationRecord
   # who closes the tab triggers none of them, so their session sat parked in
   # :submitted forever (2026-08-24 student trial: ~17 sessions with real
   # progress, plus ~27 greeting-only peeks). A session idle for `idle_for`
-  # (no turn activity, status still :submitted, not archived):
-  #   - with at least one student answer: finalized exactly like the
-  #     hard-cap / End-button paths — system turn, :evaluating, grade job
-  #     with no model: (the grade service default decides, rev 2011) — so
-  #     the student gets a grade for what they showed;
-  #   - greeting-only: archived (the restart flow's soft-hide). Under the
-  #     engaged-only limit accounting (rev 2014) it never counted anyway.
-  # Sessions with a :processing turn are skipped: VivaTurn.fail_stale!
-  # owns stuck turns, and once it flips them to :error a later sweep here
-  # picks the session up.
-  # Registered production-only in config/recurring.yml — in development it
-  # would silently spend LLM tokens grading forgotten local sessions.
+  # (no turn activity, status still :submitted, not archived) is handed to
+  # finalize_open_viva! — graded if the student answered at least once,
+  # archived if greeting-only. Sessions with a :processing turn are skipped
+  # here (and re-checked under the lock): VivaTurn.fail_stale! owns stuck
+  # turns, and once it flips them to :error a later sweep picks the session
+  # up. Registered production-only in config/recurring.yml — in development
+  # it would silently spend LLM tokens grading forgotten local sessions.
   def self.reap_abandoned_vivas!(idle_for: ABANDONED_VIVA_REAP_AFTER, now: Time.zone.now)
     cutoff = now - idle_for
     stale = submitted
@@ -266,23 +261,49 @@ class Submission < ApplicationRecord
               .where("submissions.submitted_at < ?", cutoff)
               .where.not(id: VivaTurn.where("updated_at >= ?", cutoff).select(:submission_id))
               .where.not(id: VivaTurn.where(status: :processing).select(:submission_id))
-    graded = archived = 0
+    counts = {graded: 0, archived: 0}
     stale.find_each do |sub|
-      if sub.viva_turns.where(role: :student).exists?
-        sub.viva_turns.create!(role: :system, status: :ok,
-          content: '(session expired after inactivity — grading begins)')
-        sub.update!(status: :evaluating)
-        Llm::VivaGradeAssistJob.perform_later(sub)
-        graded += 1
+      outcome = sub.finalize_open_viva!(
+        graded_note:   '(session expired after inactivity — grading begins)',
+        archived_note: '(session expired after inactivity — archived)',
+        now: now)
+      counts[outcome] += 1 if counts.key?(outcome)
+    end
+    Rails.logger.info "Submission.reap_abandoned_vivas!: graded #{counts[:graded]}, archived #{counts[:archived]} abandoned viva session(s)" if counts.values.sum.positive?
+    counts
+  end
+
+  # Finalizes ONE open viva session — the single step behind both the 24 h
+  # reaper above and the contest page's "Finish open vivas" button
+  # (Contest#finish_open_vivas!), so the two can never drift apart:
+  #   - with at least one student answer: closing system turn, :evaluating,
+  #     grade job with no model: (the grade service default decides, rev
+  #     2011) — exactly the hard-cap / End-button path;
+  #   - greeting-only: closing system turn + archived (the restart flow's
+  #     soft-hide). Under the engaged-only limit accounting (rev 2014) it
+  #     never counted anyway.
+  # Runs under the same row lock as VivaSessionsController#answer / #finish
+  # and re-checks the session inside it, so a student's answer landing at the
+  # same instant is serialised, not doubled. Returns :graded, :archived or
+  # :skipped — skipped when the session is no longer open (ended, archived,
+  # already grading) or an assistant reply is still :processing. The grade
+  # job is enqueued after the lock block has committed.
+  def finalize_open_viva!(graded_note:, archived_note:, now: Time.zone.now)
+    outcome = with_lock do
+      next :skipped unless submitted? && viva_archived_at.nil?
+      next :skipped if viva_turns.where(status: :processing).exists?
+      if viva_turns.where(role: :student).exists?
+        viva_turns.create!(role: :system, status: :ok, content: graded_note)
+        update!(status: :evaluating)
+        :graded
       else
-        sub.viva_turns.create!(role: :system, status: :ok,
-          content: '(session expired after inactivity — archived)')
-        sub.update!(viva_archived_at: now)
-        archived += 1
+        viva_turns.create!(role: :system, status: :ok, content: archived_note)
+        update!(viva_archived_at: now)
+        :archived
       end
     end
-    Rails.logger.info "Submission.reap_abandoned_vivas!: graded #{graded}, archived #{archived} abandoned viva session(s)" if (graded + archived).positive?
-    {graded: graded, archived: archived}
+    Llm::VivaGradeAssistJob.perform_later(self) if outcome == :graded
+    outcome
   end
 
 

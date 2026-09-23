@@ -164,6 +164,33 @@ class Contest < ApplicationRecord
       .where('submitted_at <= ?', actual_stop)
   end
 
+  # Open viva sessions of this contest: still :submitted, not archived, on
+  # this contest's viva problems, by enrolled users, started inside the
+  # window (with each user's start offset / extra time) — the same membership
+  # and window rules as #submissions.
+  def open_viva_sessions
+    submissions.submitted.where(viva_archived_at: nil)
+               .joins(:problem).merge(Problem.viva_exam)
+  end
+
+  # "Finish open vivas" (contests/show): runs Submission#finalize_open_viva!
+  # once over every open session — answered ones go to grading, greeting-only
+  # ones are archived, a session whose assistant reply is still in flight is
+  # skipped and reported so staff can click again shortly. Decided 2026-09-17
+  # as a batch button rather than a contest-stop trigger; the manual precursor
+  # of Phase B's window-end force-finish (doc/Viva-Exam.md). The 24 h reaper
+  # stays as the safety net. Returns {graded:, archived:, skipped:}.
+  def finish_open_vivas!(now: Time.zone.now)
+    counts = {graded: 0, archived: 0, skipped: 0}
+    open_viva_sessions.find_each do |sub|
+      counts[sub.finalize_open_viva!(
+        graded_note:   '(session closed by contest staff — grading begins)',
+        archived_note: '(session closed by contest staff — archived)',
+        now: now)] += 1
+    end
+    counts
+  end
+
   #
   # -------- report ---------------
   #
