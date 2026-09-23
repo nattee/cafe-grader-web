@@ -1247,6 +1247,14 @@ class Viva::RegraderTest < ActiveSupport::TestCase
     assert_equal 'reverted', Viva::Regrader.status(batch_id).rows.find { |r| r.submission_id == a.id }.outcome
   end
 
+  test "revert refuses a batch whose problem no longer exists" do
+    batch_id, _a, _b, _c, _d = batch_with_outcomes
+    Problem.where(id: @problem.id).delete_all          # the audit row outlives its problem by design
+    err = assert_raises(ArgumentError) { Viva::Regrader.revert(batch_id, apply: true, io: @io) }
+    assert_match(/no longer exists/, err.message)
+    refute AuditLog.where(action: 'viva_regrade_revert').exists?
+  end
+
   test "revert keeps a run that has no earlier valid grade behind it" do
     a = graded(user: users(:john), status: :grader_error)
     batch_id, _plan = regrader.apply!(now: Time.zone.local(2026, 9, 23, 18, 0, 0))
@@ -1483,6 +1491,9 @@ module Viva
     def self.revert(batch_id, apply: false, io: $stdout, now: Time.zone.now)
       audit   = find_batch_audit(batch_id)
       problem = audit.auditable
+      # Audit rows outlive their target by design; a batch whose problem was
+      # destroyed has no grades left to revert and no problem to audit on.
+      raise ArgumentError, "the problem of batch #{batch_id} no longer exists; nothing to revert" if problem.nil?
       io.puts(apply ? "== REVERTING batch #{batch_id} ==" : "== DRY RUN revert of batch #{batch_id} (report only; run with APPLY=1 to execute) ==")
       counts = Hash.new(0)
       VivaGrade.where(batch_id: batch_id).current.includes(:submission).order(:id).each do |run|
@@ -1561,6 +1572,7 @@ namespace :viva do
   desc 'Progress and outcome of a viva:regrade batch: counts, old/new/final means, per-target rows; CSV=<path> writes them. Usage: bin/rails viva:regrade_status BATCH=<id> [CSV=<path>]'
   task regrade_status: :environment do
     batch_id = ENV['BATCH'].presence or abort 'usage: bin/rails viva:regrade_status BATCH=<id> [CSV=<path>]'
+    Current.actor_note = "Rake: viva:regrade_status #{batch_id}"
     st = Viva::Regrader.status(batch_id)
     st.print($stdout)
     if ENV['CSV'].present?
