@@ -13,15 +13,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ### Added
 - **Viva test-drives: sit your own viva without polluting the data.** The
   problem edit page shows a **Test-drive** button on viva problems (editors of
-  the problem's group and admins). It runs a real interview and grading, but
-  the session is flagged as a test-drive: excluded from the problem list,
-  scores, contest scoreboards, every Report page, the stat pages, the
-  AI-usage report and the API; not counted against the author's daily starts;
-  not blocked by the contest-only rule; restartable without limit. Test-drives
-  are listed in the Viva Exam card of the edit page and badged on the viva
-  session, viva alerts and stuck-turn pages. Other students never see them,
-  even when a problem shares transcripts. Adds `submissions.test_drive`
-  (migration). (rev 2167–2173)
+  the problem's group and admins). The admin problem index offers the same
+  button on viva rows in place of the former staff "Start Viva". It runs a
+  real interview and grading, but the session is flagged as a test-drive:
+  excluded from the problem list, scores, contest scoreboards, every Report
+  page, the stat pages, the AI-usage report and the API; not counted against
+  the author's daily starts; not blocked by the contest-only rule;
+  restartable without limit. Test-drives are listed in the Viva Exam card of
+  the edit page and badged on the viva session, viva alerts and stuck-turns
+  pages. Other students never see them, even when a problem shares
+  transcripts. Adds `submissions.test_drive` (migration). (rev 2167–2173)
 - **"Finish open vivas" button on the contest management page** (contest
   editors and admins). One click closes every viva session of the contest
   that is still open — started inside the contest window by an enrolled

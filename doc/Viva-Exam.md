@@ -258,7 +258,9 @@ Until Phase B ships, the only in-contest behavior that differs from practice is:
 
 An editor of the problem's group, or an admin, can sit a viva themselves in a
 session flagged `submissions.test_drive` — the **Test-drive** button in the
-problem edit page's header (viva problems only). Design:
+problem edit page's header and on viva rows of the admin problem index (viva
+problems only; the index's former staff "Start Viva" started a real,
+data-polluting session). Design:
 `docs/superpowers/specs/2026-09-23-viva-test-drive-design.md`; revs 2167–2173.
 
 - **Same interview, same grading.** Prompt assembly, models, alert detection and

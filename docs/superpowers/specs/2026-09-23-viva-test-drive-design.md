@@ -36,7 +36,7 @@ and report. It widens to
 
 ```ruby
 scope :regular, -> { where(repaired_from_id: nil, test_drive: false) }
-scope :test_drive, -> { where(test_drive: true) }
+scope :test_drives, -> { where(test_drive: true) }
 ```
 
 with its comment updated: *regular = a real, student-facing submission — not a
@@ -125,12 +125,11 @@ whoever can see the edit page (editors and admins).
 - End interview is offered on test-drives regardless of `viva_daily_limit`;
 - the `_viva_session` partial is unchanged (transcript, answer form, grade card).
 
-**Admin surfaces show test-drives with a badge, never hide them:** submission
-detail (`submissions/show`), the viva alerts page (`graders#viva_alerts` — an
-author probing jailbreak resistance wants to see the alert fire), stuck viva
-turns. The per-user page under User Admin and the problem stat page are
-*reports* and already read `.regular`, so they exclude test-drives like every
-other report. One helper `submission_test_drive_badge(sub)` (in
+**Admin surfaces show test-drives with a badge, never hide them:** the viva
+alerts page (`graders#viva_alerts` — an author probing jailbreak resistance
+wants to see the alert fire), stuck viva turns. The per-user page under User
+Admin and the problem stat page are *reports* and already read `.regular`, so
+they exclude test-drives like every other report. One helper `submission_test_drive_badge(sub)` (in
 `SubmissionsHelper`, created if absent) renders the badge.
 
 ## Interactions
@@ -150,8 +149,7 @@ other report. One helper `submission_test_drive_badge(sub)` (in
   stat pages' per-model request/points/dollar tables already go through
   `.regular` submissions; `viva_turns` / `viva_grades` rows still exist and any
   hand-run SQL over them must join submissions and filter `test_drive = 0`
-  (noted in `doc/Viva-Exam.md` and the Assist-History "Numbers for reporting"
-  recipe).
+  (noted in `doc/Viva-Exam.md`).
 - **Alerts** — detection runs unchanged; the exam-strict consequence branch is
   dormant (Phase B) so nothing to gate. When Phase B lands, test-drives must
   take the *practice* (log-only) branch regardless of contest — recorded as a
@@ -230,3 +228,11 @@ No backfill: nothing existing is a test-drive.
 - The D7 preflight lint (LLM pass over the assembled prompt).
 - Any change to how students start, restart or are limited.
 - Phase B (contest retake budgets, snapshot, window-end force-finish).
+
+## Deviations recorded during execution (2026-09-23)
+
+- The scope is `Submission.test_drives` (plural) so the class-level scope is never confused with the per-row `test_drive?` reader.
+- No badge on `submissions/show`: that page redirects every viva submission to the viva page (`SubmissionsController#show`), so a test-drive can never render there. The badge lives on the viva session, viva alerts and stuck-turns pages.
+- The admin problem index (`problems/index`) offers **Test-drive** on viva rows instead of the former staff "Start Viva" — the real-session path that polluted the data this feature protects. Real sessions start from the student-facing main list only.
+- `#restart` runs under the submission row lock (a double click no longer opens two test-drives) and re-runs the setup check before opening the fresh session. `#test_drive` authorizes before it inspects the problem, and reopens only a test-drive whose interview or grading is still in progress; a graded one no longer blocks a fresh start.
+- The hand-SQL rule is recorded in `doc/Viva-Exam.md` only: Assist-History's "Numbers for reporting" table counts assist comments, which a viva test-drive cannot carry.

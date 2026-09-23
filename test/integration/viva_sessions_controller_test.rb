@@ -734,4 +734,53 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/>test-drive</, response.body)
   end
+
+  test "an editor can test-drive a hidden (draft) viva and open the session" do
+    problem = setup_test_drive_problem
+    problem.update!(available: false)   # draft: students cannot see or submit it
+    sign_in_as("mary", "mary")
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      post viva_test_drive_problem_path(problem)
+    end
+    follow_redirect!
+    assert_response :success
+    assert_match(/>test-drive</, response.body, "the author lands on their own session although the problem is unavailable")
+  end
+
+  test "an admin can test-drive a viva that is in no group" do
+    viva_language
+    problem = problems(:prob_viva)          # fixtures keep it out of every group
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
+    sign_in_as("admin", "admin")
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      post viva_test_drive_problem_path(problem)
+    end
+    follow_redirect!
+    assert_response :success
+    assert_match(/>test-drive</, response.body)
+  end
+
+  test "a finished test-drive does not block a fresh one" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    done = make_test_drive(user: users(:mary), problem: problem)
+    done.update_columns(status: Submission.statuses[:done], points: 70)
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      post viva_test_drive_problem_path(problem)
+    end
+    assert_not_equal done.id, Submission.test_drives.order(:id).last.id
+  end
+
+  test "restart on a test-drive refuses a fresh session when the setup is now incomplete" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    drive = make_test_drive(user: users(:mary), problem: problem)
+    problem.update_columns(viva_prompt: nil)   # briefing blanked after the first start
+    assert_no_difference -> { Submission.test_drives.count } do
+      post viva_restart_submission_path(drive)
+    end
+    assert_redirected_to edit_problem_path(problem)
+    assert_match(/setup is incomplete/, flash[:alert])
+    assert drive.reload.viva_archived_at.present?, "the old test-drive is still archived"
+  end
 end

@@ -103,11 +103,11 @@ class VivaSessionsController < ApplicationController
   # test-drives only: a second click while one is open just reopens it.
   # The setup check stays: a viva with no briefing cannot assemble a prompt.
   def test_drive
-    unless @problem.viva_exam?
-      redirect_to edit_problem_path(@problem), alert: 'This problem is not a viva exam.' and return
-    end
     unless @current_user.can_edit_problem?(@problem)
       redirect_to list_main_path, alert: 'Authorization error: only editors of this problem may test-drive it.' and return
+    end
+    unless @problem.viva_exam?
+      redirect_to edit_problem_path(@problem), alert: 'This problem is not a viva exam.' and return
     end
     unless Language.find_by(name: VIVA_LANGUAGE_NAME)
       redirect_to edit_problem_path(@problem), alert: 'Viva language is not seeded. Run Language.seed.' and return
@@ -119,7 +119,11 @@ class VivaSessionsController < ApplicationController
       return
     end
 
-    open_drive = @problem.submissions.test_drives.where(user: @current_user, viva_archived_at: nil).order(:id).last
+    # "Open" = interview or grading still in progress. A graded test-drive stays
+    # in the list as a record but does not stand in the way of a fresh run.
+    open_drive = @problem.submissions.test_drives
+                         .where(user: @current_user, viva_archived_at: nil, status: %i[submitted evaluating])
+                         .order(:id).last
     if open_drive
       redirect_to viva_submission_path(open_drive),
                   notice: 'You already have an open test-drive on this problem — continuing it.'
@@ -303,9 +307,17 @@ class VivaSessionsController < ApplicationController
       problem = @submission.problem
       if @submission.test_drive?
         # Test-drives restart in place: archive, then open a fresh test-drive
-        # at once — no limit, no detour through the problem list.
-        fresh = create_viva_session!(problem, test_drive: true)
-        redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.'
+        # at once — no limit, no detour through the problem list. The setup
+        # check runs again: the briefing may have been blanked since the first
+        # start, and a fresh session with no prompt could only error.
+        setup_errors = problem.viva_setup_errors
+        if setup_errors.any?
+          redirect_to edit_problem_path(problem),
+                      alert: "Test-drive archived, but a fresh one cannot start — problem setup is incomplete: #{setup_errors.join('; ')}"
+        else
+          fresh = create_viva_session!(problem, test_drive: true)
+          redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.'
+        end
       elsif problem.viva_daily_limit == 0
         redirect_to list_main_path, notice: 'Viva archived — start a fresh one from the problem list (only available during a contest).'
       else
