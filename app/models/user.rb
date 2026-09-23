@@ -501,6 +501,11 @@ class User < ApplicationRecord
     # the "other student" paths below.
     return false if submission.viva_archived_at.present?
 
+    # Viva test-drives are an author's own trial run — rubric probing
+    # included. The owner, admins and reporters already returned true above;
+    # nobody else may read one, even when the problem shares transcripts.
+    return false if submission.test_drive?
+
     # check global disable
     return false unless GraderConfiguration["right.user_view_submission"]
 

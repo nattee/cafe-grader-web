@@ -537,7 +537,7 @@ ORDER BY ip_address,created_at
       GROUP BY u.id
       HAVING count > 1
     ) ml ON s.user_id = ml.id
-    WHERE s.submitted_at >= ? and s.submitted_at <= ? AND s.repaired_from_id IS NULL
+    WHERE s.submitted_at >= ? and s.submitted_at <= ? AND s.repaired_from_id IS NULL AND s.test_drive = 0
 UNION
   SELECT s.id,s.user_id,s.ip_address,s.submitted_at,s.problem_id
     FROM submissions s INNER JOIN
@@ -548,7 +548,7 @@ UNION
       GROUP BY l.ip_address
       HAVING count > 1
     ) ml on ml.ip_address = s.ip_address
-    WHERE s.submitted_at >= ? and s.submitted_at <= ? AND s.repaired_from_id IS NULL
+    WHERE s.submitted_at >= ? and s.submitted_at <= ? AND s.repaired_from_id IS NULL AND s.test_drive = 0
 ORDER BY ip_address,submitted_at
             SQL
     @subs = Submission.joins(:problem).find_by_sql([st, @since_time, @until_time,
@@ -590,7 +590,7 @@ ORDER BY ip_address,submitted_at
 UNION
   SELECT s.submitted_at,s.id,u.login,u.full_name,s.ip_address,s.problem_id,s.points,s.user_id
   FROM submissions s INNER JOIN users u ON s.user_id = u.id
-  WHERE s.submitted_at >= ? AND s.submitted_at <= ? AND #{condition} AND s.repaired_from_id IS NULL
+  WHERE s.submitted_at >= ? AND s.submitted_at <= ? AND #{condition} AND s.repaired_from_id IS NULL AND s.test_drive = 0
 ORDER BY submitted_at
   SQL
 

@@ -89,13 +89,20 @@ class Submission < ApplicationRecord
     query
   }
 
-  # Near-Miss Grading: shadow submissions are machine-generated repaired
-  # copies (repaired_from_id points at the original). Every student-visible
-  # query and every quota count must read .regular; the judge worker, admin
-  # monitoring, and number-assignment must NOT filter. See the exclusion
-  # audit in docs/superpowers/plans/2026-07-30-near-miss-grading.md.
-  scope :regular, -> { where(repaired_from_id: nil) }
-  scope :shadow,  -> { where.not(repaired_from_id: nil) }
+  # `regular` = a real, student-facing submission: NOT a near-miss shadow and
+  # NOT an author's viva test-drive. Every student-visible query, every quota
+  # count and every report must read .regular; the judge worker, admin
+  # monitoring, number-assignment and the viva reaper must NOT filter.
+  #   - Shadows (Near-Miss Grading) are machine-generated repaired copies;
+  #     repaired_from_id points at the original. Exclusion audit:
+  #     docs/superpowers/plans/2026-07-30-near-miss-grading.md.
+  #   - Test-drives are an editor/admin sitting their own viva
+  #     (VivaSessionsController#test_drive); graded like a real session but
+  #     never counted anywhere. Design:
+  #     docs/superpowers/specs/2026-09-23-viva-test-drive-design.md.
+  scope :regular,     -> { where(repaired_from_id: nil, test_drive: false) }
+  scope :shadow,      -> { where.not(repaired_from_id: nil) }
+  scope :test_drives, -> { where(test_drive: true) }
 
   # Ungraded submissions the judge workers still owe a verdict. Viva sessions
   # are LLM-graded off the judge queue, so graded_at = nil there is normal
