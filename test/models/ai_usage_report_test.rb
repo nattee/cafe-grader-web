@@ -62,4 +62,16 @@ class AiUsageReportTest < ActiveSupport::TestCase
                                 created_at: 15.minutes.ago, updated_at: 15.minutes.ago + 4.seconds)
     assert_equal 1, AiUsageReport.new(@contest).summary[:turns], "outsider turn must be excluded"
   end
+
+  test "grade calls count every run, superseded ones included, and flag failed runs" do
+    @answered.viva_grades.create!(total_points: 40, graded_at: 15.minutes.ago, llm_model: 'g', cost: 0.03, llm_latency_ms: 7000,
+                                  superseded_at: 10.minutes.ago, superseded_reason: 'replaced')
+    @answered.viva_grades.create!(total_points: 60, graded_at: 10.minutes.ago, llm_model: 'g', cost: 0.04, llm_latency_ms: 8000)
+    @answered.viva_grades.create!(graded_at: 5.minutes.ago, llm_model: 'g', cost: 0.01, superseded_at: 5.minutes.ago,
+                                  superseded_reason: 'error', error: 'x')
+    grades = @report.calls_json.select { |c| c[:kind] == "viva grade" }
+    assert_equal 3, grades.size
+    assert_equal %w[error ok ok], grades.map { |c| c[:status] }.sort
+    assert_in_delta 0.08, grades.sum { |c| c[:cost].to_f }, 0.0001
+  end
 end

@@ -796,4 +796,54 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/setup is incomplete/, flash[:alert])
     assert drive.reload.viva_archived_at.present?, "the old test-drive is still archived"
   end
+
+  # --- grade history table (spec 2026-09-23-viva-grade-history-design) ---
+
+  # Four runs on john's session: replaced → current (by admin) → lower (batch) → error.
+  def seed_grade_history(sub)
+    sub.update!(status: :done, points: 70)
+    old = sub.viva_grades.create!(total_points: 40, graded_at: 2.hours.ago, llm_model: 'old-model',
+                                  superseded_at: 1.hour.ago, superseded_reason: 'replaced')
+    cur = sub.viva_grades.create!(total_points: 70, graded_at: 1.hour.ago, llm_model: 'new-model',
+                                  requested_by_id: users(:admin).id, rubric_version: 'a' * 64)
+    sub.viva_grades.create!(total_points: 30, graded_at: 30.minutes.ago, llm_model: 'new-model',
+                            superseded_at: 30.minutes.ago, superseded_reason: 'lower', batch_id: 'regrade-1-x')
+    bad = sub.viva_grades.create!(graded_at: 10.minutes.ago, llm_model: 'new-model', superseded_at: 10.minutes.ago,
+                                  superseded_reason: 'error', error: 'grader JSON failed schema check: rubric missing',
+                                  llm_response_raw: '{"choices":[]}')
+    old.update!(superseded_by_id: cur.id)
+    [old, cur, bad]
+  end
+
+  test "an admin sees the grade history with one row per run, the badges and Make current on valid earlier runs" do
+    old, cur, bad = seed_grade_history(@owner_sub)
+    sign_in_as("admin", "admin")
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_select 'h6', text: 'Grade history'
+    assert_select 'table.grade-history tbody tr:not(.collapse)', count: 4
+    assert_select 'table.grade-history span.badge', text: 'current', count: 1
+    assert_select 'table.grade-history span.badge', text: 'replaced', count: 1
+    assert_select 'table.grade-history span.badge', text: 'lower', count: 1
+    assert_select 'table.grade-history span.badge', text: 'error', count: 1
+    assert_select 'table.grade-history td', text: 'aaaaaaaa'
+    assert_select 'table.grade-history td', text: 'admin'
+    assert_select 'table.grade-history td', text: 'batch regrade-1-x'
+    assert_select 'table.grade-history td', text: 'auto', minimum: 1
+    assert_select "form[action=?]", adopt_viva_grade_submission_path(@owner_sub, grade_id: old.id), count: 1
+    assert_select "form[action=?]", adopt_viva_grade_submission_path(@owner_sub, grade_id: cur.id), count: 0
+    assert_select "form[action=?]", adopt_viva_grade_submission_path(@owner_sub, grade_id: bad.id), count: 0
+    assert_includes response.body, 'rubric missing'
+    assert_select 'input[name=never_lower][type=checkbox][checked]', count: 1
+  end
+
+  test "the student sees neither the grade history nor the re-run form" do
+    seed_grade_history(@owner_sub)
+    sign_in_as("john", "hello")
+    get viva_submission_path(@owner_sub)
+    assert_response :success
+    assert_select 'h6', text: 'Grade history', count: 0
+    assert_select 'input[name=never_lower]', count: 0
+    assert_select 'table.grade-history', count: 0
+  end
 end

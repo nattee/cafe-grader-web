@@ -78,7 +78,7 @@
         .card-body
           %h5 Admin
           = form_with url: rejudge_submission_path(@submission), method: :post,
-                      html: {data: {turbo: true, 'turbo-confirm': 'Discard the current grade and re-run grading?'}} do |f|
+                      html: {data: {turbo: true, 'turbo-confirm': 'Re-run grading? The current grade is kept in the history.'}} do |f|
             .input-group.input-group-sm
               = f.select :model,
                   [['Default model', '']] + known_models.map { |m| [m, m] },
@@ -86,6 +86,10 @@
                   class: 'form-select form-select-sm',
                   title: 'Model to use for the next grader run'
               = f.submit 'Re-run grading', class: 'btn btn-warning btn-sm'
+            .form-check.mt-1
+              = f.check_box :never_lower, {checked: true, class: 'form-check-input', id: 'rejudge-never-lower'}, '1', '0'
+              = f.label :never_lower, 'Keep the higher grade', class: 'form-check-label small', for: 'rejudge-never-lower',
+                  title: 'If the new run scores lower, the current grade stays and the run is kept in the history'
 
           - if @submission.viva_archived?
             .small.text-secondary.mt-2
@@ -97,25 +101,12 @@
                 data: {bs_toggle: 'tooltip', bs_title: 'Soft-hides this session (kept for reports and audit) and lets the student start a fresh viva. Practice-mode starts still count toward the daily limit.'},
                 form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this viva so the student can take a fresh one? Transcript and grade are preserved for audit but no longer count for grading.'}}
 
-      -# Editor-visible diagnostics: grader response/request, per-turn raw responses.
+          = render partial: 'viva_sessions/grade_history', locals: {submission: @submission}
+
+      -# Editor-visible diagnostics: request payload previews, per-turn raw responses (grader responses live in the Admin card's grade history).
       .card.shadow-sm.mb-3
         .card-body
           %h5.mb-2 Debug
-          - if @viva_grade
-            %h6.text-secondary.small.mb-1 Last grader run
-            .small.text-secondary
-              - if @viva_grade.llm_model.present?
-                Model: #{@viva_grade.llm_model}
-              - if @viva_grade.cost
-                | · Cost: $#{format('%.4f', @viva_grade.cost)}
-              - if @viva_grade.graded_at
-                | · #{time_ago_in_words(@viva_grade.graded_at)} ago
-            - if @viva_grade.llm_response_raw.present?
-              %details.mt-2
-                %summary.text-secondary.small Grader response (last run)
-                %pre.small.bg-light.p-2.mt-1.mb-0{style: 'white-space: pre-wrap; word-break: break-word; max-height: 40vh; overflow-y: auto;'}
-                  = @viva_grade.llm_response_raw
-
           -# Request preview — what would be sent on the next grader call.
           -# Computed lazily here; pdf_attachment downloads + base64-encodes
           -# so this adds ~50–100ms to admin page loads. Acceptable for

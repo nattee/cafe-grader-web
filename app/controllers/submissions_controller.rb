@@ -4,13 +4,13 @@ class SubmissionsController < ApplicationController
 
   before_action :check_valid_login
 
-  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :archive_viva]
-  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag archive_viva ]
+  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :archive_viva, :adopt_viva_grade]
+  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag archive_viva adopt_viva_grade ]
   before_action :set_language, only: %i[ edit direct_edit_problem ]
 
   before_action :can_view_submission, only: [:show, :show_comments, :download, :edit, :evaluations, :compiler_msg]
   before_action :can_view_problem, only: [ :direct_edit_problem ]
-  before_action :can_edit_problem, only: [:rejudge, :set_tag, :archive_viva]
+  before_action :can_edit_problem, only: [:rejudge, :set_tag, :archive_viva, :adopt_viva_grade]
 
   # GET /submissions
   # GET /submissions.json
@@ -152,19 +152,22 @@ class SubmissionsController < ApplicationController
   end
 
   # POST /submissions/:id/rejudge
+  # Viva: one more grader run (Submission#regrade_viva!). The current grade
+  # is kept and stays visible to the student until the new run is adopted;
+  # never_lower=1 (the "Keep the higher grade" box) files a lower run away
+  # instead of applying it. Code submissions: a lower-priority judge job.
   def rejudge
     if @submission.problem.viva_exam?
-      @submission.viva_grade&.destroy
-      @submission.update(status: :evaluating, points: nil, grader_comment: nil, graded_at: nil)
-
-      # Optional admin override: re-run with a specific model (e.g., upgrade
-      # to gemini-2.5-pro for a stricter grader). Falls back to the service
-      # class's DEFAULT_MODEL when not specified.
-      job_kwargs = params[:model].present? ? {model: params[:model]} : {}
-      Llm::VivaGradeAssistJob.perform_later(@submission, **job_kwargs)
-
-      model_label = params[:model].presence || 'default model'
-      @toast = {title: 'Re-grading', body: "Submission ##{@submission.id} grading queued (#{model_label})."}
+      never_lower = params[:never_lower] == '1'
+      begin
+        @submission.regrade_viva!(model: params[:model].presence, never_lower: never_lower, requested_by: @current_user)
+        model_label = params[:model].presence || 'default model'
+        rule = never_lower ? 'keeps the higher grade' : 'replaces the current grade'
+        @toast = {title: 'Re-grading',
+                  body: "Submission ##{@submission.id} grading queued (#{model_label}; #{rule}). The current grade stays until the new run is adopted."}
+      rescue Submission::NotRegradable => e
+        @toast = {title: 'Re-grading', body: "Cannot re-run grading: #{e.message}.", type: :alert}
+      end
     else
       # add lower priority job
       @submission.add_judge_job(@submission.problem.live_dataset, -10)
@@ -188,6 +191,33 @@ class SubmissionsController < ApplicationController
     @submission.update!(viva_archived_at: Time.current)
     redirect_to viva_submission_path(@submission),
                 notice: "Viva session ##{@submission.id} has been archived. The student can now start a fresh viva on '#{@submission.problem.name}'."
+  end
+
+  # POST /submissions/:id/viva/grades/:grade_id/adopt
+  # "Make current" on the grade-history table: re-adopt an earlier valid run
+  # (Submission#adopt_viva_grade!; the displaced run is labelled 'reverted').
+  # Changes a student's score by hand, so one audit row goes on the problem.
+  def adopt_viva_grade
+    grade = @submission.viva_grades.find(params[:grade_id])
+    if @submission.status.to_s.in?(%w[submitted evaluating])
+      redirect_to viva_submission_path(@submission),
+                  alert: "Cannot change the grade while the interview or grading is in progress (status: #{@submission.status})." and return
+    end
+    if grade.failed?
+      redirect_to viva_submission_path(@submission), alert: "Run ##{grade.id} produced no grade and cannot be made current." and return
+    end
+    if grade.current?
+      redirect_to viva_submission_path(@submission), notice: "Run ##{grade.id} is already the current grade." and return
+    end
+    previous = @submission.viva_grade
+    @submission.adopt_viva_grade!(grade, reason: 'reverted')
+    AuditLog.record!(auditable: @submission.problem, action: 'viva_grade_adopt', object_changes: {
+      'submission_id' => [nil, @submission.id],
+      'grade_id'      => [previous&.id, grade.id],
+      'points'        => [previous&.total_points&.to_f, grade.total_points.to_f]
+    })
+    redirect_to viva_submission_path(@submission),
+                notice: "Run ##{grade.id} (#{grade.total_points}/100, #{grade.llm_model}) is now the current grade of viva session ##{@submission.id}."
   end
 
   def set_tag
