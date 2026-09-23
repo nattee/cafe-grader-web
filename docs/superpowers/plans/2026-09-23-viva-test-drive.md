@@ -310,6 +310,7 @@ Append inside `class VivaSessionsControllerTest` (before its final `end`), in `t
   # may test-drive it while john (member) is a plain student of it. Fixtures
   # keep prob_viva out of every group and use_problem_group off.
   def setup_test_drive_problem(viva_daily_limit: nil)
+    viva_language  # seed the 'viva' Language: #start and #test_drive refuse without it
     set_grader_config('system.use_problem_group', 'true')
     problem = problems(:prob_viva)
     GroupProblem.create!(group: groups(:group_a), problem: problem, enabled: true)
@@ -523,7 +524,7 @@ to
   end
 ```
 
-(d) In the `private` section, directly above `def engaged_starts_today(problem, user)`, add:
+(d) In the `private` section, directly after `force_finish!`'s closing `end` (so the existing comment block above `daily_start_limit_for` / `engaged_starts_today` stays attached to those methods), add:
 
 ```ruby
   # Creates a viva session for @current_user on `problem` and kicks off the
