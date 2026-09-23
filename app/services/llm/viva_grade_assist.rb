@@ -18,12 +18,41 @@ module Llm
     # picker dropdown — when empty, the dropdown only offers "default model".
     KNOWN_MODELS = [].freeze
 
-    def initialize(submission:, model: nil, **args)
-      @submission = submission
-      @problem    = submission.problem
-      @model      = model.presence || self.class::DEFAULT_MODEL
-      @error      = nil
-      @other_args = args
+    # never_lower / requested_by_id / batch_id come from Submission#regrade_viva!
+    # (the Re-run button, Viva::Regrader batches); the automatic first grading
+    # passes none of them. See #decide_adoption!.
+    def initialize(submission:, model: nil, never_lower: true, requested_by_id: nil, batch_id: nil, **args)
+      @submission      = submission
+      @problem         = submission.problem
+      @model           = model.presence || self.class::DEFAULT_MODEL
+      @never_lower     = never_lower
+      @requested_by_id = requested_by_id
+      @batch_id        = batch_id
+      @error           = nil
+      @other_args      = args
+    end
+
+    # The grader's rubric context: conduct tags + briefing + grounding text, in
+    # this order — exactly what #assemble_context puts in the system prompt.
+    # Class-level so Viva::Regrader can hash it without a submission.
+    def self.rubric_context_for(problem)
+      conduct  = problem.viva_conduct_tags.map(&:params).reject(&:blank?).join("\n\n")
+      briefing = problem.viva_prompt.to_s.strip
+      raise RuntimeError, "Problem '#{problem.name}' has a blank viva_prompt — viva needs the examiner briefing" if briefing.blank?
+
+      grounding = problem.grounding_materials.filter_map(&:grounding_text).join("\n\n---\n\n")
+      [conduct, briefing, grounding].reject(&:blank?).join("\n\n")
+    end
+
+    # SHA-256 (64 hex chars) of the rubric context, written to
+    # viva_grades.rubric_version on every run and compared by Viva::Regrader
+    # to tell a stale grade from a fresh one. nil instead of raising on a
+    # blank briefing when strict is false (page rendering, failure rows).
+    def self.rubric_version_for(problem, strict: true)
+      Digest::SHA256.hexdigest(rubric_context_for(problem))
+    rescue RuntimeError
+      raise if strict
+      nil
     end
 
     private
@@ -106,12 +135,11 @@ module Llm
     end
 
     def assemble_context
-      conduct = @problem.viva_conduct_tags.map(&:params).reject(&:blank?).join("\n\n")
-      briefing = @problem.viva_prompt.to_s.strip
-      raise RuntimeError, "Problem '#{@problem.name}' has a blank viva_prompt — viva needs the examiner briefing" if briefing.blank?
+      self.class.rubric_context_for(@problem)
+    end
 
-      grounding = @problem.grounding_materials.filter_map(&:grounding_text).join("\n\n---\n\n")
-      [conduct, briefing, grounding].reject(&:blank?).join("\n\n")
+    def rubric_version
+      @rubric_version ||= self.class.rubric_version_for(@problem, strict: false)
     end
 
     # Student turns are remapped from the DB role enum to the OpenAI wire role,
@@ -171,19 +199,28 @@ module Llm
       usage  = parsed['usage'] || {}
 
       # Persist what we know about the upstream response BEFORE any further
-      # parsing. This way a downstream failure (model returned prose instead
-      # of JSON, body cut off mid-object, schema mismatch, etc.) leaves a
-      # paper trail an admin can inspect via @submission.viva_grade.llm_response_raw.
-      grade = @submission.viva_grade || @submission.build_viva_grade
-      grade.assign_attributes(
+      # parsing, so a downstream failure (prose instead of JSON, a body cut
+      # off mid-object, a schema miss) leaves a paper trail in the run's row.
+      # Every run gets its OWN row, written non-current (superseded_at set)
+      # and adopted in #decide_adoption! once it is a grade —
+      # @submission.viva_grade is the current grade and is never overwritten.
+      # The one re-ask (#respond) reuses @grade and folds its cost in.
+      now = Time.zone.now
+      @grade ||= @submission.viva_grades.build(
+        superseded_at:   now,
+        requested_by_id: @requested_by_id,
+        batch_id:        @batch_id,
+        rubric_version:  rubric_version
+      )
+      @grade.assign_attributes(
         llm_model:        parsed['model'] || @model,
         llm_response_raw: response.body,
-        cost:             compute_cost(usage) + (@re_asked ? grade.cost.to_f : 0.0),
+        cost:             compute_cost(usage) + (@re_asked ? @grade.cost.to_f : 0.0),
         llm_started_at:   llm_started_at,
         llm_latency_ms:   llm_latency_ms,
-        graded_at:        Time.zone.now
+        graded_at:        now
       )
-      grade.save!
+      @grade.save!
 
       json = extract_json_object(text)
       raise ResponseError.new('no JSON object found in grader response', body: response&.body) unless json
@@ -199,27 +236,48 @@ module Llm
         raise ResponseError.new("grader JSON failed schema check: #{problem}", body: response&.body)
       end
 
-      grade.update!(
+      @grade.update!(
         score_json:   data['rubric']&.to_json,
         total_points: data['total_points'],
         narrative:    data['narrative']
       )
-
-      # The narrative stays on viva_grade only. grader_comment is the compact
-      # verdict string the main list / stat tables / Submission report / API
-      # print inline, so it gets a short marker (see Submission#viva_result_marker).
-      @submission.update!(
-        points:         data['total_points'],
-        status:         :done,
-        graded_at:      Time.zone.now,
-        grader_comment: @submission.viva_result_marker
-      )
+      decide_adoption!
 
       {ok: true}
     end
 
+    # The never-lower decision, under the submission's row lock, against the
+    # grade that is current at this moment (a parallel run may have landed):
+    #   no valid current grade            → adopt (first grading, or a retry)
+    #   new >= old, or never-lower off    → adopt; the old run becomes 'replaced'
+    #   new <  old and never-lower on     → keep the old; this run stays 'lower'
+    # Adopting (Submission#adopt_viva_grade!) copies total_points, graded_at
+    # and the compact viva marker onto the submission — the narrative stays
+    # on the grade row only; grader_comment is the verdict field the main
+    # list, stat tables, Submission report and API print inline.
+    def decide_adoption!
+      @submission.with_lock do
+        current = @submission.viva_grade
+        if current&.valid_grade? && @never_lower && @grade.total_points.to_f < current.total_points.to_f
+          @grade.update!(superseded_reason: 'lower')
+          Rails.logger.info "[viva grade] submission #{@submission.id}: run #{@grade.id} scored #{@grade.total_points} < current #{current.total_points}; kept the current grade (never-lower)"
+        else
+          @submission.adopt_viva_grade!(@grade)
+        end
+      end
+    end
+
+    # Reply not a grade after the re-ask, or any non-transport failure inside
+    # #call: record the run as 'error'. A student never loses a grade to a
+    # failed re-run — the submission is marked grader_error only when it has
+    # no valid current grade (a first grading, or a retry of a failed one).
     def handle_error
-      @submission&.update!(status: :grader_error, grader_comment: "Grader error: #{@error}")
+      return unless @submission
+      VivaGrade.record_failure!(@submission, error: @error, grade: @grade, model: @model,
+                                requested_by_id: @requested_by_id, batch_id: @batch_id,
+                                rubric_version: rubric_version)
+      return if @submission.valid_viva_grade?
+      @submission.update!(status: :grader_error, grader_comment: "Grader error: #{@error}")
     end
 
     def compute_cost(_usage)
