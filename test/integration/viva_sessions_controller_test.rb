@@ -553,4 +553,139 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/already ended/i, flash[:alert])
     assert_nil SubmissionLockHook.once, "finish must take the row lock (the hook never ran)"
   end
+
+  # --- test_drive: an author sits their own viva (spec 2026-09-23-viva-test-drive-design) ---
+
+  # Group mode on and prob_viva placed in group_a, so mary (editor of group_a)
+  # may test-drive it while john (member) is a plain student of it. Fixtures
+  # keep prob_viva out of every group and use_problem_group off.
+  def setup_test_drive_problem(viva_daily_limit: nil)
+    viva_language  # seed the 'viva' Language: #start and #test_drive refuse without it
+    set_grader_config('system.use_problem_group', 'true')
+    problem = problems(:prob_viva)
+    GroupProblem.create!(group: groups(:group_a), problem: problem, enabled: true)
+    problem.update!(viva_prompt: "# Rubric\nBe fair.", viva_daily_limit: viva_daily_limit)
+    problem
+  end
+
+  # An open test-drive with settled turns (no :processing placeholder), so
+  # restart/finish are not refused as "busy".
+  def make_test_drive(user:, problem:, answered: true)
+    Submission.create!(user: user, problem: problem, language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now, test_drive: true).tap do |sub|
+      sub.viva_turns.create!(role: :assistant, status: :ok, content: 'Q1?')
+      sub.viva_turns.create!(role: :student,   status: :ok, content: 'A1') if answered
+    end
+  end
+
+  test "test_drive by an editor of the problem's group creates a flagged session and opens it" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      assert_enqueued_with(job: Llm::VivaTurnAssistJob) do
+        post viva_test_drive_problem_path(problem)
+      end
+    end
+    drive = Submission.test_drives.order(:id).last
+    assert_redirected_to viva_submission_path(drive)
+    assert_equal users(:mary), drive.user
+    assert drive.test_drive?
+    assert_equal %w[system assistant], drive.viva_turns.ordered.map(&:role), "greeting placeholder queued like a real start"
+    refute_includes Submission.regular, drive
+  end
+
+  test "test_drive is refused for a student who is not an editor of the problem" do
+    problem = setup_test_drive_problem
+    sign_in_as("john", "hello")
+    assert_no_difference -> { Submission.count } do
+      post viva_test_drive_problem_path(problem)
+    end
+    assert_redirected_to list_main_path
+    assert_match(/only editors/, flash[:alert])
+  end
+
+  test "test_drive skips the daily start limit that refuses a real start" do
+    set_grader_config("viva.practice_daily_start_limit", 1)
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    # one engaged, archived real session today uses up mary's single start
+    used = Submission.create!(user: users(:mary), problem: problem, language: viva_language,
+                              status: :submitted, submitted_at: Time.zone.now, viva_archived_at: Time.zone.now)
+    used.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+
+    post viva_start_problem_path(problem)
+    assert_redirected_to list_main_path
+    assert_match(/Daily practice limit/, flash[:alert])
+
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      post viva_test_drive_problem_path(problem)
+    end
+  end
+
+  test "test_drive skips the contest-only rule that refuses a real start" do
+    problem = setup_test_drive_problem(viva_daily_limit: 0)
+    sign_in_as("mary", "mary")
+    post viva_start_problem_path(problem)
+    assert_redirected_to list_main_path
+    assert_match(/only be taken during a contest/, flash[:alert])
+
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      post viva_test_drive_problem_path(problem)
+    end
+  end
+
+  test "a second test_drive click reopens the open test-drive instead of starting another" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    post viva_test_drive_problem_path(problem)
+    first = Submission.test_drives.order(:id).last
+    assert_no_difference -> { Submission.count } do
+      post viva_test_drive_problem_path(problem)
+    end
+    assert_redirected_to viva_submission_path(first)
+    assert_match(/already have an open test-drive/, flash[:notice])
+  end
+
+  test "an open test-drive does not block the author's real start" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    make_test_drive(user: users(:mary), problem: problem)
+    assert_difference -> { Submission.regular.where(user: users(:mary), problem: problem).count }, 1 do
+      post viva_start_problem_path(problem)
+    end
+  end
+
+  test "restart on a test-drive archives it and opens a fresh test-drive at once" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    drive = make_test_drive(user: users(:mary), problem: problem)
+    assert_difference -> { Submission.test_drives.count }, 1 do
+      post viva_restart_submission_path(drive)
+    end
+    fresh = Submission.test_drives.order(:id).last
+    assert_not_equal drive.id, fresh.id
+    assert_redirected_to viva_submission_path(fresh)
+    assert drive.reload.viva_archived_at.present?, "the old test-drive is archived"
+    assert fresh.test_drive?
+  end
+
+  test "finish is allowed on a contest-only test-drive" do
+    problem = setup_test_drive_problem(viva_daily_limit: 0)
+    sign_in_as("mary", "mary")
+    drive = make_test_drive(user: users(:mary), problem: problem, answered: true)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+      post viva_finish_submission_path(drive)
+    end
+    assert_redirected_to viva_submission_path(drive)
+    assert_predicate drive.reload, :evaluating?
+  end
+
+  test "test_drive on a code problem sends the editor back to the edit page" do
+    set_grader_config('system.use_problem_group', 'true')
+    sign_in_as("mary", "mary")   # mary edits group_a, which holds prob_add
+    assert_no_difference -> { Submission.count } do
+      post viva_test_drive_problem_path(problems(:prob_add))
+    end
+    assert_redirected_to edit_problem_path(problems(:prob_add))
+  end
 end
