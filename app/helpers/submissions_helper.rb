@@ -1,5 +1,4 @@
 module SubmissionsHelper
-
   # The price sentence of the AI-help confirm dialog (Markdown source). `cost`
   # is what THIS requester would be charged — Llm::CommentAssist.assist_cost_for:
   # 0 for an admin asking on a student's behalf, or when the site price is 0.
@@ -11,5 +10,15 @@ module SubmissionsHelper
       'If your final score for this problem does not exceed the __reduced full score__, you will receive that score. ' \
       'If your score exceeds the __reduced full score__, it will be capped at the __reduced full score__.'
     end
+  end
+
+  # "test-drive" badge for staff surfaces (viva session page, viva alerts,
+  # stuck turns). An author's trial run of a viva — graded like a real
+  # session but excluded from reports, cost figures and start limits.
+  # Renders nothing for a real submission.
+  def submission_test_drive_badge(submission)
+    return unless submission.test_drive?
+    content_tag :span, 'test-drive', class: 'badge text-bg-info ms-1',
+                title: 'Author test-drive — excluded from reports, cost figures and start limits'
   end
 end

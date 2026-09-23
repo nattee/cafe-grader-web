@@ -705,4 +705,31 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/already been archived/i, flash[:alert])
     assert_nil SubmissionLockHook.once, "restart must take the row lock (the hook never ran)"
   end
+
+  test "show marks a test-drive with the badge and the unlimited-restarts line" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    drive = make_test_drive(user: users(:mary), problem: problem)
+    get viva_submission_path(drive)
+    assert_response :success
+    assert_match(/>test-drive</, response.body, "badge")
+    assert_match(/unlimited restarts/, response.body)
+    assert_match(/Restart test-drive/, response.body)
+    assert_no_match(/starts left today/, response.body)
+  end
+
+  test "the viva alerts and stuck-turn pages badge a test-drive" do
+    problem = setup_test_drive_problem
+    drive = make_test_drive(user: users(:mary), problem: problem)
+    drive.viva_turns.create!(role: :assistant, status: :ok, content: 'flagged', alerted: true)
+    stuck = drive.viva_turns.create!(role: :assistant, status: :error, content: 'boom')
+    VivaTurn.where(id: stuck.id).update_all(updated_at: 2.hours.ago)  # VivaTurn.stuck may require age; backdate to be safe
+    sign_in_as("admin", "admin")
+    get viva_alerts_grader_processes_path
+    assert_response :success
+    assert_match(/>test-drive</, response.body)
+    get stuck_viva_turns_grader_processes_path
+    assert_response :success
+    assert_match(/>test-drive</, response.body)
+  end
 end
