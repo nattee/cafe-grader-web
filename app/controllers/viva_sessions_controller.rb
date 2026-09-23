@@ -87,7 +87,7 @@ class VivaSessionsController < ApplicationController
       end
     end
 
-    submission = create_viva_session!(@problem)
+    submission = create_viva_session!(@problem, viva_lang)
     redirect_to viva_submission_path(submission)
   end
 
@@ -109,7 +109,8 @@ class VivaSessionsController < ApplicationController
     unless @problem.viva_exam?
       redirect_to edit_problem_path(@problem), alert: 'This problem is not a viva exam.' and return
     end
-    unless Language.find_by(name: VIVA_LANGUAGE_NAME)
+    viva_lang = Language.find_by(name: VIVA_LANGUAGE_NAME)
+    unless viva_lang
       redirect_to edit_problem_path(@problem), alert: 'Viva language is not seeded. Run Language.seed.' and return
     end
     setup_errors = @problem.viva_setup_errors
@@ -130,7 +131,7 @@ class VivaSessionsController < ApplicationController
       return
     end
 
-    submission = create_viva_session!(@problem, test_drive: true)
+    submission = create_viva_session!(@problem, viva_lang, test_drive: true)
     redirect_to viva_submission_path(submission),
                 notice: 'Test-drive started — this session is excluded from reports, cost figures and start limits.'
   end
@@ -315,7 +316,7 @@ class VivaSessionsController < ApplicationController
           redirect_to edit_problem_path(problem),
                       alert: "Test-drive archived, but a fresh one cannot start — problem setup is incomplete: #{setup_errors.join('; ')}"
         else
-          fresh = create_viva_session!(problem, test_drive: true)
+          fresh = create_viva_session!(problem, Language.find_by!(name: VIVA_LANGUAGE_NAME), test_drive: true)
           redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.'
         end
       elsif problem.viva_daily_limit == 0
@@ -402,14 +403,15 @@ class VivaSessionsController < ApplicationController
   # :processing assistant placeholder, and Llm::VivaTurnAssistJob once the
   # transaction has committed. Shared by #start (real sessions), #test_drive
   # and the test-drive branch of #restart, so the three can never drift.
-  def create_viva_session!(problem, test_drive: false)
+  # `language` is the viva Language the caller has already resolved.
+  def create_viva_session!(problem, language, test_drive: false)
     submission = nil
     placeholder = nil
     Submission.transaction do
       submission = Submission.create!(
         user:     @current_user,
         problem:  problem,
-        language: Language.find_by!(name: VIVA_LANGUAGE_NAME),
+        language: language,
         source:   nil,
         source_filename: nil,
         status:   :submitted,

@@ -29,6 +29,6 @@
               = sub.status
               - if sub.viva_archived?
                 %span.badge.text-bg-warning.ms-1 archived
-            %td.text-end= sub.points.nil? ? '—' : sub.points.to_i
+            %td.text-end= sub.points.nil? ? '—' : sub.points.round
             %td.text-end= link_to 'Open', viva_submission_path(sub), class: 'btn btn-sm btn-outline-primary border-0 py-0'
     %p.small.text-secondary.mb-0 Newest 10 shown. Test-drives are excluded from reports, cost figures and start limits.

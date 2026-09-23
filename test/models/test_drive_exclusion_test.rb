@@ -53,6 +53,8 @@ class TestDriveExclusionTest < ActiveSupport::TestCase
   end
 
   test "problem stats exclude test-drives" do
+    # Problem#get_submission_stat already reads Submission.regular; exercised
+    # here as a downstream consumer of the widened scope.
     regular_count = Submission.regular.where(problem_id: @problem.id).count
     stats = @problem.get_submission_stat
     assert_equal regular_count, stats[:total_sub]

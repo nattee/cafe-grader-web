@@ -438,6 +438,19 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/\|\s*Unlimited starts/, @response.body, "no stray HAML pipe before the text")
   end
 
+  test "show tells the owner of a contest-only viva that starts are governed by the contest" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_prompt: "# Rubric\nBe fair.", viva_daily_limit: 0)
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now)
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_match(/Contest-only viva — starts are governed by the contest/, @response.body)
+    assert_no_match(/starts left today/, @response.body)
+    assert_no_match(/\|\s*Contest-only viva/, @response.body, "no stray HAML pipe before the text")
+  end
+
   test "zero-engagement sessions do not count toward the daily start limit" do
     set_grader_config("viva.practice_daily_start_limit", 1)
     sign_in_as("john", "hello")
