@@ -67,8 +67,11 @@ class AddHistoryToVivaGrades < ActiveRecord::Migration[8.0]
       t.string   :batch_id
       t.text     :error
     end
-    remove_index :viva_grades, name: 'index_viva_grades_on_submission_id'
+    # The composite index goes in BEFORE the old one is dropped: MySQL 8
+    # refuses to drop the only index backing the viva_grades.submission_id
+    # foreign key ("Cannot drop index ... needed in a foreign key constraint").
     add_index    :viva_grades, [:submission_id, :superseded_at]
+    remove_index :viva_grades, name: 'index_viva_grades_on_submission_id'
     add_index    :viva_grades, :batch_id
   end
 end
