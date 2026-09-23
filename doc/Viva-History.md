@@ -39,6 +39,12 @@ repo, started 2026-09-02).
 
 ## Entries
 
+### 2026-09-23 — Test-drive sessions: authors sit their own viva outside limits and reports
+**behavior + access policy** · revs 2167–2173 (master); spec `docs/superpowers/specs/2026-09-23-viva-test-drive-design.md`; D7 (2026-07-20 readiness spec) half done
+- **Problem observed:** the only real check of an LLM examiner is to sit the viva, but an author's trial session was a real submission — on the stat page, in every report and the AI-usage figures, burning a daily start (editors, not admins) and sitting among student transcripts. Authors polluted the data or tested less than they should. Listed in `doc/Viva-Exam.md` Known Gaps since 2026-07-21.
+- **Change:** `submissions.test_drive`; `Submission.regular` now excludes test-drives as well as near-miss shadows, so every student-facing list, quota and report drops them in one change (hand-written shadow checks in the cheat report, `ProblemStat` and `AiUsageReport` gained the same condition). `POST /problems/:id/viva/test_drive` (editors of the problem's group, admins) shares session creation with the student start but skips the daily limit, the contest-only rule and the one-active-session guard; restart opens a fresh test-drive at once; End is allowed on contest-only vivas. `can_view_submission?` denies test-drives to peers even under transcript sharing. UI: header **Test-drive** pill and a Test-drives list on the problem edit page; badge + "unlimited restarts" line on the session page; badges on the viva alerts and stuck-turn pages. Restart takes the row lock like End (2171), so a double click cannot open two test-drives.
+- **Outcome / status:** shipped on master, not yet deployed. The preflight-lint half of D7 stays open (`doc/Viva-Exam.md` Known Gaps). Phase B must keep test-drives on the practice alert branch (recorded there).
+
 ### 2026-09-23 — "Finish open vivas": one click closes every open session of a contest
 **behavior + policy** · rev 2161 (master); backlog "Contest stop does not finish open viva sessions" → Resolved
 - **Problem observed:** at the 2026-09-09 quiz bell, 65 of 151 answered sessions were still open (no End, no `[[VIVA_DONE]]`, under the hard cap) and were finalised by 62 manual Re-run clicks over 36 minutes; otherwise the 24 h reaper would have graded them the next day. Decision 2026-09-17 (dae): a batch button, not a contest-stop trigger.

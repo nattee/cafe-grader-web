@@ -310,6 +310,16 @@ none.
 
 ## 8. Step 6 — Pilot before students see it
 
+**Sit it yourself first.** The problem edit page has a **Test-drive** button
+(viva problems only, editors and admins). It opens a real interview with the
+real examiner and grader, but the session is flagged as a test-drive: it does
+not appear in any report or score table, its cost is not counted as student
+spend, it does not use up your daily starts, and it can be restarted without
+limit. Take at least two test-drives before students see the viva — one
+answering as a strong student, one as a weak or evasive one — and read the
+grade narrative each time. Your test-drives are listed under **Test-drives** in
+the Viva Exam card of the edit page.
+
 Run the viva yourself **twice**: once as a strong student, once as a weak
 one who gives the trap answer and needs the hint. Then read the transcript
 and the rubric JSON on the admin page. Check:
@@ -385,6 +395,7 @@ Every row is something we observed on real student sessions
 | Examiner announces "the interview is over" but the session never ends | Model omitted the end-of-interview token | Platform issue; report it — a stronger model fixed it |
 | A correct but *different* design scores low on the container criterion (Quiz 1, 2026-09-09) | Briefing named one design; the grader treated the equivalent alternative as wrong | Name **every** acceptable design in the model answers and in the criterion text; if found after the exam, regrade under a never-lower rule (briefing + operation) |
 | Same transcript regraded: 74 → 63, 31 → 42; SD 4 points over 157 sessions | Grader rerun noise (gemini-3.7-flash), not the rubric | Treat one grade as ±10; never "fix" a cohort with a small rubric edit and a plain regrade — keep the higher record (policy); consider averaging two grading passes for exams |
+| Rubric wording or a probe only turns out to be confusing once real students hit it | Viva published without anyone sitting it | Take two test-drives first — strong and weak student — via the edit page's Test-drive button; read both narratives (authoring) |
 
 ---
 
