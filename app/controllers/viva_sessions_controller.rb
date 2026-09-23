@@ -1,6 +1,6 @@
 class VivaSessionsController < ApplicationController
   before_action :check_valid_login
-  before_action :set_problem, only: %i[start]
+  before_action :set_problem, only: %i[start test_drive]
   before_action :set_submission, only: %i[show answer refresh retry_turn restart finish]
   # #answer/#retry_turn/#restart already enforce their own (stricter, owner-
   # or-admin) checks below — this gate is only for the read paths, which
@@ -87,26 +87,52 @@ class VivaSessionsController < ApplicationController
       end
     end
 
-    submission = nil
-    placeholder = nil
-    Submission.transaction do
-      submission = Submission.create!(
-        user:     @current_user,
-        problem:  @problem,
-        language: viva_lang,
-        source:   nil,
-        source_filename: nil,
-        status:   :submitted,
-        submitted_at: Time.zone.now,
-        ip_address: request.remote_ip
-      )
+    submission = create_viva_session!(@problem)
+    redirect_to viva_submission_path(submission)
+  end
 
-      submission.viva_turns.create!(role: :system, status: :ok, content: '(interview start)')
-      placeholder = submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+  # POST /problems/:problem_id/viva/test_drive
+  #
+  # Author's test-drive (design D7; spec 2026-09-23-viva-test-drive-design):
+  # an editor of the problem's group, or an admin, sits the viva in a session
+  # flagged submissions.test_drive. The interview and grading run exactly as
+  # for a student; the flag keeps the session out of every report, score,
+  # cost figure and quota (Submission.regular excludes it) and out of the
+  # three student gates #start applies — the daily start limit, the
+  # contest-only rule, and the one-active-session guard, which here looks at
+  # test-drives only: a second click while one is open just reopens it.
+  # The setup check stays: a viva with no briefing cannot assemble a prompt.
+  def test_drive
+    unless @current_user.can_edit_problem?(@problem)
+      redirect_to list_main_path, alert: 'Authorization error: only editors of this problem may test-drive it.' and return
+    end
+    unless @problem.viva_exam?
+      redirect_to edit_problem_path(@problem), alert: 'This problem is not a viva exam.' and return
+    end
+    unless Language.find_by(name: VIVA_LANGUAGE_NAME)
+      redirect_to edit_problem_path(@problem), alert: 'Viva language is not seeded. Run Language.seed.' and return
+    end
+    setup_errors = @problem.viva_setup_errors
+    if setup_errors.any?
+      redirect_to edit_problem_path(@problem),
+                  alert: "Cannot test-drive '#{@problem.name}' — problem setup is incomplete: #{setup_errors.join('; ')}"
+      return
     end
 
-    Llm::VivaTurnAssistJob.perform_later(submission, turn: placeholder)
-    redirect_to viva_submission_path(submission)
+    # "Open" = interview or grading still in progress. A graded test-drive stays
+    # in the list as a record but does not stand in the way of a fresh run.
+    open_drive = @problem.submissions.test_drives
+                         .where(user: @current_user, viva_archived_at: nil, status: %i[submitted evaluating])
+                         .order(:id).last
+    if open_drive
+      redirect_to viva_submission_path(open_drive),
+                  notice: 'You already have an open test-drive on this problem — continuing it.'
+      return
+    end
+
+    submission = create_viva_session!(@problem, test_drive: true)
+    redirect_to viva_submission_path(submission),
+                notice: 'Test-drive started — this session is excluded from reports, cost figures and start limits.'
   end
 
   # GET /submissions/:submission_id/viva
@@ -259,21 +285,45 @@ class VivaSessionsController < ApplicationController
     unless @submission.problem.viva_exam?
       redirect_to viva_submission_path(@submission), alert: 'Restart is only available for viva exam problems.' and return
     end
-    if @submission.viva_archived_at.present?
-      redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.' and return
-    end
-    if @submission.viva_turns.where(status: :processing).exists?
-      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.' and return
+
+    # Same row lock as #answer / #finish. Two concurrent Restart clicks used
+    # to both pass the not-archived check — harmless while restart only
+    # archived (idempotent), but a test-drive restart now CREATES a fresh
+    # session, so the second click must be refused, not doubled. The fresh
+    # session is created after the lock block has committed.
+    outcome = @submission.with_lock do
+      next :archived if @submission.viva_archived_at.present?
+      next :busy     if @submission.viva_turns.where(status: :processing).exists?
+      @submission.update!(viva_archived_at: Time.zone.now)
+      :restarted
     end
 
-    @submission.update!(viva_archived_at: Time.zone.now)
-    problem = @submission.problem
-    if problem.viva_daily_limit == 0
-      notice = 'Viva archived — start a fresh one from the problem list (only available during a contest).'
-    else
-      notice = "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
+    case outcome
+    when :archived
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.'
+    when :busy
+      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.'
+    when :restarted
+      problem = @submission.problem
+      if @submission.test_drive?
+        # Test-drives restart in place: archive, then open a fresh test-drive
+        # at once — no limit, no detour through the problem list. The setup
+        # check runs again: the briefing may have been blanked since the first
+        # start, and a fresh session with no prompt could only error.
+        setup_errors = problem.viva_setup_errors
+        if setup_errors.any?
+          redirect_to edit_problem_path(problem),
+                      alert: "Test-drive archived, but a fresh one cannot start — problem setup is incomplete: #{setup_errors.join('; ')}"
+        else
+          fresh = create_viva_session!(problem, test_drive: true)
+          redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.'
+        end
+      elsif problem.viva_daily_limit == 0
+        redirect_to list_main_path, notice: 'Viva archived — start a fresh one from the problem list (only available during a contest).'
+      else
+        redirect_to list_main_path, notice: "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
+      end
     end
-    redirect_to list_main_path, notice: notice
   end
 
   # POST /submissions/:submission_id/viva/finish
@@ -293,7 +343,7 @@ class VivaSessionsController < ApplicationController
     unless @submission.problem.viva_exam?
       redirect_to viva_submission_path(@submission), alert: 'Finish is only available for viva exam problems.' and return
     end
-    if @submission.problem.viva_daily_limit == 0
+    if @submission.problem.viva_daily_limit == 0 && !@submission.test_drive?
       redirect_to viva_submission_path(@submission), alert: 'Contest vivas cannot be ended early.' and return
     end
 
@@ -345,6 +395,33 @@ class VivaSessionsController < ApplicationController
   def force_finish!(closing_note)
     @submission.viva_turns.create!(role: :system, status: :ok, content: closing_note)
     @submission.update!(status: :evaluating)
+  end
+
+  # Creates a viva session for @current_user on `problem` and kicks off the
+  # greeting: the Submission row, the "(interview start)" system turn, the
+  # :processing assistant placeholder, and Llm::VivaTurnAssistJob once the
+  # transaction has committed. Shared by #start (real sessions), #test_drive
+  # and the test-drive branch of #restart, so the three can never drift.
+  def create_viva_session!(problem, test_drive: false)
+    submission = nil
+    placeholder = nil
+    Submission.transaction do
+      submission = Submission.create!(
+        user:     @current_user,
+        problem:  problem,
+        language: Language.find_by!(name: VIVA_LANGUAGE_NAME),
+        source:   nil,
+        source_filename: nil,
+        status:   :submitted,
+        submitted_at: Time.zone.now,
+        ip_address: request.remote_ip,
+        test_drive: test_drive
+      )
+      submission.viva_turns.create!(role: :system, status: :ok, content: '(interview start)')
+      placeholder = submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    end
+    Llm::VivaTurnAssistJob.perform_later(submission, turn: placeholder)
+    submission
   end
 
   # Resolved daily start cap for a viva (design 2026-07-21, Phase A).

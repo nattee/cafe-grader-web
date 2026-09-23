@@ -158,6 +158,7 @@ Rails.application.routes.draw do
       delete 'delete/:attachment_type', to: 'delete_by_type', as: 'delete_by_type'
       # viva exam
       post 'viva/start', to: 'viva_sessions#start', as: 'viva_start'
+      post 'viva/test_drive', to: 'viva_sessions#test_drive', as: 'viva_test_drive'
     end
     collection do
       get 'turn_all_off'

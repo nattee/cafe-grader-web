@@ -248,8 +248,49 @@ The context-policy spec (`docs/superpowers/specs/2026-07-21-viva-context-policy-
 - **Isolated limiter jurisdictions** — daily (practice) starts and contest-governed starts are counted completely separately; exam access must never be hostage to how much practice a student already did that day.
 - **Stale-session auto-archive** — starting a viva in-window auto-archives any non-archived out-of-window session of the same problem for that student (it was practice by definition).
 - **Window-end force-finish** *(added to the spec 2026-07-21, marked MANDATORY)* — a contest-governed session must accept no student answers after its governing contest's window ends; `#answer` would force-finish exactly like the hard turn cap. Rationale: unlike code submissions (where a late `submitted_at` self-excludes from reports), a viva's `submitted_at` is its *start* time — post-bell answers would silently improve a grade that still counts. An assistant reply already in flight at the bell would complete and count (it answers pre-bell input); individual-contest mode would use the student's own window.
+- **Test-drives stay practice** *(added 2026-09-23)* — a session flagged `test_drive` must take the practice (log-only) alert branch and no retake budget, whatever contest window it runs inside; the snapshot must record it as ungoverned.
 
 Until Phase B ships, the only in-contest behavior that differs from practice is: (a) `viva_daily_limit == 0` requires an active contest to start at all, and (b) whatever the current, dormant exam-alert-policy branch would do if enabled (see next section) — which today it never is. What does exist is the manual precursor of the window-end force-finish: the contest management page's **"Finish open vivas"** button (rev 2161, 2026-09-23) closes every still-open session of that contest in one click — answered sessions go to grading, greeting-only ones are archived, a session with a reply in flight is skipped and counted (`Contest#finish_open_vivas!`, sharing `Submission#finalize_open_viva!` with the 24 h reaper). Staff click it after the bell; nothing fires on its own.
+
+---
+
+# Test-Drive Sessions (design D7, shipped 2026-09-23)
+
+An editor of the problem's group, or an admin, can sit a viva themselves in a
+session flagged `submissions.test_drive` — the **Test-drive** button in the
+problem edit page's header and on viva rows of the admin problem index (viva
+problems only; the index's former staff "Start Viva" started a real,
+data-polluting session). Design:
+`docs/superpowers/specs/2026-09-23-viva-test-drive-design.md`; revs 2167–2173.
+
+- **Same interview, same grading.** Prompt assembly, models, alert detection and
+  the grade record are exactly those of a student session; what the author sees
+  is what a student would see.
+- **Excluded everywhere that counts.** `Submission.regular` now means "not a
+  near-miss shadow and not a test-drive", so the main list, scores, contest
+  scoreboards, every Report page, the problem/user stat pages, the AI-usage
+  report and the API exclude test-drives in one place. Hand-written SQL over
+  `viva_turns` / `viva_grades` must join `submissions` and filter
+  `test_drive = 0` (and `repaired_from_id IS NULL`) itself.
+- **Outside the student gates.** A test-drive skips the daily start limit, the
+  contest-only rule (`viva_daily_limit = 0`) and the one-active-session guard —
+  a second click while a test-drive is open reopens it. It keeps the setup
+  check (`viva_setup_errors`). An open test-drive never blocks the author's own
+  real start, and never consumes one of their real daily starts.
+- **Restart and End.** Restart archives the test-drive and opens a fresh one at
+  once; End interview is available even on contest-only vivas.
+- **Who sees them.** The author, admins and reporters/editors of the problem's
+  groups (via the `:report` arm of `can_view_submission?`). Other students never
+  do, even when the problem shares transcripts. Where to find them: the
+  Test-drives list in the Viva Exam card of the edit page (newest 10); the viva
+  session page, the viva alerts page and the stuck-turns page badge them.
+- **Reapers and batch buttons.** "Finish open vivas" (contest page, rev 2161)
+  reads the contest's `.regular` submissions and leaves test-drives alone; the
+  24 h abandoned-session reaper does not filter and will grade a forgotten
+  test-drive a day later (one grade call, accepted).
+- **Phase B requirement.** When the exam-strict alert consequence is re-keyed to
+  the governing contest, a test-drive must always take the practice (log-only)
+  branch, whatever contest it runs inside.
 
 ---
 
@@ -356,7 +397,7 @@ The archived state is also surfaced in the **student-visible** Viva Info card (a
 # Known Gaps
 
 - **Export/import does not support viva problems.** (The `viva:import` rake task covers the *kit → problems* direction for authoring; the general problem export/import round-trip is what remains open.) `app/engine/problem_exporter.rb` and `app/engine/problem_importer.rb` (originally built 2023, well before viva existed — viva shipped 2026-04-19, and the format was substantially redesigned again in `doc/problem-import-export-design-2026-07-14.md` without viva in scope) have no viva-specific handling at all: no `viva_prompt`, `viva_conduct` tags, `viva_daily_limit`/caps, or `GroundingMaterial` attachments are included in a problem export/import round-trip today. This is a known gap, not yet started or formally tracked as its own item in `doc/backlog.md` — closing it is future work.
-- **D7 authoring validation (test-drive + preflight lint) is designed but not implemented.** There is no "take your own viva as a test session excluded from reports/limits" flow and no LLM-based lint pass over the assembled prompt yet. The inoculation incident above is exactly the kind of thing the planned lint would catch pre-emptively.
+- **D7 authoring validation — half done.** The *test-drive* half shipped 2026-09-23 (see "Test-Drive Sessions"). The *preflight lint* half — an LLM pass over the assembled prompt for rubric leakage, contradictions with the security directive, a missing `# Rubric`, banned template literals and embedded operational instructions — is still not built. The inoculation incident above is exactly the kind of thing that lint would catch pre-emptively.
 - **Red-team regression set (D3, Phase 2)** is not built. (The alert-review admin page *did* ship — rev 1917, Graders → Viva alerts; this list wrongly called it unimplemented until 2026-09-02.) The 56 alerts logged during the 2026-08/09 practice month — including ≥14 false positives on explicitly listed non-triggers — are the natural seed corpus; replay them before enabling exam policy, since a false positive under two-strike terminates an honest student. See `doc/Viva-History.md` (2026-09-01 audit).
 - ~~**D4 grounding PDF→text extraction** not implemented.~~ Shipped 2026-07-21 (revs 1919–1920, Genie wiring 1922; CHANGELOG 4.5.0). Stale entry, corrected 2026-09-02.
 - **Phase B of the context-policy design** (per-contest retake budgets, governing-contest snapshot, window-end force-finish) — see "Retake & Access Policy" above; no code exists yet.

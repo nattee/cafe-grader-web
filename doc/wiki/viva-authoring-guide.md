@@ -310,9 +310,16 @@ none.
 
 ## 8. Step 6 — Pilot before students see it
 
-Run the viva yourself **twice**: once as a strong student, once as a weak
-one who gives the trap answer and needs the hint. Then read the transcript
-and the rubric JSON on the admin page. Check:
+**Sit it yourself first — twice.** The problem edit page has a **Test-drive**
+button (viva problems only, editors and admins; the admin problem index offers
+it too). It opens a real interview with the real examiner and grader, but the
+session is flagged as a test-drive: it does not appear in any report or score
+table, its cost is not counted as student spend, it does not use up your daily
+starts, and it can be restarted without limit. Take one test-drive as a strong
+student and one as a weak student who gives the trap answer and needs the
+hint. Then read each transcript, the grade narrative and the rubric JSON on
+the admin page. Your test-drives are listed under **Test-drives** in the Viva
+Exam card of the edit page. Check:
 
 - [ ] The opening reproduces the scenario verbatim, including the "Come
       prepared to" list, and asks rung 1.
@@ -385,6 +392,7 @@ Every row is something we observed on real student sessions
 | Examiner announces "the interview is over" but the session never ends | Model omitted the end-of-interview token | Platform issue; report it — a stronger model fixed it |
 | A correct but *different* design scores low on the container criterion (Quiz 1, 2026-09-09) | Briefing named one design; the grader treated the equivalent alternative as wrong | Name **every** acceptable design in the model answers and in the criterion text; if found after the exam, regrade under a never-lower rule (briefing + operation) |
 | Same transcript regraded: 74 → 63, 31 → 42; SD 4 points over 157 sessions | Grader rerun noise (gemini-3.7-flash), not the rubric | Treat one grade as ±10; never "fix" a cohort with a small rubric edit and a plain regrade — keep the higher record (policy); consider averaging two grading passes for exams |
+| Rubric wording or a probe only turns out to be confusing once real students hit it | Viva published without anyone sitting it | Take two test-drives first — strong and weak student — via the edit page's Test-drive button; read both narratives (authoring) |
 
 ---
 

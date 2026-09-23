@@ -159,8 +159,9 @@ class AiUsageReport
 
   def ms_to_s(ms) = ms.nil? ? nil : (ms / 1000.0).round(1)
 
+  # .regular: near-miss shadows and author test-drives are not student usage.
   def sub_ids
-    @sub_ids ||= Submission.where(problem_id: problem_ids, user_id: user_ids).pluck(:id)
+    @sub_ids ||= Submission.regular.where(problem_id: problem_ids, user_id: user_ids).pluck(:id)
   end
 
   def turn_calls

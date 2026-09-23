@@ -48,6 +48,17 @@ the AI grader, which obeyed it instead of returning a score, and the
 session failed. Write your briefing as pure content — rubric, model
 answers, persona — and leave the guardrails to the platform.
 
+### Test-driving a viva
+
+Before students see a viva, sit it yourself. The problem edit page shows a
+**Test-drive** button for viva problems (editors of the problem's group and
+admins). It starts a normal interview with the normal examiner and grader,
+but the session is marked as a test-drive: it is left out of every report,
+score table and cost figure, it does not count against your daily starts,
+and you can restart it as often as you like. Test-drives are listed under
+**Test-drives** in the Viva Exam card of the edit page; students cannot see
+them, even on problems that share transcripts.
+
 ## Conduct profiles
 
 If you're writing several vivas for the same course and want them to share
