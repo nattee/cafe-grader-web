@@ -558,26 +558,73 @@ to
 
 - [ ] **Step 5: Controller — restart and finish branches**
 
-(e) In `#restart`, replace
+(e) Replace the whole body of `def restart … end` so the check-and-archive runs under the same row lock `#answer` / `#finish` take (a double click used to be harmless while restart only archived; the test-drive branch now CREATES a session, so the second click must be refused, not doubled). User-facing messages are unchanged:
 
 ```ruby
-    @submission.update!(viva_archived_at: Time.zone.now)
-    problem = @submission.problem
-    if problem.viva_daily_limit == 0
+  def restart
+    unless @current_user == @submission.user
+      redirect_to viva_submission_path(@submission), alert: 'Only the owner can restart their viva.' and return
+    end
+    # Non-viva submissions must never be archivable this way: archiving
+    # hides a submission from main_controller's canonical max(id) pick — a
+    # grade-manipulation vector if it could be triggered on an ordinary
+    # coding submission.
+    unless @submission.problem.viva_exam?
+      redirect_to viva_submission_path(@submission), alert: 'Restart is only available for viva exam problems.' and return
+    end
+
+    # Same row lock as #answer / #finish. Two concurrent Restart clicks used
+    # to both pass the not-archived check — harmless while restart only
+    # archived (idempotent), but a test-drive restart now CREATES a fresh
+    # session, so the second click must be refused, not doubled. The fresh
+    # session is created after the lock block has committed.
+    outcome = @submission.with_lock do
+      next :archived if @submission.viva_archived_at.present?
+      next :busy     if @submission.viva_turns.where(status: :processing).exists?
+      @submission.update!(viva_archived_at: Time.zone.now)
+      :restarted
+    end
+
+    case outcome
+    when :archived
+      redirect_to viva_submission_path(@submission), alert: 'This viva session has already been archived.'
+    when :busy
+      redirect_to viva_submission_path(@submission), alert: 'Wait for the current response to finish first.'
+    when :restarted
+      problem = @submission.problem
+      if @submission.test_drive?
+        # Test-drives restart in place: archive, then open a fresh test-drive
+        # at once — no limit, no detour through the problem list.
+        fresh = create_viva_session!(problem, test_drive: true)
+        redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.'
+      elsif problem.viva_daily_limit == 0
+        redirect_to list_main_path, notice: 'Viva archived — start a fresh one from the problem list (only available during a contest).'
+      else
+        redirect_to list_main_path, notice: "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
+      end
+    end
+  end
 ```
 
-with
+Covering test (appended with the other test-drive tests; uses the file's existing `SubmissionLockHook`):
 
 ```ruby
-    @submission.update!(viva_archived_at: Time.zone.now)
-    problem = @submission.problem
-    if @submission.test_drive?
-      # Test-drives restart in place: archive, then open a fresh test-drive
-      # at once — no limit, no detour through the problem list.
-      fresh = create_viva_session!(problem, test_drive: true)
-      redirect_to viva_submission_path(fresh), notice: 'Test-drive restarted — the previous session is archived.' and return
+  test "restart on a test-drive does not open a second session when a concurrent restart archived it first" do
+    problem = setup_test_drive_problem
+    sign_in_as("mary", "mary")
+    drive = make_test_drive(user: users(:mary), problem: problem)
+    # The other click archived this test-drive (and opened its own fresh one) while this one waited for the lock.
+    SubmissionLockHook.once = ->(s) { Submission.find(s.id).update_columns(viva_archived_at: Time.zone.now) }
+
+    assert_no_enqueued_jobs(only: Llm::VivaTurnAssistJob) do
+      assert_no_difference -> { Submission.test_drives.count } do
+        post viva_restart_submission_path(drive)
+      end
     end
-    if problem.viva_daily_limit == 0
+    assert_redirected_to viva_submission_path(drive)
+    assert_match(/already been archived/i, flash[:alert])
+    assert_nil SubmissionLockHook.once, "restart must take the row lock (the hook never ran)"
+  end
 ```
 
 (f) In `#finish`, replace
