@@ -20,11 +20,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   a lower re-run away instead of applying it, a failed re-run never removes
   a grade, and an open interview can no longer be re-run. New rake tasks
   `viva:regrade PROBLEM= [CONTEST=] [MODEL=] [ALL=1] [REPLACE=1] [LIMIT=]
-  [APPLY=1]` (stale grades only by default, one audit row per batch),
+  [APPLY=1]` (stale grades only by default, one audit row per batch; batch
+  runs queue at a lower priority than live interview turns and the report
+  warns how many viva sessions are open),
   `viva:regrade_status BATCH=` and `viva:regrade_revert BATCH=` replace the
   hand-run regrade toolkit. `viva_grades.rubric_version` is written on every
-  run. Adds six columns to `viva_grades` and drops its unique index
-  (migration). (rev 2183–2192)
+  run. Adds six columns to `viva_grades` and drops its unique index, and a
+  second migration files legacy failed grade rows as history (migrations).
+  (rev 2183–2197)
 - **Viva test-drives: sit your own viva without polluting the data.** The
   problem edit page shows a **Test-drive** button on viva problems (editors of
   the problem's group and admins). The admin problem index offers the same
