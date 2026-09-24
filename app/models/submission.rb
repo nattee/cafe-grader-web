@@ -237,18 +237,20 @@ class Submission < ApplicationRecord
   # (Make current) or viva:regrade_revert re-adopts an older one; a displaced
   # FAILED run is always labelled 'error'. Runs under the row lock so two
   # parallel decisions serialise; the grader service, the Make current button
-  # and Viva::Regrader.revert all come through here.
+  # and Viva::Regrader.revert all come through here. Returns the displaced
+  # run as read under the lock (nil when there was none, or `grade` was
+  # already current) — the Make current audit row records it.
   def adopt_viva_grade!(grade, reason: 'replaced', now: Time.zone.now)
     raise ArgumentError, 'grade belongs to another submission' unless grade.submission_id == id
     raise ArgumentError, 'cannot adopt a failed run' unless grade.valid_grade?
     with_lock do
       old = viva_grade
-      if old && old.id != grade.id
-        old.supersede!(reason: old.valid_grade? ? reason : 'error', by: grade, now: now)
-      end
+      old = nil if old&.id == grade.id
+      old&.supersede!(reason: old.valid_grade? ? reason : 'error', by: grade, now: now)
       grade.update!(superseded_at: nil, superseded_reason: nil, superseded_by_id: nil)
       update!(points: grade.total_points, status: :done, graded_at: grade.graded_at || now,
               grader_comment: viva_result_marker)
+      old
     end
   end
 
@@ -262,12 +264,24 @@ class Submission < ApplicationRecord
   # the lock has committed, with only the options actually given.
   def regrade_viva!(model: nil, never_lower: true, requested_by: nil, batch_id: nil)
     raise NotRegradable, 'not a viva submission' unless problem.viva_exam?
-    raise NotRegradable, 'the interview is still open, end it first' unless VIVA_REGRADABLE_STATUSES.include?(status.to_s)
     with_lock do
-      update!(status: :evaluating, points: nil, graded_at: nil, grader_comment: nil) unless valid_viva_grade?
+      # Checked after the lock's reload, so a session that is no longer
+      # regradable is refused (the raise rolls the lock's transaction back).
+      raise NotRegradable, 'the interview is still open, end it first' unless VIVA_REGRADABLE_STATUSES.include?(status.to_s)
+      unless valid_viva_grade?
+        # A failed run left current (legacy rows) is filed as error first,
+        # so the session has no current row while it is graded again.
+        current = viva_grade
+        current.supersede!(reason: 'error') if current&.failed?
+        update!(status: :evaluating, points: nil, graded_at: nil, grader_comment: nil)
+      end
     end
     kwargs = {model: model.presence, never_lower: never_lower, requested_by_id: requested_by&.id, batch_id: batch_id}.compact
-    Llm::VivaGradeAssistJob.perform_later(self, **kwargs)
+    # Batch runs (Viva::Regrader) queue behind live interview turns and first
+    # gradings on the shared `viva` queue: Solid Queue runs the lower priority
+    # number first, and the default is 0.
+    job = batch_id.present? ? Llm::VivaGradeAssistJob.set(priority: 10) : Llm::VivaGradeAssistJob
+    job.perform_later(self, **kwargs)
   end
 
 

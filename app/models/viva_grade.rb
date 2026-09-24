@@ -47,7 +47,9 @@ class VivaGrade < ApplicationRecord
                            rubric_version: nil, now: Time.zone.now)
     message = error.to_s.truncate(2000)
     if grade&.persisted?
-      grade.update!(superseded_at: grade.superseded_at || now, superseded_reason: 'error', error: message)
+      # The stored value, not the in-memory one: a stale handle (e.g. a run
+      # adopted and then displaced elsewhere) must never be made current here.
+      grade.update!(superseded_at: grade.superseded_at_in_database || now, superseded_reason: 'error', error: message)
       grade
     else
       submission.viva_grades.create!(superseded_at: now, superseded_reason: 'error', error: message, graded_at: now,

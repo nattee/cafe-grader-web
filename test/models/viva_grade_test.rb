@@ -90,4 +90,16 @@ class VivaGradeTest < ActiveSupport::TestCase
     assert_match(/TimeoutError/, row.error)
     assert_nil sub.reload.viva_grade, 'a failed run is never the current grade'
   end
+
+  test "record_failure! keeps a run non-current even when the handle's superseded_at is stale" do
+    sub = make_viva_submission
+    stamped = 1.hour.ago.change(usec: 0)
+    run = sub.viva_grades.create!(superseded_at: stamped, llm_response_raw: '{}')
+    run.superseded_at = nil                                  # in-memory only; the stored value is set
+    VivaGrade.record_failure!(sub, error: 'boom', grade: run)
+    run.reload
+    refute run.current?
+    assert_equal 'error', run.superseded_reason
+    assert_in_delta stamped, run.superseded_at, 1, 'the stored time is kept, not restamped'
+  end
 end

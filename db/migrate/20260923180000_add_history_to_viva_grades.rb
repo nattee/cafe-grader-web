@@ -18,7 +18,10 @@ class AddHistoryToVivaGrades < ActiveRecord::Migration[8.0]
     # (viva_grades.submission_id -> submissions), and the new composite index
     # (submission_id leads it) can take over that role without a gap.
     add_index    :viva_grades, [:submission_id, :superseded_at]
-    remove_index :viva_grades, name: 'index_viva_grades_on_submission_id'
+    # Rollback re-creates the unique single-column index, so it only works
+    # while each submission still has at most one viva_grades row (i.e.
+    # before any re-run has written history).
+    remove_index :viva_grades, :submission_id, unique: true, name: 'index_viva_grades_on_submission_id'
     add_index    :viva_grades, :batch_id
   end
 end

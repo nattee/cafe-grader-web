@@ -440,6 +440,51 @@ class SubmissionTest < ActiveSupport::TestCase
     assert_raises(Submission::NotRegradable) { submissions(:add1_by_admin).regrade_viva! }
   end
 
+  test "regrade_viva! files a failed run that is still current as error before re-grading" do
+    sub = make_viva_submission(status: :grader_error)
+    legacy = sub.viva_grades.create!(llm_response_raw: 'prose', graded_at: 1.hour.ago)   # legacy shape: failed and current
+    sub.regrade_viva!
+    legacy.reload
+    refute legacy.current?
+    assert_equal 'error', legacy.superseded_reason
+    assert_nil sub.reload.viva_grade
+    assert_equal 'evaluating', sub.status
+  end
+
+  test "regrade_viva! queues a batch run at priority 10 and a Re-run at the default priority" do
+    sub = make_viva_submission(status: :done)
+    make_run(sub, total: 40)
+    clear_enqueued_jobs
+    sub.regrade_viva!(batch_id: 'b1')
+    sub.regrade_viva!
+    jobs = enqueued_jobs.select { |j| j[:job] == Llm::VivaGradeAssistJob }
+    assert_equal 2, jobs.size
+    assert_equal 10, jobs.first[:priority]
+    assert_nil jobs.last[:priority]
+  end
+
+  test "regrade_viva! checks the status after taking the lock" do
+    sub = make_viva_submission(status: :done)
+    Submission.where(id: sub.id).update_all(status: Submission.statuses[:submitted])   # reopened behind this handle's back
+    assert_equal 'done', sub.status
+    assert_raises(Submission::NotRegradable) { sub.regrade_viva! }
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob)
+  end
+
+  test "adopt_viva_grade! returns the displaced run read under the lock" do
+    sub = make_viva_submission(status: :done)
+    first = make_run(sub, total: 40)
+    stale_handle = Submission.find(sub.id)
+    stale_handle.viva_grade                                        # caches `first`
+    second = make_run(sub, total: 50, superseded_at: Time.zone.now)
+    sub.adopt_viva_grade!(second)                                  # a re-run lands meanwhile
+    third = make_run(sub, total: 45, superseded_at: Time.zone.now)
+    assert_equal second, stale_handle.adopt_viva_grade!(third, reason: 'reverted')
+    assert_equal 'reverted', second.reload.superseded_reason
+    assert_equal 'replaced', first.reload.superseded_reason
+    assert_nil sub.adopt_viva_grade!(third), 'nothing displaced when the run is already current'
+  end
+
   test "fail_stale_viva_evaluating! sweeps a stale evaluating submission whose only grade rows are superseded" do
     sub = make_viva_submission(status: :evaluating)
     sub.viva_grades.create!(superseded_at: Time.zone.now, superseded_reason: 'error', error: 'x')
