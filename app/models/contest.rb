@@ -173,6 +173,21 @@ class Contest < ApplicationRecord
                .joins(:problem).merge(Problem.viva_exam)
   end
 
+  # Viva grading status for the status line next to "Finish open vivas":
+  # sessions whose interview has ended and whose first grade has not landed
+  # (:evaluating), and sessions whose first grading failed (:grader_error),
+  # over the same sessions as #open_viva_sessions (enrolled users, this
+  # contest's viva problems, started inside the window, not archived).
+  # Regrades of graded sessions stay :done and are not counted: those
+  # students keep a valid grade the whole time. Zero and zero means the
+  # contest's viva scores are final. Returns {grading:, errors:}.
+  def viva_grading_counts
+    counts = submissions.where(viva_archived_at: nil, status: %i[evaluating grader_error])
+                        .joins(:problem).merge(Problem.viva_exam)
+                        .reorder(nil).group(:status).count
+    {grading: counts['evaluating'].to_i, errors: counts['grader_error'].to_i}
+  end
+
   # "Finish open vivas" (contests/show): runs Submission#finalize_open_viva!
   # once over every open session — answered ones go to grading, greeting-only
   # ones are archived, a session whose assistant reply is still in flight is

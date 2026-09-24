@@ -1,6 +1,6 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
-                                     :ai_usage, :ai_usage_query, :finish_open_vivas,
+                                     :ai_usage, :ai_usage_query, :finish_open_vivas, :viva_status,
                                      :add_users_from_csv, :clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
@@ -10,7 +10,7 @@ class ContestsController < ApplicationController
   before_action :set_problem, only: [:do_problem]
 
   USER_ACTION = [:user_check_in, :set_active]
-  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query finish_open_vivas clone
+  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query finish_open_vivas viva_status clone
                      show_users_query show_problems_query
                      add_users_from_csv add_user add_user_by_group
                      add_problem add_problem_by_group
@@ -78,6 +78,13 @@ class ContestsController < ApplicationController
   # POST /contests/:id/ai_usage_query — per-call feed for the DataTable.
   def ai_usage_query
     render json: { data: AiUsageReport.new(@contest).calls_json }
+  end
+
+  # GET /contests/:id/viva_status — the viva grading status line next to
+  # "Finish open vivas", re-fetched into its turbo frame every 10 s while
+  # anything is still grading (contests/_viva_status).
+  def viva_status
+    render partial: 'viva_status', locals: {contest: @contest}
   end
 
   # POST /contests/:id/finish_open_vivas — the "Finish open vivas" button.

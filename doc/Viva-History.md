@@ -39,6 +39,12 @@ repo, started 2026-09-02).
 
 ## Entries
 
+### 2026-09-24 — Contest page shows how many vivas are still being graded
+**behavior (staff UI)** · rev 2201 (master); backlog entry raised 2026-09-23 → Resolved
+- **Problem observed:** reports bucket a viva by its start, so grades land after the bell, and staff had no signal on the contest page that the score table was final; the rule was to watch the queue page by hand.
+- **Change:** a status badge next to **Finish open vivas** — "Grading: N in progress", "N grader errors", or "All vivas graded" — over the same in-window, enrolled, non-archived sessions (`Contest#viva_grading_counts`), refreshed every 10 s through a turbo frame while anything is grading. Regrades of graded sessions are not counted.
+- **Outcome / status:** on master, not yet deployed; checked in a headless browser against the local copy of `d69_q1` (the badge flipped from "Grading: 1 in progress" to "All vivas graded" 9 s after the grade landed).
+
 ### 2026-09-23 — Grade history: every grader run is kept; Re-run and batch regrade decide under never-lower
 **platform code** · revs 2183–2192, review fixes 2195–2197 (master); spec `docs/superpowers/specs/2026-09-23-viva-grade-history-design.md`; closes the gap recorded in the 2026-09-09 entry; backlog "Viva grade history" → Resolved
 - **Problem observed:** `viva_grades` held one row per submission (unique index) and the admin Re-run button destroyed it, so the 2026-09-09 Cell Detection regrade of 157 sessions needed an external before-image, a hand-written max(old, new) step and a verify pass; a failed re-run left the student with no grade at all; `rubric_version` was never written, so nothing recorded which briefing graded a session and a batch could not tell a stale grade from a fresh one.

@@ -36,6 +36,7 @@
           form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': "Finish #{pluralize(open_vivas, 'open viva session')}? Answered sessions are sent to grading; greeting-only sessions are archived."}} do
           = mdi(:stop_circle, 'me-1') + 'Finish open vivas'
           %span#open-viva-count.badge.bg-warning-subtle.text-warning-emphasis.border.border-warning-subtle.rounded-pill.ms-1= open_vivas
+        = render 'viva_status', contest: @contest
       = link_to mdi(:query_stats, 'me-1') + 'AI Usage', ai_usage_contest_path(@contest), class: 'btn btn-outline-info btn-flex'
       = link_to mdi(:summarize, 'me-1') + 'Watch', view_contest_path(@contest), class: 'btn btn-outline-primary btn-flex'
       = link_to mdi(:edit, 'me-1') + 'Edit', edit_contest_path(@contest), class: 'btn btn-primary btn-flex'

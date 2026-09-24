@@ -11,6 +11,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Viva grading status on the contest page.** Next to **Finish open vivas**,
+  a badge shows how many of the contest's viva sessions are still being
+  graded and how many failed grading, refreshing itself every 10 seconds
+  while anything is in progress, and reads **All vivas graded** once the
+  scores are final. (rev 2201)
 - **Viva grade history and batch regrade.** Every grader run is now kept:
   the viva session page's Admin card lists each run (time, model, total,
   rubric version, who asked, outcome) with a **Raw** toggle and a **Make
