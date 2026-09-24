@@ -72,6 +72,12 @@ module AuditLogsHelper
       bulk_badge 'remove_circle_outline', 'bulk remove problems'
     when 'finish_open_vivas'
       bulk_badge 'stop_circle', 'finish open vivas'
+    when 'viva_regrade'
+      bulk_badge 'replay', 'viva regrade (batch)'
+    when 'viva_regrade_revert'
+      bulk_badge 'undo', 'viva regrade revert'
+    when 'viva_grade_adopt'
+      icon_badge 'published_with_changes', 'viva grade made current', 'bg-warning-subtle text-warning-emphasis'
     else
       badge action, 'bg-secondary-subtle text-secondary-emphasis'
     end

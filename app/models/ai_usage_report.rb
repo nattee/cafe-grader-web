@@ -194,16 +194,18 @@ class AiUsageReport
     end
   end
 
+  # Every grader run counts — superseded and failed runs cost money too (one
+  # viva_grades row per run since the grade-history change, 2026-09-23).
   def grade_calls
     return [] if sub_ids.empty?
     VivaGrade.where(submission_id: sub_ids, graded_at: window)
              .joins(submission: :user)
              .pluck(:submission_id, "submissions.user_id", "submissions.problem_id", "users.login",
-                    :llm_model, :graded_at, :llm_latency_ms, :cost)
-             .map do |sid, uid, pid, login, model, gat, lat, cost|
+                    :llm_model, :graded_at, :llm_latency_ms, :cost, :total_points)
+             .map do |sid, uid, pid, login, model, gat, lat, cost, total|
       Call.new(kind: "viva grade", at: gat, user_id: uid, login: login, problem_id: pid, problem_name: problem_name(pid),
                submission_id: sid, model: model, queued_ms: nil, model_ms: lat, total_ms: nil,
-               tokens_in: nil, tokens_out: nil, cost: cost, points: nil, status: "ok")
+               tokens_in: nil, tokens_out: nil, cost: cost, points: nil, status: total.nil? ? "error" : "ok")
     end
   end
 

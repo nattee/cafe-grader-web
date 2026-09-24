@@ -148,27 +148,9 @@ max-score number shown on the list too. It reappears the moment the user is
 back inside a qualifying window or contest mode is switched off; nothing
 about the underlying `Submission` row changes.
 
-**Contest reports key on `submitted_at`, which for a viva is session
-*start*, not completion.** `ReportController#submission_in_range`
-(`app/controllers/report_controller.rb:628-638`) buckets submissions by
-`submitted_at` (or by id range) with no viva-specific carve-out; it's the
-same helper used by every report action (`submission`, `submission_query`,
-score summaries, etc. — `report_controller.rb:38,63,67,145,180,221`). Because
-`VivaSessionsController#start` sets `submitted_at: Time.zone.now` when the
-`Submission` is created (`viva_sessions_controller.rb:89-98`) — before any
-turns are exchanged and long before grading finishes — a report window that
-captures the moment a student *began* a viva will include that attempt even
-if grading completes well after the window nominally closed.
+**Contest reports key on `submitted_at`, which for a viva is session *start* — by design.** `ReportController#submission_in_range` (`app/controllers/report_controller.rb`) buckets submissions by `submitted_at` (or by id range) with no viva-specific carve-out, `Contest#submissions` applies the same window rule, and `VivaSessionsController#start` sets `submitted_at` when the session is created, before any turn. The grade-history feature (spec `docs/superpowers/specs/2026-09-23-viva-grade-history-design.md`) depends on this: a regrade adds a grader run days or weeks after the session and moves `submissions.graded_at` to the adopted run, but `submitted_at` never moves, so a session stays in the contest window in which the student took it. Bucketing on grading time would let a rubric fix months later pull a quiz session out of its contest.
 
-**Closing-bell caveat.** Grading is asynchronous and can legitimately land
-minutes after a contest's stop time even under today's (Phase A) behavior —
-the interviewer may still be mid-conversation at the bell, and the grader LLM
-call itself takes time once the interview ends. (Phase B — not yet built —
-adds a hard window-end cutoff that force-finishes an in-window session's
-interview, but even then the *grading* pass still runs after the cutoff and
-takes real wall-clock time.) **Operational rule: don't pull final contest
-score tables the instant a contest window closes — wait until the graders
-page (`/grader_processes/queues`) shows no in-flight viva jobs.**
+**What this means at the bell.** First grading is asynchronous: an interview may still be mid-conversation when the window closes, and the grader call itself takes time after the interview ends. A session started inside the window counts in the window however late its grade lands. The tooling for the closing minutes is the contest page's **Finish open vivas** button (rev 2161), which closes every still-open in-window session and sends the answered ones to grading, plus the queue page (`/grader_processes/queues`) for in-flight viva jobs. **Operational rule: pull the final score table after Finish open vivas, once the queue page shows no viva grading in flight.** An in-flight count on the contest page itself is in `doc/backlog.md`.
 
 ---
 

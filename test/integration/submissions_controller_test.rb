@@ -152,4 +152,113 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_predicate sub.reload, :evaluating?
   end
+
+  # --- grade history: rejudge options + adopt_viva_grade (spec 2026-09-23-viva-grade-history-design) ---
+
+  def make_run(sub, total:, superseded_at: nil, reason: nil)
+    sub.viva_grades.create!(total_points: total, narrative: "n#{total}", score_json: {'a' => total}.to_json,
+                            llm_model: 'test-model', graded_at: Time.zone.now, superseded_at: superseded_at,
+                            superseded_reason: reason)
+  end
+
+  test "viva rejudge passes the model, the never-lower choice and the admin to the job and keeps the grade" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    make_run(sub, total: 40)
+    sub.update!(points: 40)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob,
+                         args: [sub, {model: 'gemini-x', never_lower: false, requested_by_id: users(:admin).id}]) do
+      post rejudge_submission_path(sub), params: {model: 'gemini-x', never_lower: '0'}, as: :turbo_stream
+    end
+    assert_response :success
+    assert_includes response.body, 'replaces the current grade'
+    sub.reload
+    assert_equal 'done', sub.status
+    assert_equal 40, sub.points
+    assert_equal 1, sub.viva_grades.count, 'the old row is kept, not destroyed'
+  end
+
+  test "viva rejudge keeps the higher grade when the box is ticked and retries a failed first grading" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :grader_error)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob, args: [sub, {never_lower: true, requested_by_id: users(:admin).id}]) do
+      post rejudge_submission_path(sub), params: {model: '', never_lower: '1'}, as: :turbo_stream
+    end
+    assert_response :success
+    assert_includes response.body, 'keeps the higher grade'
+    assert_predicate sub.reload, :evaluating?
+  end
+
+  test "viva rejudge on an open interview is refused with an alert toast" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      post rejudge_submission_path(sub), params: {never_lower: '1'}, as: :turbo_stream
+    end
+    assert_response :success
+    assert_includes response.body, 'still open'
+    assert_predicate sub.reload, :submitted?
+  end
+
+  test "adopt_viva_grade makes an earlier run current, audits it and redirects to the viva page" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    old = make_run(sub, total: 40, superseded_at: 1.hour.ago, reason: 'replaced')
+    cur = make_run(sub, total: 70)
+    sub.update!(points: 70)
+    post adopt_viva_grade_submission_path(sub, grade_id: old.id)
+    assert_redirected_to viva_submission_path(sub)
+    follow_redirect!
+    assert_includes response.body, 'is now the current grade'
+    sub.reload
+    assert_equal 40, sub.points
+    assert_equal old, sub.viva_grade
+    assert_equal 'reverted', cur.reload.superseded_reason
+    audit = AuditLog.where(auditable: sub.problem, action: 'viva_grade_adopt').order(:id).last
+    assert_equal [cur.id, old.id], audit.object_changes['grade_id']
+    assert_equal [70.0, 40.0], audit.object_changes['points']
+    assert_equal users(:admin).id, audit.user_id
+  end
+
+  test "adopt_viva_grade refuses a grade run of another session" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    make_run(sub, total: 70)
+    sub.update!(points: 70)
+    other = make_viva_submission(user: users(:james), status: :done)
+    foreign = make_run(other, total: 90, superseded_at: 1.hour.ago, reason: 'replaced')
+    post adopt_viva_grade_submission_path(sub, grade_id: foreign.id)
+    assert_redirected_to viva_submission_path(sub)
+    assert_equal 'No such grade run for this session.', flash[:alert]
+    assert_equal 70, sub.reload.points
+    assert_nil foreign.reload.superseded_by_id
+    refute AuditLog.where(action: 'viva_grade_adopt').exists?
+  end
+
+  test "adopt_viva_grade refuses a failed run and a session still grading" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    make_run(sub, total: 70)
+    sub.update!(points: 70)
+    failed = sub.viva_grades.create!(superseded_at: Time.zone.now, superseded_reason: 'error', error: 'x')
+    post adopt_viva_grade_submission_path(sub, grade_id: failed.id)
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/produced no grade/, flash[:alert])
+    assert_equal 70, sub.reload.points
+
+    old = make_run(sub, total: 40, superseded_at: 1.hour.ago, reason: 'replaced')
+    sub.update!(status: :evaluating)
+    post adopt_viva_grade_submission_path(sub, grade_id: old.id)
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/in progress/, flash[:alert])
+    assert_equal 70, sub.reload.points
+  end
+
+  test "a normal user cannot adopt a viva grade" do
+    sign_in_as("john", "hello")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    run = make_run(sub, total: 40, superseded_at: 1.hour.ago, reason: 'replaced')
+    post adopt_viva_grade_submission_path(sub, grade_id: run.id)
+    assert_redirected_to list_main_path
+  end
 end

@@ -367,6 +367,30 @@ Then decide which layer the fix belongs to: briefing (this problem's trap,
 hint, witnesses), conduct (every problem in the course), or platform (a
 code change — file it in the repo's backlog).
 
+### After you change a briefing: regrade, never lower
+
+A briefing or conduct edit changes what the grader reads, so sessions graded
+before it were graded under a different rubric. Regrade them in one batch
+rather than one Re-run at a time, and let the platform keep the higher grade:
+
+1. Apply the new briefing (kit import or the edit form).
+2. Dry run: `bin/rails viva:regrade PROBLEM=<name>` lists how many sessions
+   are stale under the new rubric and an estimated cost. Add
+   `CONTEST=<name>` to touch one exam cohort only, `LIMIT=5` to rehearse.
+3. Apply: the same command with `APPLY=1`; when the queue is empty,
+   `bin/rails viva:regrade_status BATCH=<id>`. Read the old / new / final
+   means and the *down* count before announcing anything.
+
+Two rules the platform enforces for you: a student keeps whichever **whole**
+grade record scores higher (points, breakdown and narrative together), and
+nothing is deleted — every run stays in the session's grade history, and
+`viva:regrade_revert BATCH=<id>` puts a batch back. Expect noise: the same
+transcript regraded by the same model moved by SD 4 points in our first
+cohort regrade, so a small rubric edit plus a plain regrade would lower some
+students by luck; that is what never-lower is for. Use `REPLACE=1` only when
+the old grades are wrong in kind (a hijacked grader, a broken rubric), not
+merely different.
+
 ---
 
 ## 10. Pitfalls catalogue
@@ -393,6 +417,7 @@ Every row is something we observed on real student sessions
 | A correct but *different* design scores low on the container criterion (Quiz 1, 2026-09-09) | Briefing named one design; the grader treated the equivalent alternative as wrong | Name **every** acceptable design in the model answers and in the criterion text; if found after the exam, regrade under a never-lower rule (briefing + operation) |
 | Same transcript regraded: 74 → 63, 31 → 42; SD 4 points over 157 sessions | Grader rerun noise (gemini-3.7-flash), not the rubric | Treat one grade as ±10; never "fix" a cohort with a small rubric edit and a plain regrade — keep the higher record (policy); consider averaging two grading passes for exams |
 | Rubric wording or a probe only turns out to be confusing once real students hit it | Viva published without anyone sitting it | Take two test-drives first — strong and weak student — via the edit page's Test-drive button; read both narratives (authoring) |
+| Grades need redoing after a briefing fix, but a plain re-run would lower some students | Re-run replaces; rerun noise is about ±10 per grade | Batch `viva:regrade` (never-lower by default, stale sessions only); read `viva:regrade_status` before announcing (operation) |
 
 ---
 
@@ -433,3 +458,5 @@ skips the block silently.
 - [ ] Caps sized to the plan; daily limit chosen; grounding only if needed.
 - [ ] Piloted twice (strong, weak); transcript and rubric JSON read.
 - [ ] First audit scheduled after ~50 sessions; statistics split by model.
+- [ ] After any briefing change on a live problem: `viva:regrade` dry run,
+      then `APPLY=1`, then read the status report.
