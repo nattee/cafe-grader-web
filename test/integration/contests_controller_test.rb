@@ -216,4 +216,57 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     post finish_open_vivas_contest_path(contests(:contest_a)), as: :turbo_stream
     assert_response :redirect
   end
+
+  # --- viva grading status line (next to "Finish open vivas") ---
+
+  def viva_session_in_contest_a(status:)
+    Submission.create!(user: users(:james), problem: problems(:prob_viva), language: viva_language,
+                       status: status, submitted_at: Time.zone.now)
+  end
+
+  test "contest page shows All vivas graded when nothing is waiting, with the refresh timer off" do
+    add_viva_to_contest_a
+    sign_in_as("admin", "admin")
+    get contest_path(contests(:contest_a))
+    assert_response :success
+    assert_select 'turbo-frame#viva-status', 1
+    assert_select 'turbo-frame#viva-status .badge', text: 'All vivas graded'
+    assert_select 'turbo-frame#viva-status [data-controller=refresh][data-refresh-delay-value="-1"]', 1
+  end
+
+  test "viva_status shows the grading and error counts and keeps refreshing while grading" do
+    add_viva_to_contest_a
+    viva_session_in_contest_a(status: :evaluating)
+    viva_session_in_contest_a(status: :evaluating)
+    viva_session_in_contest_a(status: :grader_error)
+    sign_in_as("admin", "admin")
+    get viva_status_contest_path(contests(:contest_a))
+    assert_response :success
+    assert_select 'turbo-frame#viva-status .badge', text: 'Grading: 2 in progress'
+    assert_select 'turbo-frame#viva-status .badge', text: '1 grader error'
+    assert_select 'turbo-frame#viva-status [data-refresh-delay-value="10000"]', 1
+    assert_select "turbo-frame#viva-status a[href=?][data-refresh-target=refreshLink]", viva_status_contest_path(contests(:contest_a))
+  end
+
+  test "viva_status stops refreshing when only grader errors are left" do
+    add_viva_to_contest_a
+    viva_session_in_contest_a(status: :grader_error)
+    sign_in_as("admin", "admin")
+    get viva_status_contest_path(contests(:contest_a))
+    assert_select 'turbo-frame#viva-status .badge', text: '1 grader error'
+    assert_select 'turbo-frame#viva-status [data-refresh-delay-value="-1"]', 1
+  end
+
+  test "contest page has no viva status line when the contest has no viva problem" do
+    sign_in_as("admin", "admin")
+    get contest_path(contests(:contest_a))
+    assert_select 'turbo-frame#viva-status', 0
+  end
+
+  test "a student cannot read the viva status" do
+    add_viva_to_contest_a
+    sign_in_as("james", "morning")
+    get viva_status_contest_path(contests(:contest_a))
+    assert_response :redirect
+  end
 end

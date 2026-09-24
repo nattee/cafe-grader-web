@@ -22,20 +22,6 @@ Conventions:
 
 ---
 
-## Contest page: show how many viva gradings are still in flight
-
-**Raised 2026-09-23** while designing grade history (`doc/viva-visibility.md`,
-"What this means at the bell"). Reports bucket a viva by its start, so a
-session's grade can land after the window closes and staff have no signal on
-the contest page that the score table is final; today they check
-`/grader_processes/queues` by hand. Proposed: next to **Finish open vivas** on
-`contests/show`, a count of the contest's viva sessions in `:evaluating`
-(`Contest#submissions.evaluating` joined to viva problems), refreshed with the
-page; optionally the same count on the contest AI-usage report. Rough size:
-half a day.
-
----
-
 ## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
 
 **Raised 2026-08-03 from the CMS migration validation.** Three separate things
@@ -445,6 +431,16 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Contest page: show how many viva gradings are still in flight — RESOLVED 2026-09-24
+
+**Rev 2201.** `Contest#viva_grading_counts` (evaluating and grader_error
+sessions over the Finish-open-vivas scope) behind a status badge next to
+**Finish open vivas** on `contests/show`, served by `contests#viva_status`
+into a turbo frame and refreshed every 10 s while anything is grading; reads
+"All vivas graded" when the scores are final. Not added to the AI-usage
+report. Record: CHANGELOG [Unreleased], `doc/viva-visibility.md`,
+`doc/Viva-History.md` 2026-09-24.
 
 ### Viva grade history — make "regrade" a feature instead of a script — RESOLVED 2026-09-23
 

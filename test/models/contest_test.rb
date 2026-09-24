@@ -194,4 +194,28 @@ class ContestTest < ActiveSupport::TestCase
     assert_equal({graded: 1, archived: 1, skipped: 0}, contest.finish_open_vivas!)
     assert_equal({graded: 0, archived: 0, skipped: 0}, contest.finish_open_vivas!)
   end
+
+  # --- viva_grading_counts (the status line next to "Finish open vivas") ---
+
+  def viva_session(user:, status:, archived: false, submitted_at: Time.zone.now)
+    Submission.create!(user: user, problem: problems(:prob_viva), language: viva_language, status: status,
+                       submitted_at: submitted_at, viva_archived_at: (archived ? Time.zone.now : nil))
+  end
+
+  test "viva_grading_counts counts in-window evaluating and grader_error sessions of enrolled users" do
+    contest = contest_with_viva
+    viva_session(user: users(:james), status: :evaluating)
+    viva_session(user: users(:jack),  status: :evaluating)
+    viva_session(user: users(:james), status: :grader_error)
+    viva_session(user: users(:james), status: :done)                               # graded: not counted
+    viva_session(user: users(:james), status: :submitted)                          # still open: not counted
+    viva_session(user: users(:jack),  status: :evaluating, archived: true)         # archived: not counted
+    viva_session(user: users(:john),  status: :evaluating)                         # not enrolled
+    viva_session(user: users(:jack),  status: :evaluating, submitted_at: 2.days.ago) # outside the window
+    assert_equal({grading: 2, errors: 1}, contest.viva_grading_counts)
+  end
+
+  test "viva_grading_counts is zero when nothing is waiting" do
+    assert_equal({grading: 0, errors: 0}, contest_with_viva.viva_grading_counts)
+  end
 end

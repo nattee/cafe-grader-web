@@ -179,8 +179,11 @@ contest.
 **Grading lag at the bell.** Grading happens after the interview ends, and
 it takes real time — the AI grader has to read the whole transcript and
 produce a score. Don't pull your final contest results the instant a window
-closes. Check the grading-queue page first and wait until no viva jobs are
-still running, then pull your tables.
+closes. After the bell, click **Finish open vivas** on the contest page and
+watch the status badge beside it: it shows how many sessions are still being
+graded and updates itself every few seconds. Pull your tables once it reads
+**All vivas graded**. If it shows grader errors, those sessions' grading
+failed; open each one and use **Re-run grading** first.
 
 **If you're developing or testing this locally:** the AI examiner and
 grader only respond when the server is running in the deployment mode that

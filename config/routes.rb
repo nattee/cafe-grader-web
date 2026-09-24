@@ -82,6 +82,7 @@ Rails.application.routes.draw do
       get 'ai_usage'
       post 'ai_usage_query'
       post 'finish_open_vivas'
+      get 'viva_status'
       post 'add_users_from_csv'
       get 'clone'
       get 'set_active'
