@@ -59,6 +59,18 @@ class Viva::RegraderTest < ActiveSupport::TestCase
     assert_equal [sub.id, failed_only.id].sort, regrader(all: true).plan.targets.map(&:id).sort, 'ALL=1 still overrides'
   end
 
+  test "plan targets a done session whose only run under the current rubric was reverted or filed as error" do
+    reverted = graded(user: users(:john), total: 60)                          # current grade: stale rubric
+    reverted.viva_grades.create!(total_points: 55, graded_at: Time.zone.now, superseded_at: Time.zone.now,
+                                 superseded_reason: 'reverted', rubric_version: @rubric, batch_id: 'earlier')
+    errored = graded(user: users(:james), total: 60)                          # current grade: stale rubric
+    errored.viva_grades.create!(total_points: 58, graded_at: Time.zone.now, superseded_at: Time.zone.now,
+                                superseded_reason: 'error', error: 'adopt failed', rubric_version: @rubric, batch_id: 'earlier')
+    plan = regrader.plan
+    assert_equal [reverted.id, errored.id].sort, plan.targets.map(&:id).sort
+    assert_equal 0, plan.up_to_date
+  end
+
   test "plan targets a done session that has no grade row at all" do
     bare = Submission.create!(user: users(:john), problem: @problem, language: viva_language, status: :done,
                               points: nil, submitted_at: Time.zone.now)

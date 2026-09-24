@@ -228,6 +228,17 @@ class Llm::VivaGradeAssistTest < ActiveSupport::TestCase
     assert_equal 40, @submission.points
   end
 
+  test "a transport error during adoption itself leaves the scored run un-superseded, not filed as error" do
+    def @submission.adopt_viva_grade!(*) = raise(ActiveRecord::Deadlocked, 'lock wait timeout exceeded')
+    grader = ScriptedGrader.new(submission: @submission, replies: [raw_response(good_grade_json(total: 87))])
+    assert_raises(ActiveRecord::Deadlocked) { grader.call }
+    run = @submission.viva_grades.order(:id).last
+    assert_equal 87, run.total_points, 'the grade the model returned is not lost'
+    assert_nil run.superseded_reason, 'a scored-but-unadopted row stays a candidate, not an error'
+    refute run.current?
+    assert_nil @submission.reload.viva_grade
+  end
+
   test "call does not re-ask a truncated reply" do
     grader = ScriptedGrader.new(submission: @submission,
                                 replies: [raw_response('{"total_points": 8', finish: 'length'), raw_response(good_grade_json)])

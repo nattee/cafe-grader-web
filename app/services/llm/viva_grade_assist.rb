@@ -69,10 +69,14 @@ module Llm
 
     private
 
+    # A row with points already saved is a valid grade that simply never got
+    # adopted (e.g. adopt_viva_grade! itself hit the transport error) — it
+    # stays 'not adopted' (superseded_reason nil), a candidate Make current
+    # can still adopt, not filed as 'error'.
     def abandon_saved_run(exception)
       return unless @grade&.persisted?
       run = VivaGrade.find_by(id: @grade.id)
-      return if run.nil? || run.current? || run.superseded_reason.present?
+      return if run.nil? || run.current? || run.superseded_reason.present? || run.total_points.present?
       run.update!(superseded_reason: 'error', error: format_error(exception).truncate(2000))
     rescue => e
       Rails.logger.error("[viva grade] could not file run #{@grade&.id} as error: #{e.class}: #{e.message}")

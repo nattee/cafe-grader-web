@@ -127,8 +127,12 @@ module Viva
         end
       end
       @io.puts "queued #{queued.size} run(s) as batch #{batch_id}"
-      @io.puts "watch:   bin/rails viva:regrade_status BATCH=#{batch_id}   (queue page: /grader_processes/queues)"
-      @io.puts "revert:  bin/rails viva:regrade_revert BATCH=#{batch_id} APPLY=1"
+      if queued.any?
+        @io.puts "watch:   bin/rails viva:regrade_status BATCH=#{batch_id}   (queue page: /grader_processes/queues)"
+        @io.puts "revert:  bin/rails viva:regrade_revert BATCH=#{batch_id} APPLY=1"
+      else
+        @io.puts "nothing queued; no batch was recorded"
+      end
       [batch_id, p]
     end
 
@@ -284,10 +288,12 @@ module Viva
     end
 
     # Ids (a Set) of the given submissions that have a valid run under the
-    # current rubric, current or not — one query.
+    # current rubric, current or not — one query. Reverted and error runs
+    # never counted, so they do not make a session fresh.
     def graded_under_current_rubric(ids)
       return Set.new if ids.empty?
       VivaGrade.where(submission_id: ids, rubric_version: @rubric_version).where.not(total_points: nil)
+               .where("viva_grades.superseded_reason IS NULL OR viva_grades.superseded_reason NOT IN ('reverted', 'error')")
                .distinct.pluck(:submission_id).to_set
     end
 
