@@ -433,3 +433,12 @@ problem targets everything, as the 2026-09-09 run did. Production
 - Any change to how students start, restart or are limited.
 - A student-visible grading date or history.
 - Phase B of the context-policy design.
+
+## Deviations recorded during execution (2026-09-23)
+
+- **Make current is audited.** The spec rejected auditing single re-runs; Make current changes a student's score by hand, so it writes one `viva_grade_adopt` row on the problem (submission id, old and new run ids, old and new totals). Re-runs themselves stay unaudited: the grade row carries `requested_by_id` and `graded_at`.
+- **Failed first-grading rows are non-current too.** The spec's write rule ("every run is written non-current first") is applied uniformly, so a failed first grading leaves a submission with no current row rather than a failed current row; the stuck sweeper's `where.missing(:viva_grade)` therefore matches exactly "no adopted run". Legacy rows (a failed run that is current, pre-migration) are handled by `adopt_viva_grade!`, which labels a displaced failed run `error`.
+- **`record_failure!` takes `rubric_version:` from the caller** instead of computing it, so the model does not depend on the service class.
+- **Known Gaps in `doc/Viva-Exam.md` had no grade-history line** to remove; the 2026-09-09 History entry was the only place the gap was recorded and the new entry closes it.
+- **Grade-history table is five columns with icon-only actions** (render-check ruling during Task 4): who asked sits under the time, the rubric version under the model, Make current and Raw are icon buttons with tooltips, per CLAUDE.md "Table Action Columns"; the seven-column layout overflowed the right-hand card.
+- **`viva:regrade_revert` refuses a batch whose problem no longer exists** (Task 3 review): audit rows outlive their target by design, so the revert raises a clear error instead of crashing; `viva:regrade_status` sets `Current.actor_note` like its siblings. The migration adds the composite index before dropping the old one, because MySQL 8 will not drop the only index backing the `viva_grades.submission_id` foreign key.

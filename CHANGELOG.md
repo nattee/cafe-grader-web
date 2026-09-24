@@ -11,6 +11,20 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Viva grade history and batch regrade.** Every grader run is now kept:
+  the viva session page's Admin card lists each run (time, model, total,
+  rubric version, who asked, outcome) with a **Raw** toggle and a **Make
+  current** button that puts an earlier grade back. **Re-run grading** no
+  longer discards the current grade: the student keeps it until the new run
+  is adopted, a new **Keep the higher grade** checkbox (on by default) files
+  a lower re-run away instead of applying it, a failed re-run never removes
+  a grade, and an open interview can no longer be re-run. New rake tasks
+  `viva:regrade PROBLEM= [CONTEST=] [MODEL=] [ALL=1] [REPLACE=1] [LIMIT=]
+  [APPLY=1]` (stale grades only by default, one audit row per batch),
+  `viva:regrade_status BATCH=` and `viva:regrade_revert BATCH=` replace the
+  hand-run regrade toolkit. `viva_grades.rubric_version` is written on every
+  run. Adds six columns to `viva_grades` and drops its unique index
+  (migration). (rev 2183–2192)
 - **Viva test-drives: sit your own viva without polluting the data.** The
   problem edit page shows a **Test-drive** button on viva problems (editors of
   the problem's group and admins). The admin problem index offers the same
@@ -67,6 +81,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   continue. (rev 2155; automation repo rev 63)
 
 ### Changed
+- A viva's `submissions.graded_at` now follows the adopted grader run (Make
+  current or a batch regrade moves it). Reports still bucket a viva by
+  `submitted_at`, its session start, so a regrade never moves a session out
+  of its contest. The contest AI-usage report marks failed grader runs
+  `error` instead of `ok`. (rev 2185, 2190)
 - **Viva interviews and grading now run on their own background-job queue
   and worker**, isolated from AI-assist requests. During the 2026-09-09 quiz
   one 3-thread worker served interview turns, grading and assists together;

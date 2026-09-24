@@ -132,11 +132,23 @@ discussing with a student, or worth tightening your briefing against.
 
 ## Regrading and retakes
 
-If a grade looks wrong — for example the AI grader returned prose instead
-of a proper score, or you think a stronger model would do better — you can
-re-run grading on the same transcript without asking the student to redo
-the interview, optionally picking a different (usually stronger) grading
-model.
+If a grade looks wrong — the AI grader returned prose instead of a score, or
+you think a stronger model would do better — open the session and use
+**Re-run grading** on the Admin card, optionally with a different (usually
+stronger) grading model. The student does not redo the interview. Three
+things to know:
+
+- **Nothing is lost.** Every grading run is kept in the **Grade history**
+  table under the button, with its model, total and outcome. The current run
+  is the one that counts; **Make current** on any earlier run puts that grade
+  back.
+- **Keep the higher grade** is ticked by default: if the new run scores
+  lower, the student keeps their current grade and the run is filed as
+  "lower". Untick it only when the old grade is wrong in kind, not merely
+  different. A run that fails never removes an existing grade.
+- **Whole classes** are regraded in one batch by your platform administrator
+  (`viva:regrade`, optionally for one contest); it applies the same
+  keep-the-higher rule to every session and can be reverted.
 
 If you want to give a student a clean second attempt, use "Archive and
 allow retake." The old attempt is kept for your records but no longer

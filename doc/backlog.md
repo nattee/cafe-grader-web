@@ -22,22 +22,17 @@ Conventions:
 
 ---
 
-## Viva grade history — make "regrade" a feature instead of a script
+## Contest page: show how many viva gradings are still in flight
 
-**Raised 2026-09-09 after the Quiz 1 Cell Detection regrade** (done by hand with
-`course-prep/…/regrade-cell-detection-2026-09-09/tools/regrade_tool.rb`; record in
-`doc/Viva-History.md` 2026-09-09). `viva_grades` is one row per submission (unique
-index) and the admin **Re-run grading** button destroys it, so the app keeps no
-grade history and a batch regrade needs an external snapshot to be reversible.
-`viva_grades.rubric_version` exists and is never written.
-
-Proposed: `superseded_at` on `viva_grades` (index becomes non-unique; `has_one
-:viva_grade, -> { where(superseded_at: nil) }` + `has_many :viva_grades`); write
-`rubric_version` = sha256 of the briefing at grading time; the Re-run button and a
-new `bin/rails viva:regrade PROBLEM=<name> [MODEL=…] [NEVER_LOWER=1] [APPLY=1]`
-supersede instead of destroy; the admin viva page lists earlier grades. The
-never-lower rule keeps the whole higher record (points + breakdown + narrative),
-as decided 2026-09-09. Rough size: 1–2 days incl. migration, tests, docs.
+**Raised 2026-09-23** while designing grade history (`doc/viva-visibility.md`,
+"What this means at the bell"). Reports bucket a viva by its start, so a
+session's grade can land after the window closes and staff have no signal on
+the contest page that the score table is final; today they check
+`/grader_processes/queues` by hand. Proposed: next to **Finish open vivas** on
+`contests/show`, a count of the contest's viva sessions in `:evaluating`
+(`Contest#submissions.evaluating` joined to viva problems), refreshed with the
+page; optionally the same count on the contest AI-usage report. Rough size:
+half a day.
 
 ---
 
@@ -450,6 +445,18 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Viva grade history — make "regrade" a feature instead of a script — RESOLVED 2026-09-23
+
+**Revs 2183–2192**, spec `docs/superpowers/specs/2026-09-23-viva-grade-history-design.md`.
+One `viva_grades` row per grader run; `superseded_at IS NULL` marks the
+current grade; Re-run keeps the old row and decides under never-lower ("Keep
+the higher grade", default on); the Admin card lists the history with Make
+current; `bin/rails viva:regrade PROBLEM= [CONTEST=] [MODEL=] [ALL=1]
+[REPLACE=1] [LIMIT=] [APPLY=1]`, `viva:regrade_status`, `viva:regrade_revert`
+replace the course-prep toolkit; `rubric_version` written on every run.
+Record: CHANGELOG [Unreleased], `doc/Viva-History.md` 2026-09-23,
+`doc/Viva-Exam.md` "Regrading a cohort".
 
 ### Contest stop does not finish open viva sessions — RESOLVED 2026-09-23
 
