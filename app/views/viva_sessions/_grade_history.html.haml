@@ -31,15 +31,16 @@
               .rubric.text-secondary{title: viva_grade_rubric_title(run, current_rubric)}= run.rubric_version.present? ? run.rubric_version[0, 8] : '—'
             %td.text-end= run.valid_grade? ? run.total_points : '—'
             %td= viva_grade_outcome_badge(run)
-            %td.text-end.text-nowrap
-              - if run.valid_grade? && !run.current?
-                = button_to adopt_viva_grade_submission_path(submission, grade_id: run.id),
-                    class: 'btn btn-outline-warning border-0 py-1 px-2', title: "Make run ##{run.id} the current grade",
-                    form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': "Make run ##{run.id} (#{run.total_points}/100) the current grade? The student's score and feedback change to this run."}} do
-                  %span.mi published_with_changes
-              - if has_raw
-                %button.btn.btn-outline-secondary.border-0.py-1.px-2{type: 'button', title: 'Raw grader response', data: {bs_toggle: 'collapse', bs_target: "#grade-run-#{run.id}"}}
-                  %span.mi data_object
+            %td.align-middle.py-1.pr-2
+              .d-flex.gap-1.justify-content-end
+                - if run.valid_grade? && !run.current?
+                  = button_to adopt_viva_grade_submission_path(submission, grade_id: run.id),
+                      class: 'btn btn-outline-warning border-0 py-1 px-2', title: "Make run ##{run.id} the current grade",
+                      form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': "Make run ##{run.id} (#{run.total_points}/100) the current grade? The student's score and feedback change to this run."}} do
+                    %span.mi published_with_changes
+                - if has_raw
+                  %button.btn.btn-outline-secondary.border-0.py-1.px-2{type: 'button', title: 'Raw grader response', data: {bs_toggle: 'collapse', bs_target: "#grade-run-#{run.id}"}}
+                    %span.mi data_object
           - if has_raw
             %tr.collapse{id: "grade-run-#{run.id}"}
               %td{colspan: 5}

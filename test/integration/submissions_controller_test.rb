@@ -216,7 +216,23 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 'reverted', cur.reload.superseded_reason
     audit = AuditLog.where(auditable: sub.problem, action: 'viva_grade_adopt').order(:id).last
     assert_equal [cur.id, old.id], audit.object_changes['grade_id']
+    assert_equal [70.0, 40.0], audit.object_changes['points']
     assert_equal users(:admin).id, audit.user_id
+  end
+
+  test "adopt_viva_grade refuses a grade run of another session" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    make_run(sub, total: 70)
+    sub.update!(points: 70)
+    other = make_viva_submission(user: users(:james), status: :done)
+    foreign = make_run(other, total: 90, superseded_at: 1.hour.ago, reason: 'replaced')
+    post adopt_viva_grade_submission_path(sub, grade_id: foreign.id)
+    assert_redirected_to viva_submission_path(sub)
+    assert_equal 'No such grade run for this session.', flash[:alert]
+    assert_equal 70, sub.reload.points
+    assert_nil foreign.reload.superseded_by_id
+    refute AuditLog.where(action: 'viva_grade_adopt').exists?
   end
 
   test "adopt_viva_grade refuses a failed run and a session still grading" do

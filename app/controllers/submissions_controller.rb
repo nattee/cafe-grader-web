@@ -198,7 +198,10 @@ class SubmissionsController < ApplicationController
   # (Submission#adopt_viva_grade!; the displaced run is labelled 'reverted').
   # Changes a student's score by hand, so one audit row goes on the problem.
   def adopt_viva_grade
-    grade = @submission.viva_grades.find(params[:grade_id])
+    grade = @submission.viva_grades.find_by(id: params[:grade_id])
+    unless grade
+      redirect_to viva_submission_path(@submission), alert: 'No such grade run for this session.' and return
+    end
     if @submission.status.to_s.in?(%w[submitted evaluating])
       redirect_to viva_submission_path(@submission),
                   alert: "Cannot change the grade while the interview or grading is in progress (status: #{@submission.status})." and return
@@ -209,9 +212,10 @@ class SubmissionsController < ApplicationController
     if grade.current?
       redirect_to viva_submission_path(@submission), notice: "Run ##{grade.id} is already the current grade." and return
     end
-    previous = @submission.viva_grade
-    @submission.adopt_viva_grade!(grade, reason: 'reverted')
-    AuditLog.record!(auditable: @submission.problem, action: 'viva_grade_adopt', object_changes: {
+    # The displaced run as read under the lock — a re-run that landed after
+    # this page was rendered is what gets displaced, and what is audited.
+    previous = @submission.adopt_viva_grade!(grade, reason: 'reverted')
+    AuditLog.record!(auditable: @problem, action: 'viva_grade_adopt', object_changes: {
       'submission_id' => [nil, @submission.id],
       'grade_id'      => [previous&.id, grade.id],
       'points'        => [previous&.total_points&.to_f, grade.total_points.to_f]
