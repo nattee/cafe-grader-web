@@ -31,9 +31,12 @@ module Llm
                                   model: args[:model], requested_by_id: args[:requested_by_id], batch_id: args[:batch_id],
                                   rubric_version: Llm::VivaGradeAssist.rubric_version_for(@submission.problem, strict: false))
       end
-      return if @submission.valid_viva_grade?
-      @submission.update(status: :grader_error,
-                         grader_comment: "Grader error (retries exhausted): #{error.class.name}: #{error.message}")
+      # Check and mark under the row lock (see Llm::VivaGradeAssist#handle_error).
+      @submission.with_lock do
+        next if @submission.valid_viva_grade?
+        @submission.update!(status: :grader_error,
+                            grader_comment: "Grader error (retries exhausted): #{error.class.name}: #{error.message}")
+      end
     rescue => e
       Rails.logger.error "on_retries_exhausted failed for VivaGradeAssistJob: #{e.class}: #{e.message}"
     end

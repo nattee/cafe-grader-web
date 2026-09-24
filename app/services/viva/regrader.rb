@@ -44,21 +44,25 @@ module Viva
     # users, inside the window with each user's start offset / extra time).
     def candidates
       base = @contest ? @contest.submissions : Submission.regular
-      base.where(problem_id: @problem.id).includes(:viva_grade).order(:id)
+      base.where(problem_id: @problem.id).order(:id)
     end
 
-    # done sessions whose current grade is stale (a different rubric_version,
-    # or none) plus grader_error sessions as retries; with all: every done
-    # session. Open (submitted) and grading (evaluating) sessions are skipped.
+    # done sessions with no valid run under the current rubric_version, plus
+    # grader_error sessions as retries; with all: every done session. A done
+    # session is up to date when ANY valid run carries today's rubric — current
+    # or not: a run kept as 'lower' already had its chance, and grading it
+    # again would only draw more lottery tickets under never-lower. Open
+    # (submitted) and grading (evaluating) sessions are skipped.
     def plan
       targets = []
       up_to_date = 0
       open = 0
-      candidates.each do |sub|
+      subs = candidates.to_a
+      fresh = @all ? Set.new : graded_under_current_rubric(subs.map(&:id))
+      subs.each do |sub|
         case sub.status.to_s
         when 'done'
-          g = sub.viva_grade
-          if !@all && g&.valid_grade? && g.rubric_version == @rubric_version
+          if fresh.include?(sub.id)
             up_to_date += 1
           else
             targets << sub
@@ -84,6 +88,13 @@ module Viva
       p
     end
 
+    # Viva sessions being interviewed right now, site-wide (every viva
+    # problem, archived attempts excluded): their turns share the `viva`
+    # queue with the batch's runs, which queue behind them (priority 10).
+    def self.open_viva_sessions
+      Submission.submitted.joins(:problem).merge(Problem.viva_exam).where(viva_archived_at: nil).count
+    end
+
     # Queues one grader run per target under one batch id and writes the
     # batch's audit row on the problem — the durable record that
     # viva:regrade_status and viva:regrade_revert read the target list from.
@@ -93,21 +104,28 @@ module Viva
       @io.puts "== APPLYING viva:regrade #{@problem.name} as #{batch_id} =="
       print_plan(p)
       queued = []
-      p.targets.each do |sub|
-        sub.regrade_viva!(model: @model, never_lower: @never_lower, batch_id: batch_id)
-        queued << sub.id
-      rescue Submission::NotRegradable => e
-        @io.puts "SKIP     ##{sub.id}: #{e.message}"
+      begin
+        p.targets.each do |sub|
+          sub.regrade_viva!(model: @model, never_lower: @never_lower, batch_id: batch_id)
+          queued << sub.id
+        rescue Submission::NotRegradable => e
+          @io.puts "SKIP     ##{sub.id}: #{e.message}"
+        end
+      ensure
+        # Written even when the loop aborts part-way: the runs already queued
+        # will land, and status / revert find them only through this row.
+        if queued.any?
+          AuditLog.record!(auditable: @problem, action: 'viva_regrade', object_changes: {
+            'batch_id'       => [nil, batch_id],
+            'contest'        => [nil, @contest&.name],
+            'model'          => [nil, @model || 'default'],
+            'never_lower'    => [nil, @never_lower],
+            'rubric_version' => [nil, @rubric_version],
+            'targets'        => [nil, queued.size],
+            'submission_ids' => [nil, queued]
+          })
+        end
       end
-      AuditLog.record!(auditable: @problem, action: 'viva_regrade', object_changes: {
-        'batch_id'       => [nil, batch_id],
-        'contest'        => [nil, @contest&.name],
-        'model'          => [nil, @model || 'default'],
-        'never_lower'    => [nil, @never_lower],
-        'rubric_version' => [nil, @rubric_version],
-        'targets'        => [nil, queued.size],
-        'submission_ids' => [nil, queued]
-      })
       @io.puts "queued #{queued.size} run(s) as batch #{batch_id}"
       @io.puts "watch:   bin/rails viva:regrade_status BATCH=#{batch_id}   (queue page: /grader_processes/queues)"
       @io.puts "revert:  bin/rails viva:regrade_revert BATCH=#{batch_id} APPLY=1"
@@ -125,6 +143,9 @@ module Viva
               .detect { |a| a.object_changes.to_h.dig('batch_id', 1) == batch_id } or
         raise ArgumentError, "no viva_regrade audit row for batch #{batch_id}"
     end
+
+    # Outcome names in the order viva:regrade_status prints them.
+    OUTCOMES = %w[adopted lower error reverted replaced pending undecided].freeze
 
     class Status
       attr_reader :batch_id, :audit, :rows
@@ -164,7 +185,7 @@ module Viva
         line = "model #{oc.dig('model', 1)} · #{oc.dig('never_lower', 1) ? 'never-lower' : 'replace'} · rubric #{oc.dig('rubric_version', 1).to_s[0, 12]}"
         line += " · contest #{oc.dig('contest', 1)}" if oc.dig('contest', 1)
         io.puts line
-        io.puts 'outcomes  ' + %w[adopted lower error reverted pending undecided].map { |k| "#{k}=#{s[:counts][k] || 0}" }.join(' ')
+        io.puts 'outcomes  ' + OUTCOMES.map { |k| "#{k}=#{s[:counts][k] || 0}" }.join(' ')
         io.puts "means     old #{fmt(s[:mean_old])} · new #{fmt(s[:mean_new])} · final #{fmt(s[:mean_final])}"
         io.puts "movement  up=#{s[:movement][:up]} equal=#{s[:movement][:equal]} down=#{s[:movement][:down]}"
         io.puts format('%-10s %-14s %-8s %6s %6s %6s  %s', 'sub', 'login', 'archived', 'old', 'new', 'final', 'outcome')
@@ -186,17 +207,23 @@ module Viva
 
     # Per target: old = the grade current before the batch, new = this batch's
     # run, final = the grade current now. Outcomes: adopted, lower, error,
-    # reverted, pending (no run yet), undecided (run written, not decided).
+    # reverted, replaced (adopted, then displaced by a later run), pending (no
+    # run yet), undecided (run written, not decided). For a run that was
+    # adopted at some point, old is the run it displaced (the row whose
+    # superseded_by_id points at it), not whatever is current today.
     def self.status(batch_id)
       audit = find_batch_audit(batch_id)
       ids   = Array(audit.object_changes.to_h.dig('submission_ids', 1))
       runs  = VivaGrade.where(batch_id: batch_id).order(:id).group_by(&:submission_id)
       rows = Submission.where(id: ids).includes(:user, :viva_grade).order(:id).map do |sub|
         run = runs[sub.id]&.last
+        predecessor = -> { VivaGrade.find_by(superseded_by_id: run.id, submission_id: sub.id) }
         outcome, old =
           if run.nil?                               then ['pending', sub.viva_grade]
-          elsif run.current?                        then ['adopted', VivaGrade.find_by(superseded_by_id: run.id, submission_id: sub.id)]
-          elsif run.superseded_reason == 'reverted' then ['reverted', run.superseded_by]
+          elsif run.current?                        then ['adopted', predecessor.call]
+          # a revert re-adopts the predecessor, clearing its pointer; it is then run.superseded_by
+          elsif run.superseded_reason == 'reverted' then ['reverted', predecessor.call || run.superseded_by]
+          elsif run.superseded_reason == 'replaced' then ['replaced', predecessor.call]
           elsif run.superseded_reason.nil?          then ['undecided', sub.viva_grade]
           else                                           [run.superseded_reason, sub.viva_grade]   # lower | error
           end
@@ -215,6 +242,8 @@ module Viva
     def self.revert(batch_id, apply: false, io: $stdout, now: Time.zone.now)
       audit   = find_batch_audit(batch_id)
       problem = audit.auditable
+      # Audit rows outlive their target by design; a batch whose problem was
+      # destroyed has no grades left to revert and no problem to audit on.
       raise ArgumentError, "the problem of batch #{batch_id} no longer exists; nothing to revert" if problem.nil?
       io.puts(apply ? "== REVERTING batch #{batch_id} ==" : "== DRY RUN revert of batch #{batch_id} (report only; run with APPLY=1 to execute) ==")
       counts = Hash.new(0)
@@ -249,6 +278,17 @@ module Viva
       @io.puts format('%-10s %d   (retries after a grader error: %d, archived attempts: %d%s)', 'targets', p.targets.size, p.retries, p.archived, p.limit ? ", LIMIT=#{p.limit}" : '')
       @io.puts format('%-10s %d up to date under this rubric%s, %d open or grading', 'skipped', p.up_to_date, p.all ? '' : ' (ALL=1 to regrade anyway)', p.open)
       @io.puts format('%-10s %s', 'est. cost', p.estimated_cost ? format('USD %.2f (mean of %d past runs x %d)', p.estimated_cost, p.cost_samples, p.targets.size) : 'unknown (no past run has a cost)')
+      open_now = self.class.open_viva_sessions
+      @io.puts format('%-10s open viva sessions right now: %d (batch runs queue behind their turns)%s', 'WARNING', open_now,
+                      open_now.positive? ? '; prefer a time when no exam is live' : '')
+    end
+
+    # Ids (a Set) of the given submissions that have a valid run under the
+    # current rubric, current or not — one query.
+    def graded_under_current_rubric(ids)
+      return Set.new if ids.empty?
+      VivaGrade.where(submission_id: ids, rubric_version: @rubric_version).where.not(total_points: nil)
+               .distinct.pluck(:submission_id).to_set
     end
 
     def grader_class_name = Rails.configuration.llm[:viva_grade_service].presence || 'Llm::VivaGradeAssist'

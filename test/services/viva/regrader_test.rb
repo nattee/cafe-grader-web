@@ -47,6 +47,41 @@ class Viva::RegraderTest < ActiveSupport::TestCase
     assert_equal 3, plan.cost_samples
   end
 
+  test "plan counts a session with a lower run under the current rubric as up to date, however stale its current grade" do
+    sub = graded(user: users(:john), total: 60)                              # current grade: stale rubric
+    sub.viva_grades.create!(total_points: 45, graded_at: Time.zone.now, superseded_at: Time.zone.now,
+                            superseded_reason: 'lower', rubric_version: @rubric, batch_id: 'earlier')
+    failed_only = graded(user: users(:james))                                # an error run under today's rubric is no grade
+    failed_only.viva_grades.create!(superseded_at: Time.zone.now, superseded_reason: 'error', error: 'x', rubric_version: @rubric)
+    plan = regrader.plan
+    assert_equal [failed_only.id], plan.targets.map(&:id)
+    assert_equal 1, plan.up_to_date
+    assert_equal [sub.id, failed_only.id].sort, regrader(all: true).plan.targets.map(&:id).sort, 'ALL=1 still overrides'
+  end
+
+  test "plan targets a done session that has no grade row at all" do
+    bare = Submission.create!(user: users(:john), problem: @problem, language: viva_language, status: :done,
+                              points: nil, submitted_at: Time.zone.now)
+    assert_equal [bare.id], regrader.plan.targets.map(&:id)
+  end
+
+  test "the cost estimate is unknown when no past run has a cost" do
+    sub = graded(user: users(:john))
+    sub.viva_grades.update_all(cost: nil)
+    plan = regrader.report
+    assert_nil plan.estimated_cost
+    assert_equal 0, plan.cost_samples
+    assert_includes @io.string, 'unknown (no past run has a cost)'
+  end
+
+  test "the dry run warns how many viva sessions are open site-wide" do
+    graded(user: users(:john))
+    graded(user: users(:james), status: :submitted)
+    graded(user: users(:jack), status: :submitted, archived: true)          # archived: not live
+    regrader.report
+    assert_includes @io.string, 'open viva sessions right now: 1 (batch runs queue behind their turns)'
+  end
+
   test "ALL regrades up-to-date grades too; archived attempts are included; test-drives are not" do
     fresh    = graded(user: users(:john), rubric: :current)
     archived = graded(user: users(:james), archived: true)
@@ -123,6 +158,42 @@ class Viva::RegraderTest < ActiveSupport::TestCase
     Current.actor_note = nil
   end
 
+  test "apply! skips a target that became unregradable after the plan and queues the rest at batch priority" do
+    a = graded(user: users(:john))
+    b = graded(user: users(:james))
+    r = regrader
+    planned = r.plan
+    Submission.where(id: b.id).update_all(status: Submission.statuses[:submitted])   # reopened after the plan
+    r.define_singleton_method(:plan) { planned }
+    batch_id = nil
+    assert_enqueued_jobs 1, only: Llm::VivaGradeAssistJob do
+      batch_id, _p = r.apply!(now: Time.zone.local(2026, 9, 23, 18, 0, 0))
+    end
+    assert_match(/SKIP     ##{b.id}: the interview is still open/, @io.string)
+    assert_equal 10, enqueued_jobs.last[:priority]
+    audit = Viva::Regrader.find_batch_audit(batch_id)
+    assert_equal [a.id], audit.object_changes.dig('submission_ids', 1)
+  end
+
+  test "apply! still writes the audit row for the runs queued before an unexpected error" do
+    a = graded(user: users(:john))
+    b = graded(user: users(:james))
+    r = regrader
+    planned = r.plan
+    boom = planned.targets.find { |t| t.id == b.id }
+    def boom.regrade_viva!(**) = raise(ActiveRecord::StatementInvalid, 'lost connection')
+    r.define_singleton_method(:plan) { planned }
+    assert_raises(ActiveRecord::StatementInvalid) { r.apply!(now: Time.zone.local(2026, 9, 23, 18, 0, 0)) }
+    audit = Viva::Regrader.find_batch_audit("regrade-#{@problem.id}-20260923T180000")
+    assert_equal [a.id], audit.object_changes.dig('submission_ids', 1)
+  end
+
+  test "apply! writes no audit row when nothing was queued" do
+    graded(user: users(:john), rubric: :current)
+    regrader.apply!
+    refute AuditLog.where(auditable: @problem, action: 'viva_regrade').exists?
+  end
+
   # What the grader service would leave behind for a batch: an adopted run
   # for `a` (40 → 60), a lower run for `b` (45 vs 50 kept), an error run for
   # `c`, and nothing yet for `d`.
@@ -158,8 +229,27 @@ class Viva::RegraderTest < ActiveSupport::TestCase
     assert_equal 'submission_id,login,archived,old,new,final,outcome', csv.lines.first.chomp
     assert_equal 5, csv.lines.size
     st.print(@io)
-    assert_includes @io.string, 'adopted=1 lower=1 error=1 reverted=0 pending=1'
+    assert_includes @io.string, 'adopted=1 lower=1 error=1 reverted=0 replaced=0 pending=1 undecided=0'
     assert_equal @problem, st.problem
+  end
+
+  test "status reports a batch run later displaced by a manual re-run as replaced, old = what it displaced" do
+    batch_id, a, _b, _c, _d = batch_with_outcomes            # a: 40 -> 60 by the batch
+    manual = a.viva_grades.create!(total_points: 75, graded_at: Time.zone.now, superseded_at: Time.zone.now, llm_model: 'manual')
+    a.adopt_viva_grade!(manual)
+    row = Viva::Regrader.status(batch_id).rows.find { |r| r.submission_id == a.id }
+    assert_equal ['replaced', 40.0, 60.0, 75.0], [row.outcome, row.old, row.new, row.final]
+  end
+
+  test "status reports a written but undecided run as undecided" do
+    a = graded(user: users(:john), total: 40)
+    batch_id, _plan = regrader.apply!(now: Time.zone.local(2026, 9, 23, 18, 0, 0))
+    a.viva_grades.create!(total_points: 55, graded_at: Time.zone.now, superseded_at: Time.zone.now, batch_id: batch_id)
+    st = Viva::Regrader.status(batch_id)
+    row = st.rows.first
+    assert_equal ['undecided', 40.0, 55.0, 40.0], [row.outcome, row.old, row.new, row.final]
+    st.print(@io)
+    assert_includes @io.string, 'undecided=1'
   end
 
   test "status refuses an unknown batch" do

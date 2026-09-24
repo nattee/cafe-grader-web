@@ -14,6 +14,17 @@ class Llm::VivaGradeAssistJobTest < ActiveJob::TestCase
     def self.call(**) = raise StandardError, 'simulated 500'
   end
 
+  # A real grade service whose provider always answers with a non-grade
+  # reply: the re-ask fails too, so Llm::VivaGradeAssist#handle_error runs.
+  class NonGradeService < Llm::VivaGradeAssist
+    def provider_name = 'scripted'
+
+    def execute_call(_data)
+      body = {model: 'scripted', choices: [{message: {content: '{"ask": 1}'}, finish_reason: 'stop'}], usage: {}}.to_json
+      Struct.new(:body).new(body)
+    end
+  end
+
   def viva_language
     Language.find_or_create_by!(name: 'viva') { |l| l.pretty_name = 'Viva Exam' }
   end
@@ -68,12 +79,18 @@ class Llm::VivaGradeAssistJobTest < ActiveJob::TestCase
   end
 
   test "a non-retryable failure over a valid grade does not add a second error run" do
+    problems(:prob_viva).update!(viva_prompt: 'Grade fairly.')
     @submission.viva_grades.create!(total_points: 55, graded_at: 1.hour.ago, llm_model: 'old')
     @submission.update!(status: :done, points: 55)
-    exhaust(BoomService.name)
+    exhaust(NonGradeService.name, batch_id: 'b2')
     @submission.reload
     assert_equal 'done', @submission.status
-    assert_equal 1, @submission.viva_grades.count, 'the service, not the job, records non-retryable failures'
+    assert_equal 55, @submission.points
+    assert_equal 55, @submission.viva_grade.total_points
+    assert_equal 2, @submission.viva_grades.count, 'the service records the failed run once; the job adds none'
+    run = @submission.viva_grades.order(:id).last
+    assert_equal ['error', 'b2'], [run.superseded_reason, run.batch_id]
+    assert_match(/schema check/, run.error)
   end
 
   test "a non-retryable failure on a first grading still lands in grader_error" do

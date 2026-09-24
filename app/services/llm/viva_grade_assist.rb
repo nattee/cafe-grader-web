@@ -55,7 +55,28 @@ module Llm
       nil
     end
 
+    # Request#call re-raises a transport error (RETRYABLE) untouched so the
+    # job can retry it. A retry builds a new service instance and a new row,
+    # so a row this attempt already saved (a first non-grade reply, then a
+    # timeout on the re-ask) would be left undecided forever: file it as
+    # 'error' with the message, then re-raise.
+    def call
+      super
+    rescue *RETRYABLE => e
+      abandon_saved_run(e)
+      raise
+    end
+
     private
+
+    def abandon_saved_run(exception)
+      return unless @grade&.persisted?
+      run = VivaGrade.find_by(id: @grade.id)
+      return if run.nil? || run.current? || run.superseded_reason.present?
+      run.update!(superseded_reason: 'error', error: format_error(exception).truncate(2000))
+    rescue => e
+      Rails.logger.error("[viva grade] could not file run #{@grade&.id} as error: #{e.class}: #{e.message}")
+    end
 
     def provider_name
       'abstract'
@@ -182,8 +203,9 @@ module Llm
     # to Request#call → handle_error → :grader_error, i.e. the red admin
     # alert + Re-run picker. Truncation (finish_reason=length) is a
     # completion-budget symptom, not a coin flip, so it is not re-asked.
-    # viva_grade.llm_response_raw keeps the LAST body; the first bad one is
-    # logged here, and #handle_response folds its cost into the grade row.
+    # The run's own viva_grades row (the Grade history Raw icon) keeps the
+    # LAST body; the first bad one is logged here, and #handle_response folds
+    # its cost into that row.
     def respond(data)
       handle_response(timed_execute_call(data))
     rescue ResponseError => e
@@ -276,8 +298,12 @@ module Llm
       VivaGrade.record_failure!(@submission, error: @error, grade: @grade, model: @model,
                                 requested_by_id: @requested_by_id, batch_id: @batch_id,
                                 rubric_version: rubric_version)
-      return if @submission.valid_viva_grade?
-      @submission.update!(status: :grader_error, grader_comment: "Grader error: #{@error}")
+      # Check and mark under the row lock, so a parallel run adopted between
+      # the two is seen and its grade is not buried under grader_error.
+      @submission.with_lock do
+        next if @submission.valid_viva_grade?
+        @submission.update!(status: :grader_error, grader_comment: "Grader error: #{@error}")
+      end
     end
 
     def compute_cost(_usage)

@@ -176,7 +176,9 @@ class Llm::VivaGradeAssistTest < ActiveSupport::TestCase
 
     def execute_call(_data)
       @calls += 1
-      @replies.shift or raise 'script exhausted'
+      reply = @replies.shift or raise 'script exhausted'
+      raise reply if reply.is_a?(Exception)
+      reply
     end
 
     def provider_name = 'scripted'
@@ -208,6 +210,22 @@ class Llm::VivaGradeAssistTest < ActiveSupport::TestCase
     assert_equal 'error', failed.superseded_reason
     assert_match(/schema check/, failed.error)
     assert_nil @submission.viva_grade
+  end
+
+  test "a transport error on the re-ask files the saved run as error and still propagates" do
+    make_current_run(total: 40)
+    grader = ScriptedGrader.new(submission: @submission, batch_id: 'b9',
+                                replies: [raw_response('{"ask": 1}'), Faraday::TimeoutError.new('execution expired')])
+    assert_raises(Faraday::TimeoutError) { grader.call }
+    assert_equal 2, grader.calls
+    run = @submission.viva_grades.order(:id).last
+    assert_equal 'b9', run.batch_id
+    assert_equal 'error', run.superseded_reason, 'the retry writes its own row; this one must not stay undecided'
+    assert_match(/TimeoutError/, run.error)
+    refute run.current?
+    @submission.reload
+    assert_equal 'done', @submission.status, 'the job, not the service, decides after the retries'
+    assert_equal 40, @submission.points
   end
 
   test "call does not re-ask a truncated reply" do
