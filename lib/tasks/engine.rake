@@ -18,7 +18,8 @@ namespace :engine do
       sub = picker.pick
       unless sub
         puts 'SKIPPED: no suitable submission on this host — need done, regular, non-viva, full score, ' \
-             "#{EngineSmokePicker::LANGUAGE_ORDER.join('/')}, graded after its live dataset last changed, " \
+             "#{EngineSmokePicker::LANGUAGE_ORDER.join('/')} still accepted by its problem, " \
+             'graded after its live dataset last changed, ' \
              "slowest testcase within #{(EngineSmokePicker::RUNTIME_MARGIN * 100).to_i}% of the time limit, " \
              "testcases x limit <= #{EngineSmokePicker::MAX_BUDGET_SECONDS}s"
         exit 0

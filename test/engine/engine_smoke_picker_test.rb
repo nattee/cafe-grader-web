@@ -82,6 +82,18 @@ class EngineSmokePickerTest < ActiveSupport::TestCase
     assert_nil @picker.pick
   end
 
+  # Grading saves the submission, and Submission#assign_language relabels it to
+  # a single-language problem's only language — so an old C++ submission on a
+  # problem that now accepts only Python runs as Python and every testcase
+  # crashes (comprog-grader, 2026-09-25: a false "verdict DIFFERS").
+  test 'skips a submission whose language its problem no longer accepts' do
+    problems(:prob_add).update_columns(permitted_lang: 'python')
+    done_sub
+    assert_nil @picker.pick
+    problems(:prob_add).update_columns(permitted_lang: 'cpp python')
+    assert_not_nil @picker.pick
+  end
+
   test 'returns nil on an empty host' do
     assert_nil @picker.pick
   end

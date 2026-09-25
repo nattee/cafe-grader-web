@@ -511,6 +511,19 @@ option, a never-deleted smoke problem seeded per host, was not built — the
 `SKIPPED` path covers a fresh host, and a real host always has recent
 full-score C++.
 
+Follow-up 2026-09-25 (rev 2203): that last claim was wrong on comprog-grader,
+a Python course whose newest full-score C++ was from 2024, on a problem since
+limited to Python. `Submission#assign_language` (run by the engine's own
+validating save) relabelled it Python, the C++ crashed as Python, and deploy
+job 897 stopped on a false exit 2; `restore!` did not put `language_id` back
+(three comprog submissions, 1967623 / 1917720 / 1887841, set back to C++ by
+a one-off runner script). The picker
+now requires a language the problem still accepts, `EngineSmoke` restores
+`language_id`, and it grades from no Evaluation rows (the evaluator's crash
+path keeps a found row's score, so the log showed `crash score=1.0`). The same
+relabelling happens on an ordinary rejudge of such a submission — left as is:
+it only touches submissions made before their problem's language list changed.
+
 ### `jobs.status` has no index, and the judge polls it at 5 Hz per grader — RESOLVED 2026-09-08
 
 Shipped rev 2115: migration `AddStatusPriorityIdIndexToJobs` adds
