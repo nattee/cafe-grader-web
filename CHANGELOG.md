@@ -89,6 +89,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   continue. (rev 2155; automation repo rev 63)
 
 ### Changed
+- **The contest AI Usage page separates the AI's own time from the wait.**
+  "Wait time distribution" and "Assist by model" now show, beside each
+  wait, the mean and p95 of the AI time (how long the provider took to
+  answer, recorded since rev 2135), so a slow model can be told apart from
+  a backed-up queue. Every wait column is labelled in seconds, the p50–p99
+  headers explain themselves on hover and in a note, and the per-call table
+  reads Queue s / AI s / Wait s. Calls made before a server recorded AI
+  time show "–". (rev 2207)
 - A viva's `submissions.graded_at` now follows the adopted grader run (Make
   current or a batch regrade moves it). Reports still bucket a viva by
   `submitted_at`, its session start, so a regrade never moves a session out
@@ -111,6 +119,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- **The contest AI Usage page counted only viva grades that finished before
+  the window closed.** Grading usually lands after the bell (Finish open
+  vivas) and regrades later still, so DS Quiz 1 showed 23 grades of its 151
+  and under-reported the grading cost. A grading run now counts when its
+  viva session started inside the contest window, however late it ran, and
+  the page says how many ran after the window. The per-call table's Status
+  column, blank for every viva turn and assist, now shows ok / error /
+  processing, and its Time column carries the date. (rev 2207)
 - **The deploy's smoke check no longer fails on, or relabels, an old
   submission whose problem has since been limited to another language.**
   On comprog-grader on 2026-09-25 `engine:smoke SUB=auto` picked a 2024 C++

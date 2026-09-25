@@ -22,6 +22,40 @@ Conventions:
 
 ---
 
+## Contest reports — what a contest should report after the exam (direction not chosen)
+
+**Raised 2026-09-12 and 2026-09-22, never designed** — each time a nearby
+item was taken instead (the AI Usage page, then Finish open vivas, test-drives,
+grade history). Recorded 2026-09-25 so the next attempt starts here.
+
+**What a contest has today:** Watch (`contests#view`: best score per student
+per problem, final score after assist and hint cost, chart); AI Usage
+(`contests#ai_usage`, fixed and extended rev 2207); the per-student contest
+stat page (`user_admin#stat_contest`). The Report menu pages (Max score,
+Submission, Activity, AI, Cheat; `ReportController#selected_users` /
+`#selected_problems` / `#submission_in_range`) cannot take a contest as the
+scope: users come from groups, problems from ids/groups/tags, time from a
+date range, so per-student offset and extra time are lost.
+
+**Candidate directions (dae to pick):**
+1. **"This contest" as a scope on the Report pages** — the contest's
+   students, problems and window, with per-user offset and extra time.
+   Bounded: extends existing filters.
+2. **A post-exam results page** — per-problem statistics (mean, spread,
+   pass counts), viva grade beside code score, who submitted nothing, a
+   gradebook export. New page; needs a short spec.
+3. **Combining two contests** — e.g. the Quiz 1 remedy (Quiz 1 viva =
+   max(Q1, Q2 viva) for everyone who opened the Q1 viva, decided
+   2026-09-25, `doc/exam-postmortem-2026-09-09-d69_q1.md`). Until built,
+   the per-student max table is pulled by hand.
+
+**Also open:** the AI-time columns (rev 2207) have no real data locally —
+the local prod copy ends 2026-09-12, before the timing deploy (chula_cp 2158,
+verified on cp-grader 2026-09-21). Check them against the first contest with
+AI use held after that.
+
+---
+
 ## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
 
 **Raised 2026-08-03 from the CMS migration validation.** Three separate things
@@ -431,6 +465,14 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Contest AI Usage page — grades undercounted, blank status, unlabelled units — RESOLVED 2026-09-25
+
+**Rev 2207.** Grades counted by session start (not `graded_at`): DS Quiz 1
+went from 23 to 151; status column filled for turns and assists; every wait
+column in seconds with p50–p99 explained; AI time (mean, p95) beside the
+wait in the distribution and by-model tables. Record: CHANGELOG
+[Unreleased]. Residual: the contest-report direction entry above.
 
 ### Contest page: show how many viva gradings are still in flight — RESOLVED 2026-09-24
 

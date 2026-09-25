@@ -74,4 +74,36 @@ class AiUsageReportTest < ActiveSupport::TestCase
     assert_equal %w[error ok ok], grades.map { |c| c[:status] }.sort
     assert_in_delta 0.08, grades.sum { |c| c[:cost].to_f }, 0.0001
   end
+
+  test "a grade that ran after the window still counts; a session started outside the window does not" do
+    @answered.viva_grades.create!(total_points: 60, graded_at: @report.window.end + 1.hour, llm_model: 'g', cost: 0.04)
+    early = submissions(:sub1_by_james)
+    early.update_columns(problem_id: problems(:easy).id, submitted_at: @contest.start - 1.day,
+                         status: Submission.statuses[:done])
+    early.viva_grades.create!(total_points: 50, graded_at: 10.minutes.ago, llm_model: 'g', cost: 0.02)
+    s = AiUsageReport.new(@contest).summary
+    assert_equal 1, s[:grades], "the late grade counts, the grade of the pre-window session does not"
+    assert_equal 1, s[:grades_after_window]
+    assert_in_delta 0.04, s[:grade_cost], 0.0001
+    grade_bars = AiUsageReport.new(@contest).counts_chart[:datasets].find { |d| d[:label] == "viva grade" }[:data]
+    assert_equal 0, grade_bars.sum, "the per-5-minute chart stays inside the window"
+  end
+
+  test "viva turns and assists carry their status" do
+    @answered.viva_turns.create!(role: :assistant, status: :error, sequence: 3, content: "",
+                                 created_at: 25.minutes.ago, updated_at: 25.minutes.ago + 2.seconds)
+    rows = @report.calls_json
+    assert_equal %w[error ok], rows.select { |c| c[:kind] == "viva turn" }.map { |c| c[:status] }.sort
+    assert_equal %w[ok], rows.select { |c| c[:kind] == "assist" }.map { |c| c[:status] }
+  end
+
+  test "AI time is reported beside the wait" do
+    d = @report.distribution.index_by { |r| r[:kind] }
+    assert_equal 5.0, d["viva turn"][:ai_p95]
+    assert_equal 5.0, d["assist"][:ai_mean]
+    assert_nil d["viva grade"][:ai_mean]
+    m = @report.by_model.find { |r| r[:model] == "claude-opus-4-5" }
+    assert_equal 30.0, m[:p95]                 # wait
+    assert_equal 5.0, m[:ai_p95]               # AI time
+  end
 end

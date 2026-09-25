@@ -155,7 +155,14 @@ for no gain. Score at request time was under 25 for 228 of 260 requests.
 2. **W0 before W1** — recommended; it is the cause of F1/F2 and needs a deploy.
 3. **Second opinion** — a) stop here; b) full dry Opus pass (≈ USD 11, no writes, per-student comparison); c) read the six
    largest gaps in `second-opinion-summary.csv` first. Recommendation: c, then decide b.
-4. **The seven students in F2** — makeup or not is a course decision.
+4. **The seven students in F2** — makeup or not is a course decision. **DECIDED 2026-09-25 (dae):** no separate
+   makeup; remedy = each student's Quiz 1 viva score becomes max(Quiz 1 viva, Quiz 2 viva), for **everyone who opened
+   the Quiz 1 viva** (157 students; not the 17 enrolled who never opened it). Announced as a rule, so no list of names is
+   published. Why everyone rather than a wait threshold: from 10:20 the next question took ~2–5 min for anyone still in
+   the viva (worst normal wait before then 37 s); a "longest single wait ≥ 60 s" rule catches 129 and is flat to 2 min
+   (124), so only ~28 were never hit, and the max() never lowers a score. Counts per boundary (longest single wait /
+   total wait): 60 s 129/135, 90 s 125/129, 2 min 124/126, 3 min 109/119, 5 min 70/111, 10 min 0/86 — from
+   `viva_turns` (assistant turn `updated_at − created_at`), local prod copy.
 5. **Confirm** the 62 Re-run grading clicks (13:28–14:04) were yours, and whether the TA's mode flip (F6/B4) was intended.
 6. **Housekeeping** — keep or drop the `prod_solid_queue_*` tables in the local dev DB.
 
@@ -175,8 +182,8 @@ Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed 
 | chart double-draw fix (found in review) | DONE | 2143 |
 | worker defaults resized 5+3 → 3+3, knobs renamed `VIVA_JOB_THREADS`/`JOB_THREADS` (stock `JOB_CONCURRENCY` = processes) | DONE — deploy needs no host step | 2146 |
 | `database.yml.SAMPLE` sizing note (threads <= pool − 1) | DONE | 2148 |
-| config layering: `queue.yml` = defaults, `config/solid_queue.env` = per-host override (`.SAMPLE` shipped, real file ignored) | DONE in repo; `EnvironmentFile=` line NOT yet on any host (one root edit per host, only for exam-time tuning) | 2150 |
+| config layering: `queue.yml` = defaults, `config/solid_queue.env` = per-host override (`.SAMPLE` shipped, real file ignored) | DONE in repo; on cp-grader (10.0.5.50) since 2026-09-25 via a systemd drop-in `solid_queue.service.d/env.conf` (`EnvironmentFile=-…/config/solid_queue.env`: `VIVA_JOB_THREADS=5`, `RAILS_MAX_THREADS=8`, for DS Quiz 2; verified `thread_pool_size` 5 viva / 3 default). No other host has it. | 2150 |
 | Job Workers card on /grader_processes (effective queues + thread pools, stale rows red) | DONE (screenshot reviewed) | 2151 |
 | F5 contest-stop auto-finish of open vivas | deferred to `doc/backlog.md` | — |
 
-Decision 2 (deploy) is DONE — see above. Still open (dae): the optional `EnvironmentFile=` line on the solid_queue unit (one root edit per host, only for exam-time tuning), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
+Decision 2 (deploy) is DONE — see above. Still open (dae): 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
