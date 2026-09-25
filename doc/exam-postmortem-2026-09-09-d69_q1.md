@@ -175,8 +175,8 @@ Plan `docs/superpowers/plans/2026-09-12-contest-ai-usage-and-queue.md` executed 
 | chart double-draw fix (found in review) | DONE | 2143 |
 | worker defaults resized 5+3 → 3+3, knobs renamed `VIVA_JOB_THREADS`/`JOB_THREADS` (stock `JOB_CONCURRENCY` = processes) | DONE — deploy needs no host step | 2146 |
 | `database.yml.SAMPLE` sizing note (threads <= pool − 1) | DONE | 2148 |
-| config layering: `queue.yml` = defaults, `config/solid_queue.env` = per-host override (`.SAMPLE` shipped, real file ignored) | DONE in repo; `EnvironmentFile=` line NOT yet on any host (one root edit per host, only for exam-time tuning) | 2150 |
+| config layering: `queue.yml` = defaults, `config/solid_queue.env` = per-host override (`.SAMPLE` shipped, real file ignored) | DONE in repo; on cp-grader (10.0.5.50) since 2026-09-25 via a systemd drop-in `solid_queue.service.d/env.conf` (`EnvironmentFile=-…/config/solid_queue.env`: `VIVA_JOB_THREADS=5`, `RAILS_MAX_THREADS=8`, for DS Quiz 2; verified `thread_pool_size` 5 viva / 3 default). No other host has it. | 2150 |
 | Job Workers card on /grader_processes (effective queues + thread pools, stale rows red) | DONE (screenshot reviewed) | 2151 |
 | F5 contest-stop auto-finish of open vivas | deferred to `doc/backlog.md` | — |
 
-Decision 2 (deploy) is DONE — see above. Still open (dae): the optional `EnvironmentFile=` line on the solid_queue unit (one root edit per host, only for exam-time tuning), 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
+Decision 2 (deploy) is DONE — see above. Still open (dae): 3 (full second-opinion pass), 4 (makeup for the seven queue-hit students), 5 (confirm the 62 Re-run clicks + the TA mode flip), 6 (drop the local `prod_solid_queue_*` tables when done).
