@@ -145,14 +145,14 @@ export const columns = {
   },
   // --- contest AI-usage report (per-call feed) ---
   aiUsage: {
-    at:           { data: 'at', title: 'Time', render: cafe.dt.render.datetime('HH:mm:ss') },
+    at:           { data: 'at', title: 'Time', render: cafe.dt.render.datetime('MM-DD HH:mm:ss') },
     kind:         { data: 'kind', title: 'Kind' },
     login:        { data: 'login', title: 'Student' },
     problem:      { data: 'problem', title: 'Problem' },
     model:        { data: 'model', title: 'Model' },
-    queuedS:      { data: 'queued_s', title: 'Queued s' },
-    modelS:       { data: 'model_s', title: 'Model s' },
-    totalS:       { data: 'total_s', title: 'Total s' },
+    queuedS:      { data: 'queued_s', title: 'Queue s' },
+    modelS:       { data: 'model_s', title: 'AI s' },
+    totalS:       { data: 'total_s', title: 'Wait s' },
     tokensIn:     { data: 'tokens_in', title: 'Tok in' },
     tokensOut:    { data: 'tokens_out', title: 'Tok out' },
     cost:         { data: 'cost', title: 'Cost $' },

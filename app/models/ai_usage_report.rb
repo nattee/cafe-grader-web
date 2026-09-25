@@ -4,14 +4,17 @@
 # over the contest window (extended by the largest per-user offset/extra time,
 # a coarse bound; per-user precision is not needed for usage reporting).
 #
-# "wait" semantics (a call carries up to three):
+# Time semantics (a call carries up to three, all reported in seconds; the
+# page calls them queue time, AI time and wait):
 #   queued_s — request queued -> provider call started (started_at - created_at).
 #              Available for viva turns and assists (placeholder row created at
 #              enqueue). Nil for grades (their row is created after the call) and
-#              for rows written before the timing columns existed.
-#   model_s  — the provider round-trip (llm_latency_ms). Nil on pre-timing rows.
-#   total_s  — what the user actually waited: for turns/assists, updated_at -
-#              created_at (queue + model + save); for grades, model_s.
+#              for rows written before the timing columns existed (rev 2135).
+#   model_s  — "AI time": the provider round-trip (llm_latency_ms). Nil on
+#              pre-timing rows.
+#   total_s  — "wait", what the user actually waited: for turns/assists,
+#              updated_at - created_at (queue + AI time + save); for grades,
+#              model_s.
 class AiUsageReport
   BUCKET = 300 # seconds
   KINDS  = ["viva turn", "assist", "viva grade"].freeze
@@ -66,24 +69,28 @@ class AiUsageReport
       assists_total:    assists.size,
       assist_wait_p95:  Stats.percentile(assists.map { |c| total_s(c) }, 0.95),
       grades:           grades.size,
+      grades_after_window: grades.count { |c| c.at && c.at > window.end },
       grade_cost:       grades.sum { |c| c.cost.to_f },
       grade_wait_p95:   Stats.percentile(grades.map { |c| total_s(c) }, 0.95)
     }
   end
 
-  # One row per kind. `calls` is every call of that kind; the percentiles are
-  # over the ones that carry a wait (`timed`). Historical grade rows have no
-  # latency yet, so a grade row can show calls>0 with timed=0.
+  # One row per kind. `calls` is every call of that kind; the wait percentiles
+  # are over the ones that carry a wait (`timed`), the AI-time ones over those
+  # that carry an AI time. Grade rows and pre-timing rows have no latency, so a
+  # row can show calls>0 with timed=0 and a blank AI time.
   def distribution
     KINDS.map do |kind|
       ks    = calls.select { |c| c.kind == kind }
       waits = ks.map { |c| total_s(c) }.compact
+      ai    = ks.map { |c| ai_s(c) }.compact
       {
         kind: kind, calls: ks.size, timed: waits.size,
         mean: Stats.mean(waits), p50: Stats.percentile(waits, 0.5),
         p90: Stats.percentile(waits, 0.9), p95: Stats.percentile(waits, 0.95),
         p99: Stats.percentile(waits, 0.99), max: waits.max,
-        over_60: waits.empty? ? 0 : (100.0 * waits.count { |w| w > 60 } / waits.size).round
+        over_60: waits.empty? ? 0 : (100.0 * waits.count { |w| w > 60 } / waits.size).round,
+        ai_mean: Stats.mean(ai), ai_p95: Stats.percentile(ai, 0.95)
       }
     end
   end
@@ -91,11 +98,13 @@ class AiUsageReport
   def by_model
     calls.select { |c| c.kind == "assist" }.group_by(&:model).map do |model, cs|
       waits  = cs.map { |c| total_s(c) }.compact
+      ai     = cs.map { |c| ai_s(c) }.compact
       priced = cs.reject { |c| c.cost.nil? }
       {
         model: model, requests: cs.size, students: cs.map(&:user_id).uniq.size,
         points: cs.sum { |c| c.points.to_f }, dollars: priced.sum { |c| c.cost.to_f },
-        priced: priced.size, mean_wait: Stats.mean(waits), p95: Stats.percentile(waits, 0.95), max: waits.max
+        priced: priced.size, mean_wait: Stats.mean(waits), p95: Stats.percentile(waits, 0.95), max: waits.max,
+        ai_mean: Stats.mean(ai), ai_p95: Stats.percentile(ai, 0.95)
       }
     end.sort_by { |r| -r[:requests] }
   end
@@ -157,6 +166,8 @@ class AiUsageReport
     c.total_ms.nil? ? nil : (c.total_ms / 1000.0).round(1)
   end
 
+  def ai_s(c) = ms_to_s(c.model_ms)
+
   def ms_to_s(ms) = ms.nil? ? nil : (ms / 1000.0).round(1)
 
   # .regular: near-miss shadows and author test-drives are not student usage.
@@ -174,7 +185,7 @@ class AiUsageReport
       Call.new(kind: "viva turn", at: cat, user_id: uid, login: login, problem_id: pid, problem_name: problem_name(pid),
                submission_id: sid, model: model, queued_ms: queued_ms(cat, sat),
                model_ms: lat, total_ms: ((uat - cat) * 1000).round, tokens_in: tin, tokens_out: tout,
-               cost: cost, points: nil, status: VivaTurn.statuses.key(status))
+               cost: cost, points: nil, status: status)
     end
   end
 
@@ -190,16 +201,21 @@ class AiUsageReport
       Call.new(kind: "assist", at: cat, user_id: uid, login: login, problem_id: pid, problem_name: problem_name(pid),
                submission_id: sid, model: model, queued_ms: queued_ms(cat, sat),
                model_ms: lat, total_ms: ((uat - cat) * 1000).round, tokens_in: tin, tokens_out: tout,
-               cost: dollars, points: points, status: Comment.statuses.key(status))
+               cost: dollars, points: points, status: status)
     end
   end
 
   # Every grader run counts — superseded and failed runs cost money too (one
   # viva_grades row per run since the grade-history change, 2026-09-23).
+  # A run belongs to the contest when its session STARTED in the window,
+  # however late it ran (doc/viva-visibility.md: a viva is bucketed by session
+  # start). Most first gradings land after the bell (Finish open vivas), and
+  # regrades later; filtering on graded_at counted 23 of Quiz 1's 151 runs.
   def grade_calls
     return [] if sub_ids.empty?
-    VivaGrade.where(submission_id: sub_ids, graded_at: window)
+    VivaGrade.where(submission_id: sub_ids)
              .joins(submission: :user)
+             .where(submissions: {submitted_at: window})
              .pluck(:submission_id, "submissions.user_id", "submissions.problem_id", "users.login",
                     :llm_model, :graded_at, :llm_latency_ms, :cost, :total_points)
              .map do |sid, uid, pid, login, model, gat, lat, cost, total|

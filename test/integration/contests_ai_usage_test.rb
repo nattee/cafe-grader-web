@@ -18,6 +18,10 @@ class ContestsAiUsageTest < ActionDispatch::IntegrationTest
     sign_in_as("admin", "admin")
     get ai_usage_contest_path(@contest)
     assert_response :success
+    assert_select "th", text: "AI time", count: 2
+    assert_match "All times are in seconds", response.body
+    assert_match "ran after the window closed", response.body
+    assert_select "th[data-bs-toggle=tooltip]", text: "p95"
   end
 
   test "editor of the contest sees the page" do
