@@ -155,7 +155,14 @@ for no gain. Score at request time was under 25 for 228 of 260 requests.
 2. **W0 before W1** — recommended; it is the cause of F1/F2 and needs a deploy.
 3. **Second opinion** — a) stop here; b) full dry Opus pass (≈ USD 11, no writes, per-student comparison); c) read the six
    largest gaps in `second-opinion-summary.csv` first. Recommendation: c, then decide b.
-4. **The seven students in F2** — makeup or not is a course decision.
+4. **The seven students in F2** — makeup or not is a course decision. **DECIDED 2026-09-25 (dae):** no separate
+   makeup; remedy = each student's Quiz 1 viva score becomes max(Quiz 1 viva, Quiz 2 viva), for **everyone who opened
+   the Quiz 1 viva** (157 students; not the 17 enrolled who never opened it). Announced as a rule, so no list of names is
+   published. Why everyone rather than a wait threshold: from 10:20 the next question took ~2–5 min for anyone still in
+   the viva (worst normal wait before then 37 s); a "longest single wait ≥ 60 s" rule catches 129 and is flat to 2 min
+   (124), so only ~28 were never hit, and the max() never lowers a score. Counts per boundary (longest single wait /
+   total wait): 60 s 129/135, 90 s 125/129, 2 min 124/126, 3 min 109/119, 5 min 70/111, 10 min 0/86 — from
+   `viva_turns` (assistant turn `updated_at − created_at`), local prod copy.
 5. **Confirm** the 62 Re-run grading clicks (13:28–14:04) were yours, and whether the TA's mode flip (F6/B4) was intended.
 6. **Housekeeping** — keep or drop the `prod_solid_queue_*` tables in the local dev DB.
 
