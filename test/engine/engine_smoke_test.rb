@@ -45,6 +45,24 @@ class EngineSmokeTest < ActiveSupport::TestCase
     def execute(_sub, _testcase) = raise('sandbox exploded')
   end
 
+  # Like the real Compiler: a validating save, so Submission#assign_language runs.
+  class ValidatingCompiler < FakeCompiler
+    def compile(sub, _dataset)
+      EngineSmokeTest.calls << [:compile, sub.id]
+      sub.update!(status: :compilation_success, compiler_message: '')
+      EngineResponse::Result.success(result_description: 'compiled')
+    end
+  end
+
+  # Like the real Evaluator's isolate-crash path: sets the result, leaves the score.
+  class CrashingEvaluator < FakeEvaluator
+    def execute(sub, testcase)
+      EngineSmokeTest.calls << [:evaluate, testcase.id]
+      Evaluation.find_or_create_by(submission: sub, testcase: testcase).update(result: :crash)
+      EngineResponse::Result.success(result_description: 'evaluated')
+    end
+  end
+
   class FakeScorer
     def self.get_scorer(_sub) = self
     def initialize(_worker_id, _box_id); end
@@ -87,6 +105,37 @@ class EngineSmokeTest < ActiveSupport::TestCase
 
     assert_equal @snapshot, @sub.reload.slice('status', 'points', 'grader_comment', 'graded_at')
     assert_equal @evaluations_before, Evaluation.where(submission: @sub).count, 'evaluation rows created by the run are removed'
+  end
+
+  test 'puts every stored evaluation row back unchanged, ids included' do
+    stored = Evaluation.where(submission: @sub).order(:id).map(&:attributes)
+    assert_not_empty stored
+
+    smoke.run
+
+    assert_equal stored, Evaluation.where(submission: @sub).order(:id).map(&:attributes)
+  end
+
+  # The engine's own validating save runs Submission#assign_language, which
+  # relabels a submission on a single-language problem (comprog-grader,
+  # 2026-09-25: three C++ submissions were left labelled Python).
+  test 'puts the language back when grading relabels the submission' do
+    @sub.problem.update_columns(permitted_lang: 'python')
+    language_before = @sub.language_id
+
+    smoke(compiler: ValidatingCompiler).run
+
+    assert_equal language_before, @sub.reload.language_id
+  end
+
+  # A real regrade starts from no evaluation rows (Submission#add_judge_job);
+  # grading on top of the stored rows let a crashed testcase keep its stored
+  # score, so the 2026-09-25 log read "crash score=1.0" with 100 points.
+  test 'grades from no evaluation rows, so a crash does not keep the stored score' do
+    report = smoke(evaluator: CrashingEvaluator).run
+
+    assert_equal [nil], report.evaluations.map { |e| e[:score] }.uniq
+    assert_equal ['crash'], report.evaluations.map { |e| e[:result] }.uniq
   end
 
   test 'restores the submission and reports the error when the chain raises' do

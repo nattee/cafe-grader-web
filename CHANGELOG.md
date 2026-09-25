@@ -111,6 +111,18 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- **The deploy's smoke check no longer fails on, or relabels, an old
+  submission whose problem has since been limited to another language.**
+  On comprog-grader on 2026-09-25 `engine:smoke SUB=auto` picked a 2024 C++
+  submission on a problem that now accepts only Python; grading saves the
+  submission, the save relabels it to the problem's only language, the C++
+  ran as Python and every testcase crashed, so the deploy stopped on a false
+  "verdict DIFFERS" (exit 2) — and the submission was left labelled Python.
+  The picker now skips a submission whose language its problem no longer
+  accepts, the check restores the submission's language along with its
+  grade, and it grades from no stored testcase results, as a real regrade
+  does, so a crashed testcase no longer shows its old score in the log.
+  (rev 2203)
 - **A browser refused by the device lock ("You cannot login from two
   different places") is now logged out, not just redirected.** A refused
   window used to keep its session, so its contest heartbeat kept polling and

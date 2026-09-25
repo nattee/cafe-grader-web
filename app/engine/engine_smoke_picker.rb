@@ -11,6 +11,11 @@
 #     crosses compile, every testcase through the checker, and the scorer;
 #   - one of LANGUAGE_ORDER, tried in that order — every judge host compiles
 #     C++, most C and Python; nothing else is guaranteed anywhere;
+#   - in a language its problem still accepts — grading saves the submission
+#     and Submission#assign_language relabels it to a single-language
+#     problem's only language, so a 2024 C++ submission on a problem now
+#     limited to Python ran as Python and crashed every testcase (false
+#     "verdict DIFFERS", comprog-grader 2026-09-25);
 #   - slowest testcase used at most RUNTIME_MARGIN of the time limit — a timing
 #     wobble cannot flip P<->T and give a false "verdict DIFFERS";
 #   - graded after the live dataset and its testcases last changed — the stored
@@ -66,6 +71,8 @@ class EngineSmokePicker
   end
 
   def suitable?(sub)
+    # blank permitted_lang = every language; when_blank skips the Language query
+    return false unless sub.problem.get_permitted_lang_as_ids(when_blank: [sub.language_id]).include?(sub.language_id)
     ds = sub.problem.live_dataset
     tcs = ds.testcases
     return false if tcs.empty?
