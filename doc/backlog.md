@@ -26,7 +26,8 @@ Conventions:
 
 **Raised 2026-09-12 and 2026-09-22, never designed** — each time a nearby
 item was taken instead (the AI Usage page, then Finish open vivas, test-drives,
-grade history). Recorded 2026-09-25 so the next attempt starts here.
+grade history). Recorded 2026-09-25 so the next attempt starts here; direction
+1 shipped 2026-09-30, directions 2 and 3 remain open.
 
 **What a contest has today:** Watch (`contests#view`: best score per student
 per problem, final score after assist and hint cost, chart); AI Usage
@@ -38,9 +39,10 @@ scope: users come from groups, problems from ids/groups/tags, time from a
 date range, so per-student offset and extra time are lost.
 
 **Candidate directions (dae to pick):**
-1. **"This contest" as a scope on the Report pages** — the contest's
-   students, problems and window, with per-user offset and extra time.
-   Bounded: extends existing filters.
+1. ~~**"This contest" as a scope on the Report pages**~~ — DONE rev 2209
+   (2026-09-30): `?contest=ID` on Best Score / Submissions / User Activity,
+   picker in the title row, **Reports** menu on the contest page; the AI
+   report stays range-based and points at the contest's AI Usage page.
 2. **A post-exam results page** — per-problem statistics (mean, spread,
    pass counts), viva grade beside code score, who submitted nothing, a
    gradebook export. New page; needs a short spec.

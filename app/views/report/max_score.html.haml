@@ -1,9 +1,11 @@
-.d-flex.flex-column.gap-1.mb-3
-  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
-  %h2.fw-bold.text-dark.mb-0 Best Score
+= render 'page_header', title: 'Best Score', path: max_score_report_path
+= render 'contest_scope', path: max_score_report_path
 
 = form_with id: 'max-score-filter-form', url: max_score_table_report_path, data: {turbo: true, controller: 'init-ui-component'} do |f|
-  .row
+  -# with a contest picked the cards stay in the DOM (their JS feeds the
+  -# table) but hidden; the controller ignores them and uses the contest
+  = hidden_field_tag :contest, @report_contest.id if @report_contest
+  .row{class: ('d-none' if @report_contest)}
     .col-lg-4
       = render partial: 'problem_select'
     .col-lg-4
@@ -14,4 +16,4 @@
 = render 'report_help'
 .mt-3
   = turbo_frame_tag "max_score_result", data: {turbo: "true"} do
-    = render partial: 'score_table', locals: {problems: Problem.none, link_for_data: max_score_query_report_path, refresh_submit_form_id: 'max-score-filter-form' }
+    = render partial: 'score_table', locals: {problems: @table_problems, link_for_data: max_score_query_report_path(report_contest_query), contest_id: @report_contest&.id, refresh_submit_form_id: 'max-score-filter-form' }

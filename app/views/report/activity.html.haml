@@ -1,23 +1,25 @@
-.d-flex.flex-column.gap-1.mb-3
-  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
-  %h2.fw-bold.text-dark.mb-0 User Activity
+= render 'page_header', title: 'User Activity', path: activity_report_path
+= render 'contest_scope', path: activity_report_path
 
 = form_with url: '#', id: 'filter_form' do |f|
-  .row{data: {controller: 'init-ui-component'}}
+  -# with a contest picked the cards stay in the DOM (their JS feeds the
+  -# table) but hidden; the query URL carries the contest and the
+  -# controller ignores the card params
+  .row{class: ('d-none' if @report_contest), data: {controller: 'init-ui-component'}}
     .col-lg-4.mt-2
       = render partial: 'problem_select', locals: {all: true}
     .col-lg-4.mt-2
       = render partial: 'submission_range'
     .col-lg-4.mt-2
       = render partial: 'user_select'
-      .form-check.mt-2
-        %input#show_inactive.form-check-input{type: :checkbox}
-        %label.form-check-label{for: 'show_inactive'}
-          Also show selected users with zero submissions
-        .form-text Inactive rows are highlighted; applies to the user filter above.
+  .form-check.mt-2
+    %input#show_inactive.form-check-input{type: :checkbox}
+    %label.form-check-label{for: 'show_inactive'}
+      Also show selected users with zero submissions
+    .form-text= @report_contest ? 'Inactive rows are highlighted; lists the contest\'s students who never submitted in their window.' : 'Inactive rows are highlighted; applies to the user filter above.'
 
 = render 'empty_report_notice'
-= render 'report_help', refresh_hint: 'Select filters above, then click Refresh to load data. Solved counts problems with a 100-point submission (raw-sum problems excluded).'
+= render 'report_help', extra_hint: 'Solved counts problems with a 100-point submission (raw-sum problems excluded).'
 
 .row
   .col-sm-12
@@ -76,7 +78,7 @@
         if (data.sub_count == 0) { $(row).addClass('table-danger') }
       },
       ajax: {
-        url: '#{activity_query_report_path}',
+        url: '#{activity_query_report_path(report_contest_query)}',
         type: 'POST',
         data: (d) =>  {
           build_sub_range_params(d)

@@ -11,6 +11,20 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **A contest as the scope of the Best Score, Submissions and User Activity
+  reports.** A **Contest** picker in each report's title row (contests you
+  manage) reloads the page with `?contest=ID`: the three filter cards give
+  way to one line naming the contest, and the report covers its students
+  (the rows its Watch page lists), its problems you may report on, and each
+  student's own window — start offset and extra time included, which the
+  date-range filter could never express. Best Score then shows the Watch
+  page's numbers with the contest seat and remark, and loads at once;
+  User Activity's "zero submissions" option lists the students who never
+  submitted in their window. The contest management page gets a
+  **Reports** menu opening the three with the contest picked. A contest you
+  cannot manage is ignored and the page says so. The AI Assist report has
+  no picker (it reads the job queue by submission number) and points at
+  the contest's AI Usage page instead. (rev 2209)
 - **Viva grading status on the contest page.** Next to **Finish open vivas**,
   a badge shows how many of the contest's viva sessions are still being
   graded and how many failed grading, refreshing itself every 10 seconds
@@ -119,6 +133,12 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- **The Submissions report ignored its Users card** — an assignment written
+  where a comparison was meant (`unless @users = User.all`, 2024-09-30) made
+  every query list every user's submissions on the chosen problems, so a
+  reporter also saw students outside their groups who had submitted to a
+  shared problem. The card's choice now applies, as on the other reports.
+  (rev 2209)
 - **The contest AI Usage page counted only viva grades that finished before
   the window closed.** Grading usually lands after the bell (Finish open
   vivas) and regrades later still, so DS Quiz 1 showed 23 grades of its 151

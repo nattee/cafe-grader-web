@@ -210,25 +210,31 @@ class Contest < ApplicationRecord
   # -------- report ---------------
   #
   # This is for reporting the maximum score of each problem of each user
-  def score_report
+  # The Watch page's score table (contests#view_query). `users:` and
+  # `problems:` narrow it — a contest-scoped Report page passes the subsets
+  # its viewer may report on — and default to every member and every contest
+  # problem, so the Watch page itself is unchanged.
+  def score_report(users: self.users, problems: self.problems)
+    subs = submissions.where(user: users, problem: problems)
+
     # calculate submission with max score
-    max_records = self.submissions
+    max_records = subs
       .group('submissions.user_id,submissions.problem_id')
       .select('MAX(submissions.points) as max_score, submissions.user_id, submissions.problem_id')
 
-    llm_assist_count = submissions.joins(:comments).group(:user_id, :problem_id)
+    llm_assist_count = subs.joins(:comments).group(:user_id, :problem_id)
       .select('SUM(comments.cost) as llm_cost')
       .select('COUNT(comments.id) as llm_count')
       .select('user_id', 'problem_id')
 
-    hint_reveal = Comment.hint_reveal_for_problems(self.problems, (self.start)..(self.stop))
+    hint_reveal = Comment.hint_reveal_for_problems(problems, (self.start)..(self.stop))
       .select('comment_reveals.user_id as user_id')
       .select('comments.commentable_id as problem_id')
       .select('SUM(comments.cost) as hint_cost')
       .select('count(comments.id) as hint_count')
 
     # records having the same score as the max record
-    records = self.submissions
+    records = subs
       .joins("JOIN (#{max_records.to_sql}) MAX_RECORD ON " +
                    'submissions.points = MAX_RECORD.max_score AND ' +
                    'submissions.user_id = MAX_RECORD.user_id AND ' +
@@ -254,5 +260,18 @@ class Contest < ApplicationRecord
 
 
     return Submission.calculate_max_score(records, users, problems)
+  end
+
+  # The members a scoreboard or a contest-scoped report is about: the
+  # contests_users rows with role `user` (editors are staff), enabled or
+  # not — exactly the rows the Watch page lists (contests#view_query).
+  def students
+    User.where(id: contests_users.where(role: :user).select(:user_id))
+  end
+
+  # True when some member has a start offset or extra time, i.e. the
+  # window differs per student (Contest#submissions applies it per row).
+  def per_user_windows?
+    contests_users.where('start_offset_second > 0 OR extra_time_second > 0').exists?
   end
 end
