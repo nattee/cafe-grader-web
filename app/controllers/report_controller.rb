@@ -2,6 +2,8 @@ class ReportController < ApplicationController
   include ProblemAuthorization
 
   before_action :check_valid_login
+  before_action :set_report_contest, only: [ :max_score, :max_score_table, :max_score_query, :show_max_score,
+                                             :submission, :submission_query, :activity, :activity_query ]
   before_action :selected_problems, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query, :activity_query ]
   before_action :selected_users, only: [ :show_max_score, :max_score_table, :submission_query, :max_score_query, :ai_query, :activity_query ]
   before_action :set_report_empty_hint, only: [ :max_score, :submission, :activity, :ai ]
@@ -18,19 +20,37 @@ class ReportController < ApplicationController
   before_action :admin_authorization, only: [:problem_hof_recompute]
   before_action :can_view_problem, only: [:problem_hof_view]
 
+  helper_method :report_contest_query
+
   # render the UI for filtering and the initial blank table
   def max_score
     # this is for rendering the filter selection
     @problems = @current_user.problems_for_action(:report)
     @groups = @current_user.groups_for_action(:report)
+    # a contest-scoped page renders the table with its columns at once, so
+    # the first load already shows the contest's scores (no Refresh needed)
+    @table_problems = @report_contest ? contest_problems : Problem.none
   end
 
   # turbo update the table (also with blank table but with columns)
   def max_score_table
-    render turbo_stream: turbo_stream.update(:max_score_result, partial: 'score_table', locals: {problems: @problems, link_for_data: max_score_query_report_path, refresh_submit_form_id: 'max-score-filter-form' })
+    render turbo_stream: turbo_stream.update(:max_score_result, partial: 'score_table', locals: {problems: @problems, link_for_data: max_score_query_report_path(report_contest_query), contest_id: @report_contest&.id, refresh_submit_form_id: 'max-score-filter-form' })
   end
 
   def max_score_query
+    if @report_contest
+      # The Watch page's numbers (Contest#score_report) over the reportable
+      # subset of the contest's students and problems; rows carry the contest
+      # seat and remark, as on Watch.
+      render json: {
+        data: @report_contest.contests_users.joins(:user).where(user_id: @users.select(:id))
+          .select(:id, :user_id, :login, :full_name, :remark, :seat, :last_heartbeat),
+        result: @report_contest.score_report(users: @users, problems: @problems),
+        problem: @problems
+      }
+      return
+    end
+
     # when @problems is blank, it is very likely that the user hasn't select anything in the form at all
     # which default to showing all user with no problem selected. We then force the user to be blank as well to speed up
 
@@ -156,10 +176,9 @@ class ReportController < ApplicationController
     @submissions = submission_in_range(params[:sub_range])
       .joins(:problem).joins(:language).joins(:user)
 
-    # filter users
-    unless @users = User.all
-      @submissions = @submissions.where(user: @users)
-    end
+    # filter users (`unless @users = User.all` assigned instead of comparing
+    # from 2024-09-30 to rev 2209, so the Users card was ignored here)
+    @submissions = @submissions.where(user: @users)
 
     # filter submissions
     @submissions = @submissions.where(problem: @problems)
@@ -633,10 +652,38 @@ ORDER BY submitted_at
         .where('groups.enabled': true).order('groups.name').pluck('groups.name')
     end
 
+    # Contest scope (?contest=ID) for Best Score / Submissions / User Activity:
+    # the contest's students, its problems and each student's own window
+    # replace the three filter cards (selected_users / selected_problems /
+    # submission_in_range branch on @report_contest). Only a contest the user
+    # can manage counts; any other id is ignored and the page says so, so a
+    # stale or hand-edited link never widens what a reporter can see.
+    def set_report_contest
+      id = params[:contest].presence or return
+      @report_contest = @current_user.contests_for_action(:edit).find_by(id: id)
+      @report_contest_ignored = id if @report_contest.nil?
+    end
+
+    # Query params that carry the contest scope into the table's data URL.
+    def report_contest_query
+      @report_contest ? {contest: @report_contest.id} : {}
+    end
+
+    # The contest's problems the user may report on, in contest order.
+    def contest_problems
+      ordered = @report_contest.contests_problems.order(:number).pluck(:problem_id)
+      ids = ordered & @current_user.problems_for_action(:report).ids
+      Problem.where(id: ids).in_order_of(:id, ids)
+    end
+
     # receive an ActiveRecord::AAssociation *query* of submissions
     # and add more where clause limiting the submission to be in the
     # rnage specified only
     def submission_in_range(range_params)
+      # a contest scope replaces the range: each student's own window, start
+      # offset and extra time included (Contest#submissions)
+      return @report_contest.submissions if @report_contest
+
       range_params ||= {}
       if range_params[:use] ==  'sub_id'
         Submission.regular.by_id_range(range_params[:from_id], range_params[:to_id])
@@ -650,6 +697,8 @@ ORDER BY submitted_at
 
     # build @problems that matches the given params
     def selected_problems
+      return (@problems = contest_problems) if @report_contest
+
       # start with reportable problems (this already consider when @current_user is an admin)
       @problems = Problem.where(id: @current_user.problems_for_action(:report).ids)
 
@@ -675,6 +724,11 @@ ORDER BY submitted_at
     end
 
     def selected_users
+      if @report_contest
+        @users = @report_contest.students
+        @users = @users.where(id: @current_user.reportable_users) unless @current_user.admin?
+        return
+      end
       return (@users = User.none) unless params.has_key? :users
       @users = if params[:users][:use] == "group" then
                  if params[:users][:only_users]

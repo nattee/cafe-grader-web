@@ -1,9 +1,11 @@
-.d-flex.flex-column.gap-1.mb-3
-  %small.text-secondary.text-uppercase.fw-bold.ls-1 Report
-  %h2.fw-bold.text-dark.mb-0 Submissions
+= render 'page_header', title: 'Submissions', path: submission_report_path
+= render 'contest_scope', path: submission_report_path
 
 = form_with url: '#', id: 'filter_form' do |f|
-  .row{data: {controller: 'init-ui-component'}}
+  -# with a contest picked the cards stay in the DOM (their JS feeds the
+  -# table) but hidden; the query URL carries the contest and the
+  -# controller ignores the card params
+  .row{class: ('d-none' if @report_contest), data: {controller: 'init-ui-component'}}
     .col-lg-4.mt-2
       = render partial: 'problem_select', locals: {all: true}
     .col-lg-4.mt-2
@@ -97,7 +99,7 @@
         {title: 'IP', data: 'ip_address', className: 'grader-comment'},
       ]),
       ajax: {
-        url: '#{submission_query_report_path}',
+        url: '#{submission_query_report_path(report_contest_query)}',
         type: 'POST',
         data: (d) =>  {
           build_sub_range_params(d)
