@@ -22,43 +22,6 @@ Conventions:
 
 ---
 
-## Testcase visibility vs. scraping — what "view testcase" should expose (issue #18, decision needed)
-
-**Raised 2017 as GitHub issue #18, re-read 2026-10-01.** The reporter: some
-problems' input files hold only the name of a text file the program opens at
-run time, and the student testcase page never shows that file, so the visible
-testcase does not help debugging.
-
-**Current state.** Two gates: `Problem#can_view_testcase` (site-wide
-`show_testcase` ∧ per-problem `view_testcase`) and `User#can_view_testcase?`
-(admin ∨ can view the problem ∧ `right.view_testcase`). The page
-`app/views/testcases/show_problem.html.haml` (`TestcasesController#show_problem`)
-prints every test's input and expected output in full and links the dataset's
-compile-time *managers* for download; the run-time *data files*
-(`Dataset#data_files`, `app/models/dataset.rb`) are not listed and have no
-student download route (`config/routes.rb` has `download_manager`,
-`download_input`, `download_sol` only). So the flag's intent — "the student may
-see everything" — is not what the page delivers, and #18 is that gap.
-
-**Why it is not a one-line fix (dae, 2026-10-01).** The same full testcases and
-data files are exactly what a student needs to scrape the site and clone it,
-and the material is the problem setter's copyright. A per-problem flag meant
-as "help students debug" is doubling as "publish the dataset". Closing #18 by
-adding data files to the page widens that exposure; the policy has to be
-settled first.
-
-**Options to discuss (none chosen):**
-1. Keep the flag's meaning (everything) and add data files to the page —
-   closes #18, accepts scraping on flagged problems. Small.
-2. Split the flag: "show testcases" (per-test input/output) vs "show data
-   files", the second defaulting off. Small–medium.
-3. Partial visibility by design: only the first N tests, or inputs only, never
-   the full set, with downloads logged per user. Medium.
-4. Anti-scrape measures orthogonal to the flag: per-user download logging and
-   rate limit, no bulk download. Medium; could pair with 1 or 2.
-
-Decide the policy, then #18 itself is one view list plus one download route.
-
 ## Contest reports — what a contest should report after the exam (direction not chosen)
 
 **Raised 2026-09-12 and 2026-09-22, never designed** — each time a nearby
@@ -542,6 +505,18 @@ existing block already handles that with a config change.
 ## Resolved
 
 Pointer blocks only — newest first. Full write-ups: `hg log`, CHANGELOG, linked docs.
+
+### Testcase visibility vs. scraping (issue #18, with #59) — RESOLVED 2026-10-01
+
+**Rev 2218.** A preview tier: students the flags admit see the first
+`ui.testcase_preview_bytes` (default 2048) of each input, expected output and
+run-time data file, no downloads; admins, reporters and editors get whole
+files. One predicate, `User#testcase_access`, decides everywhere (page,
+downloads, API) and now checks the problem's own flag too, which the
+downloads and the API skipped. Managers stay whole. Record: CHANGELOG
+[Unreleased] (Added + Security), `doc/decisions.md` 2026-10-01. Residual:
+none; option 4 (download logging, rate limits) was not needed once
+downloads left the preview tier.
 
 ### Contest AI Usage page — grades undercounted, blank status, unlabelled units — RESOLVED 2026-09-25
 

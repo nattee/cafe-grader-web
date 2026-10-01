@@ -228,6 +228,7 @@ Rails.application.routes.draw do
     collection do
       get 'show_problem/:problem_id(/:test_num)' => 'testcases#show_problem', as: 'show_problem'
       get 'download_manager/:problem_id/:mg_id', as: 'download_manager', action: 'download_manager'
+      get 'download_data_file/:problem_id/:att_id', as: 'download_data_file', action: 'download_data_file'
     end
   end
 

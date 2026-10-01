@@ -547,11 +547,27 @@ class User < ApplicationRecord
     return submission.problem.view_submission
   end
 
-  def can_view_testcase?(problem)
-    # admin always has right
-    return true if admin?
+  # Testcase access tier for +problem+ (issues #18 and #59, design 2026-10-01):
+  #   :full    admins, and reporters or editors of the problem (the report set
+  #            already contains editors): whole files, downloads.
+  #   :preview anyone else the two flags admit: the first
+  #            GraderConfiguration.testcase_preview_bytes of each file, no
+  #            downloads.
+  #   nil      no access.
+  # Both flags are checked here, the site right AND the problem's own
+  # view_testcase. Until rev 2218 the downloads and the API checked only the
+  # site right, so a student could fetch the files of a problem whose own flag
+  # was off while the page refused them.
+  def testcase_access(problem)
+    return :full if admin?
+    return :full if problems_for_action(:report).where(id: problem.id).any?
+    return nil unless problem.can_view_testcase
+    return nil unless problems_for_action(:submit).where(id: problem.id).any?
+    :preview
+  end
 
-    return can_view_problem?(problem) && GraderConfiguration["right.view_testcase"]
+  def can_view_testcase?(problem)
+    testcase_access(problem).present?
   end
 
   def can_edit_announcement(announcement)

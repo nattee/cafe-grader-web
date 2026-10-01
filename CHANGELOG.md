@@ -11,6 +11,20 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Testcase page shows a preview, not the whole dataset.** Students who may
+  view a problem's test data now see the first 2 KB of each input, expected
+  output and run-time data file, with the file's size and a "truncated"
+  badge, and no download buttons; admins, reporters and editors of the
+  problem keep whole-file downloads (the page shows them the same prefix).
+  The amount is the new site setting `ui.testcase_preview_bytes` (0 = whole
+  files and downloads for everyone, the old behaviour); run `db:seed` to add
+  the key, or the default 2048 applies. Compile-time manager files stay whole
+  for every tier. The JSON API follows the same tier: `/testcases/{id}/input`
+  and `/sol` return the prefix with `X-Testcase-Byte-Size` and
+  `X-Testcase-Truncated` headers, and `/problems/{id}/testcases` lists
+  `access`, `input_bytes` and `sol_bytes`. Fixes the page that pulled every
+  file whole (one visible problem served 244 MB per visit, issue #59) and
+  closes issue #18 (run-time data files were never shown). (rev 2218)
 - **My Submissions lists everything, newest first.** The Submissions page
   no longer opens on "Select a problem": it shows all your submissions across
   every problem you can open, newest first, 50 a page (Newer / Older links),
@@ -137,6 +151,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   (threads must stay at most pool minus one). (rev 2137, 2146)
 
 ### Security
+- Testcase downloads and the API checked only the site-wide `right.view_testcase`,
+  not the problem's own "view testcase" flag: a student could fetch the test
+  files of a problem whose flag was off while the page refused them. One
+  predicate (`User#testcase_access`) now checks both everywhere. (rev 2218)
 - **Switching the site mode (standard/contest/analysis) now requires an
   admin.** It was reachable by any group editor; a TA flipped the whole site's
   mode mid-exam on 2026-09-09. (rev 2141)

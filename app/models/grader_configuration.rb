@@ -13,6 +13,9 @@ class GraderConfiguration < ApplicationRecord
   CONTEST_TIME_LIMIT_KEY = 'contest.time_limit'
   MULTIPLE_IP_LOGIN_KEY = 'right.multiple_ip_login'
   VIEW_TESTCASE = 'right.view_testcase'
+  # Bytes of each testcase file shown to the preview tier (User#testcase_access);
+  # 0 = whole files. Missing key (not yet seeded) = 2048.
+  TESTCASE_PREVIEW_BYTES = 'ui.testcase_preview_bytes'
   SINGLE_USER_KEY = 'system.single_user_mode'
   SYSTEM_USE_PROBLEM_GROUP = 'system.use_problem_group'
   SYSTEM_MINIMUM_LAST_LOGIN_TIME = 'system.min_last_login_time'
@@ -77,6 +80,11 @@ class GraderConfiguration < ApplicationRecord
 
   def  self.show_testcase
     return get(VIEW_TESTCASE)
+  end
+
+  def self.testcase_preview_bytes
+    v = get(TESTCASE_PREVIEW_BYTES)
+    v.nil? ? 2048 : v.to_i
   end
 
   def self.allow_test_request(user)

@@ -130,7 +130,13 @@ class UserTest < ActiveSupport::TestCase
     set_grader_config('right.view_testcase', 'true')
     # john needs to be able to view the problem first
     set_grader_config('system.use_problem_group', 'false')
+    # ...and the problem's own flag must be on too (rev 2218: both flags,
+    # on every path — the downloads and the API used to check only the site right)
+    problems(:prob_add).update!(view_testcase: false)
+    assert_not users(:john).can_view_testcase?(problems(:prob_add))
+    problems(:prob_add).update!(view_testcase: true)
     assert users(:john).can_view_testcase?(problems(:prob_add))
+    assert_equal :preview, users(:john).testcase_access(problems(:prob_add))
   end
 
   # --- can_view_problem_pdf? ---

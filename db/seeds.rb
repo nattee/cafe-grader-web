@@ -108,7 +108,14 @@ CONFIGURATIONS =
      key: 'right.view_testcase',
      value_type: 'boolean',
      default_value: 'false',
-     description: 'If true, any user can view/download test data'
+     description: 'If true, any user can view test data of the problems that allow it (see ui.testcase_preview_bytes for how much)'
+   },
+
+   {
+     key: 'ui.testcase_preview_bytes',
+     value_type: 'integer',
+     default_value: '2048',
+     description: 'Students who may view test data see only the first N bytes of each input, expected output and data file, with no download. 0 = whole files and downloads. Admins, reporters and editors always get whole files.'
    },
 
    {
