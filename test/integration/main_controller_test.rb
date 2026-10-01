@@ -42,12 +42,6 @@ class MainControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "help page loads" do
-    sign_in_as("john", "hello")
-    get help_main_path
-    assert_response :success
-  end
-
   # --- Dead actions (no routes) ---
   #
   # MainController defines `source`, `load_output`, `confirm_contest_start`,

@@ -12,39 +12,51 @@ class SubmissionsController < ApplicationController
   before_action :can_view_problem, only: [ :direct_edit_problem ]
   before_action :can_edit_problem, only: [:rejudge, :set_tag, :archive_viva, :adopt_viva_grade]
 
-  # GET /submissions
-  # GET /submissions.json
-  # Show problem selection and user's submission of that problem
+  # GET /submissions                  My Submissions, all problems (issue #62)
+  # GET /submissions/prob/:problem_id  ... narrowed to one problem
+  # 50 rows a page, newest first: a student may hold thousands of submissions
+  # (the heaviest on production has ~20k), so the page never loads them all.
+  PER_PAGE = 50
+
   def index
     @problems = @current_user.problems_for_action(:submit)
 
-    if params[:problem_id]==nil
-      @problem = nil
-      @submissions = nil
-    else
-      @problem = Problem.find(params[:problem_id]) rescue nil
-      if (@problem == nil) || (! @current_user.can_view_problem?(@problem))
+    if params[:problem_id].present?
+      @problem = Problem.find_by(id: params[:problem_id])
+      if @problem.nil? || !@current_user.can_view_problem?(@problem)
         redirect_to list_main_path
         flash[:error] = 'Authorization error: You have no right to view submissions for this problem'
         return
       end
-
-
-      if GraderConfiguration.contest_mode?
-        # when in contest mode, show only submission during this contest
-        @submissions = Submission.regular.where(user: @current_user, problem: @problem).where(submitted_at: @current_user.active_contests_range).order(id: :desc)
-      else
-        @submissions = Submission.regular.where(user: @current_user, problem: @problem).order(id: :desc)
-      end
-
-
-      @sub_details = Hash.new { |h, k| h[k] = {} }
-      Comment
-        .where(kind: ['llm_assist'], commentable_id: @submissions.ids)
-        .group(:commentable_id)
-        .select(:commentable_id, "count(comments.id) as llm_count", "sum(comments.cost) as llm_cost")
-        .each { |row| @sub_details[row.commentable_id] = { count: row.llm_count, cost: row.llm_cost } }
     end
+
+    scope = Submission.regular.where(user: @current_user)
+    if @problem
+      scope = scope.where(problem: @problem)
+    elsif !@current_user.admin?
+      # All problems (issue #62): only the problems the student may open —
+      # the same report ∪ submit set User#can_view_problem? checks — so every
+      # row links to a page that will actually render.
+      scope = scope.where(problem_id: @current_user.problems_for_action(:submit))
+                   .or(scope.where(problem_id: @current_user.problems_for_action(:report)))
+    end
+    # when in contest mode, show only submissions made during the active contests
+    scope = scope.where(submitted_at: @current_user.active_contests_range) if GraderConfiguration.contest_mode?
+
+    @total_count = scope.count
+    @per_page    = PER_PAGE
+    @total_pages = [(@total_count.to_f / @per_page).ceil, 1].max
+    @page        = params[:page].to_i.clamp(1, @total_pages)
+    @submissions = scope.order(id: :desc)
+                        .offset((@page - 1) * @per_page).limit(@per_page)
+                        .includes(:problem, :language)
+
+    @sub_details = Hash.new { |h, k| h[k] = {} }
+    Comment
+      .where(kind: ['llm_assist'], commentable_id: @submissions.map(&:id))
+      .group(:commentable_id)
+      .select(:commentable_id, "count(comments.id) as llm_count", "sum(comments.cost) as llm_cost")
+      .each { |row| @sub_details[row.commentable_id] = { count: row.llm_count, cost: row.llm_cost } }
   end
 
   # GET /submissions/1

@@ -22,6 +22,43 @@ Conventions:
 
 ---
 
+## Testcase visibility vs. scraping — what "view testcase" should expose (issue #18, decision needed)
+
+**Raised 2017 as GitHub issue #18, re-read 2026-10-01.** The reporter: some
+problems' input files hold only the name of a text file the program opens at
+run time, and the student testcase page never shows that file, so the visible
+testcase does not help debugging.
+
+**Current state.** Two gates: `Problem#can_view_testcase` (site-wide
+`show_testcase` ∧ per-problem `view_testcase`) and `User#can_view_testcase?`
+(admin ∨ can view the problem ∧ `right.view_testcase`). The page
+`app/views/testcases/show_problem.html.haml` (`TestcasesController#show_problem`)
+prints every test's input and expected output in full and links the dataset's
+compile-time *managers* for download; the run-time *data files*
+(`Dataset#data_files`, `app/models/dataset.rb`) are not listed and have no
+student download route (`config/routes.rb` has `download_manager`,
+`download_input`, `download_sol` only). So the flag's intent — "the student may
+see everything" — is not what the page delivers, and #18 is that gap.
+
+**Why it is not a one-line fix (dae, 2026-10-01).** The same full testcases and
+data files are exactly what a student needs to scrape the site and clone it,
+and the material is the problem setter's copyright. A per-problem flag meant
+as "help students debug" is doubling as "publish the dataset". Closing #18 by
+adding data files to the page widens that exposure; the policy has to be
+settled first.
+
+**Options to discuss (none chosen):**
+1. Keep the flag's meaning (everything) and add data files to the page —
+   closes #18, accepts scraping on flagged problems. Small.
+2. Split the flag: "show testcases" (per-test input/output) vs "show data
+   files", the second defaulting off. Small–medium.
+3. Partial visibility by design: only the first N tests, or inputs only, never
+   the full set, with downloads logged per user. Medium.
+4. Anti-scrape measures orthogonal to the flag: per-user download logging and
+   rate limit, no bulk download. Medium; could pair with 1 or 2.
+
+Decide the policy, then #18 itself is one view list plus one download route.
+
 ## Contest reports — what a contest should report after the exam (direction not chosen)
 
 **Raised 2026-09-12 and 2026-09-22, never designed** — each time a nearby
@@ -315,8 +352,9 @@ renames it explicitly; the web import path does not.
   admin-managed `languages` table, and problem-author files; authors already have
   arbitrary code execution by design (custom checkers run *unsandboxed* at
   `checker.rb:155`). Action taken: `judge_base.rb#run_initializer` → argv
-  `system(*init_cmd)`. Optional hardening: `check_command` → argv, `${UID}` →
-  `Process.uid` so `run_isolate` can drop the shell. **Separate larger item:**
+  `system(*init_cmd)`; `check_command` → argv DONE (rev 2212, issue #49: a
+  checker uploaded as "checker (1)" failed in the shell string). Optional
+  hardening left: `${UID}` → `Process.uid` so `run_isolate` can drop the shell. **Separate larger item:**
   move custom checkers inside isolate if checkers are ever accepted from
   less-trusted authors.
 - ✅ FIXED 2026-07-19 — `test/controllers/` and `test/integration/` must not declare
@@ -390,6 +428,41 @@ out of the audited attrs (derived, bulky).
 
 ## Waiting for a signal
 
+### Language-specific options in the database (issue #42) — fold into the worker overhaul
+
+**The ask (dae, 2025-06-12):** everything that depends on the submission's
+language — compile command, isolate options, editor syntax mode, default
+filename — should be configurable, not hard-coded.
+
+**Done already (2026-10-01 audit):** the `languages` table (`name`,
+`pretty_name`, `ext`, `common_ext`, `binary`) has an admin CRUD page
+(`LanguagesController`; the seeded languages are read-only, custom ones
+editable); the submission filename is per problem (`problems.submission_filename`,
+falling back to `Language#default_submission_filename`); which languages a
+problem accepts is per problem.
+
+**Still in code, keyed by `Language#name`:** the compile command (one class per
+language under `app/engine/compiler/`, chosen by `Compiler.get_compiler`;
+compiler binaries from `config/worker.yml` `compiler:`), the sandbox options
+(`JudgeBase#isolate_options_by_lang`, `#isolate_need_cg_by_lang`), and the
+editor mode (`ApplicationHelper#get_ace_mode`, plus the Ace mode list in
+`config/importmap.rb`).
+
+**Why not a one-day job:** a first slice — `ace_mode`, `isolate_options`,
+`need_cg` and a compile-command template as new `languages` columns, seeded
+from today's constants and read by the engine — fits in a day for the simple
+compiled languages. Java (classname detection in `pre_compile`), Python/Ruby
+(`post_compile` for scripts), Digital and PostgreSQL carry per-language Ruby
+hooks that a template cannot express, and every change here lands on the
+grading path of every judge host. With a worker overhaul planned, a half-way
+DB schema now would be designed twice.
+
+**Reopen when:** the worker overhaul design starts — make "language = data,
+not code" one of its requirements, and migrate the seeded constants then.
+Size then: medium (schema + engine readers + admin form + migration of the
+constants). Until then, new languages keep arriving as code.
+
+
 Decided, not deprioritized: each of these stays closed until its **Reopen
 when** condition is met. Reviewed 2026-09-02 with dae.
 
@@ -400,8 +473,10 @@ patterns coexist on purpose — inline knowledge card on index/overview pages,
 offcanvas drawer on edit/detail pages — and the drawer trigger is a *labeled*
 `? Help` button, never icon-only. Shared drawer layout
 (`shared/_help_drawer.html.haml`, 2026-07-01) and the accordion edit drawer
-(`problems/_edit_help`, 2026-07-19) are done. `app/views/main/help.html.haml`
-(student-facing, i18n) is a different concern.
+(`problems/_edit_help`, 2026-07-19) are done. The old student-facing
+`app/views/main/help.html.haml` (2013-era submit instructions, i18n) was
+deleted with its route, action and `help.*` keys (rev 2213, issue #35); a
+student help link, if one returns, should point at the wiki.
 
 **Not built:** a first-visit popover pointing at the trigger, on the
 cookie-based `dismiss-announcement` controller pattern. The hypothesis is that

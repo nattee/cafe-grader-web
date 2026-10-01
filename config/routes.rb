@@ -374,7 +374,6 @@ Rails.application.routes.draw do
     get 'logout'
     get 'list'
     get 'submission(/:id)', action: 'submission', as: 'main_submission'
-    get 'help'
     post 'submit'
     post 'prob_grop'
   end

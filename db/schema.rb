@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_24_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_01_120000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -211,6 +211,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_24_090000) do
     t.string "key"
     t.boolean "enabled", default: false
     t.integer "status", default: 0
+    t.integer "disk_free_mb"
     t.index ["host", "pid"], name: "index_grader_processes_on_host_and_pid"
   end
 
