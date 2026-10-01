@@ -101,7 +101,7 @@
           / announcement
           - @nav_announcement.each do |ann|
             %p.navbar-text
-              = ann.body.html_safe
+              = sanitized_html(ann.body)
         %ul.navbar-nav
           -#
             %li.nav-item

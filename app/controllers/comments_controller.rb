@@ -105,13 +105,13 @@ class CommentsController < ApplicationController
   def show_hint
     # TODO: need to check whether the user can view this hint
     @header_msg = "Hint: #{@hint.title}"
-    @body_msg = (@hint.body || '-- blank --').html_safe
+    @body_msg = @hint.body.presence || '-- blank --'
     render :show
   end
 
   # unified show for submissions comment as a modal
   def show_for_submission
-    @header_msg = "Comment: #{@comment.title}".html_safe
+    @header_msg = "Comment: #{@comment.title}"
     if @comment.kind == 'llm_assist'
       # The body is model-written and can echo student-controlled markup (a
       # code comment, a string literal), and staff open these modals — so it
@@ -121,7 +121,7 @@ class CommentsController < ApplicationController
       body_html = helpers.sanitize(helpers.markdown(@comment.body.presence || '-- blank --'))
       @body_html = helpers.safe_join([render_to_string(partial: 'llm_assist_header').html_safe, body_html])
     else
-      @body_msg = (@comment.body.html_safe || '-- blank --')
+      @body_msg = @comment.body.presence || '-- blank --'
     end
     render :show
   end
@@ -175,7 +175,7 @@ class CommentsController < ApplicationController
       user: @current_user,
       kind: 'llm_assist',
       llm_model: model_name,
-      title: "AI #{model_name} is thinking <span class='spinner-border spinner-border-sm'></span>",
+      title: "AI #{model_name} is thinking",
       body: <<~TEXT,
         ## AI is thinking, please wait
         * Request started at `#{Time.zone.now}`, using the model `#{model_name}`

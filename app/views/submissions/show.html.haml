@@ -152,5 +152,5 @@
           = render partial: 'evaluations', locals: {testcases: @testcases, evaluations_by_tcid: @evaluations_by_tcid}
 
 -# compiler msg modal
-= render partial: 'msg_modal', locals: {id: 'compiler-msg-modal', header_msg: 'Compiler message', body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
+= render partial: 'msg_modal', locals: {id: 'compiler-msg-modal', header_msg: 'Compiler message', body_msg: content_tag(:pre, @submission.compiler_message)}
 

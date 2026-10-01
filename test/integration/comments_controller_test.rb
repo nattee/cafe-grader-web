@@ -237,4 +237,66 @@ class CommentsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/10 points\. If your final score/, response.body)
     assert_no_match(/This request does not reduce the/, response.body)
   end
+
+  # ------------------------------------------------------------
+  # GitHub #50 vectors 3 and 4 — editor-typed titles and bodies are shown as
+  # text (title) or sanitized markdown (body) everywhere they surface: the
+  # comment list, the create toast, the View modal, the hint modal.
+  # ------------------------------------------------------------
+  XSS_TITLE = %(t <img src=x onerror=alert(1)>)
+
+  test "comment list shows an editor's title as text, never as markup" do
+    @sub.comments.create!(user: users(:admin), kind: "comment", title: XSS_TITLE, body: "b")
+    sign_in_as("admin", "admin")
+    get submission_comments_path(@sub), as: :turbo_stream
+    assert_response :success
+    assert_no_match(/<img/, response.body)
+    assert_includes response.body, "t &lt;img src=x onerror=alert(1)&gt;"
+  end
+
+  test "a running AI assist shows its spinner from its status, not from markup in the title" do
+    @sub.comments.create!(user: users(:john), kind: "llm_assist", status: "processing", llm_model: "m", cost: 0,
+                          title: "AI m is thinking <b>x</b>", body: "wait")
+    sign_in_as("admin", "admin")
+    get submission_comments_path(@sub), as: :turbo_stream
+    assert_response :success
+    assert_match(/spinner-border/, response.body)
+    assert_no_match(%r{<b>x</b>}, response.body)
+  end
+
+  test "llm_assist stores a plain-text placeholder title" do
+    enable_llm_assist!
+    sign_in_as("john", "hello")
+    post llm_assist_submission_comments_path(submission_id: @sub.id), params: { model: "stub-model" }, as: :turbo_stream
+    assert_response :success
+    assert_equal "AI stub-model is thinking", Comment.order(:id).last.title
+  end
+
+  test "create toast shows the new comment's title as text" do
+    sign_in_as("admin", "admin")
+    post submission_comments_path(@sub), params: { comment_title: XSS_TITLE, comment_body: "b" }, as: :turbo_stream
+    assert_response :created
+    assert_no_match(/<img/, response.body)
+    assert_includes response.body, "&lt;img src=x onerror=alert(1)&gt;"
+  end
+
+  test "comment modal escapes the title and sanitizes the body, keeping staff HTML" do
+    c = @sub.comments.create!(user: users(:admin), kind: "comment", title: XSS_TITLE,
+                              body: %(see <a href="/x.pdf" target="_blank">x</a> <script>alert(3)</script>))
+    sign_in_as("admin", "admin")
+    get submission_comment_path(@sub, c), as: :turbo_stream
+    assert_response :success
+    assert_no_match(/<img|<script>alert/, response.body)   # the stream's own show() script is fine
+    assert_includes response.body, "Comment: t &lt;img src=x onerror=alert(1)&gt;"
+    assert_includes response.body, '<a href="/x.pdf" target="_blank">x</a>'
+  end
+
+  test "hint modal sanitizes the hint body" do
+    @hint.update!(body: %(tip <b>bold</b> <script>alert(4)</script>))
+    sign_in_as("john", "hello")
+    get problem_hint_path(problem_id: @prob.id, id: @hint.id), as: :turbo_stream
+    assert_response :success
+    assert_no_match(/<script>alert/, response.body)   # the stream's own show() script is fine
+    assert_includes response.body, "<b>bold</b>"
+  end
 end

@@ -36,4 +36,43 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_no_match %r{<script}, html
     assert_includes html, '<a href="http://example.com">http://example.com</a>'
   end
+
+  # GitHub #50 vector 2. Staff-authored markdown — announcements, hints,
+  # submission comments — may carry the HTML those authors really use (links
+  # that open a new tab, font size/colour, tables, images; every one of these
+  # is in production announcement bodies) but never script, frames or event
+  # handlers, which would run in every reader's browser.
+  test "sanitized_markdown keeps the staff HTML in use: new-tab links, font, tables, images" do
+    html = sanitized_markdown(<<~MD)
+      <ul><li><a href="/doc.pdf" target="_blank">doc</a></li></ul>
+      <font size=+3 color=red>late</font>
+      <table border=1><tr><td>a</td><td>b</td></tr></table>
+      <img src="/a.png" width=100%>
+    MD
+    assert_includes html, '<a href="/doc.pdf" target="_blank">doc</a>'
+    assert_includes html, '<font size="+3" color="red">late</font>'
+    assert_match %r{<table border="1">.*<td>a</td><td>b</td>.*</table>}m, html
+    assert_includes html, '<img src="/a.png" width="100%">'
+    assert html.html_safe?
+  end
+
+  test "sanitized_markdown strips script, iframe and event handlers but keeps the text" do
+    html = sanitized_markdown(%(hello <script>alert(1)</script><iframe src="https://x.test/clock"></iframe><a href="/x" target="_blank" onclick="alert(2)">x</a><img src=x onerror=alert(3)>))
+    assert_no_match %r{<script|<iframe|onclick|onerror}, html
+    assert_includes html, 'hello'
+    assert_includes html, '<a href="/x" target="_blank">x</a>'
+  end
+
+  test "sanitized_markdown still renders markdown" do
+    html = sanitized_markdown("- [a](/a.pdf)\n\n**bold**")
+    assert_includes html, '<li><a href="/a.pdf">a</a></li>'
+    assert_includes html, '<strong>bold</strong>'
+  end
+
+  test "sanitized_html applies the same allow-list without a markdown pass" do
+    html = sanitized_html(%(<font color=red>now</font> <script>alert(1)</script>))
+    assert_includes html, '<font color="red">now</font>'
+    assert_no_match %r{<script|<p>}, html
+    assert html.html_safe?
+  end
 end

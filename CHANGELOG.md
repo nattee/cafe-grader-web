@@ -151,6 +151,23 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   (threads must stay at most pool minus one). (rev 2137, 2146)
 
 ### Security
+- **Stored XSS through staff-written text (issue #50, vectors 2–4) and
+  compiler messages.** Four places rendered text as HTML that someone other
+  than an admin controls: announcement bodies (an editor's `<script>` ran in
+  every visitor's browser, including the navbar strip), submission-comment
+  and hint titles and bodies (in the comment list, the create/update toast
+  and the View modal, so a TA's comment ran in the student's and every
+  reviewer's browser), and the compiler message (compilers echo source
+  lines, so one `#error` line in a student's code ran in whichever staff
+  member opened the message). Titles and compiler output are now plain
+  text. Announcement, hint and comment bodies render through an HTML
+  allow-list (`sanitized_markdown`): the HTML staff actually use in
+  production bodies — links that open a new tab, `<font>` size and colour,
+  tables, images — keeps working, while script, iframes and event handlers
+  are dropped. A running AI-assist row still shows its spinner; it is now
+  drawn from the request's status instead of markup stored in the title.
+  Vector 1 of the report was fixed in rev 1536 / 2079 and the AI-assist body
+  in rev 2084. (rev 2220)
 - Testcase downloads and the API checked only the site-wide `right.view_testcase`,
   not the problem's own "view testcase" flag: a student could fetch the test
   files of a problem whose flag was off while the page refused them. One

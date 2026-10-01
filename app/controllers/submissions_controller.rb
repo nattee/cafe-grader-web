@@ -160,7 +160,7 @@ class SubmissionsController < ApplicationController
     if @submission.problem.viva_exam?
       redirect_to viva_submission_path(@submission) and return
     end
-    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: "<pre>#{@submission.compiler_message}</pre>".html_safe}
+    render partial: "msg_modal_show", locals: {do_popup: true, header_msg: "Compiler message for ##{@submission.id}", body_msg: helpers.content_tag(:pre, @submission.compiler_message)}
   end
 
   # POST /submissions/:id/rejudge
