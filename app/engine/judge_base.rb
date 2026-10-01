@@ -71,7 +71,10 @@ module JudgeBase
     when 'rust'
       '-p -d /etc/alternatives'
     when 'go'
-      '-p -d /gocache:tmp --env=GOCACHE=/gocache'
+      # --open-files: isolate caps the sandbox at 64 open files by default;
+      # `go build` of anything importing fmt/os runs out ("pipe2: too many
+      # open files", issue #40). Applies to the run phase too — harmless.
+      '-p -d /gocache:tmp --env=GOCACHE=/gocache --open-files=1024'
     when 'postgres'
       '-p --share-net'
     else
