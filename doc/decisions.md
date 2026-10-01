@@ -3,6 +3,36 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-10-01 — Testcase visibility: a preview for students, whole files for staff
+
+**Decision.** "View testcase" no longer means "see everything". A student the
+flags admit sees the first `ui.testcase_preview_bytes` (default 2048) of every
+test input, expected output and run-time data file, with the file's size and a
+"truncated" mark, and cannot download them. Admins, and reporters or editors of
+the problem, get whole files on download. The page shows everyone the prefix.
+Compile-time managers stay whole for any tier. The JSON API returns exactly what
+the web page gives the same user. One predicate, `User#testcase_access`
+(`:full` / `:preview` / nil), is the only place the rule lives; every web and
+API path reads it. The amount is a site setting; 0 restores the old behaviour.
+
+**Why.** The purpose of showing tests is debugging as part of learning, and the
+head of a file serves that: 57% of the 14,266 test files on production are
+2 KB or smaller and show in full. Whole files are what a student needs to scrape
+the site and clone it, and the datasets are the setters' copyright (issue #18
+raised the data files; dae raised the scraping risk, 2026-10-01). The same
+change fixes issue #59: the page pulled every file whole, and one visible
+problem served 244 MB per visit. Managers are not secret: a submission is
+compiled against them and can print them.
+
+**Also fixed.** The old predicate checked the site right but not the problem's
+own flag, so the downloads and the API served the files of a problem whose
+flag was off while the page refused. Both flags are checked now, everywhere.
+
+**Consequences.** A problem setter who wants students to have whole files sets
+`ui.testcase_preview_bytes` to 0 site-wide; there is no per-problem override by
+design (one policy, easy to reason about). Reporters see whole files even when
+the problem's flag is off, mirroring `can_view_submission?`.
+
 ## 2026-08-30 — `prepare_testcase_directory` is create-only; the writer owns cleanup
 
 **Decision.** The shared `JudgeBase#prepare_testcase_directory` computes paths

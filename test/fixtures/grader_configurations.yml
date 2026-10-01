@@ -177,3 +177,10 @@ GraderConfiguration_28:
   value_type: integer
   value: '10'
   description: Score penalty (points off the problem's full score) charged for each LLM assist request
+
+
+GraderConfiguration_29:
+  key: ui.testcase_preview_bytes
+  value_type: integer
+  value: '2048'
+  description: Bytes of each test file shown to students who may view test data; 0 = whole files
