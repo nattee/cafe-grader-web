@@ -141,6 +141,7 @@ class Grader
 
   def main_loop
     last_heartbeat = Time.zone.now
+    last_disk_check = nil
     running = true
 
     # trap signal
@@ -158,7 +159,16 @@ class Grader
       current = Time.zone.now
       if current - last_heartbeat > 3.0
         last_heartbeat = current
-        @grader_process.update(last_heartbeat: current, status: (Time.zone.now - @last_job_time > 5.second) ? :idle : :working)
+        attrs = { last_heartbeat: current, status: (Time.zone.now - @last_job_time > 5.second) ? :idle : :working }
+        # free disk of the judge directories, at most once a minute (issue
+        # #25). Skipped while the schema predates the column (a judge host
+        # deployed before the web host migrated) so the loop never crashes
+        # on an unknown attribute.
+        if GraderProcess.column_names.include?('disk_free_mb') && (last_disk_check.nil? || current - last_disk_check > 60)
+          last_disk_check = current
+          attrs[:disk_free_mb] = GraderProcess.worker_free_disk_mb
+        end
+        @grader_process.update(attrs)
 
         # check if the database tell us to stop
         @grader_process.reload

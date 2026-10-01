@@ -245,4 +245,24 @@ class GradersControllerTest < ActionDispatch::IntegrationTest
     assert_select "#job-workers", count: 0
     assert_match(/No Solid Queue process is registered/, response.body)
   end
+
+  # Issue #25: the disk tile and the per-host list.
+  test "graders index shows the lowest free disk and flags a judge host that is low" do
+    GraderProcess.create!(worker_id: 7, box_id: 1, host: 'judge-low', disk_free_mb: 512, last_heartbeat: Time.zone.now)
+    GraderProcess.create!(worker_id: 8, box_id: 1, host: 'judge-ok', disk_free_mb: 40_960, last_heartbeat: Time.zone.now)
+    sign_in_as("admin", "admin")
+    get grader_processes_path
+    assert_response :success
+    assert_select '#disk-tile.bg-danger-subtle', text: /0\.5 GB.*1 host low on disk/m
+    assert_select '#disk-by-host span.text-danger', text: /judge-low\s+0\.5 GB/
+    assert_select '#disk-by-host', text: /judge-ok\s+40\.0 GB/
+    assert_select '#disk-by-host', text: /web: app/
+  end
+
+  test "graders index with no judge report shows the web host's own disk, not a warning" do
+    sign_in_as("admin", "admin")
+    get grader_processes_path
+    assert_response :success
+    assert_select '#disk-tile.bg-success-subtle', text: /GB.*Lowest free disk/m
+  end
 end

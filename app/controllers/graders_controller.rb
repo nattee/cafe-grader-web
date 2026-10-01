@@ -36,6 +36,16 @@ class GradersController < ApplicationController
     # single landing page, deep-linking to the calibration instrument.
     @viva_alert_count = VivaTurn.where(role: :assistant, alerted: true).distinct.count(:submission_id)
 
+    # Disk space (issue #25): the web host's app and storage directories are
+    # measured now; each judge host's figure is the newest heartbeat row that
+    # reported one. Rows: [label, free MB or nil, heartbeat time or nil].
+    @disk_rows = [
+      ['web: app', GraderProcess.free_disk_mb(Rails.root), nil],
+      ['web: storage', GraderProcess.free_disk_mb(Rails.root.join('storage')), nil]
+    ] + GraderProcess.disk_by_host
+    @lowest_disk_mb = @disk_rows.filter_map { |_, mb, _| mb }.min
+    @low_disk_count = @disk_rows.count { |_, mb, _| GraderProcess.low_disk?(mb) }
+
     @submission_limit = [20, 100, 500].include?(params[:limit].to_i) ? params[:limit].to_i : 20
     @submission = Submission.order("id desc").limit(@submission_limit).includes(:user, :problem)
 
