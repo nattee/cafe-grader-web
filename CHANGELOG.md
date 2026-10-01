@@ -10,7 +10,42 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.7.0] — 2026-10-01
+
+**Upgrade notes.** Run `bin/rails db:migrate` — this release carries 5
+migrations: `llm_started_at` / `llm_latency_ms` on `viva_turns`, `comments`
+and `viva_grades`; `submissions.test_drive`; the viva grade history
+(`viva_grades.superseded_at` / `superseded_reason` / `superseded_by_id` /
+`requested_by_id` / `batch_id` / `error`, the unique index on
+`submission_id` replaced by `(submission_id, superseded_at)`); a data
+migration that files legacy failed grade rows as history; and
+`grader_processes.disk_free_mb`. Stop the Solid Queue workers while the two
+viva_grades migrations run (a grading job landing between them could write a
+row the data migration then relabels); a judge host deployed before the web
+host migrated skips its disk-space write, so judge/web order does not matter.
+Run `bin/rails db:seed` once to add the `ui.testcase_preview_bytes` setting
+(without it the default of 2048 bytes applies). Three entries are security
+fixes — stored XSS through announcements, comment titles and compiler
+messages, a per-problem testcase flag the downloads and API ignored, and the
+site-mode switch reachable by any group editor — so servers whose TAs hold the
+group-editor role should not wait. Behaviour changes worth knowing before
+upgrading a live server: the Submissions page opens on every submission the
+student can see, newest first, instead of asking for a problem; viva
+interviews and grading run on their own job queue and worker (`viva`) beside
+`default`, sized to the stock database pool so no host configuration is
+needed, with `config/solid_queue.env.SAMPLE` showing the per-host override;
+the deploy's `engine:smoke SUB=auto` step must run from a pipeline that
+carries it (a retried older pipeline does not); the student `/main/help` page
+is gone; Go judge hosts need the new engine for the raised open-file limit.
+
 ### Added
+- **Free disk space per judge host on the Grader Processes page** (issue
+  #25). Each judge worker measures the free space of its judge directory and
+  isolate box root once a minute and stores the smaller figure; the web host
+  measures its app and storage directories when the page renders. The
+  Background Workers card gets a fourth tile with the lowest figure, red when
+  any host is under 2 GB, and a per-host line underneath. One migration
+  (`grader_processes.disk_free_mb`). (rev 2215)
 - **Testcase page shows a preview, not the whole dataset.** Students who may
   view a problem's test data now see the first 2 KB of each input, expected
   output and run-time data file, with the file's size and a "truncated"
@@ -126,6 +161,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   continue. (rev 2155; automation repo rev 63)
 
 ### Changed
+- **The old student help page (`/main/help`) is removed** (issue #35). Its
+  2013-era "how to submit" text had been outdated for years and had already
+  lost its navbar link; the route, view, locale keys and dead menu entries go
+  with it. A student help link, when one returns, will point at the wiki.
+  (rev 2213)
 - **The contest AI Usage page separates the AI's own time from the wait.**
   "Wait time distribution" and "Assist by model" now show, beside each
   wait, the mean and p95 of the AI time (how long the provider took to
@@ -177,6 +217,22 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- **A custom checker whose filename contained a space or a shell character
+  failed every testcase with a grader error** (issue #49). The checker keeps
+  its uploaded filename on the judge host, and the check command was built as
+  a shell string, so a checker uploaded as `checker (1)` was parsed by the
+  shell. Every evaluator (diff, relative, postgres, the custom ones) now runs
+  its checker as an argument list, with the argument order unchanged.
+  (rev 2212)
+- **Go submissions that import `fmt` or `os` failed to compile with
+  "pipe2: too many open files"** (issue #40). isolate caps a sandbox at 64
+  open files and `go build` needs more; the Go sandbox options now raise the
+  limit to 1024 for compile and run. (rev 2214)
+- **A queue backlog no longer shows viva students a false "timed out".** A
+  turn queued but never started counts as stale after 20 minutes, not the 10
+  that applies to a turn the model started and then hung on. (rev 2142)
+- The AI Usage page's charts threw "Canvas is already in use" and could draw
+  twice when their data was present at page load. (rev 2143)
 - The submission status line read "submitted3 minutes ago" and
   "1 day ago(30/09/26 …)"; the words now have spaces between them, on the
   problem list as well. (rev 2211)
