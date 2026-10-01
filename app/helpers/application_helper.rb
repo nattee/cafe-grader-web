@@ -22,7 +22,7 @@ module ApplicationHelper
   def resource_icon_name(resource_class)
     # Handle both class and instance
     klass = resource_class.is_a?(Class) ? resource_class : resource_class.class
-    
+
     # Try direct mapping, then fallback to string lookup if needed, then default
     RESOURCE_ICONS[klass] || 'description'
   end
@@ -47,7 +47,6 @@ module ApplicationHelper
       left_menu << add_menu("#{I18n.t 'menu.hall_of_fame'}", 'report', 'problem_hof')
     end
 
-    right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-question-sign')}".html_safe, 'main', 'help')
     right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-comment')}".html_safe, 'messages', 'list', {title: I18n.t('menu.messages'), data: {toggle: 'tooltip'}})
     if GraderConfiguration['system.user_setting_enabled']
       right_menu << add_menu("#{content_tag(:span, '', class: 'glyphicon glyphicon-cog')}".html_safe, 'users', 'index', {title: I18n.t('menu.settings'), data: {toggle: 'tooltip'}})
@@ -96,7 +95,6 @@ module ApplicationHelper
     if GraderConfiguration['right.user_hall_of_fame']
       append_to menu_items, "[#{I18n.t 'menu.hall_of_fame'}]", 'report', 'problem_hof'
     end
-    append_to menu_items, "[#{I18n.t 'menu.help'}]", 'main', 'help'
 
     if GraderConfiguration['system.user_setting_enabled']
       append_to menu_items, "[#{I18n.t 'menu.settings'}]", 'users', 'index'

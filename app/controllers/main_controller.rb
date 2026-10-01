@@ -37,10 +37,6 @@ class MainController < ApplicationController
   def prob_group
   end
 
-  def help
-    @user = User.find(session[:user_id])
-  end
-
   # handle post of new submission either by
   #   1. submit via a form in the main file
   #   2. submit via "new" button
