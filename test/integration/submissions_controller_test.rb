@@ -261,4 +261,89 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     post adopt_viva_grade_submission_path(sub, grade_id: run.id)
     assert_redirected_to list_main_path
   end
+
+  # --- My Submissions, all problems (issue #62) ---
+
+  # save!(validate: false) keeps the model's number callback and skips the
+  # submit-right validation (the way trusted tooling creates rows); every
+  # test below asserts on the row's "#id" link, which only the table prints.
+  def make_submission(user:, problem:, submitted_at: Time.zone.now)
+    s = Submission.new(user: user, problem: problem, language: languages(:Language_c),
+                       submitted_at: submitted_at, source: "int main(){}")
+    s.save!(validate: false)
+    s
+  end
+
+  test "index without a problem lists the student's submissions across problems, newest first" do
+    sign_in_as("james", "morning")
+    older  = submissions(:add1_by_james)   # prob_add, available
+    hidden = submissions(:sub1_by_james)   # prob_sub is unavailable: the student cannot open it
+    newer  = make_submission(user: users(:james), problem: problems(:easy))
+
+    get submissions_path
+    assert_response :success
+    assert_select "th", text: "Problem"
+    assert_match "##{newer.id}", response.body
+    assert_match "##{older.id}", response.body
+    assert_no_match "##{hidden.id}", response.body
+    assert_operator response.body.index("##{newer.id}"), :<, response.body.index("##{older.id}")
+    assert_match problems(:easy).full_name, response.body
+    assert_match problems(:prob_add).full_name, response.body
+  end
+
+  test "index for one problem keeps the per-problem layout and links back to all problems" do
+    sign_in_as("james", "morning")
+    get problem_submissions_path(problems(:prob_add))
+    assert_response :success
+    assert_select "th", text: "Problem", count: 0
+    assert_select "a[href=?]", submissions_path, text: /All problems/
+  end
+
+  test "index without a problem for an admin lists their submissions on every problem" do
+    sign_in_as("admin", "admin")
+    get submissions_path
+    assert_response :success
+    assert_match "##{submissions(:add1_by_admin).id}", response.body
+    assert_match "##{submissions(:sub1_by_admin).id}", response.body   # unavailable problem; an admin may open it
+  end
+
+  test "index pages the list 50 at a time and clamps an out-of-range page" do
+    sign_in_as("james", "morning")
+    now = Time.zone.now
+    Submission.insert_all((1..60).map { |n|
+      { user_id: users(:james).id, problem_id: problems(:easy).id, language_id: languages(:Language_c).id,
+        submitted_at: now - (60 - n).minutes, number: n, source: "int main(){}" }
+    })
+    # 60 new rows + add1_by_james = 61 visible (sub1_by_james is on an unavailable problem)
+
+    get submissions_path
+    assert_select "tbody tr", 50
+    assert_match "Page 1 of 2 (61 submissions)", response.body
+    assert_select "a.page-link[href=?]", submissions_path(page: 2), text: /Older/
+
+    get submissions_path(page: 2)
+    assert_select "tbody tr", 11
+    assert_match "##{submissions(:add1_by_james).id}", response.body   # the oldest row lands on the last page
+
+    get submissions_path(page: 99)
+    assert_match "Page 2 of 2", response.body
+  end
+
+  test "index in contest mode lists only submissions made inside the active contests' window" do
+    sign_in_as("john", "hello")
+    contest = contests(:contest_a)   # started 1 hour ago, stops in 3 hours
+    ContestProblem.create!(contest: contest, problem: problems(:prob_add), number: 1, enabled: true)
+    ContestUser.create!(contest: contest, user: users(:john), role: 0, enabled: true,
+                        start_offset_second: 0, extra_time_second: 0)
+    set_grader_config("system.mode", "contest")
+    inside = make_submission(user: users(:john), problem: problems(:prob_add), submitted_at: 10.minutes.ago)
+    before = submissions(:add1_by_john)   # submitted in 2019, long before the contest
+
+    get submissions_path
+    assert_response :success
+    assert_match "##{inside.id}", response.body
+    assert_no_match "##{before.id}", response.body
+  ensure
+    set_grader_config("system.mode", "standard")
+  end
 end

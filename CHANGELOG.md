@@ -11,6 +11,15 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **My Submissions lists everything, newest first.** The Submissions page
+  no longer opens on "Select a problem": it shows all your submissions across
+  every problem you can open, newest first, 50 a page (Newer / Older links),
+  with a **Problem** column linking to that problem's own list. The problem
+  picker is now a filter; the × on the picker or the **All problems** button
+  on a filtered page returns to the full list. The per-problem list is paged
+  the same way.
+  Contest mode keeps its rule: only submissions inside your active contests'
+  windows are listed. Requested in issue #62. (rev 2211)
 - **A contest as the scope of the Best Score, Submissions and User Activity
   reports.** A **Contest** picker in each report's title row (contests you
   manage) reloads the page with `?contest=ID`: the three filter cards give
@@ -133,6 +142,9 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   mode mid-exam on 2026-09-09. (rev 2141)
 
 ### Fixed
+- The submission status line read "submitted3 minutes ago" and
+  "1 day ago(30/09/26 …)"; the words now have spaces between them, on the
+  problem list as well. (rev 2211)
 - **The Submissions report ignored its Users card** — an assignment written
   where a comparison was meant (`unless @users = User.all`, 2024-09-30) made
   every query list every user's submissions on the chosen problems, so a
