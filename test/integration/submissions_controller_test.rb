@@ -346,4 +346,31 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
   ensure
     set_grader_config("system.mode", "standard")
   end
+
+  # --- Compiler message (GitHub #50 follow-up) ---
+  # Compilers echo source lines, so a student can plant markup in a single
+  # `#error` line; staff open the message, so it must render as text.
+
+  COMPILER_XSS = "main.cpp:1: error: #error <img src=x onerror=alert(1)>"
+
+  test "compiler message modal shows the compiler output as text" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(compiler_message: COMPILER_XSS)
+    sign_in_as("admin", "admin")
+    post compiler_msg_submission_path(sub), as: :turbo_stream
+    assert_response :success
+    assert_no_match(/<img/, response.body)
+    assert_includes response.body, "<pre>main.cpp:1: error: #error &lt;img src=x onerror=alert(1)&gt;</pre>"
+  end
+
+  test "submission page embeds the compiler message as text" do
+    sub = submissions(:add1_by_john)
+    sub.update_columns(compiler_message: COMPILER_XSS)
+    sign_in_as("admin", "admin")
+    get submission_path(sub)
+    assert_response :success
+    modal = css_select("#compiler-msg-modal").first.to_html
+    assert_no_match(/<img/, modal)
+    assert_includes modal, "<pre>main.cpp:1: error: #error &lt;img src=x onerror=alert(1)&gt;</pre>"
+  end
 end

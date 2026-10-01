@@ -320,6 +320,28 @@ TITLEBAR
     parser.render(text.to_s).html_safe
   end
 
+  # Markdown written by staff — announcements, hints, submission comments —
+  # whose authors use real HTML: production announcement bodies carry new-tab
+  # PDF links, <font> colour/size, tables and images. Rendered through an
+  # allow-list, so those survive while script, iframe and on* handlers are
+  # dropped and a group editor's text cannot run code in every reader's
+  # browser (GitHub #50 vector 2). Rails' default list plus the tags and
+  # attributes seen in production bodies; iframes stay out on purpose (an
+  # editor-controlled frame is a phishing frame; the only historical use was
+  # countdown clocks, which the contest timer now covers).
+  STAFF_HTML_TAGS = Rails::HTML5::SafeListSanitizer.allowed_tags + %w[table thead tbody tfoot tr th td font]
+  STAFF_HTML_ATTRIBUTES = Rails::HTML5::SafeListSanitizer.allowed_attributes + %w[target color size border]
+
+  def sanitized_markdown(text)
+    sanitized_html(markdown(text.to_s))
+  end
+
+  # The same allow-list without the markdown pass, for a body shown as raw
+  # HTML (the navbar announcement strip).
+  def sanitized_html(html)
+    sanitize(html.to_s, tags: STAFF_HTML_TAGS, attributes: STAFF_HTML_ATTRIBUTES)
+  end
+
   # simple_format for text the user typed verbatim (viva student answers,
   # error messages). Rails' simple_format *sanitizes* by default, which is an
   # allow-list tag filter, not an escape: `vector<int>` loses `<int>`, and
