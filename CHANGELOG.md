@@ -10,6 +10,27 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.7.1] — 2026-10-03
+
+**Upgrade notes.** A gem update only: no migration, no new setting, no
+config change. The deploy's `bundle install` fetches the new gems (three of
+them — rdiscount, msgpack, json — build native extensions, as they did
+before). Going back to 4.7.0 needs nothing but the previous revision and
+`bundle install`; the old gem versions stay installed alongside the new ones.
+
+### Security
+- **Gem update** that clears 74 of the 78 security advisories GitHub reports
+  against `Gemfile.lock`, every gem staying within its current major version:
+  Rails 8.0.2 → 8.0.5.1 (Active Storage arbitrary file read and path
+  traversal), rack 3.1.22, rack-session 2.1.2, nokogiri 1.19.4, jwt 3.3.0,
+  rails-html-sanitizer 1.7.1, faraday 2.14.4, net-imap 0.5.15, mail 2.9.1,
+  loofah 2.25.2, rdiscount 2.2.7.5 and smaller ones. The `concurrent-ruby`
+  1.3.4 pin, a workaround from the Rails 7.0 days, is lifted. No migration;
+  the deploy's `bundle install` is the only host step. Left for a separate
+  step because each is a major-version jump: puma 7 (the development server —
+  production runs Passenger), rubyzip 3 (pulled in only by the system-test
+  browser driver) and erb 6 (pulled in by rdoc). (rev 2225)
+
 ## [4.7.0] — 2026-10-01
 
 **Upgrade notes.** Run `bin/rails db:migrate` — this release carries 5
