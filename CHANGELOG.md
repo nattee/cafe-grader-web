@@ -10,8 +10,16 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.7.1] — 2026-10-03
+
+**Upgrade notes.** A gem update only: no migration, no new setting, no
+config change. The deploy's `bundle install` fetches the new gems (three of
+them — rdiscount, msgpack, json — build native extensions, as they did
+before). Going back to 4.7.0 needs nothing but the previous revision and
+`bundle install`; the old gem versions stay installed alongside the new ones.
+
 ### Security
-- Gem update that clears 74 of the 78 security advisories GitHub reports
+- **Gem update** that clears 74 of the 78 security advisories GitHub reports
   against `Gemfile.lock`, every gem staying within its current major version:
   Rails 8.0.2 → 8.0.5.1 (Active Storage arbitrary file read and path
   traversal), rack 3.1.22, rack-session 2.1.2, nokogiri 1.19.4, jwt 3.3.0,
