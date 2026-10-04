@@ -425,6 +425,12 @@ not code" one of its requirements, and migrate the seeded constants then.
 Size then: medium (schema + engine readers + admin form + migration of the
 constants). Until then, new languages keep arriving as code.
 
+**Reopened 2026-10-04:** the worker overhaul design is
+`docs/superpowers/specs/2026-10-04-judge-worker-pool-design.md`. Its
+envelope carries the per-language values (§6.3, §9.4); phase 0 collects
+today's constants into a `LanguageProfile` registry (slice 0.4) and the
+`languages` columns are slice 1.8, optional within phase 1.
+
 
 Decided, not deprioritized: each of these stays closed until its **Reopen
 when** condition is met. Reviewed 2026-09-02 with dae.
