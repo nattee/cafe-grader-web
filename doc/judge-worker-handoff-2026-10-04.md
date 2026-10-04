@@ -156,25 +156,28 @@ and ask for review round 2.
 
 ## 6. Decisions dae owes
 
-1. **Trust boundary, interim.** Until phase 0 ships sandboxed checkers:
-   accept the exposure (57 accounts on cp-grader can run code on the judge
-   host as the app user), or restrict checker and initializer uploads to
-   admins meanwhile.
+1. **Trust boundary, interim — DECIDED 2026-10-04 (dae): accept the
+   exposure** until phase 0 ships sandboxed checkers. No upload restriction
+   meanwhile. The spec's decision log gets this entry in revision 2.
 2. **Go for the three hardening fixes** with the defaults in §3, or change
-   them.
-3. **Thread order.** Recommended: hardening thread first (short, releasable),
-   then the spec revision thread, then phase-0 planning.
+   them — stated in the hardening thread's opening message.
+3. **Thread order.** Hardening thread first (short, releasable), then the
+   spec revision thread, then phase-0 planning.
 
 ## 7. How to resume
 
 Hardening thread, first message:
-> Read `doc/judge-worker-handoff-2026-10-04.md` §3 and §6. Implement fix 3 as a
-> bounded change, then fix 2, then fix 1; one commit each on master; release
-> 4.7.2 at the end.
+> Read `doc/judge-worker-handoff-2026-10-04.md` §3 and §6. The §3 defaults
+> stand unless I say otherwise here. Implement fix 3 as a bounded change,
+> then fix 2, then fix 1; one commit each on master with a test; time the
+> evaluations index build on a local copy before writing that migration;
+> cut release 4.7.2 at the end with the `/release` skill.
 
 Spec thread, first message:
-> Read `doc/judge-worker-handoff-2026-10-04.md` §2 and §5, then the spec at
-> rev 2229. Write revision 2 and commit it; then ask for review round 2.
+> Read `doc/judge-worker-handoff-2026-10-04.md` §2, §5 and §6, then the spec
+> at rev 2229. Write revision 2, including the server-side state-transition
+> table and the trust decision in the decision log; commit it on master;
+> then give me the review commands so I can send it for review round 2.
 
 Useful commands:
 
