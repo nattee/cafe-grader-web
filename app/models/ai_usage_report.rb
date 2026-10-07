@@ -71,7 +71,10 @@ class AiUsageReport
       grades:           grades.size,
       grades_after_window: grades.count { |c| c.at && c.at > window.end },
       grade_cost:       grades.sum { |c| c.cost.to_f },
-      grade_wait_p95:   Stats.percentile(grades.map { |c| total_s(c) }, 0.95)
+      grade_wait_p95:   Stats.percentile(grades.map { |c| total_s(c) }, 0.95),
+      # Every dollar the contest's AI calls cost: viva turns + viva grading +
+      # the assists that carry a provider price (unpriced ones add nothing).
+      total_cost:       turns.sum { |c| c.cost.to_f } + grades.sum { |c| c.cost.to_f } + priced.sum { |c| c.cost.to_f }
     }
   end
 

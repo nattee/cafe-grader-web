@@ -27,6 +27,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   the only ways out were waiting up to 3 minutes or deleting the counter
   from a Rails console. (rev 2232)
 
+### Changed
+- **Submissions and User Activity reports:** Login (the link) and Name are
+  separate columns, as on the problem stat page and the Best Score report,
+  instead of "(login) name". With a contest picked, the login opens the
+  student's stat page for that contest. The problem column links the full
+  name, with the short name in grey after it; copy/Excel exports keep
+  "[name] full name". (rev 2235)
+- **Contest AI Usage:** a "total AI cost" tile — viva turns + viva grading +
+  priced assists — with the three parts underneath, in place of the
+  assist-only dollars tile. (rev 2235)
+- **Problem stat page of a viva problem** says that staff test-drives are not
+  counted on the page, and how many there are. (rev 2235)
+
 ## [4.7.1] — 2026-10-03
 
 **Upgrade notes.** A gem update only: no migration, no new setting, no

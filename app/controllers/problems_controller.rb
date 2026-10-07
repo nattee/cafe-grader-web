@@ -237,6 +237,9 @@ class ProblemsController < ApplicationController
     # table via #stat_query, so a problem with thousands of submissions no
     # longer loads them all into Ruby (and into the HTML) to show two numbers.
     @submission_count = Submission.regular.where(problem_id: @problem.id).count
+    # Staff test-drives are left out of every number here (Submission.regular);
+    # a viva problem says so on the page, with the count left out.
+    @test_drive_count = @problem.viva_exam? ? @problem.submissions.test_drives.count : 0
     @summary          = @problem.attempt_summary            # distinct users, all groups
     @group_stats      = @problem.group_stats_for(@current_user)
     @llm_usage        = Comment.llm_assists_on(Submission.where(problem_id: @problem.id)).usage_by_model

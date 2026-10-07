@@ -90,6 +90,10 @@
               %span.text-secondary No submissions yet
             - else
               #{@summary[:solved]}/#{@summary[:attempted]} (#{(@summary[:solved] * 100.0 / @summary[:attempted]).round(1)}%)
+        - if @problem.viva_exam?
+          %p.text-secondary.small.mb-0.mt-3#test-drive-note
+            Staff test-drives are not counted anywhere on this page
+            = "(#{pluralize(@test_drive_count, 'test-drive')} so far)."
 
     -# AI-assist requests on this problem's submissions, by model. Points are the
     -# score penalty students paid; Cost is the provider's dollar figure where it

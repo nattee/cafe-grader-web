@@ -17,6 +17,23 @@ class ProblemsStatControllerTest < ActionDispatch::IntegrationTest
 
   # --- summary, By-group card, and the AJAX-loaded submissions table ---
 
+  test "a viva problem says test-drives are not counted, with their number" do
+    prob = problems(:prob_viva)
+    Submission.new(user: users(:admin), problem: prob, language: languages(:Language_cpp),
+                   submitted_at: Time.zone.now, test_drive: true).save!(validate: false)
+    sign_in_as("admin", "admin")
+    get stat_problem_path(prob)
+    assert_response :success
+    assert_select "#test-drive-note", text: /test-drives are not counted.*\(1 test-drive so far\)/m
+  end
+
+  test "a code problem has no test-drive note" do
+    sign_in_as("admin", "admin")
+    get stat_problem_path(problems(:prob_add))
+    assert_response :success
+    assert_select "#test-drive-note", count: 0
+  end
+
   test "summary is a distinct-user count with a percentage" do
     submissions(:add1_by_john).update_columns(points: 100)
     sign_in_as("admin", "admin")
