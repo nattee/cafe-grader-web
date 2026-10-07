@@ -21,6 +21,9 @@ class GraderConfiguration < ApplicationRecord
   SYSTEM_MINIMUM_LAST_LOGIN_TIME = 'system.min_last_login_time'
   WHITELIST_IGNORE_KEY = 'right.whitelist_ignore'
   WHITELIST_IP_KEY = 'right.whitelist_ip'
+  # Addresses that skip the per-IP login-failure counter (LoginThrottling),
+  # e.g. an exam gateway that NATs a whole room. Missing key = none.
+  LOGIN_THROTTLE_EXEMPT_IPS_KEY = 'right.login_throttle_exempt_ips'
 
   # class_attribute :config_cache
   cattr_accessor :task_grading_info_cache
@@ -149,6 +152,23 @@ class GraderConfiguration < ApplicationRecord
     user_ip = IPAddr.new(remote_ip)
     allowed = get(WHITELIST_IP_KEY) || ''
     allowed.delete(' ').split(',').any? { |range| IPAddr.new(range).include?(user_ip) }
+  end
+
+  # Is this address listed in right.login_throttle_exempt_ips (comma- or
+  # space-separated addresses or CIDR ranges)? Runs on every login, so a
+  # malformed entry is skipped rather than raised — a typo in the setting
+  # must never break logging in.
+  def self.login_throttle_exempt_ip?(remote_ip)
+    listed = get(LOGIN_THROTTLE_EXEMPT_IPS_KEY).to_s.split(/[\s,]+/).reject(&:empty?)
+    return false if listed.empty?
+    user_ip = IPAddr.new(remote_ip.to_s)
+    listed.any? do |range|
+      IPAddr.new(range).include?(user_ip)
+    rescue IPAddr::Error
+      false
+    end
+  rescue IPAddr::Error
+    false
   end
 
   def self.contest_time_limit

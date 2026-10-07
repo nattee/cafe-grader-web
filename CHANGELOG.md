@@ -10,6 +10,23 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+- **Exam gateways no longer lock a whole room out of login.** The login
+  lock counts failed passwords per account and per address (30 within 3
+  minutes). When every student reaches the server through one exam gateway,
+  the whole room shares that address, so a few minutes of wrong passwords
+  locked everyone out: in DS Quiz 2 (2026-10-07) a CU-net password switch
+  left off for four minutes refused 113 logins. New setting
+  `right.login_throttle_exempt_ips` (comma-separated addresses or CIDR
+  ranges, created empty by a data migration) lists addresses that skip the
+  per-address count; each account still locks after 30 failures. After
+  deploying, put the exam gateway's address in it. (rev 2232)
+- **Clear Login Locks** button on the System configuration page, beside
+  Clear Device Locks: unlocks every address and account blocked by "Too
+  many failed login attempts" at once and names what was locked. Before,
+  the only ways out were waiting up to 3 minutes or deleting the counter
+  from a Rails console. (rev 2232)
+
 ## [4.7.1] — 2026-10-03
 
 **Upgrade notes.** A gem update only: no migration, no new setting, no

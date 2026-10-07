@@ -237,6 +237,7 @@ Rails.application.routes.draw do
       get 'reload'
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
       post 'clear_user_ip'
+      post 'clear_login_locks'
     end
     member do
       patch 'toggle'
