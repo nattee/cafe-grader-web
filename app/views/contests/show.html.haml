@@ -45,6 +45,8 @@
           %li= link_to 'Best Score', max_score_report_path(contest: @contest.id), class: 'dropdown-item'
           %li= link_to 'Submissions', submission_report_path(contest: @contest.id), class: 'dropdown-item'
           %li= link_to 'User Activity', activity_report_path(contest: @contest.id), class: 'dropdown-item'
+          - if @contest.problems.viva_exam.exists?
+            %li= link_to 'Viva check', viva_check_contest_path(@contest), class: 'dropdown-item'
       = link_to mdi(:query_stats, 'me-1') + 'AI Usage', ai_usage_contest_path(@contest), class: 'btn btn-outline-info btn-flex'
       = link_to mdi(:summarize, 'me-1') + 'Watch', view_contest_path(@contest), class: 'btn btn-outline-primary btn-flex'
       = link_to mdi(:edit, 'me-1') + 'Edit', edit_contest_path(@contest), class: 'btn btn-primary btn-flex'

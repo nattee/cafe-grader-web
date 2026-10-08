@@ -201,8 +201,21 @@ class SubmissionsController < ApplicationController
                        object_changes: {'submission_id' => [nil, @submission.id],
                                         'user'          => [nil, @submission.user.login]})
     end
-    flash_key = outcome == :granted ? :notice : :alert
-    redirect_to viva_submission_path(@submission), flash_key => message
+    # From the contest's Viva check page (contest_id given): toast, and
+    # re-render the report so the row updates at once — only for a contest
+    # the staff member may manage. From the session page: back to it.
+    if params[:contest_id].present?
+      toast = {title: 'Allow another attempt', body: message, type: (outcome == :granted ? :notice : :warning)}
+      streams = [turbo_stream.append('toast-area', partial: 'toast', locals: {toast: toast})]
+      if (contest = viva_check_contest)
+        streams << turbo_stream.replace('viva-check-report', partial: 'contests/viva_check_report',
+                                                              locals: {contest: contest, report: VivaCheckReport.new(contest)})
+      end
+      render turbo_stream: streams
+    else
+      flash_key = outcome == :granted ? :notice : :alert
+      redirect_to viva_submission_path(@submission), flash_key => message
+    end
   end
 
   # POST /submissions/:id/viva/grades/:grade_id/adopt
@@ -254,6 +267,11 @@ protected
     else
       'Not a viva session.'
     end
+  end
+
+  # The contest a Viva check grant came from, when the user may manage it.
+  def viva_check_contest
+    @current_user.contests_for_action(:edit).find_by(id: params[:contest_id])
   end
 
   def set_submission

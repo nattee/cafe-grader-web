@@ -269,4 +269,85 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     get viva_status_contest_path(contests(:contest_a))
     assert_response :redirect
   end
+
+  # --- Viva check ---
+
+  def retook_in_contest_a
+    add_viva_to_contest_a
+    problems(:prob_viva).update!(viva_prompt: "# Rubric\n- a (20): x\n- b (80): y\n")
+    2.times { open_viva_in_contest_a(answered: true) }
+    Submission.where(user: users(:james), problem: problems(:prob_viva)).order(:id).last
+  end
+
+  test "viva check lists a student who retook, with the Allow another attempt button" do
+    latest = retook_in_contest_a
+    sign_in_as("admin", "admin")
+    get viva_check_contest_path(contests(:contest_a))
+    assert_response :success
+    assert_select "turbo-frame#viva-check-report [data-controller~=refresh][data-refresh-delay-value='30000']", 1
+    assert_select "turbo-frame#viva-check-report tr.table-warning .badge", text: 'Retook'
+    assert_select "form[action=?]", allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id)
+  end
+
+  test "the Reports dropdown links to Viva check only when the contest has a viva problem" do
+    sign_in_as("admin", "admin")
+    get contest_path(contests(:contest_a))
+    assert_select "a[href=?]", viva_check_contest_path(contests(:contest_a)), 0
+
+    add_viva_to_contest_a
+    get contest_path(contests(:contest_a))
+    assert_select "a.dropdown-item[href=?]", viva_check_contest_path(contests(:contest_a)), text: 'Viva check'
+  end
+
+  test "the contest page badge counts the students who need action" do
+    retook_in_contest_a
+    sign_in_as("admin", "admin")
+    get contest_path(contests(:contest_a))
+    assert_select "turbo-frame#viva-status a[href=?]", viva_check_contest_path(contests(:contest_a)), text: '1 to check'
+  end
+
+  test "viva check on a contest with no viva problem says so" do
+    sign_in_as("admin", "admin")
+    get viva_check_contest_path(contests(:contest_a))
+    assert_response :success
+    assert_match(/This contest has no viva problem/, response.body)
+  end
+
+  test "a student cannot open viva check" do
+    add_viva_to_contest_a
+    sign_in_as("james", "morning")
+    get viva_check_contest_path(contests(:contest_a))
+    assert_response :redirect
+  end
+
+  test "an editor of the contest opens viva check, without grant buttons for a problem they cannot edit" do
+    latest = retook_in_contest_a
+    sign_in_as("mary", "mary")                     # editor of contest_a; prob_viva is in none of her groups
+    get viva_check_contest_path(contests(:contest_a))
+    assert_response :success
+    assert_select "turbo-frame#viva-check-report tr.table-warning .badge", text: 'Retook'
+    assert_select "form[action=?]", allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), 0
+  end
+
+  test "Allow another attempt from viva check toasts and re-renders the report" do
+    latest = retook_in_contest_a
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), as: :turbo_stream
+    assert_response :success
+    assert_match(/<turbo-stream action="append" target="toast-area">/, response.body)
+    assert_match(/<turbo-stream action="replace" target="viva-check-report">/, response.body)
+    assert latest.reload.viva_retake_granted_at.present?
+  end
+
+  test "a grant with a contest the user cannot manage toasts only" do
+    latest = retook_in_contest_a                   # sessions first: james can only submit while contest mode is on
+    set_grader_config('system.use_problem_group', 'true')   # group editing rights apply only in group mode
+    GroupProblem.create!(group: groups(:group_a), problem: problems(:prob_viva), enabled: true)
+    sign_in_as("mary", "mary")                     # editor of contest_a only
+    post allow_viva_retake_submission_path(latest, contest_id: contests(:contest_b).id), as: :turbo_stream
+    assert_response :success
+    assert_match(/<turbo-stream action="append" target="toast-area">/, response.body)
+    assert_no_match(/viva-check-report/, response.body)
+    assert latest.reload.viva_retake_granted_at.present?
+  end
 end

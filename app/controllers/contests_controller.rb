@@ -1,6 +1,6 @@
 class ContestsController < ApplicationController
   before_action :set_contest, only: [:show, :edit, :update, :destroy, :view, :view_query,
-                                     :ai_usage, :ai_usage_query, :finish_open_vivas, :viva_status,
+                                     :ai_usage, :ai_usage_query, :finish_open_vivas, :viva_status, :viva_check,
                                      :add_users_from_csv, :clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
@@ -10,7 +10,7 @@ class ContestsController < ApplicationController
   before_action :set_problem, only: [:do_problem]
 
   USER_ACTION = [:user_check_in, :set_active]
-  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query finish_open_vivas viva_status clone
+  EDITOR_ACTION = %i[show edit update destroy view view_query ai_usage ai_usage_query finish_open_vivas viva_status viva_check clone
                      show_users_query show_problems_query
                      add_users_from_csv add_user add_user_by_group
                      add_problem add_problem_by_group
@@ -85,6 +85,15 @@ class ContestsController < ApplicationController
   # anything is still grading (contests/_viva_status).
   def viva_status
     render partial: 'viva_status', locals: {contest: @contest}
+  end
+
+  # GET /contests/:id/viva_check — the Viva check page (design 2026-10-07,
+  # §4): per student, per viva problem, the flags staff should act on during
+  # the exam or look at afterwards. The body reloads itself every 30 s while
+  # the contest runs; its only write is the per-row "Allow another attempt"
+  # (SubmissionsController#allow_viva_retake, which re-renders the body).
+  def viva_check
+    @report = VivaCheckReport.new(@contest)
   end
 
   # POST /contests/:id/finish_open_vivas — the "Finish open vivas" button.
