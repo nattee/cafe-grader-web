@@ -99,6 +99,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   resort the every-minute watchdog now kills a grader that has not reported
   for 10 minutes while its box is enabled; the job goes back to the queue
   and a fresh grader starts. (rev 2251)
+- **Retry All on the Graders page no longer re-runs jobs a rejudge has
+  replaced.** It put every failed job back in the queue, including failed
+  jobs from a grading that a later rejudge had already restarted, so two
+  gradings of one submission ran at once. Retry and Retry All now re-queue
+  a failed job only when its submission still exists, has not been graded
+  since, and has not been rejudged since; the message says how many were
+  skipped. Clear All is unchanged. (rev 2252)
 
 ## [4.7.1] — 2026-10-03
 

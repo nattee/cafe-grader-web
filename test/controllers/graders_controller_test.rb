@@ -50,21 +50,48 @@ class GradersControllerTest < ActionDispatch::IntegrationTest
 
   # --- Error-job management ---
 
-  test "admin can retry a single error job" do
-    sign_in_as("admin", "admin")
-    job = jobs(:job_error)
-    assert_equal "error", job.status
-    post retry_error_job_grader_processes_path, params: { job_id: job.id }, as: :turbo_stream
-    assert_response :success
-    assert_equal "wait", job.reload.status
+  # A submission graded twice: the first chain (compile A) failed in one
+  # evaluate job, then a rejudge started chain B, which failed too. B's
+  # compile row has been cleaned away (successful rows go after a day), so
+  # only B's error row says that chain A is superseded.
+  def rejudged_submission_with_two_error_jobs
+    sub = submissions(:add1_by_admin)
+    sub.update!(status: :grader_error)
+    compile_a = Job.create!(job_type: :compile, arg: sub.id, status: :success)
+    stale = Job.create!(job_type: :evaluate, arg: sub.id, parent_job_id: compile_a.id, status: :error, result: 'boom A')
+    compile_b = Job.create!(job_type: :compile, arg: sub.id, status: :success)
+    current = Job.create!(job_type: :evaluate, arg: sub.id, parent_job_id: compile_b.id, status: :error, result: 'boom B')
+    compile_b.delete
+    [stale, current]
   end
 
-  test "admin can retry all error jobs" do
+  test "admin can retry a single error job of the current chain" do
     sign_in_as("admin", "admin")
-    Job.where(status: :error).count > 0  # baseline
+    _stale, current = rejudged_submission_with_two_error_jobs
+    post retry_error_job_grader_processes_path, params: { job_id: current.id }, as: :turbo_stream
+    assert_response :success
+    assert_equal "wait", current.reload.status
+    assert_nil current.result
+  end
+
+  test "retry refuses an error job superseded by a rejudge" do
+    sign_in_as("admin", "admin")
+    stale, _current = rejudged_submission_with_two_error_jobs
+    post retry_error_job_grader_processes_path, params: { job_id: stale.id }, as: :turbo_stream
+    assert_response :success
+    assert_equal "error", stale.reload.status
+    assert_match "not re-queued", response.body
+  end
+
+  test "retry all requeues the current chain only and reports what it skipped" do
+    sign_in_as("admin", "admin")
+    stale, current = rejudged_submission_with_two_error_jobs
+    Job.where(status: :error).where.not(id: [stale.id, current.id]).delete_all
     post retry_all_error_jobs_grader_processes_path, as: :turbo_stream
     assert_response :success
-    assert_equal 0, Job.where(status: :error).count
+    assert_equal "wait", current.reload.status
+    assert_equal "error", stale.reload.status
+    assert_match "1 error job re-queued. 1 skipped", response.body
   end
 
   test "admin can clear all error jobs" do

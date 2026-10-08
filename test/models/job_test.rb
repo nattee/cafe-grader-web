@@ -86,6 +86,32 @@ class JobTest < ActiveSupport::TestCase
     assert_equal 2, Job.clean_old_job(1.day)
   end
 
+  # --- Chains and Retry ---
+
+  test "chain_id is the compile job's own id, and the parent's for its evaluate and score jobs" do
+    compile = Job.create!(job_type: :compile, arg: 1)
+    assert_equal compile.id, compile.chain_id
+    assert_equal compile.id, Job.new(job_type: :evaluate, parent_job_id: compile.id).chain_id
+    assert_equal compile.id, Job.new(job_type: :score, parent_job_id: compile.id).chain_id
+  end
+
+  test "split_retryable skips the error row of a submission graded since, even with no newer rows left" do
+    sub = submissions(:add1_by_admin)
+    compile = Job.create!(job_type: :compile, arg: sub.id, status: :success)
+    failed = Job.create!(job_type: :evaluate, arg: sub.id, parent_job_id: compile.id, status: :error)
+
+    sub.update!(status: :grader_error)
+    assert_equal [[failed], []], Job.split_retryable([failed])
+
+    sub.update!(status: :done) # a later chain finished; its rows were cleaned away
+    assert_equal [[], [failed]], Job.split_retryable([failed])
+  end
+
+  test "split_retryable skips the error row of a deleted submission" do
+    failed = Job.create!(job_type: :compile, arg: 0, status: :error)
+    assert_equal [[], [failed]], Job.split_retryable([failed])
+  end
+
   # The judge polls and claims on `status` many times a second; without this
   # index every poll is a full scan and every claim locks the whole table
   # (see the 2026-09-08 migration). Guard against it being dropped.

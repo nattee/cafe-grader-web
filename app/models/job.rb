@@ -99,6 +99,48 @@ class Job < ApplicationRecord
   end
 
   #
+  # ---- chains ----
+  #
+
+  # Submission#add_judge_job starts a chain: one compile job, then the
+  # evaluate jobs and the score job it leads to, which carry the compile
+  # job's id as parent_job_id. A rejudge starts a new chain with a higher id
+  # while the old chain's rows stay in the table (errors for 30 days), so a
+  # submission's current chain is the newest chain id among its rows.
+  CHAIN_ID_SQL = "CASE WHEN job_type = #{job_types[:compile]} THEN id ELSE parent_job_id END".freeze
+
+  def chain_id
+    jt_compile? ? id : parent_job_id
+  end
+
+  # {submission_id => newest chain id among its job rows}. Counts a chain's
+  # evaluate and score rows, not only its compile row: clean_old_job deletes
+  # a successful compile row after a day but keeps the chain's error rows
+  # for 30.
+  def self.newest_chain_ids(submission_ids)
+    where(arg: submission_ids).group(:arg).maximum(Arel.sql(CHAIN_ID_SQL))
+  end
+
+  # A submission in one of these has finished its newest grading, so an error
+  # row it still has is history — also once the newer chain's own rows have
+  # been cleaned away and the row looks current again.
+  RETRY_SETTLED_STATUSES = %w[done compilation_error].freeze
+
+  # Split error jobs into [retryable, skipped] for Retry and Retry All on the
+  # Graders page. Retryable: the submission still exists, is not settled,
+  # and no newer chain has rows for it. Retry All used to requeue every error
+  # row, so a row left behind by a rejudge ran again beside the new chain and
+  # both wrote the submission's evaluations.
+  def self.split_retryable(jobs)
+    sub_ids = jobs.map(&:arg).compact.uniq
+    open_ids = Submission.where(id: sub_ids).where.not(status: RETRY_SETTLED_STATUSES).pluck(:id).to_set
+    newest = newest_chain_ids(sub_ids)
+    jobs.partition do |job|
+      open_ids.include?(job.arg) && job.chain_id.present? && job.chain_id >= newest[job.arg]
+    end
+  end
+
+  #
   # ---- reclaiming orphaned jobs ----
   #
 
