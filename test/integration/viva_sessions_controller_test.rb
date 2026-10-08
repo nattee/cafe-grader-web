@@ -405,6 +405,81 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to viva_submission_path(Submission.last)
   end
 
+  test "viva_daily_limit of 0 allows one counted session in contest mode, then refuses with the proctor message" do
+    viva_language
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 0, viva_prompt: "# Rubric\nBe fair.")
+    contest = contests(:contest_a)
+    ContestProblem.create!(contest: contest, problem: problem, number: 99, enabled: true)
+    ContestUser.create!(contest: contest, user: users(:john), role: 0, enabled: true,
+                         start_offset_second: 0, extra_time_second: 0)
+    set_grader_config("system.mode", "contest")
+
+    post viva_start_problem_path(problem)
+    first = Submission.last
+    assert_redirected_to viva_submission_path(first)
+    first.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    first.update!(viva_archived_at: Time.zone.now)   # as if restarted
+
+    assert_no_difference "Submission.count" do
+      post viva_start_problem_path(problem)
+    end
+    assert_redirected_to list_main_path
+    assert_match(/You have used your attempt.*ask a proctor/, flash[:alert])
+  end
+
+  test "restart is hidden and refused when the student could not start again" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 1, viva_prompt: "# Rubric\nBe fair.")
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now)
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_no_match(/Restart practice viva/, @response.body)
+
+    post viva_restart_submission_path(sub)   # e.g. from a stale tab
+    assert_nil sub.reload.viva_archived_at
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/Restart is not available/, flash[:alert])
+  end
+
+  test "restart stays available on a session with no answer under limit 1" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 1, viva_prompt: "# Rubric\nBe fair.")
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now)
+
+    get viva_submission_path(sub)
+    assert_match(/Restart practice viva/, @response.body)
+    post viva_restart_submission_path(sub)
+    assert sub.reload.viva_archived_at.present?
+  end
+
+  test "a staff grant shows on the session page and frees a start" do
+    viva_language
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 1, viva_prompt: "# Rubric\nBe fair.")
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :done, submitted_at: Time.zone.now)
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    sub.grant_viva_retake!(by: users(:admin))
+
+    get viva_submission_path(sub)
+    assert_match(/Another attempt allowed by admin/, @response.body)
+    assert_match(/does not count toward the start limit/, @response.body)
+
+    assert_difference "Submission.count", 1 do
+      post viva_start_problem_path(problem)
+    end
+    assert_redirected_to viva_submission_path(Submission.last)
+  end
+
   # --- retake-policy visibility ---
 
   test "show displays the starts-left line for every viva" do
@@ -438,7 +513,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/\|\s*Unlimited starts/, @response.body, "no stray HAML pipe before the text")
   end
 
-  test "show tells the owner of a contest-only viva that starts are governed by the contest" do
+  test "show tells the owner of a contest-only viva it can be taken only during a contest" do
     sign_in_as("john", "hello")
     problem = problems(:prob_viva)
     problem.update!(viva_prompt: "# Rubric\nBe fair.", viva_daily_limit: 0)
@@ -446,7 +521,7 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
                              status: :submitted, submitted_at: Time.zone.now)
     get viva_submission_path(sub)
     assert_response :success
-    assert_match(/Contest-only viva — starts are governed by the contest/, @response.body)
+    assert_match(/Contest-only viva — can be taken only during a contest/, @response.body)
     assert_no_match(/starts left today/, @response.body)
     assert_no_match(/\|\s*Contest-only viva/, @response.body, "no stray HAML pipe before the text")
   end

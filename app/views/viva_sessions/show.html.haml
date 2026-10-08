@@ -42,7 +42,7 @@
             .col
               = "#{time_ago_in_words(@submission.viva_archived_at)} ago"
               %div.small.text-secondary.fst-italic
-                This viva no longer counts for grading. You may start a fresh viva on this problem.
+                This session is closed; its score still counts toward the best. A fresh session can be started from the problem list when a start is left.
 
         .row.mb-2
           .col-5.text-end.text-secondary Starts
@@ -52,9 +52,18 @@
             - elsif @current_user == @submission.user && @current_user.admin?
               Unlimited starts (admin)
             - elsif @submission.problem.viva_daily_limit == 0
-              Contest-only viva — starts are governed by the contest
+              - if GraderConfiguration.contest_mode?
+                = "Contest-only viva — #{@starts_left} of 1 attempt left today"
+              - else
+                Contest-only viva — can be taken only during a contest
             - else
               = "#{@starts_left} of #{@daily_start_limit} starts left today"
+        - if @submission.viva_retake_granted_at
+          .row.mb-2
+            .col-5.text-end.text-secondary Retake
+            .col
+              = "Another attempt allowed by #{@submission.viva_retake_granted_by&.login || 'staff'}, #{time_ago_in_words(@submission.viva_retake_granted_at)} ago"
+              %div.small.text-secondary.fst-italic This session does not count toward the start limit.
 
         - if @current_user == @submission.user && @submission.viva_archived_at.nil?
           - if @submission.status.to_s == 'submitted' && (@submission.problem.viva_daily_limit != 0 || @submission.test_drive?) && @submission.viva_turns.where(role: :student).exists?
@@ -65,7 +74,7 @@
             = button_to 'Restart test-drive', viva_restart_submission_path(@submission),
                 class: 'btn btn-sm btn-warning mt-2',
                 form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this test-drive and open a fresh one right away?'}}
-          - else
+          - elsif @restart_allowed
             = button_to 'Restart practice viva', viva_restart_submission_path(@submission),
                 class: 'btn btn-sm btn-warning mt-2',
                 form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this session and start over? The transcript is kept for instructors.'}}
