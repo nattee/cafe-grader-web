@@ -100,15 +100,17 @@
               = f.label :never_lower, 'Keep the higher grade', class: 'form-check-label small', for: 'rejudge-never-lower',
                   title: 'If the new run scores lower, the current grade stays and the run is kept in the history'
 
-          - if @submission.viva_archived?
+          -# "Allow another attempt" (design 2026-10-07, A4): any status,
+          -# archived or not; the session stops counting toward the start limit.
+          - if @submission.viva_retake_granted_at
             .small.text-secondary.mt-2
-              %em Archived #{time_ago_in_words(@submission.viva_archived_at)} ago.
-              The student has been able to start a new viva since then.
-          - elsif @submission.status.to_s.in?(%w[done grader_error])
-            = button_to 'Archive & allow retake', archive_viva_submission_path(@submission),
+              %em Another attempt allowed #{time_ago_in_words(@submission.viva_retake_granted_at)} ago
+              = "by #{@submission.viva_retake_granted_by&.login || 'staff'}."
+          - elsif !@submission.test_drive?
+            = button_to 'Allow another attempt', allow_viva_retake_submission_path(@submission),
                 class: 'btn btn-warning btn-sm mt-2',
-                data: {bs_toggle: 'tooltip', bs_title: 'Soft-hides this session (kept for reports and audit) and lets the student start a fresh viva. Practice-mode starts still count toward the daily limit.'},
-                form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this viva so the student can take a fresh one? Transcript and grade are preserved for audit but no longer count for grading.'}}
+                data: {bs_toggle: 'tooltip', bs_title: 'Archives this session (even mid-interview; kept for reports and audit) and stops it counting toward the start limit, so the student can start one more. Their best score still counts.'},
+                form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': "Allow #{@submission.user.login} another attempt? This session is archived and stops counting toward the start limit; an unfinished interview is not graded."}}
 
           = render partial: 'viva_sessions/grade_history', locals: {submission: @submission}
 

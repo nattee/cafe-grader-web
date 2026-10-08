@@ -110,13 +110,70 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Start Viva/, flash[:alert])
   end
 
-  test "archive_viva redirects to the viva page and archives the session" do
+  def retake_audit_rows
+    AuditLog.where(action: 'viva_retake_grant')
+  end
+
+  test "allow_viva_retake archives an open session, stops it counting, audits and redirects to the viva page" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    assert_difference -> { retake_audit_rows.count }, 1 do
+      post allow_viva_retake_submission_path(sub)
+    end
+    assert_redirected_to viva_submission_path(sub)
+    sub.reload
+    assert sub.viva_archived_at.present?
+    assert sub.viva_retake_granted_at.present?
+    assert_equal users(:admin).id, sub.viva_retake_granted_by_id
+    assert_match(/another attempt/i, flash[:notice])
+    log = retake_audit_rows.last
+    assert_equal ['Problem', sub.problem_id], [log.auditable_type, log.auditable_id]
+    assert_equal [nil, sub.id], log.object_changes['submission_id']
+    assert_equal [nil, 'john'], log.object_changes['user']
+  end
+
+  test "allow_viva_retake a second time changes nothing and says so" do
     sign_in_as("admin", "admin")
     sub = make_viva_submission(user: users(:john), status: :done)
-    post archive_viva_submission_path(sub)
+    sub.grant_viva_retake!(by: users(:admin))
+    assert_no_difference -> { retake_audit_rows.count } do
+      post allow_viva_retake_submission_path(sub)
+    end
     assert_redirected_to viva_submission_path(sub)
-    assert sub.reload.viva_archived_at.present?
-    assert_match(/archived/i, flash[:notice])
+    assert_match(/already/i, flash[:alert])
+  end
+
+  test "a student cannot allow another attempt" do
+    sign_in_as("john", "hello")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    post allow_viva_retake_submission_path(sub)
+    assert_nil sub.reload.viva_retake_granted_at
+  end
+
+  test "an editor of the problem's group can allow another attempt" do
+    set_grader_config('system.use_problem_group', 'true')
+    GroupProblem.create!(group: groups(:group_a), problem: problems(:prob_viva), enabled: true)
+    sign_in_as("mary", "mary")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    post allow_viva_retake_submission_path(sub)
+    assert sub.reload.viva_retake_granted_at.present?
+  end
+
+  test "the viva page offers Allow another attempt to staff" do
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    sign_in_as("admin", "admin")
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_select "form[action=?]", allow_viva_retake_submission_path(sub)
+    assert_no_match(/Archive &amp; allow retake/, response.body)
+  end
+
+  test "the viva page does not offer Allow another attempt to the student" do
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    sign_in_as("john", "hello")
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_select "form[action=?]", allow_viva_retake_submission_path(sub), 0
   end
 
   # Reachable via the ballot link in _submission_short.html.haml on any

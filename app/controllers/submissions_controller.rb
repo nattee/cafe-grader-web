@@ -4,13 +4,13 @@ class SubmissionsController < ApplicationController
 
   before_action :check_valid_login
 
-  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :archive_viva, :adopt_viva_grade]
-  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag archive_viva adopt_viva_grade ]
+  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :allow_viva_retake, :adopt_viva_grade]
+  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag allow_viva_retake adopt_viva_grade ]
   before_action :set_language, only: %i[ edit direct_edit_problem ]
 
   before_action :can_view_submission, only: [:show, :show_comments, :download, :edit, :evaluations, :compiler_msg]
   before_action :can_view_problem, only: [ :direct_edit_problem ]
-  before_action :can_edit_problem, only: [:rejudge, :set_tag, :archive_viva, :adopt_viva_grade]
+  before_action :can_edit_problem, only: [:rejudge, :set_tag, :allow_viva_retake, :adopt_viva_grade]
 
   # GET /submissions                  My Submissions, all problems (issue #62)
   # GET /submissions/prob/:problem_id  ... narrowed to one problem
@@ -188,21 +188,21 @@ class SubmissionsController < ApplicationController
     render 'turbo_toast'
   end
 
-  # POST /submissions/:id/archive_viva
-  # Admin-only: mark a viva submission as archived so the student can
-  # take a fresh viva on the same problem. The original submission
-  # (with transcript, grade, costs) is preserved for audit.
-  def archive_viva
-    unless @submission.problem.viva_exam?
-      redirect_to viva_submission_path(@submission), alert: 'Not a viva submission.' and return
+  # POST /submissions/:id/allow_viva_retake — "Allow another attempt" (design
+  # 2026-10-07, A4; editors of the problem). Archives the session whatever its
+  # status and stops it counting toward the start limit, so the student can
+  # start exactly one more (Submission#grant_viva_retake!). One audit row on
+  # the problem per grant; a second click changes nothing and says so.
+  def allow_viva_retake
+    outcome = @submission.grant_viva_retake!(by: @current_user)
+    message = allow_viva_retake_message(outcome)
+    if outcome == :granted
+      AuditLog.record!(auditable: @submission.problem, action: 'viva_retake_grant',
+                       object_changes: {'submission_id' => [nil, @submission.id],
+                                        'user'          => [nil, @submission.user.login]})
     end
-    unless @submission.status.in?(%w[done grader_error])
-      redirect_to viva_submission_path(@submission),
-                  alert: "Cannot archive a viva that's still in progress (status: #{@submission.status}). Wait for grading to finish or fail." and return
-    end
-    @submission.update!(viva_archived_at: Time.current)
-    redirect_to viva_submission_path(@submission),
-                notice: "Viva session ##{@submission.id} has been archived. The student can now start a fresh viva on '#{@submission.problem.name}'."
+    flash_key = outcome == :granted ? :notice : :alert
+    redirect_to viva_submission_path(@submission), flash_key => message
   end
 
   # POST /submissions/:id/viva/grades/:grade_id/adopt
@@ -242,6 +242,20 @@ class SubmissionsController < ApplicationController
   end
 
 protected
+  def allow_viva_retake_message(outcome)
+    login = @submission.user.login
+    case outcome
+    when :granted
+      "#{login} may start another attempt at '#{@submission.problem.name}'. Session ##{@submission.id} is archived and no longer counts toward the start limit."
+    when :already
+      "Session ##{@submission.id} already has a grant — #{login} may already start another attempt."
+    when :test_drive
+      'A test-drive is outside the start limit; there is nothing to allow.'
+    else
+      'Not a viva session.'
+    end
+  end
+
   def set_submission
     @submission = Submission.find(params[:id])
   end

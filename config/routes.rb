@@ -297,7 +297,7 @@ Rails.application.routes.draw do
       get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
       post 'viva/restart', to: 'viva_sessions#restart', as: 'viva_restart'
       post 'viva/finish', to: 'viva_sessions#finish', as: 'viva_finish'
-      post 'archive_viva'
+      post 'allow_viva_retake'
       post 'viva/grades/:grade_id/adopt', to: 'submissions#adopt_viva_grade', as: 'adopt_viva_grade'
     end
     collection do
