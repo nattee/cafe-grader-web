@@ -10,6 +10,23 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.7.2] — 2026-10-08
+
+**Upgrade notes.** Run `bin/rails db:migrate` — four migrations: the
+`right.login_throttle_exempt_ips` setting (created empty); two nullable
+columns on `submissions` for viva retakes (added in place, but the ALTER
+briefly waits for a lock on `submissions`); an index on `jobs.arg`; and the
+evaluations clean-up plus a unique index on `(submission_id, testcase_id)`
+(about 30 seconds on cp-grader's 7.6 million rows; grading goes on during
+it). Run them outside exam hours. Deploy a web host before its judge host,
+or both together: the new judge code looks jobs up by submission and is slow
+until the `jobs.arg` index exists. After deploying, put each exam gateway's
+address in `right.login_throttle_exempt_ips` on the System configuration
+page. The new checker and initializer time bounds need no configuration.
+Going back to 4.7.1: `bin/rails db:rollback:primary STEP=2` restores the old
+evaluations index (the deleted orphan rows stay deleted); the viva columns
+and the setting can stay.
+
 ### Added
 - **Exam gateways no longer lock a whole room out of login.** The login
   lock counts failed passwords per account and per address (30 within 3
