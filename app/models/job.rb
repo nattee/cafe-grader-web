@@ -107,10 +107,15 @@ class Job < ApplicationRecord
   # job's id as parent_job_id. A rejudge starts a new chain with a higher id
   # while the old chain's rows stay in the table (errors for 30 days), so a
   # submission's current chain is the newest chain id among its rows.
-  CHAIN_ID_SQL = "CASE WHEN job_type = #{job_types[:compile]} THEN id ELSE parent_job_id END".freeze
-
   def chain_id
     jt_compile? ? id : parent_job_id
+  end
+
+  # chain_id in SQL, built as an Arel node rather than an interpolated string
+  def self.chain_id_expression
+    Arel::Nodes::Case.new(arel_table[:job_type])
+      .when(job_types[:compile]).then(arel_table[:id])
+      .else(arel_table[:parent_job_id])
   end
 
   # {submission_id => newest chain id among its job rows}. Counts a chain's
@@ -118,7 +123,7 @@ class Job < ApplicationRecord
   # a successful compile row after a day but keeps the chain's error rows
   # for 30.
   def self.newest_chain_ids(submission_ids)
-    where(arg: submission_ids).group(:arg).maximum(Arel.sql(CHAIN_ID_SQL))
+    where(arg: submission_ids).group(:arg).maximum(chain_id_expression)
   end
 
   # False once a rejudge has started a newer chain for the submission. The
