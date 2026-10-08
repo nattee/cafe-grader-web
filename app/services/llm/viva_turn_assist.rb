@@ -235,8 +235,11 @@ module Llm
         updates[:viva_terminated_at] = Time.current if terminate
         # A session staff closed while this reply was in flight stays closed
         # and ungraded (design 2026-10-07, A4); with_lock re-reads the row.
+        # One already sent to grading meanwhile (the student's End click) is
+        # not sent a second time.
         graded = @submission.with_lock do
           next false if @submission.viva_archived_at.present?
+          next false unless @submission.submitted?
 
           @submission.update!(updates)
           true

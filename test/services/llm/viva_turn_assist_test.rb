@@ -225,6 +225,18 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert_equal 'bye', @placeholder.reload.content, 'the reply itself is still kept in the transcript'
   end
 
+  test "a [[VIVA_DONE]] reply on a session already sent to grading queues no second grade job" do
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    # The student pressed End (status -> evaluating, grade job queued by the
+    # controller) while this reply was in flight; the in-memory copy is stale.
+    Submission.where(id: @submission.id).update_all(status: Submission.statuses[:evaluating])
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      svc.send(:handle_response, Struct.new(:body).new(alert_response_body("bye [[VIVA_DONE]]")))
+    end
+    assert_equal 'evaluating', @submission.reload.status
+    assert_equal 'bye', @placeholder.reload.content
+  end
+
   test "handle_response strips every occurrence of a doubled sentinel, not just the first" do
     svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
     text = "deflect [[VIVA_ALERT]] more deflecting [[VIVA_ALERT]] bye [[VIVA_DONE]] [[VIVA_DONE]]"

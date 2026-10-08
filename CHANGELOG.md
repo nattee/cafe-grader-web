@@ -45,12 +45,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   examiner reply already on its way would have ended the interview. The
   confirmation says what the student can do now: start again (with the
   starts left), or not yet, because another answered session of theirs
-  today still counts. On the session page's Admin card, replacing "Archive
-  & allow retake", and on each student row of Viva check. Each grant is an
-  audit row on the problem. Run `bin/rails db:migrate` (two nullable
-  columns on `submissions`, added without a table copy). Run the migration
-  outside exam hours: the ALTER briefly waits for a lock on `submissions`.
-  (revs 2238, 2240, 2244, 2247)
+  today still counts — shown as a warning, so staff grant that session too.
+  On the session page's Admin card, replacing "Archive & allow retake", and
+  on each student row of Viva check. Each grant is an audit row on the
+  problem. Run `bin/rails db:migrate` (two nullable columns on
+  `submissions`, added without a table copy). Run the migration outside
+  exam hours: the ALTER briefly waits for a lock on `submissions`. (revs
+  2238, 2240, 2244, 2247, 2249)
 
 ### Changed
 - **Viva start limit 0 means one attempt in a contest.** "Contest-only"
@@ -63,9 +64,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 - **Viva Restart is offered only when the student could start again.**
   Under limit 1, Restart in the middle of an interview used to archive the
   session ungraded and leave the student unable to start a new one. The
-  session page's archived note now says whether the session's score still
-  counts toward the best or it was closed without a grade. (revs 2239,
-  2247)
+  button now reads "Restart viva" (was "Restart practice viva"), since it
+  also shows during exams. The session page's archived note now says
+  whether the session's score still counts toward the best or it was
+  closed without a grade. (revs 2239, 2247, 2249)
 - **Submissions and User Activity reports:** Login (the link) and Name are
   separate columns, as on the problem stat page and the Best Score report,
   instead of "(login) name". With a contest picked, the login opens the

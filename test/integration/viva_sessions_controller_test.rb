@@ -506,7 +506,8 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
 
     get viva_submission_path(sub)
     assert_response :success
-    assert_no_match(/Restart practice viva/, @response.body)
+    assert_no_match(/Restart viva/, @response.body)
+    assert_select "form[action=?]", viva_restart_submission_path(sub), 0
 
     post viva_restart_submission_path(sub)   # e.g. from a stale tab
     assert_nil sub.reload.viva_archived_at
@@ -522,7 +523,8 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
                              status: :submitted, submitted_at: Time.zone.now)
 
     get viva_submission_path(sub)
-    assert_match(/Restart practice viva/, @response.body)
+    assert_select "form[action=?] button", viva_restart_submission_path(sub), text: 'Restart viva'
+    assert_no_match(/Restart practice viva/, @response.body, 'it shows during exams too: no "practice" in the label')
     post viva_restart_submission_path(sub)
     assert sub.reload.viva_archived_at.present?
   end

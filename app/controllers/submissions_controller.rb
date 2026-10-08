@@ -204,12 +204,18 @@ class SubmissionsController < ApplicationController
         end
       end
     end
-    message = allow_viva_retake_message(outcome)
+    # Read after the grant has committed: what the student can do now.
+    policy  = Viva::StartPolicy.new(@submission.problem, @submission.user)
+    message = allow_viva_retake_message(outcome, policy)
+    # Green only when a start was actually freed; a grant that still leaves
+    # the student without a start ("grant that one too") is a warning, so
+    # staff notice it.
+    freed = outcome == :granted && policy.refusal.nil?
     # From the contest's Viva check page (contest_id given): toast, and
     # re-render the report so the row updates at once — only for a contest
     # the staff member may manage. From the session page: back to it.
     if params[:contest_id].present?
-      toast = {title: 'Allow another attempt', body: message, type: (outcome == :granted ? :notice : :warning)}
+      toast = {title: 'Allow another attempt', body: message, type: (freed ? :notice : :warning)}
       streams = [turbo_stream.append('toast-area', partial: 'toast', locals: {toast: toast})]
       if (contest = viva_check_contest)
         streams << turbo_stream.replace('viva-check-report', partial: 'contests/viva_check_report',
@@ -217,7 +223,7 @@ class SubmissionsController < ApplicationController
       end
       render turbo_stream: streams
     else
-      flash_key = outcome == :granted ? :notice : :alert
+      flash_key = freed ? :notice : :alert
       redirect_to viva_submission_path(@submission), flash_key => message
     end
   end
@@ -259,12 +265,12 @@ class SubmissionsController < ApplicationController
   end
 
 protected
-  def allow_viva_retake_message(outcome)
+  def allow_viva_retake_message(outcome, policy)
     case outcome
     when :granted
-      "Session ##{@submission.id} is closed and no longer counts toward the start limit#{retake_start_tail}"
+      "Session ##{@submission.id} is closed and no longer counts toward the start limit#{retake_start_tail(policy)}"
     when :already
-      "Session ##{@submission.id} already has a grant. It is closed and no longer counts toward the start limit#{retake_start_tail}"
+      "Session ##{@submission.id} already has a grant. It is closed and no longer counts toward the start limit#{retake_start_tail(policy)}"
     when :test_drive
       'A test-drive is outside the start limit; there is nothing to allow.'
     else
@@ -272,13 +278,12 @@ protected
     end
   end
 
-  # What the student can do now, read from Viva::StartPolicy after the grant:
-  # the grant frees this session, but another answered session of theirs
-  # today may still count, and a contest-only viva cannot start outside
-  # contest mode.
-  def retake_start_tail
-    policy = Viva::StartPolicy.new(@submission.problem, @submission.user)
-    login  = @submission.user.login
+  # What the student can do now, read from Viva::StartPolicy (`policy`, built
+  # after the grant): the grant frees this session, but another answered
+  # session of theirs today may still count, and a contest-only viva cannot
+  # start outside contest mode.
+  def retake_start_tail(policy)
+    login = @submission.user.login
     if policy.refusal.nil?
       left = policy.starts_left
       ". #{login} may start another attempt at '#{@submission.problem.name}'" \

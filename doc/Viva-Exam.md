@@ -467,12 +467,12 @@ is `doc/Viva-History.md`.
 - [ ] *(Optional)* Attach the **Statement PDF** only if the scenario needs figures or original exam layout.
 - [ ] *(Optional)* Attach **grounding materials** (create/edit under **Manage → Grounding**, attach via the problem form's select) for additional reference material.
 - [ ] Review/set **Soft turn cap** and **Hard turn cap** (defaults 10/15) if the default pacing doesn't fit the topic.
-- [ ] Review/set **Daily start limit** — blank for the site default (currently 3/day), a positive number for a custom limit, or `0` to make the viva contest-only.
+- [ ] Review/set **Daily start limit** — blank for the site default (seeded 3/day), a positive number for a custom limit (**`1` is the usual exam setting**), or `0`, which also forbids starts outside contest mode (one counted session in contest mode, and no End button). See "The start limit".
 - [ ] *(Bulk authoring)* A course-prep kit (a directory with `manifest.yml` + one scenario `.md` + one briefing `.md` per problem + optional shared conduct `.md` files declared under `conduct_tags:` (course profile + mode overlay) + optional shared grounding `.md` files declared under `grounding:`) can be created/updated in one command: `bin/rails viva:import DIR=/path/to/kit` (report only) then `APPLY=1` to write. Idempotent by problem `name`, conduct-tag name, and grounding `title`; `available` is applied on create only; grounding links are add-only (a hand-attached `-sol` PDF survives re-import); every touched problem is post-checked with `viva_setup_errors`. See `Viva::KitImporter` and `course-prep/README.md`.
 - [ ] Confirm a `Language` named `viva` is seeded — the system requires it to create viva submissions.
 - [ ] Confirm `viva_turn_service` and `viva_grade_service` are configured in `config/llm.yml` for the deployment (on chula_cp they're `Llm::VivaTurnGenieAssist` / `Llm::VivaGradeGenieAssist`; on master they're blank, intentionally — the abstract bases raise `NotImplementedError` to signal "no provider configured for this deployment").
 - [ ] Have a colleague (or yourself, as an editor) run a viva end-to-end before exposing it to students. Read the transcript and the rubric breakdown. If the grader returned prose, escalate to `gemini-2.5-pro` via the Re-run grading model picker.
-- [ ] Keep in mind: everyone can self-restart at any time, so a low-limit or contest-only setting is the only thing standing between a "practice" viva and grinding-for-score behavior — see "Retake & Access Policy."
+- [ ] Keep in mind: Restart is offered only when the student could start a new session afterwards, so the start limit is what stands between a "practice" viva and grinding-for-score behavior — a practice value left on an exam viva lets students finish, restart and retake, and the best session counts. See "Retake & Access Policy."
 
 ---
 

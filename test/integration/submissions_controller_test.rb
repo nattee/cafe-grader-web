@@ -159,6 +159,7 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Session ##{sub.id} is closed and no longer counts toward the start limit. " \
                  "john may start another attempt at '#{problems(:prob_viva).name}' (1 start left today).",
                  flash[:notice]
+    assert_nil flash[:alert]
   end
 
   test "allow_viva_retake when another answered session today still counts says no start is left" do
@@ -173,6 +174,9 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
             'start left today: another answered session of theirs today still counts. ' \
             'Use Allow another attempt on that session too if they should start again.'
     assert_includes response.body, toast
+    # No start was freed: a warning toast, so staff notice "grant that one too".
+    toast_style = response.body[/<div class='toast-header py-1 ([^']*)'>/, 1]
+    assert_equal 'bg-warning-subtle', toast_style
 
     # A second click says the same, after "already has a grant".
     post allow_viva_retake_submission_path(latest)
@@ -180,13 +184,16 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
                  flash[:alert])
   end
 
-  test "allow_viva_retake on a contest-only viva outside contest mode says it can start only during a contest" do
+  test "allow_viva_retake on a contest-only viva outside contest mode says it can start only during a contest, as an alert" do
     problems(:prob_viva).update!(viva_daily_limit: 0)
     sub = answered_viva_submission(user: users(:john))
     sign_in_as("admin", "admin")
     post allow_viva_retake_submission_path(sub)
+    assert sub.reload.viva_retake_granted_at.present?, 'the grant itself still happens'
+    # No start was freed, so the session page shows it in the alert style.
+    assert_nil flash[:notice]
     assert_equal "Session ##{sub.id} is closed and no longer counts toward the start limit, " \
-                 'but this viva can be started only during a contest.', flash[:notice]
+                 'but this viva can be started only during a contest.', flash[:alert]
   end
 
   test "a student cannot allow another attempt" do

@@ -354,6 +354,8 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/<turbo-stream action="append" target="toast-area">/, response.body)
     assert_match(/<turbo-stream action="replace" target="viva-check-report">/, response.body)
     assert latest.reload.viva_retake_granted_at.present?
+    # A start was freed (site default 3 a day, one other counted session): the plain notice toast.
+    assert_equal 'bg-info-subtle', response.body[/<div class='toast-header py-1 ([^']*)'>/, 1]
   end
 
   test "a grant with a contest the user cannot manage toasts only" do

@@ -81,7 +81,7 @@
                 class: 'btn btn-sm btn-warning mt-2',
                 form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this test-drive and open a fresh one right away?'}}
           - elsif @restart_allowed
-            = button_to 'Restart practice viva', viva_restart_submission_path(@submission),
+            = button_to 'Restart viva', viva_restart_submission_path(@submission),
                 class: 'btn btn-sm btn-warning mt-2',
                 form: {class: 'd-inline', data: {turbo: true, 'turbo-confirm': 'Archive this session and start over? The transcript is kept for instructors.'}}
 
