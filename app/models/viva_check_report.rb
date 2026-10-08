@@ -97,19 +97,20 @@ class VivaCheckReport
   private
 
   def subs
-    @subs ||= if viva_problems.empty?
-                []
-              else
-                # Students only: a contest editor's (or an enrolled admin's)
-                # own sessions are never rows and never count in the tiles.
-                @contest.submissions.where(problem_id: viva_problems.map(&:id))
-                        .where(user_id: @contest.students.select(:id))
-                        .reorder('submissions.id')
-                        .select('submissions.id, submissions.user_id, submissions.problem_id, submissions.status',
-                                'submissions.points, submissions.submitted_at, submissions.updated_at',
-                                'submissions.viva_archived_at, submissions.viva_retake_granted_at')
-                        .to_a
-              end
+    @subs ||=
+      if viva_problems.empty?
+        []
+      else
+        # Students only: a contest editor's (or an enrolled admin's)
+        # own sessions are never rows and never count in the tiles.
+        @contest.submissions.where(problem_id: viva_problems.map(&:id))
+                .where(user_id: @contest.students.select(:id))
+                .reorder('submissions.id')
+                .select('submissions.id, submissions.user_id, submissions.problem_id, submissions.status',
+                        'submissions.points, submissions.submitted_at, submissions.updated_at',
+                        'submissions.viva_archived_at, submissions.viva_retake_granted_at')
+                .to_a
+      end
   end
 
   def ids
@@ -147,13 +148,14 @@ class VivaCheckReport
 
   # submission_id => [score_json, total_points] of its current grade
   def current_grades
-    @current_grades ||= if ids.empty?
-                          {}
-                        else
-                          VivaGrade.where(submission_id: ids, superseded_at: nil)
-                                   .pluck(:submission_id, :score_json, :total_points)
-                                   .to_h { |sid, json, total| [sid, [json, total]] }
-                        end
+    @current_grades ||=
+      if ids.empty?
+        {}
+      else
+        VivaGrade.where(submission_id: ids, superseded_at: nil)
+                 .pluck(:submission_id, :score_json, :total_points)
+                 .to_h { |sid, json, total| [sid, [json, total]] }
+      end
   end
 
   # Seconds from opening a session to the examiner's first question.
