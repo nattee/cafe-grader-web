@@ -1449,9 +1449,9 @@ class VivaCheckReportTest < ActiveSupport::TestCase
   end
 
   test "two answered sessions without a grant are flagged Retook, with the grant on the latest" do
-    first = session_for(users(:james))
+    first = session_for(users(:james), answers: 4)    # 4 answers: not "short but high"
     grade(first, 74, a: 14, b: 60)
-    second = session_for(users(:james), submitted_at: @now - 5.minutes)
+    second = session_for(users(:james), answers: 4, submitted_at: @now - 5.minutes)
     grade(second, 83, a: 18, b: 65)
 
     row = row_for(users(:james))
