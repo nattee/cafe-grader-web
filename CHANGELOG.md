@@ -10,6 +10,30 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Fixed
+- **Scheduled housekeeping had stopped on every server since the 2026-09-17
+  deploy.** The nightly clean-up of old grading-job rows and compiled
+  programs, the viva failsafe (fails an examiner reply that never arrives),
+  the abandoned-viva reaper, the stuck-grading-job reclaim and the audit-log
+  clean-up were all queued on time but never run: Solid Queue puts every
+  scheduled command in its own queue, and since the 2026-09-12 split into a
+  viva worker and a default worker no worker served it. The default worker
+  now serves every queue; the viva worker still serves only interview turns
+  and viva grading, so nothing can hold those up. Grading itself was never
+  affected. The unrun requests (about 9,550 per server) were discarded on
+  2026-10-08, so after deploying each task catches up once at its normal
+  time: on cp-grader the 02:00 clean-up deletes about 244,000 old grading-job
+  rows and the compiled programs of about 15,000 graded submissions, and the
+  hourly reaper closes 11 abandoned viva sessions (one is sent for grading).
+  (rev 2258)
+- **Hall of Fame counts were never refreshed.** The hourly task that
+  recomputes them was written where Solid Queue does not read scheduled
+  tasks, so cp-grader showed counts from 2026-04-17 and other servers showed
+  none. It now runs every hour (7 seconds on cp-grader). (rev 2258)
+- A viva examiner reply that never arrived was marked "no response after 10
+  minutes" although the rule that failed it waits 20; the message now names
+  the wait that applied. (rev 2258)
+
 ## [4.7.2] — 2026-10-08
 
 **Upgrade notes.** Run `bin/rails db:migrate` — four migrations: the

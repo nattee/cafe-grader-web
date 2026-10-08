@@ -3,6 +3,33 @@
 Major, hard-to-reverse decisions and their reasoning. Newest first.
 (Deferred work goes in `backlog.md`; this file is for decisions already made.)
 
+## 2026-10-08 — Solid Queue: the viva worker serves only `viva`, the other worker serves `"*"`
+
+**Decision.** `config/queue.yml` keeps two workers. The viva worker serves the
+`viva` queue alone. The other worker serves `"*"`, every queue, instead of a
+list of names. Scheduled tasks are declared only in `config/recurring.yml`.
+A test (`test/jobs/solid_queue_config_test.rb`) fails if any scheduled task
+or job class lands in a queue no worker serves.
+
+**Why.** Rev 2137 (2026-09-12) split the single worker so assists could not
+hold up interview turns, and limited the second worker to `default`, on the
+belief that `viva` and `default` were the only queues. They were not: Solid
+Queue puts every `command:` task into its own `solid_queue_recurring` queue.
+From the 2026-09-17 deploy until 4.7.3 nothing served it, and on all nine
+deployed web hosts the nightly cleanup, the viva failsafe and reaper, the job
+reclaim and the audit-log cleanup never ran (about 9,550 unrun requests per
+host, discarded by hand on 2026-10-08). `"*"` cannot strand a queue again.
+The isolation 2137 wanted still holds: the viva worker takes nothing but
+`viva`, so a turn never waits behind an assist; the `"*"` worker also takes
+viva jobs when it has a free thread, which only shortens a turn's wait, and
+assists may wait behind viva jobs at a viva peak — accepted (dae).
+`"*"` cannot be ordered: in Solid Queue 1.1.5 a `"*"` anywhere in a list
+means all queues, oldest job first, and the other names are ignored.
+
+**Also fixed.** `refresh_problem_stats` sat under a `recurring:` key in
+`queue.yml` since rev 1558 (2026-04); Solid Queue never reads that key, so
+the Hall of Fame counts were never refreshed. It moved to `recurring.yml`.
+
 ## 2026-10-01 — Testcase visibility: a preview for students, whole files for staff
 
 **Decision.** "View testcase" no longer means "see everything". A student the
