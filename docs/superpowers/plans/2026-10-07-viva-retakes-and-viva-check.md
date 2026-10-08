@@ -1864,8 +1864,8 @@ In `test/integration/contests_controller_test.rb`, before the file's final `end`
   end
 
   test "a grant with a contest the user cannot manage toasts only" do
+    latest = retook_in_contest_a                           # sessions first: group mode changes who may submit
     set_grader_config('system.use_problem_group', 'true')   # group editing rights apply only in group mode
-    latest = retook_in_contest_a
     GroupProblem.create!(group: groups(:group_a), problem: problems(:prob_viva), enabled: true)
     sign_in_as("mary", "mary")                     # editor of contest_a only
     post allow_viva_retake_submission_path(latest, contest_id: contests(:contest_b).id), as: :turbo_stream
