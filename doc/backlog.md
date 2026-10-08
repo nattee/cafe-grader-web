@@ -92,20 +92,18 @@ per-problem start limit stays the control, and the checklist warns about it.
   and the failures locked the whole room out of login (all students share
   the exam gateway's IP address, which the login lock counts per address).
 
-**Three facts about the start limit the checklist must get right** (read from
-`VivaSessionsController#start` / `#restart` and `Submission#finalize_open_viva!`,
-2026-10-07):
-1. **0 does not mean one attempt.** It means "only during contest mode", with
-   no count at all, and the Restart button is still shown. So 0 allows
-   unlimited retakes during an exam. Only the End button is hidden.
-2. **Under limit 1, admin "Archive & allow retake" gives no retake that day.**
-   The archived session still counts toward the day's starts (a session
-   counts once the student has answered). A same-day second attempt
-   therefore needs the limit raised, which applies to every student.
-3. **Under limit 1, Restart mid-interview locks the student out with no
-   grade.** Restart archives the session even while it is open; neither the
-   24 h reaper nor Finish open vivas grades an archived session, and the
-   student cannot start again. Not seen in either quiz.
+**Three start-limit traps found 2026-10-07 — all FIXED** (master 2238–2240,
+`Viva::StartPolicy`, `doc/Viva-Exam.md` "The start limit"): limit 0 used to
+mean unlimited retakes during a contest (now one counted session); admin
+"Archive & allow retake" gave no retake under limit 1 (replaced by **Allow
+another attempt**, which stops the session counting); Restart mid-interview
+under limit 1 locked the student out ungraded (Restart is now offered only
+when a new start is possible). What the checklist still has to warn about is
+a start limit other than 1 or 0 on a contest's viva.
+
+**Reuse:** `Viva::Rubric.parse` (rubric readable, weights sum to 100) and the
+contest's Viva check page (`VivaCheckReport`) already exist; the checklist's
+viva rows can call the same code.
 
 **Size:** small to medium — a PORO of checks plus a card on `contests/show`.
 

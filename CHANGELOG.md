@@ -26,8 +26,38 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   many failed login attempts" at once and names what was locked. Before,
   the only ways out were waiting up to 3 minutes or deleting the counter
   from a Rails console. (rev 2232)
+- **Viva check** page for each contest (contest page → Reports → Viva
+  check): one row per student per viva problem with the flags staff should
+  act on — Retook, Waiting for reply, Reply failed, Grading failed, Left
+  unfinished, Grade doesn't add up (a rubric item above its maximum or items
+  not summing to the total), Rubric unreadable — and the ones worth a look
+  (No answer yet, Short but high, Ended early, Rule-break flag). It reloads
+  every 30 seconds while the contest runs; an "N to check" badge next to the
+  viva grading status on the contest page counts the students who need
+  action. Built after proctors saw students take the DS Quiz 2 viva twice.
+  (revs 2242, 2244)
+- **Allow another attempt** (staff who can edit the problem, in contest
+  mode too): archives a viva session at any status — including an open
+  interview after an infrastructure failure — and stops it counting toward
+  the start limit, so the student can start one more. On the session page's
+  Admin card, replacing "Archive & allow retake", and on each student row of
+  Viva check. Each grant is an audit row on the problem. Run
+  `bin/rails db:migrate` (two nullable columns on `submissions`, added
+  without a table copy). (revs 2238, 2240, 2244)
 
 ### Changed
+- **Viva start limit 0 means one attempt in a contest.** "Contest-only"
+  vivas used to allow unlimited restarts during contest mode; now a student
+  gets one counted session (a session counts once they answer), the same as
+  limit 1. For an exam set the limit to 1 (or 0): a practice value lets
+  students finish, restart and retake, and the best session counts. One
+  rule (`Viva::StartPolicy`) now drives Start, Restart and the session
+  page. (revs 2238, 2239)
+- **Viva Restart is offered only when the student could start again.**
+  Under limit 1, Restart in the middle of an interview used to archive the
+  session ungraded and leave the student unable to start a new one. The
+  session page's archived note now says the session's score still counts
+  toward the best. (rev 2239)
 - **Submissions and User Activity reports:** Login (the link) and Name are
   separate columns, as on the problem stat page and the Best Score report,
   instead of "(login) name". With a contest picked, the login opens the

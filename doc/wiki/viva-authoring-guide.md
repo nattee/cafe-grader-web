@@ -357,9 +357,15 @@ none.
 - **Hard cap** ≈ soft cap + 4. It is a cutoff, not a target; sessions that
   hit it usually did so by burning turns on scaffolding, and a plan whose
   last rungs were never reached zeroes those criteria.
-- **Daily start limit**: blank for the site default, a number for this
-  problem, `0` for contest-only. Peeks (opened, never answered) are free;
-  only sessions with at least one student answer count.
+- **Daily start limit** (the *start limit*): blank for the site default, a
+  number for this problem, `0` for contest-only. Peeks (opened, never
+  answered) are free; only sessions with at least one student answer count,
+  and a session stops counting when staff use **Allow another attempt**.
+  **For an exam, use `1`** — one counted session; staff can allow a second
+  one by hand after an infrastructure failure. `0` also means one counted
+  session during a contest, and none outside it. A practice value (3, 5)
+  left on an exam viva lets students finish, restart and retake, and the
+  best session counts.
 
 ---
 
@@ -473,6 +479,7 @@ Every row is something we observed on real student sessions
 | Same transcript regraded: 74 → 63, 31 → 42; SD 4 points over 157 sessions | Grader rerun noise (gemini-3.7-flash), not the rubric | Treat one grade as ±10; never "fix" a cohort with a small rubric edit and a plain regrade — keep the higher record (policy); consider averaging two grading passes for exams |
 | Rubric wording or a probe only turns out to be confusing once real students hit it | Viva published without anyone sitting it | Take two test-drives first — strong and weak student — via the edit page's Test-drive button; read both narratives (authoring) |
 | Grades need redoing after a briefing fix, but a plain re-run would lower some students | Re-run replaces; rerun noise is about ±10 per grade | Batch `viva:regrade` (never-lower by default, stale sessions only); read `viva:regrade_status` before announcing (operation) |
+| Students retake the exam viva and the better score counts (Quiz 2, 2026-10-07: 80 → 94, 74 → 83); the examiner greets everyone with "practice viva" | A practice viva reused for an exam kept its practice start limit (5) and its scenario's "practice viva" line | Before the exam: start limit `1` (or `0`), scenario and conduct overlay switched to exam wording; during it, the contest's **Viva check** page flags *Retook* live (operation) |
 
 ---
 
@@ -512,7 +519,10 @@ skips the block silently.
       language paragraph (examiner, student, translation, narrative) with
       probe examples in the examiner's language; grading conventions in
       the base.
-- [ ] Caps sized to the plan; daily limit chosen; grounding only if needed.
+- [ ] Caps sized to the plan; start limit chosen (`1`, or `0`, for an exam);
+      grounding only if needed.
+- [ ] Reusing a practice viva for an exam: start limit, scenario wording
+      ("practice viva") and conduct overlay all switched to the exam versions.
 - [ ] Piloted twice (strong, weak); transcript and rubric JSON read.
 - [ ] First audit scheduled after ~50 sessions; statistics split by model.
 - [ ] After any briefing change on a live problem: `viva:regrade` dry run,

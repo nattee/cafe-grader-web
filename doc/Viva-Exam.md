@@ -230,20 +230,33 @@ A run is written **non-current first** (`handle_response` saves the raw response
 
 **Baseline: every viva is practice.** Self-restart is allowed for every viva, unconditionally, subject only to the daily-start guard below. Jailbreak alerts are logged and shown to the student as a gentle notice; nothing auto-terminates yet (see "Jailbreak Detection & Consequence Policy").
 
-## Out-of-contest limiter: per-problem daily start limit
+## The start limit (`Viva::StartPolicy`, revised 2026-10-07)
 
-`problems.viva_daily_limit` (nullable integer):
+One rule decides whether a student may start a session, whether Restart is offered, and what the Viva Info card says: `Viva::StartPolicy` (`app/services/viva/start_policy.rb`; design `docs/superpowers/specs/2026-10-07-viva-retakes-and-viva-check-design.md`). `VivaSessionsController#start` refuses with its `#refusal`, `#restart` asks `#restart_allowed?`, and the card reads `#limit` / `#starts_left`.
 
-- **`nil`** → falls back to `GraderConfiguration['viva.practice_daily_start_limit']` (seeded default **3**, admin-editable). If that config key is itself missing/blank/non-positive, the controller falls back further to a hardcoded `DAILY_START_LIMIT_FALLBACK = 3` — a misconfigured global key must fail safe to a limit, never to "unlimited."
-- **`N > 0`** → at most N starts per student per problem per calendar day (`Time.zone.now.beginning_of_day`). The counter is every `Submission` for that user+problem started today, **including archived ones** — restarting doesn't refund the day's budget.
-- **`0`** → **contest-only.** The problem can never be started outside an active contest window. `VivaSessionsController#start` checks `GraderConfiguration.contest_mode?` directly for this case; since the earlier `can_submit_to_problem?` gate already proved (for a student, via its `:submit` arm) the problem is only visible right now because it's included in an active, enrolled contest, gating on the global contest-mode flag here is sufficient for the current implementation (Phase A — no per-contest retake budget exists yet, see "Phase B" below). An editor reaching the gate via its `:edit` arm is still blocked here in normal mode like everyone else; admins skip the whole guard block.
-- **Admins are exempt** from the daily limit entirely (`unless @current_user.admin?` wraps the whole check block).
+`problems.viva_daily_limit` — the **start limit** ("Daily start limit" on the problem form):
 
-The resolved limit and remaining count are surfaced on the viva page's Viva Info card ("N of L starts left today", or "Contest-only viva — starts are governed by the contest" when the limit is 0, or "Unlimited starts (admin)").
+| Start limit | Outside contest mode | In contest mode |
+|---|---|---|
+| blank | the site default (`viva.practice_daily_start_limit`, seeded 3) counted sessions per day; a missing, blank or non-positive setting falls back to 3, never to unlimited | same |
+| N > 0 | N counted sessions per day | same |
+| 0 | cannot start | **one** counted session per day |
+
+- **A counted session** is a regular session (not a test-drive) started today (`Time.zone.now.beginning_of_day`, Asia/Bangkok) with at least one student answer and **no staff grant** ("Allow another attempt", below). Peeks — opened, never answered — are free: the 2026-08-24 trial had 27 of 70 starts as zero-engagement peeks. Archived sessions still count; restarting never refunds the day's budget.
+- **Before 2026-10-07, `0` had no count at all** in contest mode, so a student could restart and retake as often as they liked during an exam. It now means one counted session, the same as `1` during a contest.
+- **The usual exam setting is `1`** (or `0`, which also forbids starts outside contest mode). A practice value left on an exam viva lets students finish, restart and retake, and the best session counts — DS Quiz 2, 2026-10-07, see `doc/Viva-History.md`.
+- **Admins are exempt** (`#limit` is nil).
+- In contest mode the refusal tells the student to ask a proctor, who can allow another attempt.
+
+The Viva Info card shows "N of L starts left today", "Contest-only viva — N of 1 attempt left today" (contest mode), "Contest-only viva — can be taken only during a contest", or "Unlimited starts (admin)".
 
 ## Self-restart
 
-`VivaSessionsController#restart` lets the **owner only** archive their own non-archived, non-processing session at any time (`POST /submissions/:id/viva/restart`), reusing the same `viva_archived_at` soft-archive mechanism admins use. This immediately re-enables the **Start Viva** button on `/main/list`; the *next* start attempt is still subject to the daily-limit/contest-only guard above. This replaces the old exam-mode "single attempt, admin-archive-only" behavior — under the context-policy model there is no exam mode to protect, so self-service retakes are safe everywhere today.
+`VivaSessionsController#restart` lets the **owner only** archive their own non-archived, non-processing session (`POST /submissions/:id/viva/restart`) — and only when they could start again afterwards (`#restart_allowed?`): a test-drive, a session with no answer (it never counted), or a counted start left today with this session included. Otherwise the button is hidden and a direct POST is refused. Before 2026-10-07 Restart was offered unconditionally, so under limit 1 a student who restarted mid-interview archived an ungraded session that nothing would ever grade, and could not start again. Restart never grades the archived session.
+
+## Allow another attempt (staff, 2026-10-07)
+
+Anyone who can edit the problem (admins, editors of its groups) can let one student start one more session, in contest mode too — from the Admin card on the session page, or from the student's row on the contest's **Viva check** page. `SubmissionsController#allow_viva_retake` → `Submission#grant_viva_retake!`, under the row lock: archives the session **whatever its status** (an open interview after an infrastructure failure; a session being graded, whose grade still lands and counts toward the best), stamps `viva_retake_granted_at` / `viva_retake_granted_by_id` so the session stops counting toward the start limit, and writes one `viva_retake_grant` audit row on the problem. An open session archived this way is never graded. A second click, or a second staff member, changes nothing. This replaced "Archive & allow retake" (`archive_viva`), which archived only finished sessions and — because archived sessions still count — gave no retake under limit 1.
 
 ## Phase B (planned, not yet implemented)
 
@@ -256,7 +269,7 @@ The context-policy spec (`docs/superpowers/specs/2026-07-21-viva-context-policy-
 - **Window-end force-finish** *(added to the spec 2026-07-21, marked MANDATORY)* — a contest-governed session must accept no student answers after its governing contest's window ends; `#answer` would force-finish exactly like the hard turn cap. Rationale: unlike code submissions (where a late `submitted_at` self-excludes from reports), a viva's `submitted_at` is its *start* time — post-bell answers would silently improve a grade that still counts. An assistant reply already in flight at the bell would complete and count (it answers pre-bell input); individual-contest mode would use the student's own window.
 - **Test-drives stay practice** *(added 2026-09-23)* — a session flagged `test_drive` must take the practice (log-only) alert branch and no retake budget, whatever contest window it runs inside; the snapshot must record it as ungoverned.
 
-Until Phase B ships, the only in-contest behavior that differs from practice is: (a) `viva_daily_limit == 0` requires an active contest to start at all, and (b) whatever the current, dormant exam-alert-policy branch would do if enabled (see next section) — which today it never is. What does exist is the manual precursor of the window-end force-finish: the contest management page's **"Finish open vivas"** button (rev 2161, 2026-09-23) closes every still-open session of that contest in one click — answered sessions go to grading, greeting-only ones are archived, a session with a reply in flight is skipped and counted (`Contest#finish_open_vivas!`, sharing `Submission#finalize_open_viva!` with the 24 h reaper). Staff click it after the bell; nothing fires on its own.
+Until Phase B ships, the only in-contest behavior that differs from practice is: (a) `viva_daily_limit == 0` requires contest mode to start and allows one counted session there (since 2026-10-07), and (b) whatever the current, dormant exam-alert-policy branch would do if enabled (see next section) — which today it never is. What does exist is the manual precursor of the window-end force-finish: the contest management page's **"Finish open vivas"** button (rev 2161, 2026-09-23) closes every still-open session of that contest in one click — answered sessions go to grading, greeting-only ones are archived, a session with a reply in flight is skipped and counted (`Contest#finish_open_vivas!`, sharing `Submission#finalize_open_viva!` with the 24 h reaper). Staff click it after the bell; nothing fires on its own.
 
 ---
 
@@ -322,7 +335,7 @@ An **alert-review admin page** (flagged sessions with transcripts, for calibrati
 
 # Archived Sessions — Visibility & Scoring
 
-Archiving (self-service via `#restart`, or admin via `SubmissionsController#archive_viva`) sets `submissions.viva_archived_at` and never deletes anything — transcript, grade, cost, and raw LLM responses are all preserved.
+Archiving (self-service via `#restart`; staff via **Allow another attempt**, `SubmissionsController#allow_viva_retake`; greeting-only sessions via Finish open vivas and the 24 h reaper) sets `submissions.viva_archived_at` and never deletes anything — transcript, grade, cost, and raw LLM responses are all preserved.
 
 **Visibility (`User#can_view_submission?`):**
 - The **owner** and **admins/reporters** can always see an archived viva (admin/reporter checks and the owner check both short-circuit before the archived check).
@@ -337,6 +350,12 @@ This is deliberate, not an oversight: **retaking never lowers your score.** A st
 
 ---
 
+# Viva Check (contest report, 2026-10-07)
+
+`GET /contests/:id/viva_check` (Reports dropdown on the contest page; same access as AI Usage). Built by the read-only `VivaCheckReport` over `Contest#submissions` on the contest's viva problems — regular sessions only, each student's own window, archived ones included. One row per student per viva problem, flagged students first; the body is a turbo frame that reloads every 30 s while the contest runs. Each row links to the session page and, for staff who can edit the problem, offers **Allow another attempt** on the student's latest counted session (the frame re-renders after the grant).
+
+**Needs action** (red; counted in the "N to check" badge next to the grading status on the contest page): *Retook* (2+ answered sessions without a grant), *Waiting for reply* (an examiner reply in progress 60 s or more), *Reply failed* (latest reply of an open session errored), *Grading failed* (`grader_error`, or grading 5 minutes with no grade), *Left unfinished* (archived mid-interview with answers and no grant — never graded), *Grade doesn't add up* (a rubric item above its maximum, items not summing to the total, or names not in the rubric), and per problem *Rubric unreadable* (no `# Rubric` list of `- key (weight): …` lines, or weights not summing to 100 — `Viva::Rubric.parse`). **Worth a look** (grey): *No answer yet* (open 5 minutes or more), *Short but high* (3 or fewer answers, 50+ points), *Ended early* (the student pressed End), *Rule-break flag* (an alerted turn). Tiles: sessions, answered, open now, graded / grading / failed, opening-question wait (p95, max), need action.
+
 # Lifecycle of a Viva Session
 
 1. **Start.** The student clicks **Start Viva** on `/main/list` (`POST /problems/:id/viva/start`).
@@ -344,7 +363,7 @@ This is deliberate, not an oversight: **retaking never lowers your score.** A st
    - Confirms the `viva` `Language` is seeded.
    - `Problem#viva_setup_errors` runs. If `viva_prompt` is blank or missing a `# Rubric` section, redirects to `/main/list` with a flash alert listing what's missing. No submission is created.
    - Defensive check: if the user already has an active (non-archived) viva for this problem, refuses — stops a stale tab or direct POST from creating a parallel session.
-   - **Retake/limit guard** (skipped for admins): if `viva_daily_limit == 0`, requires `GraderConfiguration.contest_mode?`; otherwise enforces the resolved daily start limit (see "Retake & Access Policy" above).
+   - **Start limit guard** (`Viva::StartPolicy#refusal`; admins exempt): the contest-only rule and the counted-session limit — see "The start limit" above.
    - Otherwise: creates a `Submission` (language `viva`, no source code), an opening `system` marker turn (`"(interview start)"`), and an `assistant` placeholder turn (`status: processing`). Enqueues `Llm::VivaTurnAssistJob`. Redirects to the viva session page.
 
 2. **First turn.** The interviewer LLM runs with the assembled system prompt + first user message (scenario text + grounding text + PDF, per "How the Prompt Is Assembled"). Replies with the scenario echoed back and the first question. The placeholder turn is updated with the response (sentinels stripped, status `:ok`). The session page polls every 3 seconds (`data-viva-session-interval-ms-value="3000"`) and renders the new assistant message via the `safe_markdown` helper (Redcarpet with HTML filtering, so prompt-injection-via-HTML can't execute).
@@ -389,13 +408,13 @@ The right-side cards (visible to users with `can_edit_problem?` permission on th
 
 - **Re-run grading** *(form: model picker + "Keep the higher grade" checkbox, on by default)* — `Submission#regrade_viva!` queues `Llm::VivaGradeAssistJob` with the chosen model (default = the service class's `DEFAULT_MODEL`), the never-lower choice and the admin as `requested_by`. The current grade is **kept** and stays visible to the student until the new run is adopted (before rev 2190 the row was destroyed and the submission reset to `:evaluating`, so a failed re-run left the student with nothing). Box ticked: a lower new run is stored as `lower` and changes nothing. Box unticked: the new run always becomes current. A submission with no valid grade (first grading failed) goes back to `:evaluating` as before. Refused with an alert toast while the interview is still open (`submitted`).
 - **Grade history** *(table under the form, five columns)* — every run of the session: **When** (with who asked — login, batch id, or "auto" — underneath), **Model** (with the rubric version — first 8 hex; the tooltip says whether it matches the problem's current rubric — underneath), **Total**, **Outcome** (a badge: current · replaced · lower · error · reverted · not adopted (written but never decided, e.g. an interrupted job)), and an action cell with two icon-only buttons: **Raw** opens the response body and error message, and **Make current** (tooltip "Make run #N the current grade", with a confirm) appears on any valid run that is not current — `SubmissionsController#adopt_viva_grade` re-adopts it (`adopt_viva_grade!`, the displaced run becomes `reverted`), writes a `viva_grade_adopt` audit row on the problem and redirects so the grade card shows the adopted total. Refused while the interview or grading is in progress. Wait for a pending re-run to finish before using Make current: the re-run decides against whatever is current when it lands, so a Make current in between can be overridden by it. The audit row records the run actually displaced (read under the lock). The Debug card's "Last grader run" block moved here.
-- **Archive & allow retake** *(soft archive)* — sets `submission.viva_archived_at = Time.current`. Transcript, grade, cost, and raw response are all preserved; only the submission's role as the canonical attempt is given up. The student's Start Viva button reappears on `/main/list` (subject to their daily-limit budget, same as self-restart). Available only when the submission status is `:done` or `:grader_error` (refuses to archive an in-progress interview).
+- **Allow another attempt** — see "Allow another attempt" under Retake & Access Policy: archives the session at any status, stops it counting toward the start limit, audits the grant. Transcript, grade, cost and raw responses are preserved. Once granted, the card says who allowed it and when. Not offered on test-drives (they are outside the limit).
 - **Debug card** — collapsible sections showing:
   - **Grader request payload preview** — the JSON that *would be* sent on the next grader call, reconstructed from current state via `Llm::Request.preview`. PDFs in the payload are redacted to `<application/pdf base64, ~XKB redacted>` for readability.
   - **Turn request payload preview** — same for the next interviewer call.
   - **Per-turn responses** — every assistant turn's `llm_response_raw`, model, cost, token counts.
 
-The archived state is also surfaced in the **student-visible** Viva Info card (an "archived" badge on the Status row + an "Archived X ago" note explaining "This viva no longer counts for grading. You may start a fresh viva on this problem."), so a student opening their archived viva understands why Start Viva is available again — note the max-score-includes-archived rule above means an archived viva still *contributes* to their best score even though it's no longer the canonical attempt.
+The archived state is also surfaced in the **student-visible** Viva Info card (an "archived" badge on the Status row + an "Archived X ago" note: "This session is closed; its score still counts toward the best. A fresh session can be started from the problem list when a start is left." — and, after a grant, "Another attempt allowed by …"), so a student opening their archived viva understands where they stand — note the max-score-includes-archived rule above means an archived viva still *contributes* to their best score even though it's no longer the canonical attempt.
 
 ## Regrading a cohort (`bin/rails viva:regrade`)
 
@@ -419,9 +438,9 @@ After a briefing or conduct change, or to try a different grader model, regrade 
 - **D7 authoring validation — half done.** The *test-drive* half shipped 2026-09-23 (see "Test-Drive Sessions"). The *preflight lint* half — an LLM pass over the assembled prompt for rubric leakage, contradictions with the security directive, a missing `# Rubric`, banned template literals and embedded operational instructions — is still not built. The inoculation incident above is exactly the kind of thing that lint would catch pre-emptively.
 - **Red-team regression set (D3, Phase 2)** is not built. (The alert-review admin page *did* ship — rev 1917, Graders → Viva alerts; this list wrongly called it unimplemented until 2026-09-02.) The 56 alerts logged during the 2026-08/09 practice month — including ≥14 false positives on explicitly listed non-triggers — are the natural seed corpus; replay them before enabling exam policy, since a false positive under two-strike terminates an honest student. See `doc/Viva-History.md` (2026-09-01 audit).
 - ~~**D4 grounding PDF→text extraction** not implemented.~~ Shipped 2026-07-21 (revs 1919–1920, Genie wiring 1922; CHANGELOG 4.5.0). Stale entry, corrected 2026-09-02.
-- **Phase B of the context-policy design** (per-contest retake budgets, governing-contest snapshot, window-end force-finish) — see "Retake & Access Policy" above; no code exists yet.
+- **Phase B of the context-policy design** (per-contest retake budgets, governing-contest snapshot, window-end force-finish) — see "Retake & Access Policy" above; no code exists yet. Since 2026-10-07 the start limit plus staff grants cover the common exam case (one attempt, a second one by hand).
 - **No session wall clock.** A session's only time bounds are the 24 h abandonment reaper and, in a contest, staff clicking "Finish open vivas" after the bell; the 2026-09-01 audit found sessions paused 8–10 h mid-interview and finished across days, which also opens an oracle window for abandon-and-retry. Needed before any exam use; Phase B's window-end force-finish is the natural home.
-- **Grade JSON is not validated against the rubric weights.** Rev 2043 checks `total_points` and a non-empty rubric only; the audit found 2/117 rubrics with a criterion above its weight (one on a 0–100-per-criterion scale, invited by the grading prompt's `<number 0-100>` schema comment). Per-criterion maxima are stated in the conduct tag since 2026-09-01; a code-level check remains open.
+- **Grade JSON is not validated against the rubric weights.** Rev 2043 checks `total_points` and a non-empty rubric only; the audit found 2/117 rubrics with a criterion above its weight (one on a 0–100-per-criterion scale, invited by the grading prompt's `<number 0-100>` schema comment). Per-criterion maxima are stated in the conduct tag since 2026-09-01. Since 2026-10-07 the contest's Viva check page *detects* such grades ("Grade doesn't add up", `Viva::Rubric.grade_problems`); grading itself still accepts them.
 
 ---
 
