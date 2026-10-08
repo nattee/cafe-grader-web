@@ -492,6 +492,7 @@ class SubmissionTest < ActiveSupport::TestCase
     assert_equal 1, Submission.fail_stale_viva_evaluating!
     assert_predicate sub.reload, :grader_error?
   end
+
   # --- "Allow another attempt" (Submission#grant_viva_retake!) ---
 
   test "grant_viva_retake! archives an open session, stamps who granted it, and is idempotent" do

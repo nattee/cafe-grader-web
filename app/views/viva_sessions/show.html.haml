@@ -42,7 +42,13 @@
             .col
               = "#{time_ago_in_words(@submission.viva_archived_at)} ago"
               %div.small.text-secondary.fst-italic
-                This session is closed; its score still counts toward the best. A fresh session can be started from the problem list when a start is left.
+                - if @submission.points
+                  This session is closed; its score still counts toward the best.
+                - elsif @submission.status.to_s == 'evaluating'
+                  This session is closed; its grade still counts toward the best once grading finishes.
+                - else
+                  This session was closed without a grade.
+                A fresh session can be started from the problem list when a start is left.
 
         .row.mb-2
           .col-5.text-end.text-secondary Starts

@@ -329,6 +329,23 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     assert_select "form[action=?]", allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), 0
   end
 
+  test "in contest mode a contest editor gets the grant button on viva check and the grant succeeds" do
+    latest = retook_in_contest_a
+    set_grader_config("system.mode", "contest")    # contest editors edit the contest's available problems
+    sign_in_as("mary", "mary")                     # editor of contest_a; prob_viva is in none of her groups
+    get viva_check_contest_path(contests(:contest_a))
+    assert_response :success
+    assert_select "form[action=?]", allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), 1
+
+    assert_difference -> { AuditLog.where(action: 'viva_retake_grant').count }, 1 do
+      post allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), as: :turbo_stream
+    end
+    assert_response :success
+    assert_match(/<turbo-stream action="replace" target="viva-check-report">/, response.body)
+    assert latest.reload.viva_retake_granted_at.present?
+    assert_equal users(:mary).id, latest.viva_retake_granted_by_id
+  end
+
   test "Allow another attempt from viva check toasts and re-renders the report" do
     latest = retook_in_contest_a
     sign_in_as("admin", "admin")

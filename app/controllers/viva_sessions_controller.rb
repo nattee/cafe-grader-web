@@ -11,6 +11,9 @@ class VivaSessionsController < ApplicationController
 
   VIVA_LANGUAGE_NAME = Language::VIVA_NAME
 
+  # #answer and #retry_turn on an archived session.
+  CLOSED_SESSION_ALERT = 'This session has been closed. Start a new one from the problem list if you have a start left.'.freeze
+
   # The start limit, the contest-only rule and Restart's guard live in one
   # place, Viva::StartPolicy (design 2026-10-07); #start, #restart and the
   # session page all ask it.
@@ -46,7 +49,7 @@ class VivaSessionsController < ApplicationController
     # here anyway. Refuse with a clear flash.
     if @problem.submissions.regular.where(user: @current_user, viva_archived_at: nil).exists?
       redirect_to list_main_path,
-                  alert: "You already have an active viva session for '#{@problem.name}'. An admin can archive it from the viva page if you need to retake."
+                  alert: "You already have an active viva session for '#{@problem.name}'. Open it from the problem list, or ask staff to allow another attempt."
       return
     end
 
@@ -110,6 +113,15 @@ class VivaSessionsController < ApplicationController
   # GET /submissions/:submission_id/viva
   def show
     load_viva_state
+
+    # Retake-policy visibility (Viva::StartPolicy — the rule #start and
+    # #restart apply): starts left today for the session's owner, and whether
+    # the owner's Restart button is offered at all. Only the Viva Info card
+    # reads these, so the 3 s #refresh (the transcript partial) skips them.
+    policy = Viva::StartPolicy.new(@submission.problem, @submission.user)
+    @daily_start_limit = policy.limit || Viva::StartPolicy.daily_limit_for(@submission.problem)
+    @starts_left       = policy.starts_left || @daily_start_limit
+    @restart_allowed   = policy.restart_allowed?(@submission)
   end
 
   # POST /submissions/:submission_id/viva/turns
@@ -133,6 +145,9 @@ class VivaSessionsController < ApplicationController
     # a worker never sees pre-commit state.
     placeholder = nil
     outcome = @submission.with_lock do
+      # A closed (archived) session takes no more answers — Restart, Allow
+      # another attempt or Finish open vivas closed it (design 2026-10-07, A4).
+      next :archived if @submission.viva_archived_at.present?
       case @submission.status.to_s
       when 'done', 'grader_error' then next :ended
       when 'evaluating'           then next :grading
@@ -154,6 +169,8 @@ class VivaSessionsController < ApplicationController
     end
 
     case outcome
+    when :archived
+      redirect_to viva_submission_path(@submission), alert: CLOSED_SESSION_ALERT
     when :ended
       redirect_to viva_submission_path(@submission), alert: 'This viva session has ended.'
     when :grading
@@ -220,6 +237,12 @@ class VivaSessionsController < ApplicationController
     when 'done', 'grader_error', 'evaluating'
       redirect_to viva_submission_path(@submission),
                   alert: 'This viva session has already ended.' and return
+    end
+
+    # A closed (archived) session is not revived by a retry, the owner's or
+    # an admin's (design 2026-10-07, A4).
+    if @submission.viva_archived_at.present?
+      redirect_to viva_submission_path(@submission), alert: CLOSED_SESSION_ALERT and return
     end
 
     turn.update!(
@@ -423,14 +446,6 @@ class VivaSessionsController < ApplicationController
     @pending_turn = @submission.viva_turns.where(status: :processing).exists? ||
                     @submission.status == 'evaluating'
     @finished     = %w[done grader_error evaluating].include?(@submission.status.to_s)
-
-    # Retake-policy visibility (Viva::StartPolicy — the rule #start and
-    # #restart apply): starts left today for the session's owner, and whether
-    # the owner's Restart button is offered at all.
-    policy = Viva::StartPolicy.new(@submission.problem, @submission.user)
-    @daily_start_limit = policy.limit || Viva::StartPolicy.daily_limit_for(@submission.problem)
-    @starts_left       = policy.starts_left || @daily_start_limit
-    @restart_allowed   = policy.restart_allowed?(@submission)
   end
 
   def set_problem

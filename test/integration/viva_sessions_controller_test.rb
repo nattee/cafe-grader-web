@@ -1,4 +1,5 @@
 require "test_helper"
+require "minitest/mock"   # Object#stub, for the #refresh test below
 
 class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
   # `viva_sessions#start` requires both:
@@ -429,6 +430,72 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/You have used your attempt.*ask a proctor/, flash[:alert])
   end
 
+  # --- the exam path itself: contest mode, limit 0 (design 2026-10-07, A1/A3) ---
+
+  # prob_viva as a contest-only viva in contest_a (running now), john enrolled
+  # as a student, contest mode on. Returns the problem.
+  def setup_contest_only_viva
+    viva_language
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 0, viva_prompt: "# Rubric\nBe fair.")
+    ContestProblem.create!(contest: contests(:contest_a), problem: problem, number: 99, enabled: true)
+    ContestUser.create!(contest: contests(:contest_a), user: users(:john), role: 0, enabled: true,
+                        start_offset_second: 0, extra_time_second: 0)
+    set_grader_config("system.mode", "contest")
+    problem
+  end
+
+  def contest_session_for_john(problem, answered:)
+    Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now).tap do |sub|
+      sub.viva_turns.create!(role: :assistant, status: :ok, content: 'Q?')
+      sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once') if answered
+    end
+  end
+
+  test "contest mode, limit 0: the session page counts the one attempt and offers no End button" do
+    sign_in_as("john", "hello")
+    problem = setup_contest_only_viva
+    sub = contest_session_for_john(problem, answered: false)
+
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_match(/Contest-only viva — 1 of 1 attempt left today/, @response.body)
+
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    get viva_submission_path(sub)
+    assert_match(/Contest-only viva — 0 of 1 attempt left today/, @response.body)
+    assert_select "form[action=?]", viva_finish_submission_path(sub), 0
+  end
+
+  test "contest mode, limit 0: Restart is refused on an answered session" do
+    sign_in_as("john", "hello")
+    problem = setup_contest_only_viva
+    sub = contest_session_for_john(problem, answered: true)
+
+    get viva_submission_path(sub)
+    assert_select "form[action=?]", viva_restart_submission_path(sub), 0
+
+    post viva_restart_submission_path(sub)
+    assert_nil sub.reload.viva_archived_at
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/Restart is not available.*You have used your attempt/, flash[:alert])
+  end
+
+  test "contest mode, limit 0: Restart is allowed on a session with no answer" do
+    sign_in_as("john", "hello")
+    problem = setup_contest_only_viva
+    sub = contest_session_for_john(problem, answered: false)
+
+    get viva_submission_path(sub)
+    assert_select "form[action=?]", viva_restart_submission_path(sub), 1
+
+    post viva_restart_submission_path(sub)
+    assert sub.reload.viva_archived_at.present?
+    assert_redirected_to list_main_path
+    assert_match(/only available during a contest/, flash[:notice])
+  end
+
   test "restart is hidden and refused when the student could not start again" do
     sign_in_as("john", "hello")
     problem = problems(:prob_viva)
@@ -480,7 +547,107 @@ class VivaSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to viva_submission_path(Submission.last)
   end
 
+  # --- a closed (archived) session takes no answers and no retries (design 2026-10-07, A4) ---
+  #
+  # Final review of the retake work: on a session closed by "Allow another
+  # attempt" the owner still saw the answer form, a POST to viva/turns was
+  # accepted, and a second live session could then be started beside it.
+
+  test "a granted open session hides the answer form and refuses answers and retries, also after a new start" do
+    viva_language
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_daily_limit: 1, viva_prompt: "# Rubric\nBe fair.")
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :submitted, submitted_at: Time.zone.now)
+    sub.viva_turns.create!(role: :assistant, status: :ok, content: 'Q?')
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    failed = make_failed_turn(sub)
+    assert_equal :granted, sub.grant_viva_retake!(by: users(:admin))
+
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_select "form[action=?]", viva_answer_submission_path(sub), 0
+    assert_select "form[action=?]", viva_retry_turn_submission_path(sub, turn_id: failed.id), 0
+    assert_match(/This session was closed without a grade\./, @response.body)
+    assert_no_match(/its score still counts toward the best/, @response.body)
+
+    assert_no_enqueued_jobs do
+      assert_no_difference -> { sub.viva_turns.where(role: :student).count } do
+        post viva_answer_submission_path(sub), params: {content: 'a second answer'}
+      end
+    end
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/This session has been closed/, flash[:alert])
+
+    assert_no_enqueued_jobs do
+      post viva_retry_turn_submission_path(sub, turn_id: failed.id)
+    end
+    assert_redirected_to viva_submission_path(sub)
+    assert_match(/This session has been closed/, flash[:alert])
+    assert_predicate failed.reload, :error?, 'the failed turn must not be reset'
+
+    # The grant frees one start; the new session is the only live one.
+    assert_difference "Submission.count", 1 do
+      post viva_start_problem_path(problem)
+    end
+    fresh = Submission.last
+    assert_redirected_to viva_submission_path(fresh)
+    assert_no_difference -> { sub.viva_turns.where(role: :student).count } do
+      post viva_answer_submission_path(sub), params: {content: 'answer on the closed session'}
+    end
+    assert_match(/This session has been closed/, flash[:alert])
+    assert_equal 'submitted', sub.reload.status
+  end
+
+  test "a closed session with a grade says its score still counts toward the best" do
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    sub = Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                             status: :done, points: 80, submitted_at: Time.zone.now)
+    sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    sub.grant_viva_retake!(by: users(:admin))
+    get viva_submission_path(sub)
+    assert_match(/This session is closed; its score still counts toward the best\./, @response.body)
+    assert_match(/A fresh session can be started from the problem list when a start is left\./, @response.body)
+  end
+
+  test "start with a session still open names the problem list and staff, not an admin archive" do
+    viva_language
+    sign_in_as("john", "hello")
+    problem = problems(:prob_viva)
+    problem.update!(viva_prompt: "# Rubric\nBe fair.")
+    Submission.create!(user: users(:john), problem: problem, language: viva_language,
+                       status: :submitted, submitted_at: Time.zone.now)
+    assert_no_difference "Submission.count" do
+      post viva_start_problem_path(problem)
+    end
+    assert_redirected_to list_main_path
+    assert_match(/Open it from the problem list, or ask staff to allow another attempt\./, flash[:alert])
+  end
+
+  test "an admin cannot retry a turn on a closed session either" do
+    sign_in_as("admin", "admin")
+    @owner_sub.update!(viva_archived_at: Time.zone.now)   # e.g. the student pressed Restart
+    turn = make_failed_turn(@owner_sub)
+    assert_no_enqueued_jobs(only: Llm::VivaTurnAssistJob) do
+      post viva_retry_turn_submission_path(@owner_sub, turn_id: turn.id)
+    end
+    assert_redirected_to viva_submission_path(@owner_sub)
+    assert_match(/This session has been closed/, flash[:alert])
+    assert_predicate turn.reload, :error?
+  end
+
   # --- retake-policy visibility ---
+
+  test "refresh renders the transcript without building the start policy (only show reads it)" do
+    sign_in_as("john", "hello")
+    Viva::StartPolicy.stub(:new, ->(*) { flunk 'the 3 s refresh must not build Viva::StartPolicy' }) do
+      get viva_refresh_submission_path(@owner_sub)
+    end
+    assert_response :success
+    assert_select "#viva-session", 1
+  end
 
   test "show displays the starts-left line for every viva" do
     sign_in_as("john", "hello")

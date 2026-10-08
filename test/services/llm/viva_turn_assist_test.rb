@@ -14,6 +14,8 @@ class ExamPolicyStubVivaTurnAssist < Llm::VivaTurnAssist
 end
 
 class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
+  include ActiveJob::TestHelper
+
   setup do
     @submission = submissions(:add1_by_admin)
     @submission.viva_turns.destroy_all
@@ -201,6 +203,26 @@ class Llm::VivaTurnAssistTest < ActiveSupport::TestCase
     assert result[:done]
     refute @placeholder.reload.alerted
     assert_nil @submission.reload.viva_terminated_at
+  end
+
+  test "a [[VIVA_DONE]] reply sends an open session to grading" do
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    assert_enqueued_with(job: Llm::VivaGradeAssistJob) do
+      svc.send(:handle_response, Struct.new(:body).new(alert_response_body("bye [[VIVA_DONE]]")))
+    end
+    assert_equal 'evaluating', @submission.reload.status
+  end
+
+  test "a [[VIVA_DONE]] reply on a session closed while it was in flight leaves it ungraded" do
+    svc = Llm::VivaTurnAssist.new(submission: @submission, turn: @placeholder)
+    # Staff close the session (Allow another attempt) after the placeholder was
+    # created; update_all leaves the service's in-memory copy stale on purpose.
+    Submission.where(id: @submission.id).update_all(viva_archived_at: Time.zone.now)
+    assert_no_enqueued_jobs(only: Llm::VivaGradeAssistJob) do
+      svc.send(:handle_response, Struct.new(:body).new(alert_response_body("bye [[VIVA_DONE]]")))
+    end
+    assert_equal 'submitted', @submission.reload.status
+    assert_equal 'bye', @placeholder.reload.content, 'the reply itself is still kept in the transcript'
   end
 
   test "handle_response strips every occurrence of a doubled sentinel, not just the first" do

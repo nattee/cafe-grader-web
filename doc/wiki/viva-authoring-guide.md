@@ -363,9 +363,13 @@ none.
   and a session stops counting when staff use **Allow another attempt**.
   **For an exam, use `1`** — one counted session; staff can allow a second
   one by hand after an infrastructure failure. `0` also means one counted
-  session during a contest, and none outside it. A practice value (3, 5)
-  left on an exam viva lets students finish, restart and retake, and the
-  best session counts.
+  session during a contest, and none outside it. The two differ in one
+  button: under `1` the student can press **End interview & get graded**;
+  under `0` it is hidden, so nobody ends early to lock in a score before the
+  harder questions. A practice value (3, 5) left on an exam viva lets
+  students finish, restart and retake, and the best session counts. The
+  count is per day, not per contest: practice sessions earlier the same day
+  count, so keep an exam viva hidden until the exam.
 
 ---
 

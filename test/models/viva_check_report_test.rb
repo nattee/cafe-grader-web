@@ -33,6 +33,14 @@ class VivaCheckReportTest < ActiveSupport::TestCase
 
   def report = VivaCheckReport.new(@contest, now: @now)
 
+  # contest_a's fixture students are james and jack (mary and admin are its
+  # editors); tests that need more student rows enrol john and reba.
+  def enrol_student(user)
+    ContestUser.create!(contest: @contest, user: user, role: 0, enabled: true,
+                        start_offset_second: 0, extra_time_second: 0)
+    user
+  end
+
   def row_for(user, rep = report, check: 0)
     rep.checks[check].rows.find { |r| r.user_id == user.id }
   end
@@ -68,31 +76,31 @@ class VivaCheckReportTest < ActiveSupport::TestCase
     waiting.viva_turns.create!(role: :assistant, status: :processing, content: nil, created_at: @now - 2.minutes)
     failed = session_for(users(:jack))
     failed.viva_turns.create!(role: :assistant, status: :error, content: 'LLM error')
-    session_for(users(:mary), answers: 0, submitted_at: @now - 10.minutes)
+    session_for(enrol_student(users(:john)), answers: 0, submitted_at: @now - 10.minutes)
 
     assert_includes row_for(users(:james)).flags, :waiting_reply
     assert_includes row_for(users(:jack)).flags, :reply_failed
-    assert_equal [:no_answer_yet], row_for(users(:mary)).flags
-    refute row_for(users(:mary)).needs_action?
+    assert_equal [:no_answer_yet], row_for(users(:john)).flags
+    refute row_for(users(:john)).needs_action?
   end
 
   test "after-exam flags: left unfinished, grading failed, grade mismatch, short but high, ended early, rule flag" do
     session_for(users(:james), viva_archived_at: @now - 1.minute)                     # archived mid-interview
     jack = session_for(users(:jack))
     jack.update_columns(status: Submission.statuses[:grader_error])
-    mary = session_for(users(:mary), answers: 2)
-    grade(mary, 90, a: 30, b: 60)                                                    # a above its 20
-    admin = session_for(users(:admin), answers: 5)
-    grade(admin, 70, a: 10, b: 60)
-    admin.viva_turns.create!(role: :system, status: :ok, content: '(student ended the interview — grading begins)')
-    admin.viva_turns.create!(role: :assistant, status: :ok, content: 'Stay on topic.', alerted: true)
+    john = session_for(enrol_student(users(:john)), answers: 2)
+    grade(john, 90, a: 30, b: 60)                                                    # a above its 20
+    reba = session_for(enrol_student(users(:reba)), answers: 5)
+    grade(reba, 70, a: 10, b: 60)
+    reba.viva_turns.create!(role: :system, status: :ok, content: '(student ended the interview — grading begins)')
+    reba.viva_turns.create!(role: :assistant, status: :ok, content: 'Stay on topic.', alerted: true)
 
     assert_equal [:left_unfinished], row_for(users(:james)).flags
     assert_equal [:grading_failed], row_for(users(:jack)).flags
-    mary_row = row_for(users(:mary))
-    assert_equal [:grade_mismatch, :short_high], mary_row.flags
-    assert_match(/above maximum: a 30\/20/, mary_row.details[:grade_mismatch])
-    assert_equal [:ended_early, :rule_flag], row_for(users(:admin)).flags
+    john_row = row_for(users(:john))
+    assert_equal [:grade_mismatch, :short_high], john_row.flags
+    assert_match(/above maximum: a 30\/20/, john_row.details[:grade_mismatch])
+    assert_equal [:ended_early, :rule_flag], row_for(users(:reba)).flags
   end
 
   test "test-drives and sessions outside the contest window are left out" do
@@ -111,11 +119,24 @@ class VivaCheckReportTest < ActiveSupport::TestCase
 
     rep = report
     assert_equal 2, rep.checks.size
-    rep.checks.each do |check|
-      row = check.rows.find { |r| r.user_id == users(:james).id }
-      assert_equal 1, row.sessions.size
-      refute_includes row.flags, :retook
+    first_row, second_row = [@problem, second_viva].map do |problem|
+      rep.checks.find { |c| c.problem == problem }.rows.find { |r| r.user_id == users(:james).id }
     end
+    assert_equal [1, 1], [first_row.sessions.size, second_row.sessions.size]
+    assert_equal [:short_high], first_row.flags     # 1 answer, 74 points; no :retook across problems
+    assert_empty second_row.flags
+  end
+
+  test "staff sessions are not rows and do not count: only the contest's students are checked" do
+    session_for(users(:james))
+    session_for(users(:mary), answers: 2)          # contest_a editor
+    session_for(users(:admin), answers: 2)         # admin enrolled as a contest_a editor
+
+    rep = report
+    assert_equal [users(:james).id], rep.checks.first.rows.map(&:user_id)
+    assert_nil row_for(users(:mary), rep)
+    assert_equal 1, rep.summary[:sessions]
+    assert_equal 1, rep.summary[:students]
   end
 
   test "summary counts, the greeting wait, and an unreadable rubric counting once" do

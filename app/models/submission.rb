@@ -386,7 +386,6 @@ class Submission < ApplicationRecord
     outcome
   end
 
-
   # "Allow another attempt" (design 2026-10-07, A4; staff only — the caller
   # authorizes). Archives the session whatever its status — an open interview
   # after an infrastructure failure, a session still being graded (its grade

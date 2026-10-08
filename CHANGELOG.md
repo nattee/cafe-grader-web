@@ -28,22 +28,29 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   from a Rails console. (rev 2232)
 - **Viva check** page for each contest (contest page → Reports → Viva
   check): one row per student per viva problem with the flags staff should
-  act on — Retook, Waiting for reply, Reply failed, Grading failed, Left
+  act on (students only: staff sessions are left out) — Retook, Waiting for
+  reply, Reply failed, Grading failed, Left
   unfinished, Grade doesn't add up (a rubric item above its maximum or items
   not summing to the total), Rubric unreadable — and the ones worth a look
   (No answer yet, Short but high, Ended early, Rule-break flag). It reloads
   every 30 seconds while the contest runs; an "N to check" badge next to the
   viva grading status on the contest page counts the students who need
   action. Built after proctors saw students take the DS Quiz 2 viva twice.
-  (revs 2242, 2244)
+  (revs 2242, 2244, 2247)
 - **Allow another attempt** (staff who can edit the problem, in contest
   mode too): archives a viva session at any status — including an open
   interview after an infrastructure failure — and stops it counting toward
-  the start limit, so the student can start one more. On the session page's
-  Admin card, replacing "Archive & allow retake", and on each student row of
-  Viva check. Each grant is an audit row on the problem. Run
-  `bin/rails db:migrate` (two nullable columns on `submissions`, added
-  without a table copy). (revs 2238, 2240, 2244)
+  the start limit, so the student can start one more. The closed session
+  takes no more answers or retries and is never graded, even when an
+  examiner reply already on its way would have ended the interview. The
+  confirmation says what the student can do now: start again (with the
+  starts left), or not yet, because another answered session of theirs
+  today still counts. On the session page's Admin card, replacing "Archive
+  & allow retake", and on each student row of Viva check. Each grant is an
+  audit row on the problem. Run `bin/rails db:migrate` (two nullable
+  columns on `submissions`, added without a table copy). Run the migration
+  outside exam hours: the ALTER briefly waits for a lock on `submissions`.
+  (revs 2238, 2240, 2244, 2247)
 
 ### Changed
 - **Viva start limit 0 means one attempt in a contest.** "Contest-only"
@@ -56,8 +63,9 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 - **Viva Restart is offered only when the student could start again.**
   Under limit 1, Restart in the middle of an interview used to archive the
   session ungraded and leave the student unable to start a new one. The
-  session page's archived note now says the session's score still counts
-  toward the best. (rev 2239)
+  session page's archived note now says whether the session's score still
+  counts toward the best or it was closed without a grade. (revs 2239,
+  2247)
 - **Submissions and User Activity reports:** Login (the link) and Name are
   separate columns, as on the problem stat page and the Best Score report,
   instead of "(login) name". With a contest picked, the login opens the

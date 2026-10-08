@@ -194,13 +194,17 @@ class SubmissionsController < ApplicationController
   # start exactly one more (Submission#grant_viva_retake!). One audit row on
   # the problem per grant; a second click changes nothing and says so.
   def allow_viva_retake
-    outcome = @submission.grant_viva_retake!(by: @current_user)
-    message = allow_viva_retake_message(outcome)
-    if outcome == :granted
-      AuditLog.record!(auditable: @submission.problem, action: 'viva_retake_grant',
-                       object_changes: {'submission_id' => [nil, @submission.id],
-                                        'user'          => [nil, @submission.user.login]})
+    # Grant and audit row commit together, or not at all.
+    outcome = Submission.transaction do
+      @submission.grant_viva_retake!(by: @current_user).tap do |result|
+        if result == :granted
+          AuditLog.record!(auditable: @submission.problem, action: 'viva_retake_grant',
+                           object_changes: {'submission_id' => [nil, @submission.id],
+                                            'user'          => [nil, @submission.user.login]})
+        end
+      end
     end
+    message = allow_viva_retake_message(outcome)
     # From the contest's Viva check page (contest_id given): toast, and
     # re-render the report so the row updates at once — only for a contest
     # the staff member may manage. From the session page: back to it.
@@ -256,16 +260,34 @@ class SubmissionsController < ApplicationController
 
 protected
   def allow_viva_retake_message(outcome)
-    login = @submission.user.login
     case outcome
     when :granted
-      "#{login} may start another attempt at '#{@submission.problem.name}'. Session ##{@submission.id} is archived and no longer counts toward the start limit."
+      "Session ##{@submission.id} is closed and no longer counts toward the start limit#{retake_start_tail}"
     when :already
-      "Session ##{@submission.id} already has a grant — #{login} may already start another attempt."
+      "Session ##{@submission.id} already has a grant. It is closed and no longer counts toward the start limit#{retake_start_tail}"
     when :test_drive
       'A test-drive is outside the start limit; there is nothing to allow.'
     else
       'Not a viva session.'
+    end
+  end
+
+  # What the student can do now, read from Viva::StartPolicy after the grant:
+  # the grant frees this session, but another answered session of theirs
+  # today may still count, and a contest-only viva cannot start outside
+  # contest mode.
+  def retake_start_tail
+    policy = Viva::StartPolicy.new(@submission.problem, @submission.user)
+    login  = @submission.user.login
+    if policy.refusal.nil?
+      left = policy.starts_left
+      ". #{login} may start another attempt at '#{@submission.problem.name}'" \
+        "#{" (#{helpers.pluralize(left, 'start')} left today)" if left.is_a?(Integer)}."
+    elsif policy.contest_only? && !GraderConfiguration.contest_mode?
+      ', but this viva can be started only during a contest.'
+    else
+      ", but #{login} still has no start left today: another answered session of theirs today still counts. " \
+        'Use Allow another attempt on that session too if they should start again.'
     end
   end
 

@@ -3,7 +3,8 @@
 # for every student with a session on one of the contest's viva problems,
 # the flags staff should act on during the exam ("needs action") or look at
 # afterwards ("worth a look"). Sessions are Contest#submissions on the viva
-# problems — regular only (no test-drives, no near-miss shadows), each
+# problems by the contest's students (Contest#students; staff sessions are
+# left out) — regular only (no test-drives, no near-miss shadows), each
 # student's own window — archived ones included. A PORO like AiUsageReport.
 class VivaCheckReport
   WAITING_REPLY_AFTER = 60.seconds
@@ -99,7 +100,10 @@ class VivaCheckReport
     @subs ||= if viva_problems.empty?
                 []
               else
+                # Students only: a contest editor's (or an enrolled admin's)
+                # own sessions are never rows and never count in the tiles.
                 @contest.submissions.where(problem_id: viva_problems.map(&:id))
+                        .where(user_id: @contest.students.select(:id))
                         .reorder('submissions.id')
                         .select('submissions.id, submissions.user_id, submissions.problem_id, submissions.status',
                                 'submissions.points, submissions.submitted_at, submissions.updated_at',

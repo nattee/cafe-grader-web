@@ -78,17 +78,27 @@ a clear briefing is often all a viva needs.
 
 ## Daily start limit
 
-Every viva has a "how many times per day can a student start this" setting.
+Every viva has a "how many sessions per day can a student take" setting.
+Only sessions the student has actually answered count: a session they open
+and never answer is free.
 
 - Leave it **blank** to use the site default (a small number, typically 3
   per day).
-- Set a specific **number** to allow that many fresh starts per day.
-- Set it to **0** to make the viva contest-only — students can only start it
-  during an active contest window, never as free practice.
+- Set a specific **number** to allow that many sessions per day. **For an
+  exam, use 1**: one session, and staff can allow a second one by hand if
+  something goes wrong.
+- Set it to **0** to make the viva contest-only: students can start it only
+  while the site is in contest mode and the contest is running, and then
+  only one session, the same as 1. The difference from 1: under 0 the
+  student has no "End interview & get graded" button, so they cannot end
+  early to lock in a score before the harder questions.
 
-Restarting a viva always uses up part of that day's budget, even for a
-session the student later throws away. This stops a student from grinding
-through unlimited attempts by discarding every one that goes badly.
+A session the student restarts or throws away still counts for that day,
+once they have answered in it. This stops a student from grinding through
+unlimited attempts by discarding every one that goes badly. The count is
+per day, not per contest: practice sessions earlier the same day count
+against the limit, so keep an exam viva hidden from students until the
+exam starts.
 
 ## Turn caps: soft and hard
 
@@ -111,10 +121,13 @@ until the examiner decides it has enough to grade (or the hard cap is
 reached). At that point the interview ends and grading begins
 automatically, usually within a minute or two.
 
-Students can restart their own viva between sessions at any time.
-Restarting archives the old attempt — it is never deleted, and you can
-still open and read it — and immediately frees up a new attempt, subject to
-the daily limit above.
+Students can restart their own viva, but only when they could start a new
+session afterwards: the session has no answer yet, or they still have a
+session left today under the limit above. Otherwise the Restart button is
+not shown, so a student on an exam limit of 1 cannot throw away their only
+session halfway through. Restarting closes the old attempt — it is never
+deleted, and you can still open and read it. A closed attempt takes no more
+answers and is not graded.
 
 Every transcript is kept permanently, whether it's the student's current
 attempt or an old, archived one.
@@ -150,10 +163,16 @@ things to know:
   (`viva:regrade`, optionally for one contest); it applies the same
   keep-the-higher rule to every session and can be reverted.
 
-If you want to give a student a clean second attempt, use "Archive and
-allow retake." The old attempt is kept for your records but no longer
-counts as the current one, and the student's Start Viva button reappears
-(still subject to their daily limit).
+If you want to give a student a clean second attempt — for example after
+a technical failure in the middle of an interview — use **Allow another
+attempt** on the session's Admin card (or on the student's row of the
+contest's **Viva check** page). It works on a session in any state, also
+during a contest: the session is closed (an unfinished interview is not
+graded, and takes no more answers), it stops counting toward the start
+limit, and the student can start one more. The message after the click says
+whether the student can actually start now: if another answered session of
+theirs from today still counts, allow another attempt on that one too. The
+old attempt is kept for your records, and every grant is logged.
 
 ## Scores: your best attempt always counts
 
@@ -171,8 +190,10 @@ reachable at all). Two things are planned for a future update and are not
 available yet: giving each contest its own separate retake budget, and
 automatically cutting off answers the instant a contest window ends. Until
 then, treat a contest-mode viva like any other contest problem, and use the
-daily-start-limit setting if you need to restrict attempts during a
-contest.
+daily start limit (1, or 0) to allow one session per student during the
+contest. The contest's **Viva check** page (contest page → Reports) lists
+every student's sessions while the exam runs and flags anyone who took the
+viva twice, a reply that failed, or a grade that does not add up.
 
 ## Operational notes
 

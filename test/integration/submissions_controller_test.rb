@@ -143,6 +143,52 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/already/i, flash[:alert])
   end
 
+  # The grant message says what the student can do now (Viva::StartPolicy read
+  # after the grant), not just that the session was freed.
+  def answered_viva_submission(user:, status: :done)
+    make_viva_submission(user: user, status: status).tap do |sub|
+      sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    end
+  end
+
+  test "allow_viva_retake on the student's only counted session says they may start again, with the starts left" do
+    problems(:prob_viva).update!(viva_daily_limit: 1)
+    sub = answered_viva_submission(user: users(:john))
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(sub)
+    assert_equal "Session ##{sub.id} is closed and no longer counts toward the start limit. " \
+                 "john may start another attempt at '#{problems(:prob_viva).name}' (1 start left today).",
+                 flash[:notice]
+  end
+
+  test "allow_viva_retake when another answered session today still counts says no start is left" do
+    problems(:prob_viva).update!(viva_daily_limit: 1)
+    answered_viva_submission(user: users(:john))
+    latest = answered_viva_submission(user: users(:john))
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), as: :turbo_stream
+    assert_response :success
+    assert latest.reload.viva_retake_granted_at.present?
+    toast = "Session ##{latest.id} is closed and no longer counts toward the start limit, but john still has no " \
+            'start left today: another answered session of theirs today still counts. ' \
+            'Use Allow another attempt on that session too if they should start again.'
+    assert_includes response.body, toast
+
+    # A second click says the same, after "already has a grant".
+    post allow_viva_retake_submission_path(latest)
+    assert_match(/\ASession ##{latest.id} already has a grant\. It is closed .*but john still has no start left today/,
+                 flash[:alert])
+  end
+
+  test "allow_viva_retake on a contest-only viva outside contest mode says it can start only during a contest" do
+    problems(:prob_viva).update!(viva_daily_limit: 0)
+    sub = answered_viva_submission(user: users(:john))
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(sub)
+    assert_equal "Session ##{sub.id} is closed and no longer counts toward the start limit, " \
+                 'but this viva can be started only during a contest.', flash[:notice]
+  end
+
   test "a student cannot allow another attempt" do
     sign_in_as("john", "hello")
     sub = make_viva_submission(user: users(:john), status: :done)
