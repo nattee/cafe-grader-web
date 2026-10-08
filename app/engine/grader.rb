@@ -298,15 +298,29 @@ class Grader
   # serving its box (oldest first). Returns [[action, pid], ...]:
   #   [:spawn]       enabled, nothing running
   #   [:term, pid]   enabled: a duplicate (every process but the oldest);
-  #                  disabled: graceful stop. TERM, never KILL, for a live
-  #                  grader — main_loop finishes its current job first, where
+  #                  disabled: graceful stop. TERM, not KILL, for a grader
+  #                  that still beats — main_loop finishes its current job first, where
   #                  a KILL orphans it. Job.reclaim_orphaned! now returns such
   #                  a job to the queue on the next tick, so this is a matter
   #                  of not wasting the work rather than of losing it.
-  #   [:kill, pid]   disabled and the heartbeat is stale (> 300 s)
+  #   [:kill, pid]   disabled and the heartbeat is stale (> 300 s); or
+  #                  enabled and stuck: no heartbeat for STUCK_AFTER, from a
+  #                  process at least that old. main_loop only beats between
+  #                  jobs, so this is a grader held inside one job far longer
+  #                  than any job takes (checker and initializer are bounded
+  #                  by JudgeBase#run_bounded; this catches a hang nothing
+  #                  else bounds). The next tick finds the box empty,
+  #                  reclaims the job and spawns a fresh grader. The
+  #                  process-age check spares a grader just spawned on a box
+  #                  whose last heartbeat is from its predecessor.
+  STUCK_AFTER = 600.seconds
+
   def self.plan_box(gp, procs)
     if gp.enabled
       return [[:spawn]] if procs.empty?
+      stuck = gp.last_heartbeat.present? && gp.last_heartbeat < STUCK_AFTER.ago
+      stuck_procs = stuck ? procs.select { |p| p[:elapsed] > STUCK_AFTER.to_i } : []
+      return stuck_procs.map { |p| [:kill, p[:pid]] } if stuck_procs.any?
       procs.drop(1).map { |p| [:term, p[:pid]] }
     else
       stalled = gp.last_heartbeat.present? && gp.last_heartbeat < 300.seconds.ago

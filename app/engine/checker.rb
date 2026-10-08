@@ -168,9 +168,15 @@ class Checker
 
     # call the compare command (argv, no shell — see check_command)
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check cmd: " + Rainbow(cmd.shelljoin).color(JudgeBase::COLOR_CHECK_CMD)
-    out, err, status = cmd.empty? ? ['', '', nil] : Open3.capture3(*cmd)
+    timeout = worker_limit(:checker_timeout, CHECKER_TIMEOUT)
+    out, err, status, timed_out = cmd.empty? ? ['', '', nil, false] : run_bounded(cmd, timeout: timeout)
 
-    result = process_result(@ds.evaluation_type, out, err, status)
+    result = if timed_out
+      # this testcase only (`!`); the submission's other testcases still run
+      EngineResponse::CheckerResult.grader_error(comment: "(cafe-checker) checker timed out after #{timeout} s")
+    else
+      process_result(@ds.evaluation_type, out, err, status)
+    end
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} check result: "+result_status_with_color(result)
     return result
   end

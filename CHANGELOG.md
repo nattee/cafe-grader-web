@@ -86,6 +86,20 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 - **Problem stat page of a viva problem** says that staff test-drives are not
   counted on the page, and how many there are. (rev 2235)
 
+### Fixed
+- **A custom checker or dataset initializer that never finished held its
+  grader box forever.** Both ran on the judge host with no time bound, so
+  one checker stuck in a loop stopped that box from taking any other job.
+  A checker is now stopped after 30 seconds (that testcase shows `!` with
+  "checker timed out after 30 s"; the other testcases still run), and an
+  initializer after 120 seconds (the submission gets a grading error and
+  the next job on that worker initializes the dataset again); whatever they
+  started is stopped with them. A host can change the two bounds in
+  `config/worker.yml` under `limits:` (see `worker.yml.SAMPLE`). As a last
+  resort the every-minute watchdog now kills a grader that has not reported
+  for 10 minutes while its box is enabled; the job goes back to the queue
+  and a fresh grader starts. (rev 2251)
+
 ## [4.7.1] — 2026-10-03
 
 **Upgrade notes.** A gem update only: no migration, no new setting, no

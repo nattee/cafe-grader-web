@@ -74,4 +74,29 @@ class EvaluatorCheckerFlowTest < ActiveSupport::TestCase
 
     assert_equal 'wrong', evaluation.result
   end
+
+  # A custom checker that never returns used to hold the grader box, and the
+  # job, forever (Open3.capture3 has no bound). Now that testcase alone is a
+  # grader error and the evaluate job completes.
+  test 'a checker that hangs is cut off at the bound and marks only this testcase' do
+    @worker_conf[:limits] = {checker_timeout: 1}
+    dataset = @tc.dataset
+    dataset.update!(evaluation_type: :custom_testlib)
+    dataset.checker.attach(io: StringIO.new(''), filename: 'checker')
+    ev = evaluator_with_fake_sandbox(program_stdout: @tc.sol)
+    ev.define_singleton_method(:prepare_executable) do
+      @mybin_path = @bin_path + @box_id.to_s
+      @mybin_path.mkpath
+      File.write(@prob_checker_file, "#!/bin/sh\nsleep 30\n")
+      File.chmod(0o755, @prob_checker_file)
+    end
+
+    result = ev.execute(@sub, @tc)
+
+    assert_equal :success, result.status, 'the evaluate job itself completes'
+    assert_equal 'grader_error', evaluation.result
+    assert_equal '(cafe-checker) checker timed out after 1 s', evaluation.result_text
+  ensure
+    @worker_conf.delete(:limits)
+  end
 end
