@@ -75,6 +75,29 @@ class EvaluatorCheckerFlowTest < ActiveSupport::TestCase
     assert_equal 'wrong', evaluation.result
   end
 
+  # A rejudge while this testcase ran: the new chain owns the row now, so the
+  # old chain's result is dropped and its job reports the supersede.
+  test 'an evaluate job of a superseded chain writes no evaluation' do
+    old_chain = Job.create!(job_type: :compile, arg: @sub.id, status: :success)
+    Evaluation.where(submission: @sub).delete_all
+    @sub.add_judge_job(@tc.dataset)
+
+    result = evaluator_with_fake_sandbox(program_stdout: @tc.sol).execute(@sub, @tc, chain_id: old_chain.id)
+
+    assert_equal :error, result.status
+    assert_equal 'superseded by rejudge', result.result_description
+    assert_nil Evaluation.find_by(submission: @sub, testcase: @tc)
+  end
+
+  test 'an evaluate job of the current chain writes its evaluation' do
+    chain = Job.create!(job_type: :compile, arg: @sub.id, status: :success)
+    result = evaluator_with_fake_sandbox(program_stdout: @tc.sol).execute(@sub, @tc, chain_id: chain.id)
+
+    assert_equal :success, result.status
+    assert_equal 'correct', evaluation.result
+    assert_equal 1, Evaluation.where(submission: @sub, testcase: @tc).count
+  end
+
   # A custom checker that never returns used to hold the grader box, and the
   # job, forever (Open3.capture3 has no bound). Now that testcase alone is a
   # grader error and the evaluate job completes.

@@ -57,7 +57,9 @@ class Compiler
 
   # main compile function
   # return EngineResponse::Result
-  def compile(submission, dataset)
+  # chain_id: the compile job's chain, checked before the binary and status
+  # are written (see JudgeBase#superseded?)
+  def compile(submission, dataset, chain_id: nil)
     @sub = submission
     @working_dataset = dataset
     # validate the pre-condition
@@ -118,6 +120,8 @@ class Compiler
 
     # call language-specific checking of compilation
     compile_result = check_compile_result(out, err, status, meta)
+
+    return superseded_result if superseded?(chain_id)
 
     if compile_result.status == :success
       # run any post compilation

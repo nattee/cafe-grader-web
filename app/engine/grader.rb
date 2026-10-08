@@ -43,14 +43,15 @@ class Grader
     dataset = Dataset.find(param[:dataset_id])
 
     compiler = Compiler.get_compiler(sub).new(@worker_id, @box_id)
-    result = compiler.compile(sub, dataset)
+    result = compiler.compile(sub, dataset, chain_id: @job.chain_id)
 
     # report compile
     judge_log "#{@job.to_text} completed with result #{result.to_h}"
     @job.report(result)
 
-    # add next jobs only when compilation succeeded
-    if sub.compilation_success?
+    # add next jobs only when compilation succeeded (a superseded compile
+    # reports an error and leaves the submission alone)
+    if result.status == :success && sub.compilation_success?
       if dataset.testcases.count > 0
         Job.add_evaluation_jobs(sub, dataset, @job.id, @job.priority)
       else
@@ -66,7 +67,7 @@ class Grader
     testcase = Testcase.find(param[:testcase_id])
 
     evaluator = Evaluator.get_evaluator(sub).new(@worker_id, @box_id)
-    result = evaluator.execute(sub, testcase)
+    result = evaluator.execute(sub, testcase, chain_id: @job.chain_id)
 
     @job.report(result)
 
@@ -83,7 +84,7 @@ class Grader
     dataset = Dataset.find(param[:dataset_id])
 
     scorer = Scorer.get_scorer(sub).new(@worker_id, @box_id)
-    result = scorer.process(sub, dataset)
+    result = scorer.process(sub, dataset, chain_id: @job.chain_id)
 
     @job.report(result)
   end
@@ -99,7 +100,13 @@ class Grader
       begin
         judge_log "Processing #{@job.to_text}"
         @grader_process.update(task_id: @job.id, status: :working)
-        if @job.jt_compile?
+        # Job.supersede! errors a rejudged submission's waiting jobs, but an
+        # older chain can still queue more after it (a compile that finished
+        # just after the rejudge); those stop here.
+        if !Job.chain_current?(@job.arg, @job.chain_id)
+          judge_log "#{@job.to_text} superseded by a newer grading; skipped"
+          @job.superseded!
+        elsif @job.jt_compile?
           process_job_compile
         elsif @job.jt_evaluate?
           process_job_evaluate
@@ -114,7 +121,8 @@ class Grader
         # the main comment to the error message (so that the user can see it)
         judge_log Rainbow('(GraderError)').bg(COLOR_ERROR).color(:yellow) + " " + ge.message, Logger::ERROR
         @job.update(status: :error, result: ge.message) if ge.end_job
-        if ge.update_submission
+        # a superseded chain's failure is not the new grading's
+        if ge.update_submission && Job.chain_current?(@job.arg, @job.chain_id)
           s = Submission.find(ge.submission_id)
           s.set_grading_error(ge.message_for_user)
         end
@@ -128,7 +136,7 @@ class Grader
         else
           @job.update(status: :error, result: "gave up after #{retry_count} retries: #{e.class}: #{e.message}")
           s = Submission.find_by(id: @job.arg)
-          s&.set_grading_error("Internal grading error after #{retry_count} retries, please rejudge.")
+          s&.set_grading_error("Internal grading error after #{retry_count} retries, please rejudge.") if Job.chain_current?(@job.arg, @job.chain_id)
         end
       end
       result = true

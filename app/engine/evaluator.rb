@@ -16,10 +16,13 @@ class Evaluator
 
   # main run function
   # run the submission against the testcase
-  def execute(sub, testcase)
+  # chain_id: the evaluate job's chain, checked before the evaluation row is
+  # written (see JudgeBase#superseded?)
+  def execute(sub, testcase, chain_id: nil)
     @sub = sub
     @testcase = testcase
     @working_dataset = @testcase.dataset
+    @chain_id = chain_id
 
     # init isolate
     need_cg = isolate_need_cg_by_lang(@sub.language.name)
@@ -92,23 +95,22 @@ class Evaluator
   # this should be called after execute, it will runs the comparator
   def evaluate(out, meta, err)
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} checking execution result..."
-    e = Evaluation.find_or_create_by(submission: @sub, testcase: @testcase)
 
     # any error?
     unless meta['status'].blank?
       judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} forced exit by isolate (#{Rainbow(meta['status']).color(COLOR_EVALUATION_FORCE_EXIT)}) #{Rainbow(err).color(COLOR_EVALUATION_FORCE_EXIT)} "
       time = meta['time'] || meta['time-wall'] || 0
       if meta['status'] == 'SG'
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash)
+        attrs = {time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash}
       elsif meta['status'] == 'TO'
-        e.update(time: meta['time-wall'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit)
+        attrs = {time: meta['time-wall'] * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :time_limit}
       elsif meta['status'] == 'RE'
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash)
+        attrs = {time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :crash}
       elsif meta['status'] == 'XX'
-        e.update(isolate_message: meta['message'], result: :grader_error)
+        attrs = {isolate_message: meta['message'], result: :grader_error}
       else
         # other status
-        e.update(time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error)
+        attrs = {time: time * 1000, memory: meta['max-rss'], isolate_message: meta['message'], result: :unknown_error}
       end
     else
       judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} ends normally"
@@ -117,10 +119,20 @@ class Evaluator
       check_result = checker.process(@sub, @testcase)
 
       normalized_score = normalize_score_for_storage(check_result[:score])
-      e.update(time: meta['time'] * 1000, memory: meta['max-rss'],
-                result: check_result[:result], score: normalized_score,
-                result_text: (check_result[:comment] || '').truncate(250))
+      attrs = {time: meta['time'] * 1000, memory: meta['max-rss'],
+               result: check_result[:result], score: normalized_score,
+               result_text: (check_result[:comment] || '').truncate(250)}
     end
+
+    # Checked as late as possible: the run and the checker above can take
+    # many seconds, and a rejudge in that time owns this row now.
+    return superseded_result if superseded?(@chain_id)
+
+    # One row per (submission, testcase), held by a unique index: find first,
+    # and if two writers race to create it, the loser finds the winner's row.
+    e = Evaluation.find_by(submission: @sub, testcase: @testcase) ||
+        Evaluation.create_or_find_by!(submission: @sub, testcase: @testcase)
+    e.update(attrs)
 
     # save final result
     judge_log "#{rb_sub(@sub)} Testcase: #{rb_testcase(@testcase)} Evaluation #{Rainbow('done').color(COLOR_EVALUATION_DONE)}"

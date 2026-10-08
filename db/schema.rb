@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_08_090000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_08_120100) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -182,7 +182,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_08_090000) do
     t.string "result_text"
     t.string "isolate_message"
     t.text "output"
-    t.index ["submission_id"], name: "index_evaluations_on_submission_id"
+    t.index ["submission_id", "testcase_id"], name: "index_evaluations_on_submission_id_and_testcase_id", unique: true
     t.index ["testcase_id"], name: "index_evaluations_on_testcase_id"
   end
 
@@ -278,6 +278,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_08_090000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "priority", default: 0
+    t.index ["arg"], name: "index_jobs_on_arg"
     t.index ["parent_job_id"], name: "index_jobs_on_parent_job_id"
     t.index ["status", "priority", "id"], name: "index_jobs_on_status_priority_id", order: { priority: :desc }
   end

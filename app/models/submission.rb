@@ -202,6 +202,7 @@ class Submission < ApplicationRecord
   def shadow? = repaired_from_id.present?
 
   def add_judge_job(dataset = problem.live_dataset, priority = 0)
+    Job.supersede!(self)
     evaluations.delete_all
     self.update(status: 'submitted', points: nil, grader_comment: nil, graded_at: nil)
     Job.add_grade_submission_job(self, dataset, priority)

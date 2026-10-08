@@ -112,6 +112,44 @@ class JobTest < ActiveSupport::TestCase
     assert_equal [[], [failed]], Job.split_retryable([failed])
   end
 
+  # --- Rejudge: supersede and chain check ---
+
+  test "a rejudge errors the submission's waiting and processing jobs and starts a new chain" do
+    sub = submissions(:add1_by_admin)
+    compile = Job.create!(job_type: :compile, arg: sub.id, status: :success)
+    waiting = Job.create!(job_type: :evaluate, arg: sub.id, parent_job_id: compile.id, status: :wait)
+    running = Job.create!(job_type: :evaluate, arg: sub.id, parent_job_id: compile.id, status: :process)
+    other = Job.create!(job_type: :compile, arg: submissions(:add1_by_john).id, status: :wait)
+
+    sub.add_judge_job(datasets(:ds_add))
+
+    [waiting, running].each do |job|
+      assert_equal 'error', job.reload.status
+      assert_equal 'superseded by rejudge', job.result
+    end
+    assert_equal 'success', compile.reload.status, 'finished rows are history, left alone'
+    assert_equal 'wait', other.reload.status, 'another submission is untouched'
+    new_compile = Job.where(arg: sub.id, job_type: :compile).order(:id).last
+    assert_equal 'wait', new_compile.status
+    assert_not Job.chain_current?(sub.id, compile.id)
+    assert Job.chain_current?(sub.id, new_compile.id)
+  end
+
+  test "chain_current? sees a newer chain through its evaluate rows after its compile row is cleaned" do
+    sub = submissions(:add1_by_admin)
+    old_compile = Job.create!(job_type: :compile, arg: sub.id, status: :success)
+    new_compile = Job.create!(job_type: :compile, arg: sub.id, status: :success)
+    Job.create!(job_type: :evaluate, arg: sub.id, parent_job_id: new_compile.id, status: :error)
+    new_compile.delete
+
+    assert_not Job.chain_current?(sub.id, old_compile.id)
+    assert Job.chain_current?(sub.id, nil), 'a row with no chain runs as before'
+  end
+
+  test "jobs carries the arg index that supersede! and chain_current? look up by" do
+    assert ActiveRecord::Base.connection.index_exists?(:jobs, :arg, name: "index_jobs_on_arg")
+  end
+
   # The judge polls and claims on `status` many times a second; without this
   # index every poll is a full scan and every claim locks the whole table
   # (see the 2026-09-08 migration). Guard against it being dropped.

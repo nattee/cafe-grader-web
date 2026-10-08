@@ -106,6 +106,20 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   a failed job only when its submission still exists, has not been graded
   since, and has not been rejudged since; the message says how many were
   skipped. Clear All is unchanged. (rev 2252)
+- **A rejudge while a submission was still being graded could leave a wrong
+  score or "Evaluations are missing, please rejudge."** The rejudge started
+  a second grading but the first kept running, and both wrote the same
+  per-testcase results; after a rejudge onto another dataset, the first
+  grading's late scoring step failed the new one. Now a rejudge stops the
+  first grading: its queued jobs fail with "superseded by rejudge" (they
+  show among the Graders page's failed jobs, and Retry skips them), and a
+  job already running checks before each write and drops its result. The
+  database now holds at most one result per submission and testcase. Run
+  `bin/rails db:migrate` (two migrations): it deletes per-testcase results
+  whose submission no longer exists (4,279 rows on cp-grader, none of them
+  visible anywhere), keeps the newest of any duplicate, and adds a unique
+  index — about 30 seconds on cp-grader's 7.6 million rows. Grading goes on
+  during it, but run it outside exam hours. (rev 2253)
 
 ## [4.7.1] — 2026-10-03
 

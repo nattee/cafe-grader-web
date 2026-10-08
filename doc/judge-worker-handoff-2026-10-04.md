@@ -44,6 +44,35 @@ carries "Evaluations are missing" today.
 
 ## 3. Pre-phase-0 hardening: three fixes
 
+**Status 2026-10-08: all three shipped on master** — fix 3 rev 2251, fix 2
+rev 2252, fix 1 rev 2253, released as 4.7.2. Where the code differs from the
+design below (fold into spec revision 2):
+- *Chain check* counts every row of the submission, not only compile rows:
+  chain id = the compile job's id, or `parent_job_id` for evaluate and score
+  jobs, and a chain is current when no row has a higher one. A successful
+  compile row is deleted after a day (`Job.clean_old_job`) while the chain's
+  error rows stay 30 days, so "no newer compile job" alone lets a superseded
+  error row look current again.
+- *Retry guard* also skips a job whose submission is `done` or
+  `compilation_error`: a newer chain finished, and its rows may all be gone.
+  (The 2026-10-07 prod copy keeps 249k successful job rows back to
+  2026-09-16 — the nightly `grader_cleanup_web` seems not to have run since;
+  unverified on the host.)
+- *More check points:* before the compile writes the binary and status,
+  and before the grader's error paths call `set_grading_error`.
+- *Evaluation write* is `find_by || create_or_find_by!`, so a judge host
+  deployed before the web host has migrated never creates duplicates.
+- The initializer timeout relies on the `WorkerDataset` transaction rollback
+  (status back to `created`) rather than deleting the row; timeouts default
+  in code (`JudgeBase::CHECKER_TIMEOUT`, `INITIALIZER_TIMEOUT`), and
+  `worker.yml.SAMPLE` shows the `limits:` block commented out.
+- *Watchdog* kills a stuck box only when the process is also older than
+  600 s, so a grader just spawned on a box with an old heartbeat survives.
+- *Migration timing* (local prod copy, 7.56 M rows): 30 s end to end —
+  orphan scan 3 s, duplicate scan 15 s, index build 11 s online (48
+  concurrent inserts during it, slowest 25 ms). No duplicate pair on a live
+  submission; the 4,279 orphans all had `submission_id` NULL.
+
 Existing bugs (all pre-date the pool work; authorship in the thread: the
 delete-without-cancel is from 2023, Retry All from 2026-04, the timeouts
 missing since 2023, the watchdog gap carried through the 2026-08 rewrite).

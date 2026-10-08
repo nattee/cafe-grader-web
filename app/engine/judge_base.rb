@@ -381,6 +381,20 @@ module JudgeBase
     Rails.configuration.worker.dig(:limits, key) || default
   end
 
+  # True when a rejudge has started a newer job chain for @sub since this
+  # job's chain began (Job.chain_current?); the caller then returns
+  # superseded_result before writing anything. chain_id nil skips the check:
+  # engine:smoke, replay and tests drive the engine without jobs.
+  def superseded?(chain_id)
+    return false if chain_id.nil? || Job.chain_current?(@sub.id, chain_id)
+    judge_log "#{rb_sub(@sub)} superseded by a newer grading (chain #{chain_id}); nothing written"
+    true
+  end
+
+  def superseded_result
+    EngineResponse::Result.failure(error: Job::SUPERSEDED_RESULT)
+  end
+
   # set up directory and path/filename of the testcase directory
   def prepare_testcase_directory(sub, testcase)
     # preparing pathname for problem directory

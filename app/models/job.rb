@@ -121,6 +121,32 @@ class Job < ApplicationRecord
     where(arg: submission_ids).group(:arg).maximum(Arel.sql(CHAIN_ID_SQL))
   end
 
+  # False once a rejudge has started a newer chain for the submission. The
+  # grader asks after it claims a job and again before each write the job
+  # makes (compiled binary and status, evaluation row, score, grading
+  # error), so a chain overtaken mid-run stops instead of writing over the
+  # new one. A row with no chain id (none are created today) counts as
+  # current, as every row did before chains were checked.
+  def self.chain_current?(submission_id, chain_id)
+    return true if chain_id.nil?
+    newest = newest_chain_ids([submission_id])[submission_id]
+    newest.nil? || chain_id >= newest
+  end
+
+  SUPERSEDED_RESULT = 'superseded by rejudge'.freeze
+
+  # Called first by Submission#add_judge_job: the submission's waiting and
+  # processing jobs become errors, so a waiting one is never claimed and a
+  # processing one stops at its next chain check. Returns the row count.
+  def self.supersede!(submission)
+    where(arg: submission.id, status: [:wait, :process])
+      .update_all(status: :error, result: SUPERSEDED_RESULT, updated_at: Time.zone.now)
+  end
+
+  def superseded!
+    update(status: :error, result: SUPERSEDED_RESULT)
+  end
+
   # A submission in one of these has finished its newest grading, so an error
   # row it still has is history — also once the newer chain's own rows have
   # been cleaned away and the row looks current again.
