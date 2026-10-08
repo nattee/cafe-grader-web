@@ -89,6 +89,37 @@ class GraderConfigurationTest < ActiveSupport::TestCase
     assert_not GraderConfiguration.whitelisted_ip?("127.0.0.1")
   end
 
+  # --- Login throttle exempt list ---
+
+  test "login_throttle_exempt_ips_warnings is empty for a blank or well-formed list" do
+    [nil, "", "  ", "10.0.5.40", "10.0.5.40, 10.0.5.41 192.0.2.0/24", "2001:db8::/32"].each do |value|
+      assert_equal [], GraderConfiguration.login_throttle_exempt_ips_warnings(value), value.inspect
+    end
+  end
+
+  test "login_throttle_exempt_ips_warnings names each entry the login check ignores" do
+    warnings = GraderConfiguration.login_throttle_exempt_ips_warnings("10.0.5.40;10.0.5.41, 10.0.5.42, 10.0.5.999")
+    assert_equal 2, warnings.size
+    assert_match(/'10.0.5.40;10.0.5.41' is not an address or range/, warnings[0])
+    assert_match(/'10.0.5.999' is not an address or range/, warnings[1])
+  end
+
+  test "login_throttle_exempt_ips_warnings flags a range that covers every address" do
+    warnings = GraderConfiguration.login_throttle_exempt_ips_warnings("0.0.0.0/0, ::/0, 10.0.5.40/0, 10.0.0.0/8")
+    assert_equal ["'0.0.0.0/0'", "'::/0'", "'10.0.5.40/0'"], warnings.map { |w| w[/'[^']*'/] }
+    assert(warnings.all? { |w| w.include?("covers every address") })
+  end
+
+  test "value_warnings checks only the exempt list setting" do
+    conf = GraderConfiguration.find_by(key: GraderConfiguration::LOGIN_THROTTLE_EXEMPT_IPS_KEY)
+    conf.value = "not-an-ip"
+    assert_equal 1, conf.value_warnings.size
+
+    other = GraderConfiguration.find_by(key: "right.whitelist_ip")
+    other.value = "not-an-ip"
+    assert_equal [], other.value_warnings
+  end
+
   # --- set_exam_mode ---
 
   test "set_exam_mode updates multiple configs" do

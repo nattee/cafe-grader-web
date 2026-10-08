@@ -52,6 +52,7 @@
                     %span.badge.bg-body-tertiary.text-secondary=conf.value_type.upcase
                   .config-value-wrapper
                     = render partial: 'config', locals: {conf: conf}
+                = render partial: 'config_warnings', locals: {conf: conf}
 
 :javascript
   function filterConfigs() {

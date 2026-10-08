@@ -20,7 +20,13 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   `right.login_throttle_exempt_ips` (comma-separated addresses or CIDR
   ranges, created empty by a data migration) lists addresses that skip the
   per-address count; each account still locks after 30 failures. After
-  deploying, put the exam gateway's address in it. (rev 2232)
+  deploying, put the exam gateway's address in it. (rev 2232) Login skips
+  a mistyped entry without an error, so the System configuration page
+  shows a warning under the setting instead: for an entry that is not an
+  address or range (e.g. `10.0.5.40;10.0.5.41`, joined by a semicolon),
+  which exempts nothing, and for a range that covers every address (e.g.
+  `0.0.0.0/0`), which switches the per-address count off for everyone.
+  (rev 2250)
 - **Clear Login Locks** button on the System configuration page, beside
   Clear Device Locks: unlocks every address and account blocked by "Too
   many failed login attempts" at once and names what was locked. Before,

@@ -63,6 +63,37 @@ class ConfigurationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "New Title", config.reload.value
   end
 
+  # The login check skips a bad exempt-list entry silently, so the page is
+  # where the mistake has to show: under the setting, and right after a save.
+  test "saving an exempt list with a bad entry shows a warning under the setting" do
+    sign_in_as("admin", "admin")
+    config = GraderConfiguration.find_by(key: GraderConfiguration::LOGIN_THROTTLE_EXEMPT_IPS_KEY)
+    patch grader_configuration_path(config), params: {
+      grader_configuration: { value: "10.0.5.40;10.0.5.41" }
+    }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+    assert_select "turbo-stream[action=replace][target=?]", "config_warnings_grader_configuration_#{config.id}" do
+      assert_select "template", text: /'10.0.5.40;10.0.5.41' is not an address or range/
+    end
+
+    get grader_configuration_index_path
+    assert_select "#config_warnings_grader_configuration_#{config.id}:not([hidden])", text: /is not an address or range/
+  end
+
+  test "a well-formed exempt list leaves the warning area empty and hidden" do
+    sign_in_as("admin", "admin")
+    config = GraderConfiguration.find_by(key: GraderConfiguration::LOGIN_THROTTLE_EXEMPT_IPS_KEY)
+    patch grader_configuration_path(config), params: {
+      grader_configuration: { value: "10.0.5.40, 10.0.5.41" }
+    }, headers: { "Accept" => "text/vnd.turbo-stream.html" }
+    assert_response :success
+    assert_no_match(/not an address or range|covers every address/, response.body)
+
+    get grader_configuration_index_path
+    assert_select "#config_warnings_grader_configuration_#{config.id}[hidden]"
+    assert_select ".config-warnings .alert", count: 0
+  end
+
   test "admin can toggle boolean configuration" do
     sign_in_as("admin", "admin")
     config = GraderConfiguration.find_by(key: "system.single_user_mode")

@@ -157,9 +157,10 @@ class GraderConfiguration < ApplicationRecord
   # Is this address listed in right.login_throttle_exempt_ips (comma- or
   # space-separated addresses or CIDR ranges)? Runs on every login, so a
   # malformed entry is skipped rather than raised — a typo in the setting
-  # must never break logging in.
+  # must never break logging in. The configuration page shows the skipped
+  # entries instead (login_throttle_exempt_ips_warnings).
   def self.login_throttle_exempt_ip?(remote_ip)
-    listed = get(LOGIN_THROTTLE_EXEMPT_IPS_KEY).to_s.split(/[\s,]+/).reject(&:empty?)
+    listed = ip_list_entries(get(LOGIN_THROTTLE_EXEMPT_IPS_KEY))
     return false if listed.empty?
     user_ip = IPAddr.new(remote_ip.to_s)
     listed.any? do |range|
@@ -169,6 +170,36 @@ class GraderConfiguration < ApplicationRecord
     end
   rescue IPAddr::Error
     false
+  end
+
+  # What is wrong with a right.login_throttle_exempt_ips value, as sentences
+  # for the configuration page. The login check above skips these mistakes
+  # without a sound, so this is the only place they show: an entry that is
+  # not an address or range (e.g. a semicolon-joined list) exempts nothing,
+  # and a range covering every address switches the per-address count off
+  # for everyone.
+  def self.login_throttle_exempt_ips_warnings(value)
+    ip_list_entries(value).filter_map do |entry|
+      range = IPAddr.new(entry)
+      next unless range.prefix.zero?
+      "'#{entry}' covers every address, so no address is counted. " \
+        "Only each account's own limit is left."
+    rescue IPAddr::Error
+      "'#{entry}' is not an address or range, so it is ignored. " \
+        "Separate entries with commas or spaces."
+    end
+  end
+
+  def self.ip_list_entries(value)
+    value.to_s.split(/[\s,]+/).reject(&:empty?)
+  end
+  private_class_method :ip_list_entries
+
+  # Problems with this setting's saved value, shown under it on the
+  # configuration page. Empty for settings that have no check.
+  def value_warnings
+    return [] unless key == LOGIN_THROTTLE_EXEMPT_IPS_KEY
+    self.class.login_throttle_exempt_ips_warnings(value)
   end
 
   def self.contest_time_limit
