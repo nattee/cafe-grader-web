@@ -4,13 +4,13 @@ class SubmissionsController < ApplicationController
 
   before_action :check_valid_login
 
-  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :archive_viva, :adopt_viva_grade]
-  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag archive_viva adopt_viva_grade ]
+  before_action :set_submission, only: [:show, :show_comments, :download, :compiler_msg, :rejudge, :set_tag, :edit, :evaluations, :allow_viva_retake, :adopt_viva_grade]
+  before_action :set_problem, only: %i[ edit direct_edit_problem rejudge set_tag allow_viva_retake adopt_viva_grade ]
   before_action :set_language, only: %i[ edit direct_edit_problem ]
 
   before_action :can_view_submission, only: [:show, :show_comments, :download, :edit, :evaluations, :compiler_msg]
   before_action :can_view_problem, only: [ :direct_edit_problem ]
-  before_action :can_edit_problem, only: [:rejudge, :set_tag, :archive_viva, :adopt_viva_grade]
+  before_action :can_edit_problem, only: [:rejudge, :set_tag, :allow_viva_retake, :adopt_viva_grade]
 
   # GET /submissions                  My Submissions, all problems (issue #62)
   # GET /submissions/prob/:problem_id  ... narrowed to one problem
@@ -188,21 +188,44 @@ class SubmissionsController < ApplicationController
     render 'turbo_toast'
   end
 
-  # POST /submissions/:id/archive_viva
-  # Admin-only: mark a viva submission as archived so the student can
-  # take a fresh viva on the same problem. The original submission
-  # (with transcript, grade, costs) is preserved for audit.
-  def archive_viva
-    unless @submission.problem.viva_exam?
-      redirect_to viva_submission_path(@submission), alert: 'Not a viva submission.' and return
+  # POST /submissions/:id/allow_viva_retake — "Allow another attempt" (design
+  # 2026-10-07, A4; editors of the problem). Archives the session whatever its
+  # status and stops it counting toward the start limit, so the student can
+  # start exactly one more (Submission#grant_viva_retake!). One audit row on
+  # the problem per grant; a second click changes nothing and says so.
+  def allow_viva_retake
+    # Grant and audit row commit together, or not at all.
+    outcome = Submission.transaction do
+      @submission.grant_viva_retake!(by: @current_user).tap do |result|
+        if result == :granted
+          AuditLog.record!(auditable: @submission.problem, action: 'viva_retake_grant',
+                           object_changes: {'submission_id' => [nil, @submission.id],
+                                            'user'          => [nil, @submission.user.login]})
+        end
+      end
     end
-    unless @submission.status.in?(%w[done grader_error])
-      redirect_to viva_submission_path(@submission),
-                  alert: "Cannot archive a viva that's still in progress (status: #{@submission.status}). Wait for grading to finish or fail." and return
+    # Read after the grant has committed: what the student can do now.
+    policy  = Viva::StartPolicy.new(@submission.problem, @submission.user)
+    message = allow_viva_retake_message(outcome, policy)
+    # Green only when a start was actually freed; a grant that still leaves
+    # the student without a start ("grant that one too") is a warning, so
+    # staff notice it.
+    freed = outcome == :granted && policy.refusal.nil?
+    # From the contest's Viva check page (contest_id given): toast, and
+    # re-render the report so the row updates at once — only for a contest
+    # the staff member may manage. From the session page: back to it.
+    if params[:contest_id].present?
+      toast = {title: 'Allow another attempt', body: message, type: (freed ? :notice : :warning)}
+      streams = [turbo_stream.append('toast-area', partial: 'toast', locals: {toast: toast})]
+      if (contest = viva_check_contest)
+        streams << turbo_stream.replace('viva-check-report', partial: 'contests/viva_check_report',
+                                                              locals: {contest: contest, report: VivaCheckReport.new(contest)})
+      end
+      render turbo_stream: streams
+    else
+      flash_key = freed ? :notice : :alert
+      redirect_to viva_submission_path(@submission), flash_key => message
     end
-    @submission.update!(viva_archived_at: Time.current)
-    redirect_to viva_submission_path(@submission),
-                notice: "Viva session ##{@submission.id} has been archived. The student can now start a fresh viva on '#{@submission.problem.name}'."
   end
 
   # POST /submissions/:id/viva/grades/:grade_id/adopt
@@ -242,6 +265,42 @@ class SubmissionsController < ApplicationController
   end
 
 protected
+  def allow_viva_retake_message(outcome, policy)
+    case outcome
+    when :granted
+      "Session ##{@submission.id} is closed and no longer counts toward the start limit#{retake_start_tail(policy)}"
+    when :already
+      "Session ##{@submission.id} already has a grant. It is closed and no longer counts toward the start limit#{retake_start_tail(policy)}"
+    when :test_drive
+      'A test-drive is outside the start limit; there is nothing to allow.'
+    else
+      'Not a viva session.'
+    end
+  end
+
+  # What the student can do now, read from Viva::StartPolicy (`policy`, built
+  # after the grant): the grant frees this session, but another answered
+  # session of theirs today may still count, and a contest-only viva cannot
+  # start outside contest mode.
+  def retake_start_tail(policy)
+    login = @submission.user.login
+    if policy.refusal.nil?
+      left = policy.starts_left
+      ". #{login} may start another attempt at '#{@submission.problem.name}'" \
+        "#{" (#{helpers.pluralize(left, 'start')} left today)" if left.is_a?(Integer)}."
+    elsif policy.contest_only? && !GraderConfiguration.contest_mode?
+      ', but this viva can be started only during a contest.'
+    else
+      ", but #{login} still has no start left today: another answered session of theirs today still counts. " \
+        'Use Allow another attempt on that session too if they should start again.'
+    end
+  end
+
+  # The contest a Viva check grant came from, when the user may manage it.
+  def viva_check_contest
+    @current_user.contests_for_action(:edit).find_by(id: params[:contest_id])
+  end
+
   def set_submission
     @submission = Submission.find(params[:id])
   end

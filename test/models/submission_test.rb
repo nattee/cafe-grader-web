@@ -492,4 +492,35 @@ class SubmissionTest < ActiveSupport::TestCase
     assert_equal 1, Submission.fail_stale_viva_evaluating!
     assert_predicate sub.reload, :grader_error?
   end
+
+  # --- "Allow another attempt" (Submission#grant_viva_retake!) ---
+
+  test "grant_viva_retake! archives an open session, stamps who granted it, and is idempotent" do
+    admin = users(:admin)
+    sub = make_viva_submission(status: :submitted)
+    assert_equal :granted, sub.grant_viva_retake!(by: admin)
+    sub.reload
+    assert sub.viva_archived_at.present?
+    assert sub.viva_retake_granted_at.present?
+    assert_equal admin, sub.viva_retake_granted_by
+
+    first = sub.viva_retake_granted_at
+    assert_equal :already, sub.grant_viva_retake!(by: admin)
+    assert_in_delta first, sub.reload.viva_retake_granted_at, 0.001
+  end
+
+  test "grant_viva_retake! keeps an earlier archive time and refuses test-drives and code submissions" do
+    archived_at = 2.hours.ago
+    sub = make_viva_submission(status: :done)
+    sub.update!(viva_archived_at: archived_at)
+    assert_equal :granted, sub.grant_viva_retake!(by: users(:admin))
+    assert_in_delta archived_at, sub.reload.viva_archived_at, 1
+
+    drive = make_viva_submission(status: :done)
+    drive.update!(test_drive: true)
+    assert_equal :test_drive, drive.grant_viva_retake!(by: users(:admin))
+    assert_nil drive.reload.viva_retake_granted_at
+
+    assert_equal :not_viva, submissions(:add1_by_john).grant_viva_retake!(by: users(:admin))
+  end
 end

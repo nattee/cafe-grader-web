@@ -43,14 +43,15 @@ class Grader
     dataset = Dataset.find(param[:dataset_id])
 
     compiler = Compiler.get_compiler(sub).new(@worker_id, @box_id)
-    result = compiler.compile(sub, dataset)
+    result = compiler.compile(sub, dataset, chain_id: @job.chain_id)
 
     # report compile
     judge_log "#{@job.to_text} completed with result #{result.to_h}"
     @job.report(result)
 
-    # add next jobs only when compilation succeeded
-    if sub.compilation_success?
+    # add next jobs only when compilation succeeded (a superseded compile
+    # reports an error and leaves the submission alone)
+    if result.status == :success && sub.compilation_success?
       if dataset.testcases.count > 0
         Job.add_evaluation_jobs(sub, dataset, @job.id, @job.priority)
       else
@@ -66,7 +67,7 @@ class Grader
     testcase = Testcase.find(param[:testcase_id])
 
     evaluator = Evaluator.get_evaluator(sub).new(@worker_id, @box_id)
-    result = evaluator.execute(sub, testcase)
+    result = evaluator.execute(sub, testcase, chain_id: @job.chain_id)
 
     @job.report(result)
 
@@ -83,7 +84,7 @@ class Grader
     dataset = Dataset.find(param[:dataset_id])
 
     scorer = Scorer.get_scorer(sub).new(@worker_id, @box_id)
-    result = scorer.process(sub, dataset)
+    result = scorer.process(sub, dataset, chain_id: @job.chain_id)
 
     @job.report(result)
   end
@@ -99,7 +100,13 @@ class Grader
       begin
         judge_log "Processing #{@job.to_text}"
         @grader_process.update(task_id: @job.id, status: :working)
-        if @job.jt_compile?
+        # Job.supersede! errors a rejudged submission's waiting jobs, but an
+        # older chain can still queue more after it (a compile that finished
+        # just after the rejudge); those stop here.
+        if !Job.chain_current?(@job.arg, @job.chain_id)
+          judge_log "#{@job.to_text} superseded by a newer grading; skipped"
+          @job.superseded!
+        elsif @job.jt_compile?
           process_job_compile
         elsif @job.jt_evaluate?
           process_job_evaluate
@@ -114,7 +121,8 @@ class Grader
         # the main comment to the error message (so that the user can see it)
         judge_log Rainbow('(GraderError)').bg(COLOR_ERROR).color(:yellow) + " " + ge.message, Logger::ERROR
         @job.update(status: :error, result: ge.message) if ge.end_job
-        if ge.update_submission
+        # a superseded chain's failure is not the new grading's
+        if ge.update_submission && Job.chain_current?(@job.arg, @job.chain_id)
           s = Submission.find(ge.submission_id)
           s.set_grading_error(ge.message_for_user)
         end
@@ -128,7 +136,7 @@ class Grader
         else
           @job.update(status: :error, result: "gave up after #{retry_count} retries: #{e.class}: #{e.message}")
           s = Submission.find_by(id: @job.arg)
-          s&.set_grading_error("Internal grading error after #{retry_count} retries, please rejudge.")
+          s&.set_grading_error("Internal grading error after #{retry_count} retries, please rejudge.") if Job.chain_current?(@job.arg, @job.chain_id)
         end
       end
       result = true
@@ -298,15 +306,29 @@ class Grader
   # serving its box (oldest first). Returns [[action, pid], ...]:
   #   [:spawn]       enabled, nothing running
   #   [:term, pid]   enabled: a duplicate (every process but the oldest);
-  #                  disabled: graceful stop. TERM, never KILL, for a live
-  #                  grader — main_loop finishes its current job first, where
+  #                  disabled: graceful stop. TERM, not KILL, for a grader
+  #                  that still beats — main_loop finishes its current job first, where
   #                  a KILL orphans it. Job.reclaim_orphaned! now returns such
   #                  a job to the queue on the next tick, so this is a matter
   #                  of not wasting the work rather than of losing it.
-  #   [:kill, pid]   disabled and the heartbeat is stale (> 300 s)
+  #   [:kill, pid]   disabled and the heartbeat is stale (> 300 s); or
+  #                  enabled and stuck: no heartbeat for STUCK_AFTER, from a
+  #                  process at least that old. main_loop only beats between
+  #                  jobs, so this is a grader held inside one job far longer
+  #                  than any job takes (checker and initializer are bounded
+  #                  by JudgeBase#run_bounded; this catches a hang nothing
+  #                  else bounds). The next tick finds the box empty,
+  #                  reclaims the job and spawns a fresh grader. The
+  #                  process-age check spares a grader just spawned on a box
+  #                  whose last heartbeat is from its predecessor.
+  STUCK_AFTER = 600.seconds
+
   def self.plan_box(gp, procs)
     if gp.enabled
       return [[:spawn]] if procs.empty?
+      stuck = gp.last_heartbeat.present? && gp.last_heartbeat < STUCK_AFTER.ago
+      stuck_procs = stuck ? procs.select { |p| p[:elapsed] > STUCK_AFTER.to_i } : []
+      return stuck_procs.map { |p| [:kill, p[:pid]] } if stuck_procs.any?
       procs.drop(1).map { |p| [:term, p[:pid]] }
     else
       stalled = gp.last_heartbeat.present? && gp.last_heartbeat < 300.seconds.ago

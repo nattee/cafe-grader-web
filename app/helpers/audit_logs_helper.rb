@@ -78,6 +78,8 @@ module AuditLogsHelper
       bulk_badge 'undo', 'viva regrade revert'
     when 'viva_grade_adopt'
       icon_badge 'published_with_changes', 'viva grade made current', 'bg-warning-subtle text-warning-emphasis'
+    when 'viva_retake_grant'
+      icon_badge 'restart_alt', 'viva attempt allowed', 'bg-warning-subtle text-warning-emphasis'
     else
       badge action, 'bg-secondary-subtle text-secondary-emphasis'
     end

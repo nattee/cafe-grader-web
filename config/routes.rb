@@ -83,6 +83,7 @@ Rails.application.routes.draw do
       post 'ai_usage_query'
       post 'finish_open_vivas'
       get 'viva_status'
+      get 'viva_check'
       post 'add_users_from_csv'
       get 'clone'
       get 'set_active'
@@ -237,6 +238,7 @@ Rails.application.routes.draw do
       get 'reload'
       get 'set_exam_right(/:value)', action: 'set_exam_right', as: 'set_exam_right'
       post 'clear_user_ip'
+      post 'clear_login_locks'
     end
     member do
       patch 'toggle'
@@ -296,7 +298,7 @@ Rails.application.routes.draw do
       get 'viva/refresh', to: 'viva_sessions#refresh', as: 'viva_refresh'
       post 'viva/restart', to: 'viva_sessions#restart', as: 'viva_restart'
       post 'viva/finish', to: 'viva_sessions#finish', as: 'viva_finish'
-      post 'archive_viva'
+      post 'allow_viva_retake'
       post 'viva/grades/:grade_id/adopt', to: 'submissions#adopt_viva_grade', as: 'adopt_viva_grade'
     end
     collection do

@@ -18,7 +18,7 @@
     = "Grades count every grading run of a viva session that started inside the contest window, however late it ran (#{s[:grades_after_window]} ran after the window closed)."
 
 .row.g-3.mb-4{data: {controller: 'init-ui-component'}}
-  - tiles = [["#{s[:sessions_opened]}", 'viva sessions opened', "#{s[:students]} of #{s[:enrolled]} enrolled"], ["#{s[:answered]}", 'answered at least once', "#{s[:never_answered]} never answered"], ["#{s[:turns]}", 'viva turns', "$#{'%.2f' % s[:turn_cost]} · p95 #{s[:turn_wait_p95] || '–'} s"], ["#{s[:assists]}", 'assist requests', "#{s[:assist_students]} students · #{s[:assist_points].to_i} points"], ["$#{'%.2f' % s[:assist_dollars]}", 'assist dollars (priced)', "#{s[:assist_priced]} of #{s[:assists_total]} priced"], ["#{s[:grades]}", 'grades', "$#{'%.2f' % s[:grade_cost]} · p95 #{s[:grade_wait_p95] || '–'} s"]]
+  - tiles = [["#{s[:sessions_opened]}", 'viva sessions opened', "#{s[:students]} of #{s[:enrolled]} enrolled"], ["#{s[:answered]}", 'answered at least once', "#{s[:never_answered]} never answered"], ["#{s[:turns]}", 'viva turns', "$#{'%.2f' % s[:turn_cost]} · p95 #{s[:turn_wait_p95] || '–'} s"], ["#{s[:assists]}", 'assist requests', "#{s[:assist_students]} students · #{s[:assist_points].to_i} points"], ["$#{'%.2f' % s[:total_cost]}", 'total AI cost', "viva $#{'%.2f' % s[:turn_cost]} · grading $#{'%.2f' % s[:grade_cost]} · assist $#{'%.2f' % s[:assist_dollars]}" + (s[:assist_priced] < s[:assists_total] ? " (#{s[:assists_total] - s[:assist_priced]} assists unpriced)" : '')], ["#{s[:grades]}", 'grades', "$#{'%.2f' % s[:grade_cost]} · p95 #{s[:grade_wait_p95] || '–'} s"]]
   - tiles.each do |num, label, sub|
     .col-6.col-lg-2
       .card.card-shadow.h-100

@@ -10,6 +10,134 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+## [4.7.2] — 2026-10-08
+
+**Upgrade notes.** Run `bin/rails db:migrate` — four migrations: the
+`right.login_throttle_exempt_ips` setting (created empty); two nullable
+columns on `submissions` for viva retakes (added in place, but the ALTER
+briefly waits for a lock on `submissions`); an index on `jobs.arg`; and the
+evaluations clean-up plus a unique index on `(submission_id, testcase_id)`
+(about 30 seconds on cp-grader's 7.6 million rows; grading goes on during
+it). Run them outside exam hours. Deploy a web host before its judge host,
+or both together: the new judge code looks jobs up by submission and is slow
+until the `jobs.arg` index exists. After deploying, put each exam gateway's
+address in `right.login_throttle_exempt_ips` on the System configuration
+page. The new checker and initializer time bounds need no configuration.
+Going back to 4.7.1: `bin/rails db:rollback:primary STEP=2` restores the old
+evaluations index (the deleted orphan rows stay deleted); the viva columns
+and the setting can stay.
+
+### Added
+- **Exam gateways no longer lock a whole room out of login.** The login
+  lock counts failed passwords per account and per address (30 within 3
+  minutes). When every student reaches the server through one exam gateway,
+  the whole room shares that address, so a few minutes of wrong passwords
+  locked everyone out: in DS Quiz 2 (2026-10-07) a CU-net password switch
+  left off for four minutes refused 113 logins. New setting
+  `right.login_throttle_exempt_ips` (comma-separated addresses or CIDR
+  ranges, created empty by a data migration) lists addresses that skip the
+  per-address count; each account still locks after 30 failures. After
+  deploying, put the exam gateway's address in it. (rev 2232) Login skips
+  a mistyped entry without an error, so the System configuration page
+  shows a warning under the setting instead: for an entry that is not an
+  address or range (e.g. `10.0.5.40;10.0.5.41`, joined by a semicolon),
+  which exempts nothing, and for a range that covers every address (e.g.
+  `0.0.0.0/0`), which switches the per-address count off for everyone.
+  (rev 2250)
+- **Clear Login Locks** button on the System configuration page, beside
+  Clear Device Locks: unlocks every address and account blocked by "Too
+  many failed login attempts" at once and names what was locked. Before,
+  the only ways out were waiting up to 3 minutes or deleting the counter
+  from a Rails console. (rev 2232)
+- **Viva check** page for each contest (contest page → Reports → Viva
+  check): one row per student per viva problem with the flags staff should
+  act on (students only: staff sessions are left out) — Retook, Waiting for
+  reply, Reply failed, Grading failed, Left
+  unfinished, Grade doesn't add up (a rubric item above its maximum or items
+  not summing to the total), Rubric unreadable — and the ones worth a look
+  (No answer yet, Short but high, Ended early, Rule-break flag). It reloads
+  every 30 seconds while the contest runs; an "N to check" badge next to the
+  viva grading status on the contest page counts the students who need
+  action. Built after proctors saw students take the DS Quiz 2 viva twice.
+  (revs 2242, 2244, 2247)
+- **Allow another attempt** (staff who can edit the problem, in contest
+  mode too): archives a viva session at any status — including an open
+  interview after an infrastructure failure — and stops it counting toward
+  the start limit, so the student can start one more. The closed session
+  takes no more answers or retries and is never graded, even when an
+  examiner reply already on its way would have ended the interview. The
+  confirmation says what the student can do now: start again (with the
+  starts left), or not yet, because another answered session of theirs
+  today still counts — shown as a warning, so staff grant that session too.
+  On the session page's Admin card, replacing "Archive & allow retake", and
+  on each student row of Viva check. Each grant is an audit row on the
+  problem. Run `bin/rails db:migrate` (two nullable columns on
+  `submissions`, added without a table copy). Run the migration outside
+  exam hours: the ALTER briefly waits for a lock on `submissions`. (revs
+  2238, 2240, 2244, 2247, 2249)
+
+### Changed
+- **Viva start limit 0 means one attempt in a contest.** "Contest-only"
+  vivas used to allow unlimited restarts during contest mode; now a student
+  gets one counted session (a session counts once they answer), the same as
+  limit 1. For an exam set the limit to 1 (or 0): a practice value lets
+  students finish, restart and retake, and the best session counts. One
+  rule (`Viva::StartPolicy`) now drives Start, Restart and the session
+  page. (revs 2238, 2239)
+- **Viva Restart is offered only when the student could start again.**
+  Under limit 1, Restart in the middle of an interview used to archive the
+  session ungraded and leave the student unable to start a new one. The
+  button now reads "Restart viva" (was "Restart practice viva"), since it
+  also shows during exams. The session page's archived note now says
+  whether the session's score still counts toward the best or it was
+  closed without a grade. (revs 2239, 2247, 2249)
+- **Submissions and User Activity reports:** Login (the link) and Name are
+  separate columns, as on the problem stat page and the Best Score report,
+  instead of "(login) name". With a contest picked, the login opens the
+  student's stat page for that contest. The problem column links the full
+  name, with the short name in grey after it; copy/Excel exports keep
+  "[name] full name". (rev 2235)
+- **Contest AI Usage:** a "total AI cost" tile — viva turns + viva grading +
+  priced assists — with the three parts underneath, in place of the
+  assist-only dollars tile. (rev 2235)
+- **Problem stat page of a viva problem** says that staff test-drives are not
+  counted on the page, and how many there are. (rev 2235)
+
+### Fixed
+- **A custom checker or dataset initializer that never finished held its
+  grader box forever.** Both ran on the judge host with no time bound, so
+  one checker stuck in a loop stopped that box from taking any other job.
+  A checker is now stopped after 30 seconds (that testcase shows `!` with
+  "checker timed out after 30 s"; the other testcases still run), and an
+  initializer after 120 seconds (the submission gets a grading error and
+  the next job on that worker initializes the dataset again); whatever they
+  started is stopped with them. A host can change the two bounds in
+  `config/worker.yml` under `limits:` (see `worker.yml.SAMPLE`). As a last
+  resort the every-minute watchdog now kills a grader that has not reported
+  for 10 minutes while its box is enabled; the job goes back to the queue
+  and a fresh grader starts. (rev 2251)
+- **Retry All on the Graders page no longer re-runs jobs a rejudge has
+  replaced.** It put every failed job back in the queue, including failed
+  jobs from a grading that a later rejudge had already restarted, so two
+  gradings of one submission ran at once. Retry and Retry All now re-queue
+  a failed job only when its submission still exists, has not been graded
+  since, and has not been rejudged since; the message says how many were
+  skipped. Clear All is unchanged. (rev 2252)
+- **A rejudge while a submission was still being graded could leave a wrong
+  score or "Evaluations are missing, please rejudge."** The rejudge started
+  a second grading but the first kept running, and both wrote the same
+  per-testcase results; after a rejudge onto another dataset, the first
+  grading's late scoring step failed the new one. Now a rejudge stops the
+  first grading: its queued jobs fail with "superseded by rejudge" (they
+  show among the Graders page's failed jobs, and Retry skips them), and a
+  job already running checks before each write and drops its result. The
+  database now holds at most one result per submission and testcase. Run
+  `bin/rails db:migrate` (two migrations): it deletes per-testcase results
+  whose submission no longer exists (4,279 rows on cp-grader, none of them
+  visible anywhere), keeps the newest of any duplicate, and adds a unique
+  index — about 30 seconds on cp-grader's 7.6 million rows. Grading goes on
+  during it, but run it outside exam hours. (rev 2253)
+
 ## [4.7.1] — 2026-10-03
 
 **Upgrade notes.** A gem update only: no migration, no new setting, no

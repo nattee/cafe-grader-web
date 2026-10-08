@@ -16,8 +16,9 @@
             %strong Error:
             = simple_format_escaped(turn.content.to_s)
           -# Owner or admin can re-enqueue the LLM call without restarting
-          -# the entire viva. See VivaSessionsController#retry_turn.
-          - if @current_user == turn.submission.user || @current_user&.admin?
+          -# the entire viva. See VivaSessionsController#retry_turn, which
+          -# refuses on a closed (archived) session — so no button there.
+          - if (@current_user == turn.submission.user || @current_user&.admin?) && !turn.submission.viva_archived?
             = button_to viva_retry_turn_submission_path(turn.submission, turn_id: turn.id), class: 'btn btn-sm btn-outline-secondary mt-2 d-inline-flex align-items-center gap-1', form: {class: 'd-inline', data: {turbo: true}} do
               %span.mi.md-18 replay
               Retry

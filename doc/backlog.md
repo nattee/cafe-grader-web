@@ -58,6 +58,57 @@ AI use held after that.
 
 ---
 
+## Contest checklist — warnings before an exam starts (direction agreed, details to come)
+
+**Raised 2026-10-07 by dae after DS Quiz 2; dae will elaborate the item list.**
+A checklist on the contest page that lists what looks wrong for an exam. It
+**warns, never blocks** — staff may have a reason.
+
+**Why:** both DS quizzes started with the viva set up for practice. Quiz 1
+(contest 43, problem 705) and Quiz 2 (contest 46, problem 701) each began
+with the viva's start limit (`problems.viva_daily_limit`) at 5, and each was
+lowered to 1 by hand mid-exam (09-09 09:38, 10-07 09:49). In Quiz 2 two
+students finished, restarted and retook the viva before the change (80 → 94,
+74 → 83; the contest score is the best session, archived ones included).
+The viva also said "practice viva" in 147 of 148 greetings because the
+scenario text (`problems.description`) still carried the practice-kit line.
+
+**Decided 2026-10-07 (dae): no hard single-attempt rule in code.** Staff may
+want a second attempt, or need one after an infrastructure failure. The
+per-problem start limit stays the control, and the checklist warns about it.
+
+**Items known so far:**
+- Viva problems: start limit (see the three facts below); "practice"
+  wording in the scenario or briefing, or a `-practice` conduct tag;
+  rubric not machine-readable or not summing to 100; no staff test-drive
+  since the problem was last edited.
+- All problems: enabled (problem available, contest problem enabled), AI
+  assist allowed or not as intended (`contests_problems.allow_llm`), proper
+  structure (live dataset with testcases, statement, permitted languages,
+  manager files for `with_managers`).
+- Contest: users enrolled, site in contest mode, start and stop times.
+- Login: CU-net password login on (`chula.allow_cu_net_password`). In Quiz 2
+  it was switched off 09:01–09:05, students' correct CU-net passwords failed,
+  and the failures locked the whole room out of login (all students share
+  the exam gateway's IP address, which the login lock counts per address).
+
+**Three start-limit traps found 2026-10-07 — all FIXED** (master 2238–2240,
+`Viva::StartPolicy`, `doc/Viva-Exam.md` "The start limit"): limit 0 used to
+mean unlimited retakes during a contest (now one counted session); admin
+"Archive & allow retake" gave no retake under limit 1 (replaced by **Allow
+another attempt**, which stops the session counting); Restart mid-interview
+under limit 1 locked the student out ungraded (Restart is now offered only
+when a new start is possible). What the checklist still has to warn about is
+a start limit other than 1 or 0 on a contest's viva.
+
+**Reuse:** `Viva::Rubric.parse` (rubric readable, weights sum to 100) and the
+contest's Viva check page (`VivaCheckReport`) already exist; the checklist's
+viva rows can call the same code.
+
+**Size:** small to medium — a PORO of checks plus a card on `contests/show`.
+
+---
+
 ## Memory accounting for C/C++ — address space vs cgroup (POLICY + a real bug)
 
 **Raised 2026-08-03 from the CMS migration validation.** Three separate things
@@ -424,6 +475,12 @@ DB schema now would be designed twice.
 not code" one of its requirements, and migrate the seeded constants then.
 Size then: medium (schema + engine readers + admin form + migration of the
 constants). Until then, new languages keep arriving as code.
+
+**Reopened 2026-10-04:** the worker overhaul design is
+`docs/superpowers/specs/2026-10-04-judge-worker-pool-design.md`. Its
+envelope carries the per-language values (§6.3, §9.4); phase 0 collects
+today's constants into a `LanguageProfile` registry (slice 0.4) and the
+`languages` columns are slice 1.8, optional within phase 1.
 
 
 Decided, not deprioritized: each of these stays closed until its **Reopen

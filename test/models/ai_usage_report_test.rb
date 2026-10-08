@@ -29,6 +29,15 @@ class AiUsageReportTest < ActiveSupport::TestCase
     assert_equal 10.0, s[:assist_points]
   end
 
+  test "total cost adds viva turns, viva grading and priced assists" do
+    VivaGrade.create!(submission: @answered, total_points: 70, cost: 0.05, llm_model: "m",
+                      graded_at: 10.minutes.ago, created_at: 10.minutes.ago)
+    s = AiUsageReport.new(@contest).summary
+    assert_in_delta 0.01, s[:turn_cost], 0.0001
+    assert_in_delta 0.05, s[:grade_cost], 0.0001
+    assert_in_delta 0.08, s[:total_cost], 0.0001
+  end
+
   test "distribution separates the kinds and computes total wait" do
     d = @report.distribution.index_by { |r| r[:kind] }
     assert_equal 8.0, d["viva turn"][:p95]   # updated - created = 8s

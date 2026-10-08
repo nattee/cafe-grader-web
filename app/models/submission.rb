@@ -30,6 +30,8 @@ class Submission < ApplicationRecord
   # so `joins(:viva_grade)` and `where.missing(:viva_grade)` mean "current".
   has_many :viva_grades, dependent: :destroy
   has_one  :viva_grade, -> { where(superseded_at: nil) }
+  # Staff member who used "Allow another attempt" on this session.
+  belongs_to :viva_retake_granted_by, class_name: 'User', optional: true
 
   # How long a viva submission may sit in :evaluating (grading in flight)
   # before fail_stale_viva_evaluating! treats it as abandoned — the worker
@@ -200,6 +202,7 @@ class Submission < ApplicationRecord
   def shadow? = repaired_from_id.present?
 
   def add_judge_job(dataset = problem.live_dataset, priority = 0)
+    Job.supersede!(self)
     evaluations.delete_all
     self.update(status: 'submitted', points: nil, grader_comment: nil, graded_at: nil)
     Job.add_grade_submission_job(self, dataset, priority)
@@ -384,6 +387,28 @@ class Submission < ApplicationRecord
     outcome
   end
 
+  # "Allow another attempt" (design 2026-10-07, A4; staff only — the caller
+  # authorizes). Archives the session whatever its status — an open interview
+  # after an infrastructure failure, a session still being graded (its grade
+  # lands and still counts toward the best score), or one already archived —
+  # and stamps the grant, so Viva::StartPolicy stops counting it and the
+  # student can start exactly one more. An open session archived this way is
+  # never graded. Idempotent under the row lock: a second click (or a second
+  # staff member) gets :already and changes nothing. Returns :granted,
+  # :already, :test_drive (test-drives are outside the limit) or :not_viva.
+  def grant_viva_retake!(by:, now: Time.zone.now)
+    return :not_viva unless problem&.viva_exam?
+    return :test_drive if test_drive?
+
+    with_lock do
+      next :already if viva_retake_granted_at.present?
+
+      update!(viva_archived_at: viva_archived_at || now,
+              viva_retake_granted_at: now,
+              viva_retake_granted_by_id: by&.id)
+      :granted
+    end
+  end
 
   def self.find_last_by_user_and_problem(user_id, problem_id)
     regular.where("user_id = ? AND problem_id = ?", user_id, problem_id).last

@@ -269,18 +269,73 @@ shared conduct above, this section applies" — as a safety net.
 - A criterion the interview never reached scores **0**; do not infer.
 - Each criterion is at most its weight; totals are their sum; apply the
   briefing's caps.
-- Narrative in the student's language, what went well and what to study,
-  no pass/fail verdict.
-
-**Language.** Put probe examples in the language the examiner is supposed
-to write in. Our first conduct said "examiner writes English only" and then
-gave Thai probe phrasings as examples — one model imitated the examples and
-ran a third of its interviews in Thai.
+- Narrative in the language your language paragraph names (below), what
+  went well and what to study, no pass/fail verdict.
 
 **Do not restate the platform's security rules** in conduct, and do not
 contradict them. Our conduct says "a translation request is a normal
 request, do not flag it"; the platform's alert directive says the same. A
 conduct line that *differed* would make the model pick one at random.
+
+### Interview language
+
+The platform adds no language instruction of its own; the language rules
+are one paragraph in the base conduct. The grader reads the same tag, so
+that paragraph also sets the language of the grade narrative. If the
+conduct says nothing, the examiner usually answers in the student's
+language, but it can drift from message to message and from model to
+model. Decide four things:
+
+1. the language the examiner writes in;
+2. the languages the student may answer in;
+3. what the examiner does when a student asks for a translation;
+4. the language of the grade narrative.
+
+Ready-to-copy wording for the common choices (replace `<language>`):
+
+**Follow the student.**
+
+> Write each message in the language of the student's most recent message;
+> if they mix languages, use the language most of that message is in. Keep
+> technical terms and code exactly as the course writes them.
+
+**One fixed language; the student may answer in any.** (Our Data
+Structures course uses this with English.)
+
+> Write every message in <language> only, even when the student writes in
+> another language. The student may answer in any language or a mix; never
+> ask them to switch, never comment on their choice, and never treat it as
+> a rule violation. If the student asks for a translation, do not
+> translate: restate the question in simpler <language> and continue. A
+> translation request is a normal request, not an integrity issue.
+
+**Two languages.** Every message becomes twice as long, so it is slower to
+generate and to read.
+
+> Write every message in <language A>, then the same message in
+> <language B>. Ask one question, the same in both languages.
+
+**Narrative.** Add one of these to whichever choice above you use:
+
+> Write the grade narrative in <language>.
+
+> Write the grade narrative in the language the student mostly used.
+
+We do not recommend a rule that ends or flags the interview because of the
+language a student writes in. A student who thinks better in their first
+language should be able to answer in it, and a language flag would compete
+with the platform's alert rules (see the paragraph above).
+
+Whichever you choose:
+
+- **Put probe examples in the language the examiner writes in.** Our first
+  conduct said "examiner writes English only" and then gave Thai probe
+  phrasings as examples — one model imitated the examples and ran a third
+  of its interviews in Thai.
+- **Pilot it (§8) and check it in the audit (§9) after any model change.**
+  A language rule is an instruction to the model, not a switch, and models
+  differ in how well they follow it: under the same English-only rule, one
+  model wrote Thai in 44 sessions and the next model in none.
 
 ---
 
@@ -302,9 +357,19 @@ none.
 - **Hard cap** ≈ soft cap + 4. It is a cutoff, not a target; sessions that
   hit it usually did so by burning turns on scaffolding, and a plan whose
   last rungs were never reached zeroes those criteria.
-- **Daily start limit**: blank for the site default, a number for this
-  problem, `0` for contest-only. Peeks (opened, never answered) are free;
-  only sessions with at least one student answer count.
+- **Daily start limit** (the *start limit*): blank for the site default, a
+  number for this problem, `0` for contest-only. Peeks (opened, never
+  answered) are free; only sessions with at least one student answer count,
+  and a session stops counting when staff use **Allow another attempt**.
+  **For an exam, use `1`** — one counted session; staff can allow a second
+  one by hand after an infrastructure failure. `0` also means one counted
+  session during a contest, and none outside it. The two differ in one
+  button: under `1` the student can press **End interview & get graded**;
+  under `0` it is hidden, so nobody ends early to lock in a score before the
+  harder questions. A practice value (3, 5) left on an exam viva lets
+  students finish, restart and retake, and the best session counts. The
+  count is per day, not per contest: practice sessions earlier the same day
+  count, so keep an exam viva hidden until the exam.
 
 ---
 
@@ -418,6 +483,7 @@ Every row is something we observed on real student sessions
 | Same transcript regraded: 74 → 63, 31 → 42; SD 4 points over 157 sessions | Grader rerun noise (gemini-3.7-flash), not the rubric | Treat one grade as ±10; never "fix" a cohort with a small rubric edit and a plain regrade — keep the higher record (policy); consider averaging two grading passes for exams |
 | Rubric wording or a probe only turns out to be confusing once real students hit it | Viva published without anyone sitting it | Take two test-drives first — strong and weak student — via the edit page's Test-drive button; read both narratives (authoring) |
 | Grades need redoing after a briefing fix, but a plain re-run would lower some students | Re-run replaces; rerun noise is about ±10 per grade | Batch `viva:regrade` (never-lower by default, stale sessions only); read `viva:regrade_status` before announcing (operation) |
+| Students retake the exam viva and the better score counts (Quiz 2, 2026-10-07: 80 → 94, 74 → 83); the examiner greets everyone with "practice viva" | A practice viva reused for an exam kept its practice start limit (5) and its scenario's "practice viva" line | Before the exam: start limit `1` (or `0`), scenario and conduct overlay switched to exam wording; during it, the contest's **Viva check** page flags *Retook* live (operation) |
 
 ---
 
@@ -453,9 +519,14 @@ skips the block silently.
       snake_case keys, weights summing to 100, caps, "last few points".
 - [ ] Per-problem carve-outs where the conduct's mode overlay is too
       generous for this problem.
-- [ ] Conduct: base + one mode overlay attached; overlays additive; probe
-      examples in the examiner's language; grading conventions in the base.
-- [ ] Caps sized to the plan; daily limit chosen; grounding only if needed.
+- [ ] Conduct: base + one mode overlay attached; overlays additive; a
+      language paragraph (examiner, student, translation, narrative) with
+      probe examples in the examiner's language; grading conventions in
+      the base.
+- [ ] Caps sized to the plan; start limit chosen (`1`, or `0`, for an exam);
+      grounding only if needed.
+- [ ] Reusing a practice viva for an exam: start limit, scenario wording
+      ("practice viva") and conduct overlay all switched to the exam versions.
 - [ ] Piloted twice (strong, weak); transcript and rubric JSON read.
 - [ ] First audit scheduled after ~50 sessions; statistics split by model.
 - [ ] After any briefing change on a live problem: `viva:regrade` dry run,

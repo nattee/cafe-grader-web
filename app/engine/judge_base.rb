@@ -6,7 +6,16 @@
 # prepare_worker_dataset(dataset, type)       This actually downloads managers/testcases/checker for the problem's dataset
 #                                             It also call prepare_dataset_directory FIRST
 # prepare_testcase_directory(sub,testcase)    This setups various Pathname for specific testcase
+require 'open3'
+
 module JudgeBase
+  # Wall-clock bounds, in seconds, for the dataset programs that run on the
+  # judge host outside isolate: the checker (per testcase) and the
+  # initializer (once per dataset per worker). A host overrides them in
+  # worker.yml under `limits:` (see worker.yml.SAMPLE); these are the defaults.
+  CHECKER_TIMEOUT = 30
+  INITIALIZER_TIMEOUT = 120
+
   INPUT_FILENAME = 'input.txt'
   STDOUT_FILENAME = 'stdout.txt'
   StdErrFilename = 'stderr.txt'
@@ -326,7 +335,64 @@ module JudgeBase
                ]
     judge_log "init file = #{@prob_init_file}"
     judge_log "init command = #{init_cmd.join ' '}"
-    system(*init_cmd)
+    timeout = worker_limit(:initializer_timeout, INITIALIZER_TIMEOUT)
+    out, err, status, timed_out = run_bounded(init_cmd, timeout: timeout)
+    judge_log "init finished: #{status}#{' (timed out)' if timed_out}\n-- stdout --\n#{out}-- stderr --\n#{err}"
+    # Raised inside prepare_worker_dataset's WorkerDataset transaction, so the
+    # rollback returns testcases_status to 'created' and the next job on this
+    # worker downloads and initializes the dataset again.
+    raise GraderError.new("dataset initializer timed out after #{timeout} s", submission_id: @sub&.id) if timed_out
+  end
+
+  # Run argv (no shell) and give up after `timeout` seconds of wall clock.
+  # The command gets its own process group, so on expiry the KILL reaches
+  # whatever it forked too (a shell-script checker, psql under an
+  # initializer). Open3.capture3 and system have no bound: a checker stuck in
+  # a loop held its grader, and the job, forever. Returns
+  # [out, err, status, timed_out]; timed_out is also true when the command
+  # exited but something it forked kept the output pipes open past the bound.
+  def run_bounded(cmd, timeout:)
+    Open3.popen3(*cmd, pgroup: true) do |stdin, stdout, stderr, wait_thr|
+      stdin.close
+      readers = [stdout, stderr].map { |io| Thread.new { io.read } }
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+      left = -> { [deadline - Process.clock_gettime(Process::CLOCK_MONOTONIC), 0].max }
+      finished = wait_thr.join(left.call) && readers.all? { |t| t.join(left.call) }
+      unless finished
+        begin
+          Process.kill('KILL', -wait_thr.pid)
+        rescue Errno::ESRCH
+          # the group is already gone
+        end
+        wait_thr.join
+        # a process that left the group (setsid) can still hold a pipe open
+        readers.each { |t| t.join(1) }
+      end
+      out, err = readers.map do |t|
+        next t.value unless t.alive?
+        t.kill
+        ''
+      end
+      [out, err, wait_thr.value, !finished]
+    end
+  end
+
+  def worker_limit(key, default)
+    Rails.configuration.worker.dig(:limits, key) || default
+  end
+
+  # True when a rejudge has started a newer job chain for @sub since this
+  # job's chain began (Job.chain_current?); the caller then returns
+  # superseded_result before writing anything. chain_id nil skips the check:
+  # engine:smoke, replay and tests drive the engine without jobs.
+  def superseded?(chain_id)
+    return false if chain_id.nil? || Job.chain_current?(@sub.id, chain_id)
+    judge_log "#{rb_sub(@sub)} superseded by a newer grading (chain #{chain_id}); nothing written"
+    true
+  end
+
+  def superseded_result
+    EngineResponse::Result.failure(error: Job::SUPERSEDED_RESULT)
   end
 
   # set up directory and path/filename of the testcase directory

@@ -184,3 +184,9 @@ GraderConfiguration_29:
   value_type: integer
   value: '2048'
   description: Bytes of each test file shown to students who may view test data; 0 = whole files
+
+GraderConfiguration_30:
+  key: right.login_throttle_exempt_ips
+  value_type: string
+  value: ''
+  description: Addresses that skip the per-address count of failed logins

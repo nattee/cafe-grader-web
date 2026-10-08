@@ -233,14 +233,24 @@ module Llm
       if finish
         updates = {status: :evaluating}
         updates[:viva_terminated_at] = Time.current if terminate
-        @submission.update!(updates)
+        # A session staff closed while this reply was in flight stays closed
+        # and ungraded (design 2026-10-07, A4); with_lock re-reads the row.
+        # One already sent to grading meanwhile (the student's End click) is
+        # not sent a second time.
+        graded = @submission.with_lock do
+          next false if @submission.viva_archived_at.present?
+          next false unless @submission.submitted?
+
+          @submission.update!(updates)
+          true
+        end
         # No model: is passed — grading always uses the grade service's own
         # DEFAULT_MODEL, exactly like the hard-cap path in
         # VivaSessionsController#answer. Passing the interview model here made
         # the grader depend on HOW the interview ended (observed 2026-08-24:
         # sentinel-ended vivas graded by the turn model, hard-capped ones by
         # the grade default — two graders in one cohort).
-        Llm::VivaGradeAssistJob.perform_later(@submission)
+        Llm::VivaGradeAssistJob.perform_later(@submission) if graded
       end
 
       {done: finish, alerted: alerted}

@@ -46,6 +46,18 @@ class ReportContestScopeTest < ActionDispatch::IntegrationTest
     assert_select "[data-datatables--init-score-table-ajax-url-value=?]", max_score_query_report_path(contest: @contest.id)
   end
 
+  test "contest-scoped Submissions and User Activity link students to their stat for this contest" do
+    sign_in_as("admin", "admin")
+    contest_stat = stat_contest_user_admin_path(-1234, @contest)
+    [submission_report_path(contest: @contest.id), activity_report_path(contest: @contest.id)].each do |path|
+      get path
+      assert_response :success
+      assert_includes response.body, %(user_path = "#{contest_stat}"), path
+    end
+    get submission_report_path
+    assert_includes response.body, %(user_path = "#{stat_user_admin_path(-1234)}")
+  end
+
   test "without a contest the page is unchanged and the picker offers the manageable contests" do
     sign_in_as("mary", "mary")           # editor of contest_a only
     get submission_report_path

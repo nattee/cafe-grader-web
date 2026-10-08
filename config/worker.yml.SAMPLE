@@ -32,6 +32,13 @@ shared:
   hosts:
     web: http://localhost
 
+  # wall-clock bounds (seconds) for a dataset's checker (per testcase) and
+  # initializer (per dataset per worker). Defaults live in JudgeBase; uncomment
+  # only on a host that needs a different value.
+  # limits:
+  #   checker_timeout: 30
+  #   initializer_timeout: 120
+
 development:
   server_key: c2f7966dee
   worker_id: 1

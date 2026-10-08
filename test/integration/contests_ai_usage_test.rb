@@ -22,6 +22,7 @@ class ContestsAiUsageTest < ActionDispatch::IntegrationTest
     assert_match "All times are in seconds", response.body
     assert_match "ran after the window closed", response.body
     assert_select "th[data-bs-toggle=tooltip]", text: "p95"
+    assert_match "total AI cost", response.body
   end
 
   test "editor of the contest sees the page" do

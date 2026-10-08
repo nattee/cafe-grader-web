@@ -74,4 +74,52 @@ class EvaluatorCheckerFlowTest < ActiveSupport::TestCase
 
     assert_equal 'wrong', evaluation.result
   end
+
+  # A rejudge while this testcase ran: the new chain owns the row now, so the
+  # old chain's result is dropped and its job reports the supersede.
+  test 'an evaluate job of a superseded chain writes no evaluation' do
+    old_chain = Job.create!(job_type: :compile, arg: @sub.id, status: :success)
+    Evaluation.where(submission: @sub).delete_all
+    @sub.add_judge_job(@tc.dataset)
+
+    result = evaluator_with_fake_sandbox(program_stdout: @tc.sol).execute(@sub, @tc, chain_id: old_chain.id)
+
+    assert_equal :error, result.status
+    assert_equal 'superseded by rejudge', result.result_description
+    assert_nil Evaluation.find_by(submission: @sub, testcase: @tc)
+  end
+
+  test 'an evaluate job of the current chain writes its evaluation' do
+    chain = Job.create!(job_type: :compile, arg: @sub.id, status: :success)
+    result = evaluator_with_fake_sandbox(program_stdout: @tc.sol).execute(@sub, @tc, chain_id: chain.id)
+
+    assert_equal :success, result.status
+    assert_equal 'correct', evaluation.result
+    assert_equal 1, Evaluation.where(submission: @sub, testcase: @tc).count
+  end
+
+  # A custom checker that never returns used to hold the grader box, and the
+  # job, forever (Open3.capture3 has no bound). Now that testcase alone is a
+  # grader error and the evaluate job completes.
+  test 'a checker that hangs is cut off at the bound and marks only this testcase' do
+    @worker_conf[:limits] = {checker_timeout: 1}
+    dataset = @tc.dataset
+    dataset.update!(evaluation_type: :custom_testlib)
+    dataset.checker.attach(io: StringIO.new(''), filename: 'checker')
+    ev = evaluator_with_fake_sandbox(program_stdout: @tc.sol)
+    ev.define_singleton_method(:prepare_executable) do
+      @mybin_path = @bin_path + @box_id.to_s
+      @mybin_path.mkpath
+      File.write(@prob_checker_file, "#!/bin/sh\nsleep 30\n")
+      File.chmod(0o755, @prob_checker_file)
+    end
+
+    result = ev.execute(@sub, @tc)
+
+    assert_equal :success, result.status, 'the evaluate job itself completes'
+    assert_equal 'grader_error', evaluation.result
+    assert_equal '(cafe-checker) checker timed out after 1 s', evaluation.result_text
+  ensure
+    @worker_conf.delete(:limits)
+  end
 end

@@ -211,6 +211,13 @@ CONFIGURATIONS =
    },
 
    {
+     key: 'right.login_throttle_exempt_ips',
+     value_type: 'string',
+     default_value: '',
+     description: "Addresses that skip the per-address count of failed logins (comma-separated addresses or CIDR ranges, e.g. '10.0.5.40, 10.0.5.41'). List an exam gateway that puts a whole room behind one address, so a few minutes of mistyped passwords cannot lock the room out. Each account still locks after too many failures."
+   },
+
+   {
      key: 'system.llm_assist',
      value_type: 'boolean',
      default_value: 'false',

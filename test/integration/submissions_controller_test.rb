@@ -110,13 +110,123 @@ class SubmissionsControllerTest < ActionDispatch::IntegrationTest
     assert_match(/Start Viva/, flash[:alert])
   end
 
-  test "archive_viva redirects to the viva page and archives the session" do
+  def retake_audit_rows
+    AuditLog.where(action: 'viva_retake_grant')
+  end
+
+  test "allow_viva_retake archives an open session, stops it counting, audits and redirects to the viva page" do
+    sign_in_as("admin", "admin")
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    assert_difference -> { retake_audit_rows.count }, 1 do
+      post allow_viva_retake_submission_path(sub)
+    end
+    assert_redirected_to viva_submission_path(sub)
+    sub.reload
+    assert sub.viva_archived_at.present?
+    assert sub.viva_retake_granted_at.present?
+    assert_equal users(:admin).id, sub.viva_retake_granted_by_id
+    assert_match(/another attempt/i, flash[:notice])
+    log = retake_audit_rows.last
+    assert_equal ['Problem', sub.problem_id], [log.auditable_type, log.auditable_id]
+    assert_equal [nil, sub.id], log.object_changes['submission_id']
+    assert_equal [nil, 'john'], log.object_changes['user']
+  end
+
+  test "allow_viva_retake a second time changes nothing and says so" do
     sign_in_as("admin", "admin")
     sub = make_viva_submission(user: users(:john), status: :done)
-    post archive_viva_submission_path(sub)
+    sub.grant_viva_retake!(by: users(:admin))
+    assert_no_difference -> { retake_audit_rows.count } do
+      post allow_viva_retake_submission_path(sub)
+    end
     assert_redirected_to viva_submission_path(sub)
-    assert sub.reload.viva_archived_at.present?
-    assert_match(/archived/i, flash[:notice])
+    assert_match(/already/i, flash[:alert])
+  end
+
+  # The grant message says what the student can do now (Viva::StartPolicy read
+  # after the grant), not just that the session was freed.
+  def answered_viva_submission(user:, status: :done)
+    make_viva_submission(user: user, status: status).tap do |sub|
+      sub.viva_turns.create!(role: :student, status: :ok, content: 'answered once')
+    end
+  end
+
+  test "allow_viva_retake on the student's only counted session says they may start again, with the starts left" do
+    problems(:prob_viva).update!(viva_daily_limit: 1)
+    sub = answered_viva_submission(user: users(:john))
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(sub)
+    assert_equal "Session ##{sub.id} is closed and no longer counts toward the start limit. " \
+                 "john may start another attempt at '#{problems(:prob_viva).name}' (1 start left today).",
+                 flash[:notice]
+    assert_nil flash[:alert]
+  end
+
+  test "allow_viva_retake when another answered session today still counts says no start is left" do
+    problems(:prob_viva).update!(viva_daily_limit: 1)
+    answered_viva_submission(user: users(:john))
+    latest = answered_viva_submission(user: users(:john))
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(latest, contest_id: contests(:contest_a).id), as: :turbo_stream
+    assert_response :success
+    assert latest.reload.viva_retake_granted_at.present?
+    toast = "Session ##{latest.id} is closed and no longer counts toward the start limit, but john still has no " \
+            'start left today: another answered session of theirs today still counts. ' \
+            'Use Allow another attempt on that session too if they should start again.'
+    assert_includes response.body, toast
+    # No start was freed: a warning toast, so staff notice "grant that one too".
+    toast_style = response.body[/<div class='toast-header py-1 ([^']*)'>/, 1]
+    assert_equal 'bg-warning-subtle', toast_style
+
+    # A second click says the same, after "already has a grant".
+    post allow_viva_retake_submission_path(latest)
+    assert_match(/\ASession ##{latest.id} already has a grant\. It is closed .*but john still has no start left today/,
+                 flash[:alert])
+  end
+
+  test "allow_viva_retake on a contest-only viva outside contest mode says it can start only during a contest, as an alert" do
+    problems(:prob_viva).update!(viva_daily_limit: 0)
+    sub = answered_viva_submission(user: users(:john))
+    sign_in_as("admin", "admin")
+    post allow_viva_retake_submission_path(sub)
+    assert sub.reload.viva_retake_granted_at.present?, 'the grant itself still happens'
+    # No start was freed, so the session page shows it in the alert style.
+    assert_nil flash[:notice]
+    assert_equal "Session ##{sub.id} is closed and no longer counts toward the start limit, " \
+                 'but this viva can be started only during a contest.', flash[:alert]
+  end
+
+  test "a student cannot allow another attempt" do
+    sign_in_as("john", "hello")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    post allow_viva_retake_submission_path(sub)
+    assert_nil sub.reload.viva_retake_granted_at
+  end
+
+  test "an editor of the problem's group can allow another attempt" do
+    set_grader_config('system.use_problem_group', 'true')
+    GroupProblem.create!(group: groups(:group_a), problem: problems(:prob_viva), enabled: true)
+    sign_in_as("mary", "mary")
+    sub = make_viva_submission(user: users(:john), status: :done)
+    post allow_viva_retake_submission_path(sub)
+    assert sub.reload.viva_retake_granted_at.present?
+  end
+
+  test "the viva page offers Allow another attempt to staff" do
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    sign_in_as("admin", "admin")
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_select "form[action=?]", allow_viva_retake_submission_path(sub)
+    assert_no_match(/Archive &amp; allow retake/, response.body)
+  end
+
+  test "the viva page does not offer Allow another attempt to the student" do
+    sub = make_viva_submission(user: users(:john), status: :submitted)
+    sign_in_as("john", "hello")
+    get viva_submission_path(sub)
+    assert_response :success
+    assert_select "form[action=?]", allow_viva_retake_submission_path(sub), 0
   end
 
   # Reachable via the ballot link in _submission_short.html.haml on any

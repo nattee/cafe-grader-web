@@ -69,7 +69,24 @@ class GraderWatchdogTest < ActiveSupport::TestCase
   test 'enabled box with duplicates TERMs every grader but the oldest' do
     plan = Grader.plan_box(GraderProcess.new(enabled: true), procs(100, 200, 300))
     assert_equal [[:term, 200], [:term, 300]], plan
-    refute_includes plan.map(&:first), :kill, 'a live grader is never KILLed — its job would stay :process forever'
+    refute_includes plan.map(&:first), :kill, 'a grader that still beats is never KILLed — TERM lets it finish its job'
+  end
+
+  test 'enabled box whose grader has not beaten for 10 minutes KILLs it' do
+    gp = GraderProcess.new(enabled: true, last_heartbeat: 11.minutes.ago)
+    assert_equal [[:kill, 100]], Grader.plan_box(gp, procs(100)),
+                 'a grader held inside one job; the next tick reclaims the job and respawns'
+  end
+
+  test 'enabled box with a recent heartbeat is left alone' do
+    gp = GraderProcess.new(enabled: true, last_heartbeat: 9.minutes.ago)
+    assert_empty Grader.plan_box(gp, procs(100))
+  end
+
+  test 'a grader younger than the stale heartbeat it inherited is not KILLed' do
+    gp = GraderProcess.new(enabled: true, last_heartbeat: 3.days.ago)
+    fresh = [{pid: 100, ppid: 1, elapsed: 120}]
+    assert_empty Grader.plan_box(gp, fresh), 'spawned 2 minutes ago on a box disabled for days'
   end
 
   test 'disabled box TERMs all of its graders, not just the first' do

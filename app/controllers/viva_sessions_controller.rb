@@ -9,25 +9,14 @@ class VivaSessionsController < ApplicationController
   # duplicating its admin/reporter/owner/config logic here.
   before_action :authorize_viva_view, only: %i[show refresh]
 
-  # #show's "Viva Info" card reads this to render "N of L starts left today".
-  helper_method :daily_start_limit_for
-
   VIVA_LANGUAGE_NAME = Language::VIVA_NAME
 
-  # Context-based viva policy (2026-07-21 design, Phase A): every viva is
-  # practice; the out-of-contest limiter is a per-problem daily start count
-  # (archived sessions count — that's the point).
-  #
-  # Runtime-configurable fallback via
-  # GraderConfiguration['viva.practice_daily_start_limit'] (see db/seeds.rb
-  # for the seeded default/description), used only when a problem's
-  # viva_daily_limit is nil. DAILY_START_LIMIT_FALLBACK is used only when
-  # THAT config key is missing, blank, or non-positive — a misconfigured/
-  # blank global config must fall back to a safe limit, not open unlimited
-  # starts. A per-problem viva_daily_limit of 0 is a distinct, meaningful
-  # value (contest-only) and never falls back — see #daily_start_limit_for.
-  PRACTICE_DAILY_START_LIMIT_CONF_KEY = 'viva.practice_daily_start_limit'.freeze
-  DAILY_START_LIMIT_FALLBACK = 3
+  # #answer and #retry_turn on an archived session.
+  CLOSED_SESSION_ALERT = 'This session has been closed. Start a new one from the problem list if you have a start left.'.freeze
+
+  # The start limit, the contest-only rule and Restart's guard live in one
+  # place, Viva::StartPolicy (design 2026-10-07); #start, #restart and the
+  # session page all ask it.
 
   # POST /problems/:problem_id/viva/start
   def start
@@ -60,31 +49,16 @@ class VivaSessionsController < ApplicationController
     # here anyway. Refuse with a clear flash.
     if @problem.submissions.regular.where(user: @current_user, viva_archived_at: nil).exists?
       redirect_to list_main_path,
-                  alert: "You already have an active viva session for '#{@problem.name}'. An admin can archive it from the viva page if you need to retake."
+                  alert: "You already have an active viva session for '#{@problem.name}'. Open it from the problem list, or ask staff to allow another attempt."
       return
     end
 
-    unless @current_user.admin?
-      if @problem.viva_daily_limit == 0
-        # 0 = contest-only (design 2026-07-21, Phase A). We don't yet have a
-        # per-contest retake budget (that's Phase B) — but in contest mode,
-        # the can_submit_to_problem? check above already proved (for a
-        # student's :submit arm) this problem is visible only because it's
-        # included in an active contest the student is enrolled in right now,
-        # so gating on contest_mode? here is sufficient for Phase A. (Editors
-        # reaching here via the :edit arm are blocked in normal mode like
-        # everyone else; admins skip this whole block.)
-        unless GraderConfiguration.contest_mode?
-          redirect_to list_main_path, alert: 'This viva can only be taken during a contest.' and return
-        end
-      else
-        limit = daily_start_limit_for(@problem)
-        if engaged_starts_today(@problem, @current_user) >= limit
-          redirect_to list_main_path,
-                      alert: "Daily practice limit reached for '#{@problem.name}' (#{limit}/day). Try again tomorrow."
-          return
-        end
-      end
+    # Start limit and contest-only rule (Viva::StartPolicy; admins exempt).
+    # For a contest-only viva in contest mode, can_submit_to_problem? above
+    # already proved the problem is visible through an active contest the
+    # student is enrolled in, so the global contest-mode flag is enough here.
+    if (refusal = Viva::StartPolicy.new(@problem, @current_user).refusal)
+      redirect_to list_main_path, alert: refusal and return
     end
 
     submission = create_viva_session!(@problem, viva_lang)
@@ -139,6 +113,15 @@ class VivaSessionsController < ApplicationController
   # GET /submissions/:submission_id/viva
   def show
     load_viva_state
+
+    # Retake-policy visibility (Viva::StartPolicy — the rule #start and
+    # #restart apply): starts left today for the session's owner, and whether
+    # the owner's Restart button is offered at all. Only the Viva Info card
+    # reads these, so the 3 s #refresh (the transcript partial) skips them.
+    policy = Viva::StartPolicy.new(@submission.problem, @submission.user)
+    @daily_start_limit = policy.limit || Viva::StartPolicy.daily_limit_for(@submission.problem)
+    @starts_left       = policy.starts_left || @daily_start_limit
+    @restart_allowed   = policy.restart_allowed?(@submission)
   end
 
   # POST /submissions/:submission_id/viva/turns
@@ -162,6 +145,9 @@ class VivaSessionsController < ApplicationController
     # a worker never sees pre-commit state.
     placeholder = nil
     outcome = @submission.with_lock do
+      # A closed (archived) session takes no more answers — Restart, Allow
+      # another attempt or Finish open vivas closed it (design 2026-10-07, A4).
+      next :archived if @submission.viva_archived_at.present?
       case @submission.status.to_s
       when 'done', 'grader_error' then next :ended
       when 'evaluating'           then next :grading
@@ -183,6 +169,8 @@ class VivaSessionsController < ApplicationController
     end
 
     case outcome
+    when :archived
+      redirect_to viva_submission_path(@submission), alert: CLOSED_SESSION_ALERT
     when :ended
       redirect_to viva_submission_path(@submission), alert: 'This viva session has ended.'
     when :grading
@@ -251,6 +239,12 @@ class VivaSessionsController < ApplicationController
                   alert: 'This viva session has already ended.' and return
     end
 
+    # A closed (archived) session is not revived by a retry, the owner's or
+    # an admin's (design 2026-10-07, A4).
+    if @submission.viva_archived_at.present?
+      redirect_to viva_submission_path(@submission), alert: CLOSED_SESSION_ALERT and return
+    end
+
     turn.update!(
       status:           :processing,
       content:          nil,
@@ -273,8 +267,9 @@ class VivaSessionsController < ApplicationController
   # Self-service retake (design 2026-07-21, Phase A): every viva is
   # practice, so the owner can always archive their own session so the
   # Start Viva button reappears — subject to the daily start guard in
-  # #start on the *next* attempt. Admin archive-and-retake remains
-  # available too (SubmissionsController#archive_viva).
+  # #start on the *next* attempt, and offered only when that next attempt is
+  # possible (Viva::StartPolicy#restart_allowed?). Staff can still allow
+  # another attempt (SubmissionsController#allow_viva_retake).
   def restart
     unless @current_user == @submission.user
       redirect_to viva_submission_path(@submission), alert: 'Only the owner can restart their viva.' and return
@@ -285,6 +280,15 @@ class VivaSessionsController < ApplicationController
     # coding submission.
     unless @submission.problem.viva_exam?
       redirect_to viva_submission_path(@submission), alert: 'Restart is only available for viva exam problems.' and return
+    end
+
+    # Restart only when the student could start again afterwards (design
+    # 2026-10-07, A3): archiving their only counted session mid-interview used
+    # to leave them with no session, no grade and no way back.
+    policy = Viva::StartPolicy.new(@submission.problem, @current_user)
+    unless policy.restart_allowed?(@submission)
+      redirect_to viva_submission_path(@submission),
+                  alert: "Restart is not available — you could not start a new session afterwards. #{policy.refusal}" and return
     end
 
     # Same row lock as #answer / #finish. Two concurrent Restart clicks used
@@ -322,7 +326,7 @@ class VivaSessionsController < ApplicationController
       elsif problem.viva_daily_limit == 0
         redirect_to list_main_path, notice: 'Viva archived — start a fresh one from the problem list (only available during a contest).'
       else
-        redirect_to list_main_path, notice: "Viva archived — start a fresh one from the problem list (limit #{daily_start_limit_for(problem)} per day)."
+        redirect_to list_main_path, notice: "Viva archived — start a fresh one from the problem list (limit #{Viva::StartPolicy.daily_limit_for(problem)} per day)."
       end
     end
   end
@@ -426,38 +430,6 @@ class VivaSessionsController < ApplicationController
     submission
   end
 
-  # Resolved daily start cap for a viva (design 2026-07-21, Phase A).
-  # Reused by #start's rate-limit guard, #restart's notice text, and the
-  # "N of L starts left today" display. nil on the problem falls back to
-  # the site-wide GraderConfiguration default; a per-problem 0 is handled
-  # separately by callers (contest-only — never routed through here).
-  # Daily-limit accounting: a start counts once the student has sent at
-  # least one answer. Greeting-only sessions (opened, never engaged) are
-  # free — the 2026-08-24 trial had 27 of 70 starts as zero-engagement
-  # peeks, each burning a slot of the daily budget on what was often a
-  # misclick. Free peeks still cost one LLM greeting call each; if that is
-  # ever abused, add a coarse total-starts ceiling here rather than
-  # re-counting peeks.
-  def engaged_starts_today(problem, user)
-    problem.submissions.regular
-           .where(user: user)
-           .where('submitted_at >= ?', Time.zone.now.beginning_of_day)
-           .joins(:viva_turns).where(viva_turns: {role: :student})
-           .distinct.count
-  end
-
-  def daily_start_limit_for(problem)
-    problem.viva_daily_limit.nil? ? global_daily_start_limit : problem.viva_daily_limit
-  end
-
-  # The site-wide fallback used when a problem doesn't set its own
-  # viva_daily_limit. Misconfigured/blank config falls back to
-  # DAILY_START_LIMIT_FALLBACK rather than being read as "unlimited".
-  def global_daily_start_limit
-    limit = GraderConfiguration[PRACTICE_DAILY_START_LIMIT_CONF_KEY].to_i
-    limit.positive? ? limit : DAILY_START_LIMIT_FALLBACK
-  end
-
   # Shared by #show and #refresh. The "pending" flag drives both polling
   # (keep refreshing while the backend is still doing work) and the
   # answer-form's disabled state. It's true while a turn is being
@@ -474,14 +446,6 @@ class VivaSessionsController < ApplicationController
     @pending_turn = @submission.viva_turns.where(status: :processing).exists? ||
                     @submission.status == 'evaluating'
     @finished     = %w[done grader_error evaluating].include?(@submission.status.to_s)
-
-    # Retake-policy visibility: every viva session shows how many of
-    # today's starts are left, using the SAME count #start's rate-limit
-    # guard uses (engaged sessions only — this session counts against its
-    # own budget once the student has answered).
-    used = engaged_starts_today(@submission.problem, @submission.user)
-    @daily_start_limit = daily_start_limit_for(@submission.problem)
-    @starts_left = [@daily_start_limit - used, 0].max
   end
 
   def set_problem

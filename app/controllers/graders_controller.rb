@@ -132,10 +132,17 @@ class GradersController < ApplicationController
     render turbo_stream: turbo_stream.replace(helpers.dom_id(@grader), partial: 'grader', locals: {grader: @grader})
   end
 
+  # Retry and Retry All requeue only what Job.split_retryable allows: a row
+  # whose submission was deleted, rejudged or graded since stays an error.
   def retry_error_job
     job = Job.find(params[:job_id])
-    job.update(status: :wait, result: nil)
-    @toast = { title: "Grader", body: "Job ##{job.id} re-queued." }
+    if Job.split_retryable([job]).first.any?
+      job.update(status: :wait, result: nil)
+      @toast = { title: "Grader", body: "Job ##{job.id} re-queued." }
+    else
+      @toast = { title: "Grader", type: :warning,
+                 body: "Job ##{job.id} not re-queued: its submission was deleted, rejudged or graded since." }
+    end
     respond_to do |format|
       format.turbo_stream { render "turbo_toast" }
       format.html { redirect_to grader_processes_path, flash: { notice: @toast[:body] } }
@@ -143,8 +150,11 @@ class GradersController < ApplicationController
   end
 
   def retry_all_error_jobs
-    count = Job.where(status: :error).update_all(status: :wait, result: nil)
-    @toast = { title: "Grader", body: "#{count} error #{'job'.pluralize(count)} re-queued." }
+    retryable, skipped = Job.split_retryable(Job.where(status: :error).select(:id, :arg, :job_type, :parent_job_id).to_a)
+    count = Job.where(id: retryable.map(&:id), status: :error).update_all(status: :wait, result: nil)
+    body = "#{count} error #{'job'.pluralize(count)} re-queued."
+    body += " #{skipped.size} skipped: their submission was deleted, rejudged or graded since." if skipped.any?
+    @toast = { title: "Grader", body: body }
     respond_to do |format|
       format.turbo_stream { render "turbo_toast" }
       format.html { redirect_to grader_processes_path, flash: { notice: @toast[:body] } }
