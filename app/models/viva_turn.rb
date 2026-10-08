@@ -17,6 +17,10 @@ class VivaTurn < ApplicationRecord
   # only stale after a longer grace — a queue backlog is not a stuck job, and
   # failing a still-queued turn showed the student a false "timed out" (the
   # 2026-09-09 exam queued turns up to ~7.7 min under one shared worker).
+  # Note: Llm::VivaTurnAssist saves llm_started_at together with the reply, so
+  # a turn still :processing always has it nil and, as of 4.7.3, every stuck
+  # turn takes this 20-minute path; STALE_AFTER applies only if the start is
+  # ever recorded when the call begins.
   QUEUE_STALE_AFTER = 20.minutes
 
   scope :ordered, -> { order(:sequence) }
@@ -59,9 +63,12 @@ class VivaTurn < ApplicationRecord
     )
     count = 0
     stale.find_each do |turn|
+      # name the wait that actually applied (it used to say 10 minutes for a
+      # turn failed by the 20-minute queue rule)
+      waited = turn.llm_started_at ? threshold : queue_threshold
       turn.update(
         status:  :error,
-        content: "Interviewer timed out (no response after #{threshold.inspect}). " \
+        content: "Interviewer timed out (no response after #{waited.inspect}). " \
                  "Use the Retry button to try again."
       )
       count += 1

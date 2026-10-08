@@ -70,3 +70,10 @@ production:
   grader_job_reclaim:
     command: "Job.reclaim_orphaned!(older_than: 30.minutes)"
     schedule: every 10 minutes
+  # Hall of Fame counts (problem_stats). One aggregate query over submissions:
+  # 7 s on cp-grader's 977k rows (2026-10-08). Sat unread under `recurring:`
+  # in config/queue.yml from rev 1558 (2026-04) until 4.7.3, so the counts
+  # were never refreshed.
+  refresh_problem_stats:
+    class: RefreshProblemStatsJob
+    schedule: every hour

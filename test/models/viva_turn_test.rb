@@ -84,4 +84,16 @@ class VivaTurnTest < ActiveSupport::TestCase
     assert_equal 0, VivaTurn.fail_stale!, "queued 12 min but not started — not yet stale at the 20 min grace"
     assert_equal 1, VivaTurn.fail_stale!(queue_threshold: 10.minutes)
   end
+
+  test "the timed-out message names the wait that applied" do
+    queued = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    VivaTurn.where(id: queued.id).update_all(llm_started_at: nil, updated_at: 30.minutes.ago)
+    VivaTurn.fail_stale!
+    assert_match 'no response after 20 minutes', queued.reload.content
+
+    running = @submission.viva_turns.create!(role: :assistant, status: :processing, content: nil)
+    VivaTurn.where(id: running.id).update_all(llm_started_at: 15.minutes.ago, updated_at: 15.minutes.ago)
+    VivaTurn.fail_stale!
+    assert_match 'no response after 10 minutes', running.reload.content
+  end
 end
