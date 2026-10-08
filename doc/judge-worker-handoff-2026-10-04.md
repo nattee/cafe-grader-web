@@ -8,7 +8,8 @@ cold: one for the pre-phase-0 hardening fixes (§3), one for the spec revision
 
 - **Spec:** `docs/superpowers/specs/2026-10-04-judge-worker-pool-design.md`,
   committed on `master` as rev 2229 (not pushed). Approach B, the protocol
-  worker. Status: *review round 1 done, revision 2 pending*.
+  worker. Status: *revision 2 committed 2026-10-08 as rev 2262; review
+  round 2 pending* (review it against rev 2229: `hg diff -r 2229 -r 2262`).
 - **Review round 1:** an independent session reviewed rev 2229 and raised nine
   main points plus four smaller ones. Every citation was verified against the
   code and the local prod copy of cp-grader's DB; the outcomes are in §2.
@@ -149,6 +150,18 @@ and PostgreSQL dataset and must be proven, not reasoned about.
    so a host can fall back without a redeploy.
 
 ## 5. Spec revision 2: what to change
+
+**Status 2026-10-08: done**, rev 2262. Everything below is in the spec,
+plus §3's "where the code differs" notes (spec §8.1). Choices revision 2
+made beyond this list, for review round 2 to check: the ceiling gets
+allowances for compile, initializer and a cold-cache fetch (the bare
+formula would cut off a 120 s initializer); "old blobs kept while jobs
+reference them" is a fixed 24 h delayed purge plus `410 Gone` →
+re-snapshot, not reference counting; a job fault's worker exclusion lapses
+after 60 s so a pool of one still retries; the claim's filters run in SQL
+(`jobs.requires`, `jobs.dataset_id`) so a quarantined dataset at the head
+of the queue cannot starve it; a `grade` row starts a chain for the
+legacy check; the agent runs as its own user `cafe-judge`.
 
 Fold §2's decisions into the spec, section by section:
 
