@@ -221,6 +221,32 @@ Spec thread, first message:
 > table and the trust decision in the decision log; commit it on master;
 > then give me the review commands so I can send it for review round 2.
 
+Both of the above are done (2026-10-08). The next two threads:
+
+Review round 2, message for the **independent reviewing session** (paste the
+diff it names, or let it read the file):
+> Review revision 2 of `docs/superpowers/specs/2026-10-04-judge-worker-pool-design.md`
+> (master rev 2262; `hg diff -r 2229 -r 2262` on that file shows what changed
+> since revision 1). Round 1's points and how revision 2 answers them are in
+> `doc/judge-worker-handoff-2026-10-04.md` §2 and §5; §5 also lists the
+> choices revision 2 made beyond round 1 — check those first. Report only
+> defects that would change the envelope, the result-sink interface, the
+> state table (§7.8) or the phase-0 slice list, since those are what the
+> phase-0 plan is built from.
+
+Round-2 verification thread (this repo, new session), first message:
+> Read `doc/judge-worker-handoff-2026-10-04.md` §1, §2 and §5, then the spec
+> at rev 2262. Here is review round 2: [paste]. Verify every point against
+> the code and the local prod copy as round 1 was verified, tell me which are
+> real, fold the real ones into the spec as revision 3, commit on master,
+> and append the round-2 table to this handoff §2.
+
+Phase-0 planning thread, first message (only after the spec is approved):
+> Read `doc/judge-worker-handoff-2026-10-04.md`, then the approved spec. Use
+> the writing-plans skill to write the phase-0 plan only (engine extraction,
+> slices 0.1–0.5 plus the sandboxed checker from §4 as its own slice with
+> the full test), with a ledger, under `docs/superpowers/plans/`.
+
 Useful commands:
 
 ```
