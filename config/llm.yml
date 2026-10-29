@@ -33,7 +33,11 @@ llm_services: &services
   # (0/90 wrong), the model the 2026-09-05 prompt was tested on — ask OIT
   # whether the Gateway can serve a Gemini Pro model.
   # GenieAssist: gemini-3.1-pro,Claude-Sonnet
-  AiGatewayAssist: claude-opus-4-5,gemini-3.7-flash
+  # claude-opus-4-5 left the student picker on 2026-10-29 for gemini-4-argon
+  # (same 60 Quiz 2 requests: wrong diagnoses Opus 37%, argon 3%, flash 3%;
+  # course-prep gateway-argon-2026-10-29). Opus stays in the ai_gateway
+  # roster as a backup: to offer it again, add it back to this line and restart.
+  AiGatewayAssist: gemini-4-argon,gemini-3.7-flash
 
   # as of 23 Aug 2026, the list_model method gives
   # ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash-lite", "gemini-2.0-flash",
@@ -140,16 +144,20 @@ llm_services: &services
     completion_path: "/v1/chat/completions"
     models_path: "/v1/models"
     default_model: claude-sonnet-4-5
-    # Role models per the 2026-08-27 bake-off decision: opus for assist
-    # (depth), 3.7-flash for all viva roles (only compliant grader, 2.7x
-    # faster turns, no leaks, ±2 rerun noise).
+    # Role models per the 2026-10-29 model test (course-prep
+    # gateway-argon-2026-10-29/report.html), which replaced the 2026-08-27
+    # bake-off choices for three roles: gemini-4-argon grades closest to the
+    # independent reader grades (+5.6 points against 3.7-flash's +14.5 over
+    # 316 exam vivas), copies slide code most faithfully in extraction, and
+    # matches flash's assist accuracy. viva_turn stays on 3.7-flash until an
+    # exam-hour load test and the altered-scenario-code risk are settled.
     default_models:
-      assist:            claude-opus-4-5
+      assist:            gemini-4-argon
       viva_turn:         gemini-3.7-flash
-      viva_grade:        gemini-3.7-flash
-      grounding_extract: gemini-3.7-flash
+      viva_grade:        gemini-4-argon
+      grounding_extract: gemini-4-argon
     models:
-      [claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5,
+      [gemini-4-argon, claude-opus-4-5, claude-sonnet-4-5, claude-haiku-4-5,
        gemini-3.7-flash, gemini-3.6-flash, gemini-3.5-flash,
        gemini-3.5-flash-lite, gemini-2.5-flash]
 
