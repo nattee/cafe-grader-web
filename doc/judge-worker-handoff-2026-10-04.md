@@ -8,7 +8,8 @@ cold: one for the pre-phase-0 hardening fixes (§3), one for the spec revision
 
 - **Spec:** `docs/superpowers/specs/2026-10-04-judge-worker-pool-design.md`,
   committed on `master` as rev 2229 (not pushed). Approach B, the protocol
-  worker. Status: *review round 1 done, revision 2 pending*.
+  worker. Status: *revision 2 committed 2026-10-08 as rev 2262; review
+  round 2 pending* (review it against rev 2229: `hg diff -r 2229 -r 2262`).
 - **Review round 1:** an independent session reviewed rev 2229 and raised nine
   main points plus four smaller ones. Every citation was verified against the
   code and the local prod copy of cp-grader's DB; the outcomes are in §2.
@@ -150,6 +151,18 @@ and PostgreSQL dataset and must be proven, not reasoned about.
 
 ## 5. Spec revision 2: what to change
 
+**Status 2026-10-08: done**, rev 2262. Everything below is in the spec,
+plus §3's "where the code differs" notes (spec §8.1). Choices revision 2
+made beyond this list, for review round 2 to check: the ceiling gets
+allowances for compile, initializer and a cold-cache fetch (the bare
+formula would cut off a 120 s initializer); "old blobs kept while jobs
+reference them" is a fixed 24 h delayed purge plus `410 Gone` →
+re-snapshot, not reference counting; a job fault's worker exclusion lapses
+after 60 s so a pool of one still retries; the claim's filters run in SQL
+(`jobs.requires`, `jobs.dataset_id`) so a quarantined dataset at the head
+of the queue cannot starve it; a `grade` row starts a chain for the
+legacy check; the agent runs as its own user `cafe-judge`.
+
 Fold §2's decisions into the spec, section by section:
 
 - §6.2/6.4/6.5: heartbeat lists `{job_id, lease}` pairs; `seq` unique per
@@ -207,6 +220,32 @@ Spec thread, first message:
 > at rev 2229. Write revision 2, including the server-side state-transition
 > table and the trust decision in the decision log; commit it on master;
 > then give me the review commands so I can send it for review round 2.
+
+Both of the above are done (2026-10-08). The next two threads:
+
+Review round 2, message for the **independent reviewing session** (paste the
+diff it names, or let it read the file):
+> Review revision 2 of `docs/superpowers/specs/2026-10-04-judge-worker-pool-design.md`
+> (master rev 2262; `hg diff -r 2229 -r 2262` on that file shows what changed
+> since revision 1). Round 1's points and how revision 2 answers them are in
+> `doc/judge-worker-handoff-2026-10-04.md` §2 and §5; §5 also lists the
+> choices revision 2 made beyond round 1 — check those first. Report only
+> defects that would change the envelope, the result-sink interface, the
+> state table (§7.8) or the phase-0 slice list, since those are what the
+> phase-0 plan is built from.
+
+Round-2 verification thread (this repo, new session), first message:
+> Read `doc/judge-worker-handoff-2026-10-04.md` §1, §2 and §5, then the spec
+> at rev 2262. Here is review round 2: [paste]. Verify every point against
+> the code and the local prod copy as round 1 was verified, tell me which are
+> real, fold the real ones into the spec as revision 3, commit on master,
+> and append the round-2 table to this handoff §2.
+
+Phase-0 planning thread, first message (only after the spec is approved):
+> Read `doc/judge-worker-handoff-2026-10-04.md`, then the approved spec. Use
+> the writing-plans skill to write the phase-0 plan only (engine extraction,
+> slices 0.1–0.5 plus the sandboxed checker from §4 as its own slice with
+> the full test), with a ledger, under `docs/superpowers/plans/`.
 
 Useful commands:
 

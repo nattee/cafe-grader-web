@@ -22,6 +22,41 @@ Conventions:
 
 ---
 
+## Languages that still do not grade (found by `engine:langcheck`, 2026-11-14)
+
+**Why it matters:** each of these is offered in the language picker wherever
+a problem permits all languages, and a student who picks one gets a
+compilation or grader error that is not their fault. Counts are from the
+cp-grader database copy of 2026-10-28.
+
+- **Java — fixed in code (rev 2278), not yet on the hosts.** Each judge host
+  needs `bin/rails engine:detect WRITE=1` + grader restart. The 53 submissions
+  that failed with `Error loading java.security file` (2025-08-20 →
+  2026-10-05) are not regraded; decide whether to rejudge them
+  (`Submission#add_judge_job(live_dataset, -10)`).
+- **Pascal — fixed in code (revs 2278 + 2279), not yet on the hosts.** Two
+  faults: the wrong config key, then fpc not finding its units without
+  `/etc/fpc.cfg`. The same `bin/rails engine:detect WRITE=1` writes the
+  `compiler_options: pas:` line. Of its 75 submissions only 40 look like
+  Pascal (24 contain `#include`), so hiding it from the picker is still worth
+  considering where no course uses it.
+- **PHP (170, never passed).** Only the missing `compiler: php:` line; the
+  built-in program passes once the path is set. Per-host `worker.yml` edit.
+- **Octave (4,209, never passed).** `Compiler.get_compiler` has no branch for
+  it: "Unsupported language (octave)". Either write the compiler class or
+  remove the `Language` row.
+- **Haskell on this dev machine only:** compiles, then the run dies with
+  `Ticker: Failed to spawn thread` — the built-in Haskell options have no
+  `-p`, and the GHC here needs a second thread. cp-grader graded Haskell on
+  2026-10-10, so check with `engine:langcheck ONLY=haskell` on a real host
+  before changing anything.
+
+**Proposed direction:** fix or hide each one; a language that cannot grade on
+a host should not be selectable there. **Size:** PHP is a config line per
+host; Octave is a product decision first.
+
+---
+
 ## Contest reports — what a contest should report after the exam (direction not chosen)
 
 **Raised 2026-09-12 and 2026-09-22, never designed** — each time a nearby
@@ -101,11 +136,148 @@ under limit 1 locked the student out ungraded (Restart is now offered only
 when a new start is possible). What the checklist still has to warn about is
 a start limit other than 1 or 0 on a contest's viva.
 
+**Items added by the 2026-10-18 exam-viva audit** (dae 2026-10-18: keep in the backlog; course-prep
+`data-structures/viva/exam-audit-2026-10-18/report.html`; the human half of
+the same list is the authoring guide's §8b gate):
+- Viva problems with no **exam** overlay attached (neither quiz had one), or
+  with the `-practice` overlay still attached.
+- Scenario text containing a term the briefing says must not appear — needs
+  a small convention, e.g. a `# Not in the scenario` list in the briefing
+  (the Rule of Three subtitle named the answer to its last criterion).
+- Interview-plan rungs with more than one question mark (bundled rungs were
+  the main cause of a zero criterion); a criterion whose only rung is last.
+- The grading model configured for the exam differs from the one chosen in
+  "Exam viva grading" below.
+
 **Reuse:** `Viva::Rubric.parse` (rubric readable, weights sum to 100) and the
 contest's Viva check page (`VivaCheckReport`) already exist; the checklist's
 viva rows can call the same code.
 
 **Size:** small to medium — a PORO of checks plus a card on `contests/show`.
+
+---
+
+## Exam viva grading — the AI grade runs 14–18 points high (direction not chosen)
+
+**Found 2026-10-18** (full audit of both DS exam vivas, 286 sessions;
+`doc/Viva-History.md` 2026-10-18). gemini-3.7-flash grades above an
+independent reading in every score band and never below, while ranking
+students correctly. It ignores the conduct's grading conventions (hint
+discount, examiner-supplied content, unreached = 0). Already suspected in the
+2026-09-01 Buggy Counter audit (a third over-graded; "grading default to
+3.1-pro or Sonnet" left open) and in the 2026-09-12 Opus pilot (11 points
+stricter on 30 sessions). Not fixed before either exam.
+
+**Candidate directions:** (1) conventions repeated as caps inside each
+criterion (authoring guide §4c — prompt-only, try first); (2) a stronger
+grading model for exams; (3) two grading passes, keep the mean. Test any of
+them against the audit's own independent grades: the 286 transcripts and
+per-criterion scores are in `findings/batch-NN.jsonl`, so a candidate grader
+can be scored offline before an exam (university quota only).
+
+**Size:** small for (1); (2)/(3) are config plus one offline evaluation run.
+
+**State:** dae 2026-10-18 — backlog, not scheduled.
+
+**Quiz 3 (2026-10-21, problem 721, contest 47) — the narratives too.** The
+exam overlay says a narrative names only the topic, yet 65 of 109 Quiz 3
+narratives name `mLess`, 51 describe the re-check bug the student was
+supposed to find, and 11 name a fix (course-prep
+`data-structures/viva/quiz-2569-3-postexam-2026-10-28/report.html` §3). A
+candidate grader should be scored on narrative leaks as well as points. The
+gap on Quiz 3, from a blind 30-session sample: AI +9.8 on average, never
+lower, ranked almost the same (0.95), and larger for higher grades (+5 in
+the bottom third, +14 in the top) — mostly credit for examples that are not
+valid heaps and for untraced claims (`regrade-sample/` in the same folder).
+
+**2026-10-29 — direction (2) taken: grading moved to gemini-4-argon** (chula_cp
+2273; `doc/gateway-model-test-2026-10-29.md`). Scored offline on the 316
+sessions with reader grades: +5.6 points above the readers against +14.5 for
+3.7-flash (Q1 +2.7, Q2 +9.0, Q3 +3.0); on Quiz 3 its narratives name `mLess`
+in 4 of 30 sessions against 22. Still open: Quiz 2 (Rule of Three) is 9
+points high; check the first exam graded by argon against a blind sample
+(authoring guide §9) before closing this item. Direction (1) is still worth
+doing for any model.
+
+---
+
+## Viva replies on gemini-4-argon — two checks before switching
+
+The 2026-10-29 model test (`doc/gateway-model-test-2026-10-29.md`) kept
+`viva_turn` on gemini-3.7-flash although argon did better on the audit faults.
+Before moving the examiner replies to argon:
+1. **Simultaneous load at exam hours.** 30 replies sent at once, run twice at
+   night, gave argon a slowest reply of 37 s, then 9 s. Repeat during exam-hour
+   traffic (around 10:00) with
+   `course-prep/gateway-argon-2026-10-29/step3_turns.rb burst`.
+2. **Altered scenario code.** One argon opening in 13 with code inserted a
+   made-up line into the scenario's class (problem 701). Either accept it and
+   watch, or show the scenario from the platform so the model never has to
+   copy it (code change: render `problem.description` above the first turn and
+   tell the examiner not to repeat it).
+Also known: argon narrows the search more often (13 of 40 replies against
+5–7) and bundles questions; its opening takes about 20 s.
+
+---
+
+## Viva rule-break notice says "practice mode" during exams
+
+`Llm::VivaTurnAssist#apply_alert_policy` always takes the practice branch
+(`exam_policy?` is `false` until Phase B), so a flagged turn in an exam shows
+the student "In practice mode the interview continues; flags are logged for
+instructor review." Seen twice in DS Quiz 3 (contest 47, 2026-10-21). The
+behaviour (log, continue) is intended until Phase B; only the wording is
+wrong. Fix: a mode-neutral sentence ("The interview continues; flags are
+logged for instructor review."), or choose the wording from the problem's
+conduct overlay. Small.
+
+---
+
+## Viva misreadings — three cases the conduct and grading rules do not yet separate (policy decided 2026-11-06)
+
+dae's policy (2026-11-06, while preparing the AI Gateway showcase talk), for a
+student answer that is not an answer to the question asked:
+
+1. **Honest misreading** — the examiner's words can honestly be read the way the
+   student read them. The examiner explains and rephrases; **no penalty**.
+2. **Part left unanswered** — the examiner's message held two or more questions
+   and the student answered some. The examiner restates the rest **word for
+   word**; **no penalty** (students answer a chat in pieces).
+3. **Careless misreading** — the words were clear (e.g. "A *and* B") and the
+   student answered another question. Costs credit **only on a reading /
+   understanding criterion** if the rubric has one; otherwise nothing.
+
+Test for 1 vs 3: would a careful reader of the examiner's exact words reach the
+student's reading? The grader can apply it from the transcript, so the examiner
+need not judge in the moment; it rephrases or restates in every case.
+
+Today: the exam overlay allows one restatement and folds "narrow to a smaller
+instance" into it; the base conduct's "off-topic answer: redirect once, then
+move on" likely makes a misread question look off-topic; the grading convention
+discounts an answer that came "after the examiner's hint" and may count a
+clarification as a hint. Nothing restates the unanswered half of a bundled
+question.
+
+Also: every clarification costs a **turn** even when it costs no points. The
+guide's soft cap (rungs + 2) leaves two spare turns for all hints,
+clarifications and re-asks together; Buggy Counter (693, Sept audit) had 25%
+of completed sessions at the 12-turn hard cap, and of 16 students who scored 0
+on "state the bug" only 2 earned anything on the next, independent rung.
+
+Evidence from the exam transcripts (course-prep `viva-talk-2026-11-06/viva-learning-analysis-2026-11-06.md`,
+H3): honest misreadings are rare (7 in 394 exam vivas); the big loss is case 2
+— in 191 of 394 the examiner moved on without the unanswered part (restated it
+only 166 of 524 times). Exams hardly reach the turn cap (3 of 394), so there the
+cost is lost evidence, not turns; the turn-budget point matters for practice.
+
+Direction: (a) base conduct — the three cases and the examiner's move for each;
+(b) grading conventions — no discount for a clarification or a restatement;
+(c) authoring guide — size the turn budget with slack, list expected
+misreadings per rung with the clarifying sentence, one question per message;
+(d) parked: clarification turns not counting toward the cap needs the examiner
+to mark them, which cannot be relied on today. Size: (a)–(c) small prompt +
+doc work, then a regrade check on one problem; touches `doc/Viva-History.md`
+and the guide in the same commit.
 
 ---
 
@@ -288,11 +460,35 @@ the dead `AI_viva` tag deleted. Still open:
   `~/cafe-grader/assist-eval-2026-09-03/`, copies in `course-prep`) and compare
   read scores and outcomes against the 2026-09-03 document — compile-error and
   repeat-request cells first.
-- **Gateway models unread.** claude-opus-4-5 (37 answers by 2026-09-03) and
-  gemini-3.7-flash (26) were never read for quality; with Genie off the picker
-  they are the whole roster. Read a sample once ~50 answers each exist. Ask OIT
-  whether the Gateway can serve a Gemini Pro model — gemini-3.1-pro was 0/90
-  wrong and is the model the v2.2 prompt was tested on.
+- **Gateway models: read done 2026-10-13; picker decided 2026-10-29 (Opus out,
+  gemini-4-argon in, chula_cp 2273 — `doc/Assist-History.md` 2026-10-29).** Opus
+  misdiagnoses 8–12 of 60 answers, flash 0 of 39; Opus keeps to one issue in
+  48% vs flash's 82%; outcomes do not differ
+  (`doc/assist-gateway-read-2026-10-13.md`). With thinking on (tested
+  2026-10-15), Opus drops to 5 of 60 wrong. On the Quiz 2 head-to-head (same
+  60 inputs) the wrong-diagnosis rates are flash 3%, Opus 37% and thinking
+  Opus 12%; thinking Opus takes 51 s per answer. The study recommended taking
+  Opus out of the picker and keeping it as a backup. **DECIDED 2026-10-28
+  (dae, after DS Quiz 3): keep both in the picker as they are.** In Quiz 3
+  Opus took 299 of 362 requests (83%) and USD 35.41 of 36.23
+  (`doc/Assist-History.md` 2026-10-28). *SUPERSEDED 2026-10-29:* on the same
+  60 inputs gemini-4-argon was 3% wrong at USD 0.025 per answer; dae replaced
+  Opus with it in the picker, Opus kept as a backup. Open: argon keeps to one
+  issue in 62% (flash 73%) — check in the next read; measure its wait in the
+  next quiz from `comments.llm_latency_ms`. The Gateway now also serves
+  gemini-3.1-pro-preview (seen 2026-10-29), the 0/90 model the v2.2 prompt was
+  tested on — a candidate if argon disappoints.
+
+### Scoring
+- **Requests made after the contest count against the contest score.**
+  `Contest#score_report` joins every assist comment on the contest's
+  submissions, whatever its `created_at`, into `final_score = LEAST(max,
+  100 − llm − hints)`. In DS Quiz 3 (contest 47) two students asked for help
+  on their quiz submissions after the quiz (2026-10-21 13:48, 2026-10-26
+  03:30) and were charged 10 quiz points each; no score changed only because
+  both were below the cap. Fix: count only comments created inside the
+  student's contest window (the same start offset / extra time as
+  `Contest#submissions`), with a regression test. Small.
 
 ### Prompt
 - **TLE hand-over shape fix** (template or a second pass): the model names the

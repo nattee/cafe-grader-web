@@ -10,6 +10,71 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 
 ## [Unreleased]
 
+### Added
+- **`bin/rails engine:langcheck` — does each language grade on this host?**
+  It compiles and runs a small built-in program (read two numbers, print the
+  sum) for C++, C, Python, Ruby, Java, Haskell, Rust, Go, Pascal and PHP in the
+  real sandbox, with the same compiler classes and isolate options as real
+  grading, and prints one line per language: `PASS`, `FAIL` with the phase and
+  the compiler's first lines, or `not configured` when `worker.yml` has no
+  compiler path for it. It needs no problem and no submission and touches no
+  student data. `ONLY=java,cpp` limits it, `BOX=` picks the isolate box
+  (default 99), `SKIP_WEB_ONLY=1` skips a host with no grader boxes. Exit 1 on
+  any `FAIL`. (rev 2278)
+- **Per-host isolate options in `config/worker.yml`, written by
+  `bin/rails engine:detect`.** A new optional section, `isolate_options:`
+  with one line per language, is added after the built-in options for both the
+  compile and the run sandbox. `engine:detect` works out what the host needs
+  and prints it; `engine:detect WRITE=1` writes it into `worker.yml` (only that
+  line changes) and the graders use it after a restart. Graders never detect
+  anything themselves: what a box uses is the line in the file, and each
+  grader logs it once at start. `engine:langcheck` also reports when the line
+  no longer matches the host, for example after a JDK upgrade. (rev 2278)
+
+### Fixed
+- **Java submissions fail to compile with `InternalError: Error loading
+  java.security file` on Debian/Ubuntu judge hosts.** The OS package keeps the
+  JDK's configuration in `/etc/java-<N>-openjdk`, which the sandbox did not
+  mount, so `javac` died before reading the source; on cp-grader no Java
+  submission was graded from 2025-08-20 on. **Each judge host needs one manual
+  step after this deploy:** `bin/rails engine:detect WRITE=1`, restart the
+  graders, then `bin/rails engine:langcheck ONLY=java`. Submissions that
+  failed this way are not regraded automatically. (rev 2278)
+- **Pascal submissions never compiled.** Two faults. The compiler class read
+  `compiler: pascal:` while `worker.yml` defines `compiler: pas:`, so the
+  command started with `-O1` (`execve("-O1"): No such file or directory`; rev
+  2278). Behind that, `fpc` could not find its standard units inside the
+  sandbox (`Can't find unit system used by Program`), because it learns the
+  unit directory from `/etc/fpc.cfg`, which the sandbox does not show and,
+  being a single file, cannot be mounted. The directory is now passed as an
+  `-Fu` flag from a new per-host `compiler_options: pas:` line in
+  `worker.yml`, which `bin/rails engine:detect WRITE=1` writes next to the
+  Java line; `engine:langcheck` reports it when it goes stale after an fpc
+  upgrade. Same manual step per judge host as for Java. (rev 2279)
+- **`worker.yml.SAMPLE` had no `compiler: php:` line**, so on a host built
+  from it every PHP submission was a compilation error with an empty message.
+  Existing hosts: add `php: <%= `which php`.strip %>` under `compiler:` in
+  `config/worker.yml` if PHP should work there. (rev 2278)
+
+### Changed
+- **AI assist on Claude through the AI gateway costs about half as much
+  during exams.** Each request now has a fixed line, "End of the problem
+  material. The student's work follows.", between the problem material (the
+  `codey-*` prompt tags, the statement PDF, the manager files) and the
+  student's work. On gateway requests that line carries a prompt-cache
+  marker: Claude keeps the problem material for 5 minutes, and the next
+  request on the same problem pays a tenth of the input price for it.
+  Measured through the Chula AI Gateway on a Quiz 2 problem, the material is
+  82% of the input and the same request cost $0.126 without the marker and
+  $0.054 with it. The request that stores the material pays 25% extra on it,
+  so a problem nobody asks about for 5 minutes pays that again. In Quiz 2, 94%
+  of Opus requests came within 5 minutes of the previous one on the same
+  problem. Answers do not change and are about 1 second faster out of a
+  typical 22. Gemini models ignore the marker, and other providers get the
+  line without it. To turn the marker off, set `prompt_cache: false` in the
+  `ai_gateway:` block of `config/llm.yml`; no setting is needed to keep it on.
+  The manager files are now always sent sorted by file name. (rev 2264)
+
 ## [4.7.3] — 2026-10-08
 
 **Upgrade notes.** No migration; a change to `config/queue.yml` and

@@ -64,8 +64,33 @@ module JudgeBase
     end
   end
 
-  # additional options for isolate for each language
+  # Extra isolate options for a language, applied to both the compile and the
+  # run sandbox: the built-in ones below, then whatever this host adds in
+  # worker.yml under `isolate_options: <language>:` (see worker.yml.SAMPLE).
+  # The host part is for what depends on the machine, not on the language —
+  # e.g. Debian/Ubuntu's OpenJDK keeps its conf files in /etc/java-<N>-openjdk,
+  # which the sandbox does not see unless it is mounted. Nothing is detected
+  # here: `bin/rails engine:detect` works the host part out and writes it to
+  # worker.yml, so what a grader uses is always readable in that file.
   def isolate_options_by_lang(language_name)
+    [builtin_isolate_options(language_name), host_isolate_options(language_name)].reject(&:blank?).join(' ')
+  end
+
+  def host_isolate_options(language_name)
+    Rails.configuration.worker.dig(:isolate_options, language_name.to_sym).to_s.strip
+  end
+
+  # Extra compiler command-line options this host needs for a language, from
+  # worker.yml `compiler_options: <language>:` — the compiler-flag counterpart
+  # of host_isolate_options, for what cannot be solved by a mount. Written by
+  # `bin/rails engine:detect` too. Only Compiler::Pascal reads it today: fpc
+  # learns its unit path from /etc/fpc.cfg, a single file the sandbox cannot
+  # mount (isolate binds directories only).
+  def host_compiler_options(language_name)
+    Rails.configuration.worker.dig(:compiler_options, language_name.to_sym).to_s.strip
+  end
+
+  def builtin_isolate_options(language_name)
     case language_name
     when 'pas', 'php'
       '-d /etc/alternatives'
