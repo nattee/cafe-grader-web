@@ -74,6 +74,29 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   2278), and on an existing host `bin/rails engine:detect WRITE=1` adds
   `php: "<path>"` under `compiler:` when PHP is installed and the line is
   missing; a compiler line that is already there is never changed. (rev 2283)
+- **`engine:detect WRITE=1` works on a `worker.yml` in the older layout.**
+  A file that keeps its common settings under `default: &default` (merged
+  into each environment with `<<: *default`) instead of `shared:` made the
+  task stop without writing anything; the toi host has such a file. New
+  sections now go into that anchored block. (rev 2286)
+- **Viva grade feedback dropped C++ template brackets.** The Feedback line on
+  a graded viva went through Rails `simple_format`, whose sanitizer read
+  `` `map<int, set<int>>` `` as tags and showed `` `map>` `` (113 of 843 grades
+  in the local database). The rev 2078 fix covered the transcript only. The
+  feedback is now rendered as markdown like the interviewer's turns: `<` and
+  `>` show as written, and the quoted code shows as code. In the same helper,
+  `<std::set<int>>` was read as a link with the "scheme" `std:` and showed
+  as `std::set<int`; it now stays text. (rev 2287)
+- **Messages dropped C++ template brackets.** A message body went through the
+  same sanitizing `simple_format`, so a student who wrote `vector<int> v;`
+  saw `vector v;` in their own message list, and so did the admin reading it
+  (`a<b` even turned the rest of the line bold). Message bodies now show as
+  typed on both pages. (rev 2288)
+- **User import from a YAML file failed on every upload** with
+  `NoMethodError: undefined method 'external_encoding'` (the file was handed
+  to the YAML parser as an upload object instead of its contents). It reads
+  the file now, and the import log shows names from the file as text.
+  (rev 2288)
 
 ### Changed
 - **AI assist on Claude through the AI gateway costs about half as much
@@ -93,6 +116,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   line without it. To turn the marker off, set `prompt_cache: false` in the
   `ai_gateway:` block of `config/llm.yml`; no setting is needed to keep it on.
   The manager files are now always sent sorted by file name. (rev 2264)
+
+### Security
+- **Model-written markdown could carry a clickable `javascript:` link.** The
+  markdown renderer used for viva interviewer turns, viva grade feedback and
+  the markdown editor preview escaped raw HTML but turned `[x](javascript:…)`,
+  `<javascript:…>` and `<data:…>` into real links, and the site sets no
+  Content-Security-Policy to stop them. A student who talked the interviewer
+  into repeating such a link could have it run in the browser of a staff
+  member who clicked it. Only `http`, `https`, `ftp`, `mailto` and relative
+  links become links now; anything else shows as plain text. No stored turn or
+  grade used any other kind of link. (rev 2287)
 
 ## [4.7.3] — 2026-10-08
 
