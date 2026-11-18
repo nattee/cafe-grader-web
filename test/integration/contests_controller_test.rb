@@ -107,12 +107,118 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  # --- Contest comments (staff notes; design 2026-11-18) ---
+
+  test "a contest editor adds, edits and deletes a comment, also on a finalized contest" do
+    contest = contests(:contest_a)
+    contest.update_columns(finalized: true)
+    sign_in_as("mary", "mary")   # editor of contest_a
+
+    assert_difference -> { contest.comments.count }, 1 do
+      post add_comment_contest_path(contest), params: { body: "Room 403 lost power at **10:15**" }, as: :turbo_stream
+    end
+    assert_response :success
+    comment = contest.comments.last
+    assert_equal users(:mary), comment.user
+    assert_equal "comment", comment.kind
+    assert_match "contest-comments", response.body
+
+    get contest_path(contest)
+    assert_select "#contest-comments #contest-comment-#{comment.id} strong", "10:15"
+    assert_select "#contest-comments", /mary/
+
+    post update_comment_contest_path(contest), params: { comment_id: comment.id, body: "Resolved: +15 min for the room" }, as: :turbo_stream
+    assert_equal "Resolved: +15 min for the room", comment.reload.body
+
+    assert_difference -> { contest.comments.count }, -1 do
+      post delete_comment_contest_path(contest), params: { comment_id: comment.id }, as: :turbo_stream
+    end
+  end
+
+  test "an empty contest comment is refused" do
+    sign_in_as("admin", "admin")
+    assert_no_difference -> { Comment.count } do
+      post add_comment_contest_path(contests(:contest_a)), params: { body: "   " }, as: :turbo_stream
+    end
+    assert_match "Comment not added", response.body
+  end
+
+  test "a contest comment's markup is sanitized" do
+    sign_in_as("admin", "admin")
+    contest = contests(:contest_a)
+    contest.comments.create!(kind: :comment, user: users(:admin), body: "<script>alert(1)</script>ok")
+    get contest_path(contest)
+    assert_select "#contest-comments script", false
+  end
+
+  test "a student cannot add or delete a contest comment" do
+    contest = contests(:contest_a)
+    comment = contest.comments.create!(kind: :comment, user: users(:admin), body: "staff only")
+    sign_in_as("james", "morning")   # a contestant of contest_a
+    assert_no_difference -> { Comment.count } do
+      post add_comment_contest_path(contest), params: { body: "hi" }, as: :turbo_stream
+      post delete_comment_contest_path(contest), params: { comment_id: comment.id }, as: :turbo_stream
+    end
+    post update_comment_contest_path(contest), params: { comment_id: comment.id, body: "hacked" }, as: :turbo_stream
+    assert_equal "staff only", comment.reload.body
+  end
+
+  test "a comment of another contest cannot be edited through this contest" do
+    sign_in_as("admin", "admin")
+    other = Contest.where.not(id: contests(:contest_a).id).first
+    comment = other.comments.create!(kind: :comment, user: users(:admin), body: "other contest")
+    post update_comment_contest_path(contests(:contest_a)), params: { comment_id: comment.id, body: "moved" }, as: :turbo_stream
+    assert_response :not_found
+    assert_equal "other contest", comment.reload.body
+  end
+
   # --- Collection actions ---
 
   test "admin can change system mode" do
     sign_in_as("admin", "admin")
     post set_system_mode_contests_path, params: { mode: "standard" }
     assert_response :redirect
+  end
+
+  # The IP whitelist follows the mode (design 2026-11-18): contest turns it on,
+  # normal turns it off, the allowed list is never touched.
+  test "contest mode turns the IP whitelist on and normal mode turns it off" do
+    set_grader_config("right.whitelist_ip", "10.0.5.0/24, 192.0.2.7/32")
+    sign_in_as("admin", "admin")
+
+    assert_difference -> { AuditLog.where(action: "mode_change").count }, 1 do
+      post set_system_mode_contests_path, params: { mode: "contest" }
+    end
+    reset_grader_config_cache
+    assert GraderConfiguration.whitelist_active?
+    assert_equal "10.0.5.0/24, 192.0.2.7/32", GraderConfiguration["right.whitelist_ip"]
+    assert_match "IP whitelist is now ON — allowed: 10.0.5.0/24, 192.0.2.7/32", flash[:notice]
+    changes = AuditLog.where(action: "mode_change").last.object_changes
+    assert_equal %w[true false], changes["right.whitelist_ignore"]
+
+    get contests_path
+    assert_select "#whitelist-state", /ON.*Allowed:\s*10\.0\.5\.0\/24, 192\.0\.2\.7\/32/m
+
+    post set_system_mode_contests_path, params: { mode: "standard" }
+    reset_grader_config_cache
+    assert_not GraderConfiguration.whitelist_active?
+    assert_match "IP whitelist is now off", flash[:notice]
+    get contests_path
+    assert_select "#whitelist-state", /off.*Allowed when on:/m
+  ensure
+    reset_grader_config_cache
+  end
+
+  test "an empty allowed list is flagged on the mode card and in the notice" do
+    set_grader_config("right.whitelist_ip", "")
+    sign_in_as("admin", "admin")
+    get contests_path
+    assert_select "#whitelist-state.bg-danger-subtle", /allowed list is empty/
+
+    post set_system_mode_contests_path, params: { mode: "contest" }
+    assert_match "allowed list is EMPTY", flash[:notice]
+  ensure
+    reset_grader_config_cache
   end
 
   test "non-admin cannot change system mode" do

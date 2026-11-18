@@ -11,6 +11,14 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Comments on a contest.** The contest's manage page has a Comments card for
+  staff notes — issues to resolve, what happened during the contest, the
+  after-action report. Each comment shows its author and time and is written
+  in Markdown. Admins and the contest's editors read, add, edit and delete;
+  students never see them. It stays open on a finalized contest. (rev 2293)
+- **The Contests page shows the IP whitelist beside the mode buttons** — on or
+  off, and the allowed ranges, in red when the list is empty. The message
+  after a mode switch repeats it. (rev 2291)
 - **`bin/rails engine:langcheck` — does each language grade on this host?**
   It compiles and runs a small built-in program (read two numbers, print the
   sum) for C++, C, Python, Ruby, Java, Haskell, Rust, Go, Pascal and PHP in the
@@ -32,6 +40,10 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   no longer matches the host, for example after a JDK upgrade. (rev 2278)
 
 ### Fixed
+- **The Logins report opened empty.** With the date boxes left blank, From was
+  read as "now" and Until as the year 3000, so no login matched. A blank box
+  now means what its hint says — start of today / end of today — on all three
+  tabs (Detail, Summary, Failed attempts). (rev 2290)
 - **Java submissions fail to compile with `InternalError: Error loading
   java.security file` on Debian/Ubuntu judge hosts.** The OS package keeps the
   JDK's configuration in `/etc/java-<N>-openjdk`, which the sandbox did not
@@ -99,6 +111,19 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   (rev 2288)
 
 ### Changed
+- **Contest mode turns the IP whitelist on.** Pressing Contest now also sets
+  `right.whitelist_ignore` to false, so addresses outside `right.whitelist_ip`
+  are blocked by default during an exam; Normal and Analysis set it back to
+  true. The allowed list itself is never changed — **check it before pressing
+  Contest** (an empty list lets in only admins and problem editors). The
+  mode-change audit row records the whitelist switch. (rev 2291)
+- **Submission Detail and Viva Info name the author and the problem the same
+  way.** The author is shown to the owner and to the problem's staff (admins,
+  editors, reporters — TAs with report rights no longer see "REDACTED");
+  another student allowed to open the page sees "hidden" on both (the viva
+  page used to show the login). Only admins get the link to the user stat
+  page. The viva page now shows the full problem block and the exact start
+  time. (rev 2292)
 - **AI assist on Claude through the AI gateway costs about half as much
   during exams.** Each request now has a fixed line, "End of the problem
   material. The student's work follows.", between the problem material (the
