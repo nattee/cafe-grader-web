@@ -279,6 +279,9 @@ class User < ApplicationRecord
       http = Net::HTTP.new(host, 443)
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      # exam-day setup keeps the switch on, so failed exam logins reach CUCAS: never wait long
+      http.open_timeout = 5
+      http.read_timeout = 10
       result = [ ]
       http.start do |http|
         req = Net::HTTP::Post.new(path)

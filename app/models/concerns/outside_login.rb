@@ -16,7 +16,8 @@ module OutsideLogin
 
     # Whether the outside login is switched on for the site right now.
     def outside_login_on?
-      GraderConfiguration.get('chula.allow_cu_net_password') == true
+      # a string-typed 'true' row must stay ON; 'false' (either type) reads OFF
+      [true, 'true'].include?(GraderConfiguration.get('chula.allow_cu_net_password'))
     end
 
     # Whether +password+ is +user+'s password in the outside system.
