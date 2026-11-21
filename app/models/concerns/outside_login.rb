@@ -7,7 +7,7 @@ module OutsideLogin
   class_methods do
     # Name shown to users, or nil when this deployment has no outside login.
     def outside_login_name
-      nil
+      'CU-net'
     end
 
     def outside_login_available?
@@ -16,12 +16,12 @@ module OutsideLogin
 
     # Whether the outside login is switched on for the site right now.
     def outside_login_on?
-      false
+      GraderConfiguration.get('chula.allow_cu_net_password') == true
     end
 
     # Whether +password+ is +user+'s password in the outside system.
     def outside_password?(user, password)
-      false
+      user.authenticated_by_cucas?(password)   # CUCAS, chula_cp's User method
     end
   end
 end
