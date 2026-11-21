@@ -4,7 +4,7 @@ class ContestsController < ApplicationController
                                      :add_users_from_csv, :clone, :set_active,
                                      :show_users_query, :show_problems_query,
                                      :add_user, :add_user_by_group, :add_problem, :add_problem_by_group,
-                                     :do_all_users, :do_user, :extra_time_user, :do_all_problems, :do_problem,
+                                     :do_all_users, :do_user, :extra_time_user, :do_all_problems, :do_problem, :reorder_problems,
                                      :add_comment, :update_comment, :delete_comment,
                                     ]
   before_action :set_user, only: [:do_user]
@@ -15,7 +15,7 @@ class ContestsController < ApplicationController
                      show_users_query show_problems_query
                      add_users_from_csv add_user add_user_by_group
                      add_problem add_problem_by_group
-                     do_all_users do_user do_all_problems do_problem
+                     do_all_users do_user do_all_problems do_problem reorder_problems
                      add_comment update_comment delete_comment
                     ]
   before_action :check_valid_login
@@ -24,7 +24,7 @@ class ContestsController < ApplicationController
 
   before_action :check_finalized, only: %i[add_user_by_group add_user add_users_from_csv
                                            add_problem add_problem_by_group do_all_problems
-                                           do_all_users do_user do_all_problems do_problem
+                                           do_all_users do_user do_all_problems do_problem reorder_problems
                                           ]
   delegate :pluralize, to: 'ActionController::Base.helpers'
 
@@ -143,10 +143,11 @@ class ContestsController < ApplicationController
   end
 
   def clone
-    new_contest = Contest.new(description: @contest.description, start: Time.zone.now, stop: Time.zone.now+3.hour)
+    new_contest = Contest.new(description: @contest.description, start: Time.zone.now, stop: Time.zone.now+3.hour,
+                            outside_login_off: @contest.outside_login_off)
     new_contest.name = new_contest.get_next_name(@contest.name + '_copy')
     @contest.contests_users.each { |cu| new_contest.contests_users.build(user_id: cu.user_id, role: cu.role) }
-    @contest.contests_problems.each { |cp| new_contest.contests_problems.build(problem_id: cp.problem_id) }
+    @contest.contests_problems.each { |cp| new_contest.contests_problems.build(problem_id: cp.problem_id, number: cp.number) }
 
     saved = nil
     AuditLog.paused do
@@ -236,8 +237,11 @@ class ContestsController < ApplicationController
     # was removed along with the underlying practice/exam toggle
     # (2026-07-21 context-policy design, Phase A) — nothing in
     # contestManageProblem reads compilation_type here anymore either.
-    render json: {data: @contest.contests_problems.joins(:problem)
-      .select('contests_problems.id', :problem_id, :contest_id, :available, :enabled, :allow_llm, :name, :full_name, :number)}
+    rows = @contest.contests_problems.joins(:problem)
+      .select('contests_problems.id', :problem_id, :contest_id, :available, :enabled, :allow_llm, :name, :full_name, :number)
+      .reorder('contests_problems.number', 'contests_problems.id')
+    data = rows.each_with_index.map { |r, i| r.as_json.merge('position' => i + 1) }
+    render json: {data: data}
   end
 
   def do_all_users
@@ -370,10 +374,8 @@ class ContestsController < ApplicationController
       gp.update(allow_llm: !gp.allow_llm?)
     when 'moveup', 'movedown'
       old_number = gp.number
-      delta = params[:command] == 'moveup' ? -1.2 : 1.2
-      anchor = params[:command] == 'moveup' ? (gp.number || 2) : (gp.number || 0)
       AuditLog.paused do
-        @contest.set_problem_number(@problem, anchor + delta)
+        @contest.move_problem(@problem, params[:command] == 'moveup' ? :up : :down)
       end
       new_number = @contest.contests_problems.where(problem: @problem).first&.number
       AuditLog.record!(
@@ -386,6 +388,24 @@ class ContestsController < ApplicationController
       @toast[:body] = "Unknown command"
       @toast[:type] = 'alert'
     end
+    @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
+    render 'turbo_toast'
+  end
+
+  # POST: save the problem order sent by drag-and-drop (problem_order = comma-separated problem ids)
+  def reorder_problems
+    before = @contest.problems_in_display_order.map(&:problem)
+    AuditLog.paused { @contest.reorder_problems!(params[:problem_order].to_s.split(',')) }
+    after_ids = @contest.problems_in_display_order.map(&:problem_id)
+    if after_ids != before.map(&:id)
+      names = before.index_by(&:id).transform_values(&:name)
+      AuditLog.record!(
+        auditable:      @contest,
+        action:         'reorder_problems',
+        object_changes: { 'order' => [before.map(&:name), after_ids.map { |i| names[i] }] }
+      )
+    end
+    @toast = {title: "Contest #{@contest.name}", body: "The problem order was saved."}
     @event_dispatcher = {event_name: 'datatable:reload', event_detail: { "table": 'problem_table'}}
     render 'turbo_toast'
   end
@@ -561,17 +581,24 @@ class ContestsController < ApplicationController
       redirect_to contests_path, notice: 'Unrecognized mode' and return
     end
 
+    # An exam mode needs an explicit IP-whitelist choice, ON or OFF, with no
+    # default: the Contest button's dialog sends `whitelist`. One site-wide
+    # allowed list cannot fit every course — one exam sits in a lab on the
+    # list, another on the campus network, a makeup at home (design
+    # 2026-11-18, revised 2026-11-19).
+    exam = ['contest', 'indv-contest'].include?(params[:mode])
+    if exam && !['on', 'off'].include?(params[:whitelist])
+      redirect_to contests_path, notice: 'Mode not changed: choose whether the IP whitelist is ON or OFF.' and return
+    end
+
     mode_row = GraderConfiguration.find_by(key: 'system.mode')
     old_mode = mode_row.value
     old_whitelist_ignore = GraderConfiguration.find_by(key: GraderConfiguration::WHITELIST_IGNORE_KEY)&.value
 
     AuditLog.paused do
       mode_row.update(value: params[:mode])
-      if ['contest', 'indv-contest'].include? params[:mode]
-        GraderConfiguration.set_exam_mode(true)
-      else
-        GraderConfiguration.set_exam_mode(false)
-      end
+      GraderConfiguration.set_exam_mode(exam)
+      GraderConfiguration.set_whitelist(exam && params[:whitelist] == 'on')
     end
     new_whitelist_ignore = GraderConfiguration.find_by(key: GraderConfiguration::WHITELIST_IGNORE_KEY)&.value
 
@@ -580,8 +607,8 @@ class ContestsController < ApplicationController
       action:         'mode_change',
       object_changes: {
         'system.mode' => [old_mode, params[:mode]],
-        # the IP whitelist follows the mode (set_exam_mode); dropped from the
-        # row when the switch did not change it
+        # the IP whitelist as chosen (Contest) or turned off (Normal,
+        # Analysis); dropped from the row when the switch did not change it
         GraderConfiguration::WHITELIST_IGNORE_KEY => [old_whitelist_ignore, new_whitelist_ignore]
       }.reject { |_key, (old, new)| old == new }
     )
@@ -627,8 +654,8 @@ class ContestsController < ApplicationController
       ]
     end
 
-    # The notice after a mode switch says what happened to the IP whitelist,
-    # which follows the mode — a stale or empty allowed list is seen at once.
+    # The notice after a mode switch says what happened to the IP whitelist —
+    # a stale or empty allowed list is seen at once.
     def mode_changed_notice(mode)
       GraderConfiguration.read_config
       msg = "Mode changed to #{helpers.mode_to_text(mode)}."
@@ -662,7 +689,9 @@ class ContestsController < ApplicationController
       if @contest && @contest.finalized?
         params.require(:contest).permit(:finalized)
       else
-        params.require(:contest).permit(:name, :description, :enabled, :lock, :start, :stop, :finalized)
+        permitted = %i[name description enabled lock start stop finalized]
+        permitted << :outside_login_off if @current_user.admin? && User.outside_login_available?
+        params.require(:contest).permit(*permitted)
       end
     end
 

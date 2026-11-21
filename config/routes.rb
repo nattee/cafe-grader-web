@@ -102,6 +102,7 @@ Rails.application.routes.draw do
       post 'add_problem_by_group'
       post 'do_all_problems'
       post 'do_problem'
+      post 'reorder_problems'
 
       # contest comments (staff notes)
       post 'add_comment'
@@ -278,6 +279,7 @@ Rails.application.routes.draw do
       get 'mass_mailing'
       match 'modify_role', via: [:get, :post]
       match 'create_from_list', via: [:get, :post]
+      post 'check_list'
       match 'random_all_passwords', via: [:get, :post]
     end
     member do

@@ -1,6 +1,6 @@
 = render 'application/breadcrumb', steps: [ { label: 'Contests', path: contests_path, icon: resource_icon_name(Contest) }, { label: 'Management' } ]
 
-.contest-management-wrapper{data: {controller: 'contest init-ui-component'}}
+.contest-management-wrapper{data: {controller: 'contest init-ui-component', action: 'problems-reordered->contest#postProblemOrder'}}
   -# hidden action forms (required by Stimulus contest controller)
   .d-none
     = form_with url: do_user_contest_path, html: {'data-contest-target': 'userForm', id: 'do-user-form',
@@ -19,12 +19,19 @@
       = f.hidden_field :problem_id, 'data-contest-target': 'problemFormProblemID'
       = f.hidden_field :command, 'data-contest-target': 'problemFormCommand'
 
+    = form_with url: reorder_problems_contest_path, html: {'data-contest-target': 'problemOrderForm',
+      data: {turbo: true}} do |f|
+      = f.hidden_field :problem_order, 'data-contest-target': 'problemOrderFormIds'
+
   .d-flex.justify-content-between.align-items-center.mb-3
     .d-flex.align-items-center.gap-2
       %h2.fw-bold.text-dark.mb-0.font-monospace
         = @contest.name
       %span.badge.bg-primary-subtle.text-primary.border.border-primary-subtle.rounded-pill.fw-medium
         %small Manage
+      - if User.outside_login_available? && @contest.outside_login_off?
+        %span.badge.bg-warning-subtle.text-warning-emphasis.border.border-warning-subtle.rounded-pill.fw-medium{data: {bs_toggle: 'tooltip'}, title: "Until #{@contest.stop&.strftime('%d/%b/%Y %H:%M')}"}
+          %small= "#{User.outside_login_name} off for students"
 
     .d-flex.gap-2
       -# "Finish open vivas" — closes every still-open viva session of this
@@ -286,17 +293,20 @@
                             %strong.text-dark LLM Assistant 
                             can be enabled individually for each problem.
                           %li.mt-1
-                            Use the 
-                            %strong.text-dark 
+                            Drag a problem by its
+                            %span.mi.md-18.align-text-bottom drag_indicator
+                            handle, or use the
+                            %strong.text-dark
                               %span.mi.md-18.align-text-bottom arrow_upward
                               %span.mi.md-18.align-text-bottom arrow_downward
-                            arrows to sort the display order of problems for the contest users.
+                            arrows, to set the order students see.
               .row
                 .col-12
                   %table#problem_table.table.datatable.table-hover
                     %thead
                       %tr
                         %th Number
+                        %th{'aria-label': 'Drag to reorder'}
                         %th Name
                         %th Full name
                         %th.text-center Global Available

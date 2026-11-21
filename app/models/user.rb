@@ -5,7 +5,15 @@ require 'net/http'
 require 'json'
 
 class User < ApplicationRecord
+  include OutsideLogin
+
   has_and_belongs_to_many :roles
+
+  # True while this user is a student of a contest that turned the outside
+  # login off, up to the contest stop plus the user's own extra time.
+  def outside_login_blocked?(now = Time.zone.now)
+    ContestUser.blocking_outside_login(now).where(user_id: id).exists?
+  end
 
   # has_and_belongs_to_many :groups
   has_many :groups_users, class_name: 'GroupUser'
@@ -223,16 +231,40 @@ class User < ApplicationRecord
     return start..stop
   end
 
-  def self.authenticate(login, password)
+  # refusal is nil or :slip_password_required.
+  LoginResult = Data.define(:user, :refusal)
+
+  # The one login decision for the web and API doors. Order matters: see
+  # doc/ spec "Login behaviour". The local password always works; the outside
+  # password is only consulted when the site switch is on, and for a student
+  # of a contest that turned outside login off it is refused (never cached
+  # over the slip password).
+  def self.login_result(login, password)
     user = find_by_login(login)
-    if user
-      return user if user.authenticated?(password)
-      if GraderConfiguration.get('chula.allow_cu_net_password') && user.authenticated_by_cucas?(password)
-        user.password = password
-        user.save
-        return user
-      end
+    return LoginResult.new(user: nil, refusal: nil) unless user
+    return LoginResult.new(user: user, refusal: nil) if user.authenticated?(password)
+    return LoginResult.new(user: nil, refusal: nil) unless outside_login_on?
+
+    if user.outside_login_blocked?
+      refusal = outside_password?(user, password) ? :slip_password_required : nil
+      return LoginResult.new(user: nil, refusal: refusal)
     end
+
+    if outside_password?(user, password)
+      user.password = password
+      user.save
+      return LoginResult.new(user: user, refusal: nil)
+    end
+    LoginResult.new(user: nil, refusal: nil)
+  end
+
+  def self.authenticate(login, password)
+    login_result(login, password).user
+  end
+
+  def self.outside_login_refused_message
+    "This exam uses the password on your seat slip. " \
+      "Your #{outside_login_name} password will work again after the exam ends."
   end
 
   # authenticate with CU cas
@@ -647,72 +679,37 @@ class User < ApplicationRecord
     created_user_ids = []
     updated_user_ids = []
 
-    lines.split("\n").each do |line|
-      # split with large limit, this will cause consecutive ',' to be result in a blank
-      items = line.chomp.split(',', 1000)
-      if items.length>=2
-        login = items[0]
-        full_name = items[1]
-        remark =''
-        user_alias = ''
+    UserImportList.new(lines).rows.each do |row|
+      user = User.find_by_login(row.login)
+      created = false
+      if user
+        user.full_name = row.full_name
+        user.remark = row.remark unless row.remark.nil?
+        case row.password_mode
+        when :given then user.password = row.password
+        when :random then user.password = random_password
+        end
+      else
+        password = row.password || random_password
+        user = User.new({login: row.login,
+                         full_name: row.full_name,
+                         password: password,
+                         password_confirmation: password,
+                         alias: row.user_alias,
+                         remark: row.remark || ''})
+        created = true
+      end
+      user.activated = true
 
-        added_random_password = false
-        added_password = false
-
-        # given password?
-        if items.length >= 3
-          if items[2].chomp(" ").length > 0
-            password = items[2].chomp(" ")
-            added_password = true
-          end
+      if user.save
+        if created
+          created_user_ids << user.id
         else
-          password = random_password
-          added_random_password=true
+          updated_user_ids << user.id
         end
-
-        # given alias?
-        if items.length>= 4 and items[3].chomp(" ").length > 0
-          user_alias = items[3].chomp(" ")
-        else
-          user_alias = login
-        end
-
-        # given remark?
-        has_remark = false
-        if items.length>=5
-          remark = items[4].strip
-          has_remark = true
-        end
-
-        user = User.find_by_login(login)
-        created = false
-        if user
-          user.full_name = full_name
-          user.remark = remark if has_remark
-          user.password = password if added_password || added_random_password
-        else
-          # create a random password if none are given
-          password = random_password unless password
-          user = User.new({login: login,
-                           full_name: full_name,
-                           password: password,
-                           password_confirmation: password,
-                           alias: user_alias,
-                           remark: remark})
-          created = true
-        end
-        user.activated = true
-
-        if user.save
-          if created
-            created_user_ids << user.id
-          else
-            updated_user_ids << user.id
-          end
-        else
-          error_logins << "'#{login}'"
-          first_error = user.errors.full_messages.to_sentence unless first_error
-        end
+      else
+        error_logins << "'#{row.login}'"
+        first_error = user.errors.full_messages.to_sentence unless first_error
       end
     end
 

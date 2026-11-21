@@ -11,6 +11,17 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
 ## [Unreleased]
 
 ### Added
+- **Check before importing users.** The Import Users page has a Check button beside Create following users. It shows, without saving anything, what the import would do: who gets a new or random password, which logins would become new accounts (usually a typo on an exam import), duplicates, name and remark changes, ignored lines, and, where an outside login exists, who isn't yet covered by a contest that turns it off. Create works as before. (rev 2313)
+- **Turn off an outside login (CU-net) for one contest's students.** An admin
+  ticks the box on the contest's edit page. Until the contest ends (plus each
+  student's extra time), those students can log in only with the password the
+  admin imported. A CU-net login can't replace that password, and a correct
+  CU-net password typed by mistake shows a 'use the password on your seat slip'
+  message and doesn't count toward the login lockout. Everyone else keeps
+  CU-net; the site-wide switch is unchanged. Hidden on deployments without an
+  outside login. (revs 2308–2310)
+- **Drag-and-drop ordering on a contest's Problems tab.** Drag the handle at
+  the left of each row to set the order students see. (rev 2303)
 - **Comments on a contest.** The contest's manage page has a Comments card for
   staff notes — issues to resolve, what happened during the contest, the
   after-action report. Each comment shows its author and time and is written
@@ -40,6 +51,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   no longer matches the host, for example after a JDK upgrade. (rev 2278)
 
 ### Fixed
+- **Moving a contest problem up or down moves it exactly one row.** Adding
+  problems to a contest that already had some gave the first new one a repeated
+  number, moving down created a repeat, and cloning dropped the order, so one
+  press could jump two rows or to the top. Every move now renumbers the list
+  1..n, which also repairs older contests on their first move. (revs 2301–2302)
 - **The Logins report opened empty.** With the date boxes left blank, From was
   read as "now" and Until as the year 3000, so no login matched. A blank box
   now means what its hint says — start of today / end of today — on all three
@@ -111,12 +127,22 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   (rev 2288)
 
 ### Changed
-- **Contest mode turns the IP whitelist on.** Pressing Contest now also sets
-  `right.whitelist_ignore` to false, so addresses outside `right.whitelist_ip`
-  are blocked by default during an exam; Normal and Analysis set it back to
-  true. The allowed list itself is never changed — **check it before pressing
-  Contest** (an empty list lets in only admins and problem editors). The
-  mode-change audit row records the whitelist switch. (rev 2291)
+- **Pressing Contest asks whether to turn the IP whitelist on.** A dialog
+  shows the allowed list (`right.whitelist_ip`) and offers two buttons,
+  "Contest, IP whitelist ON" and "Contest, IP whitelist OFF", with no
+  default; a switch to a contest mode without that choice is refused and
+  changes nothing. Normal and Analysis turn the whitelist off. The allowed
+  list itself is never changed; when it is empty the ON button is red,
+  because it would let in only admins and problem editors. There is no
+  default because one site-wide list rarely fits every course: on one
+  server, one course's exams ran in a lab on the list while another's sat
+  on the campus network and a makeup ran from home. The mode-change audit
+  row records the whitelist switch. (revs 2291, 2298)
+- **New installs start with `0.0.0.0/0, ::/0` as the IP whitelist's allowed
+  list**, not `0.0.0.0/0`, which never matches an IPv6 address (about a
+  quarter of logins on one production server arrive over IPv6). Existing
+  servers keep their list: one that reads only `0.0.0.0/0` blocks IPv6
+  students whenever the whitelist is on. (rev 2298)
 - **Submission Detail and Viva Info name the author and the problem the same
   way.** The author is shown to the owner and to the problem's staff (admins,
   editors, reporters — TAs with report rights no longer see "REDACTED");
@@ -137,10 +163,11 @@ When a release is cut: rename it to `[X.Y.Z] — YYYY-MM-DD`, bump
   so a problem nobody asks about for 5 minutes pays that again. In Quiz 2, 94%
   of Opus requests came within 5 minutes of the previous one on the same
   problem. Answers do not change and are about 1 second faster out of a
-  typical 22. Gemini models ignore the marker, and other providers get the
-  line without it. To turn the marker off, set `prompt_cache: false` in the
-  `ai_gateway:` block of `config/llm.yml`; no setting is needed to keep it on.
-  The manager files are now always sent sorted by file name. (rev 2264)
+  typical 22. Only Claude models (a model name containing "claude") get the
+  marker; Gemini models and other providers get the line without it. To turn
+  the marker off, set `prompt_cache: false` in the `ai_gateway:` block of
+  `config/llm.yml`; no setting is needed to keep it on. The manager files are
+  now always sent sorted by file name. (revs 2264, 2297)
 
 ### Security
 - **Model-written markdown could carry a clickable `javascript:` link.** The
