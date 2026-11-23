@@ -5,7 +5,7 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
 
   test "unauthenticated user is redirected" do
     get contests_path
-    assert_redirected_to login_main_path
+    assert_redirected_to_login
   end
 
   test "normal user is redirected from contests index" do
@@ -133,6 +133,21 @@ class ContestsControllerTest < ActionDispatch::IntegrationTest
     assert_difference -> { contest.comments.count }, -1 do
       post delete_comment_contest_path(contest), params: { comment_id: comment.id }, as: :turbo_stream
     end
+  end
+
+  test "comments live in their own tab, whose count follows a new comment" do
+    contest = contests(:contest_a)
+    sign_in_as("admin", "admin")
+    get contest_path(contest)
+    assert_select ".nav-tabs button[data-bs-target='#tab-contest-comments']", text: /Comments/
+    assert_select "#tab-contest-comments.tab-pane #contest-comments", 1
+    assert_select "#contest-comments-count.d-none", 1          # no comment yet: no number
+
+    post add_comment_contest_path(contest), params: { body: "Room 403 lost power" }, as: :turbo_stream
+    assert_match(/<turbo-stream action="replace" target="contest-comments-count">/, response.body)
+    get contest_path(contest)
+    assert_select "#contest-comments-count", text: "1"
+    assert_select "#contest-comments-count.d-none", 0
   end
 
   test "an empty contest comment is refused" do
